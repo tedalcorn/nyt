@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Analysis of New York Times Articles</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+        background-color: #f0f0f0; /* Fallback background color */
+      }
+      header {
+        background: rgba(51, 51, 51, 0.8); /* Slightly transparent background */
+        color: #fff;
+        padding: 1rem 0;
+        text-align: center;
+      }
+      .container {
+        width: 80%;
+        margin: auto;
+        overflow: hidden;
+        padding: 20px;
+        background: rgba(255, 255, 255, 0.8); /* Slightly transparent background for better readability */
+        border-radius: 8px;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 20px 0;
+      }
+      p {
+        margin-bottom: 20px;
+      }
+      .chart-container {
+        text-align: center;
+        margin-top: 40px;
+      }
+      .chart-container img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 10px auto;
+      }
+      .grouped-charts {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      .grouped-charts img {
+        width: 33%; /* Adjust width as needed */
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Analysis of New York Times Articles</h1>
+    </header>
+    <div class="container">
+      <p>This analysis delves into various aspects of New York Times articles from Jan. 1, 2014 to August 4, 2024.</p>
+      
+      <ul>
+        <li>524,762,428 printed words</li>
+        <li>641,503 articles (after dropping 10 articles mistakenly brought in from 2007)</li>
+        <li>30,238 unique authors</li>
+        <li>2,548 authors with 25+ articles over that time</li>
+        <li>76 named sections</li>
+      </ul>
+      
+      <!-- Display charts -->
+      <div class="chart-container">
+        <img src="chart1.png" alt="Chart 1">
+        <img src="chart2.png" alt="Chart 2">
+        <img src="chart3.png" alt="Chart 3">
+        <img src="chart4.png" alt="Chart 4">
+        <img src="chart5.png" alt="Chart 5">
+        <div class="grouped-charts">
+          <img src="chart6a.png" alt="Chart 6a">
+          <img src="chart6b.png" alt="Chart 6b">
+          <img src="chart6c.png" alt="Chart 6c">
+        </div>
+        <div class="grouped-charts">
+          <img src="chart7a.png" alt="Chart 7a">
+          <img src="chart7b.png" alt="Chart 7b">
+        </div>
+        <img src="chart8.jpg" alt="Chart 8">
+      </div>
+      <p>For more details, you can view <a href="20240805NYT.ipynb">my Python code</a>.</p>
+    </div>
+  </body>
+</html>
