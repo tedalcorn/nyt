@@ -184,6 +184,9 @@
       <h4 style="margin-top:16px;margin-bottom:4px">Geographic data</h4>
       <p>World and U.S. state coverage is based on the <code>glocations</code> keyword field in the API. City-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. This field was discontinued in the API in 2025, so geographic data covers 2014–2024 only. Per-capita figures use 2025 population estimates.</p>
 
+      <h4 style="margin-top:16px;margin-bottom:4px">Section names</h4>
+      <p>"Fashion &amp; Style" and "Fashion" have been merged into "Style," reflecting the NYT's own renaming of this section around 2018–2020.</p>
+
       <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
       <ul style="margin-left:20px">
         <li>The current calendar year is excluded from trend charts to avoid incomplete data skewing results.</li>
@@ -796,7 +799,7 @@ function extractBeats(authorArticles) {
   for (const a of authorArticles) {
     const seen = new Set();
     for (const s of a.subjects) {
-      if (GENERIC_SUBJECTS.has(s)) continue;
+      if (GENERIC_SUBJECTS.has(s) || s.startsWith('internal-')) continue;
       if (!seen.has(s)) { authorFreq[s] = (authorFreq[s] || 0) + 1; seen.add(s); }
     }
   }
