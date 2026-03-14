@@ -153,6 +153,7 @@
 </header>
 
 <nav id="nav">
+  <button data-view="about">About</button>
   <button data-view="overview" class="active">Overview</button>
   <button data-view="authors">Authors</button>
   <button data-view="sections">Sections</button>
@@ -164,6 +165,33 @@
 
 <div class="container">
   <div class="loading" id="loading">Loading data...</div>
+
+  <!-- ABOUT -->
+  <div class="view" id="view-about">
+    <div class="chart-box" style="max-width:760px;margin:0 auto;font-size:14px;line-height:1.7">
+      <h3 style="margin-bottom:12px">About</h3>
+      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2014 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data refreshes automatically on the 2nd of each month.</p>
+
+      <h4 style="margin-top:16px;margin-bottom:4px">Primary section</h4>
+      <p>Each author is assigned a "primary section" based on the section in which they have the most published articles. This is a rough proxy for their beat and may not reflect their actual desk assignment, especially for authors who write across sections.</p>
+
+      <h4 style="margin-top:16px;margin-bottom:4px">Beat topics</h4>
+      <p>The topics shown on author profiles are derived from the NYT's own subject tags on each article. Topics are scored by how disproportionately an author covers them relative to the full corpus — a topic must appear at least twice as often in an author's work as the corpus-wide average to qualify. Authors with few articles or articles lacking subject tags may have no beats listed. Subject tags are assigned by the NYT, not by this dashboard.</p>
+
+      <h4 style="margin-top:16px;margin-bottom:4px">Author names</h4>
+      <p>Author name variants (e.g., "Jonah E. Bromwich" and "Jonah Bromwich") are merged when they share first and last names with compatible middle names. Only minor variants are merged; if two forms each have substantial article counts, they are kept separate to avoid false merges. Institutional bylines (The Associated Press, The Editorial Board, Reuters, etc.) are excluded from author rankings.</p>
+
+      <h4 style="margin-top:16px;margin-bottom:4px">Geographic data</h4>
+      <p>World and U.S. state coverage is based on the <code>glocations</code> keyword field in the API. City-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. This field was discontinued in the API in 2025, so geographic data covers 2014–2024 only. Per-capita figures use 2025 population estimates.</p>
+
+      <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
+      <ul style="margin-left:20px">
+        <li>The current calendar year is excluded from trend charts to avoid incomplete data skewing results.</li>
+        <li>Word counts reflect what the API returns; some article types (interactives, briefings, live updates) may have unusual counts.</li>
+        <li>Article counts include all document types returned by the API (news, opinion, reviews, obituaries, etc.).</li>
+      </ul>
+    </div>
+  </div>
 
   <!-- OVERVIEW -->
   <div class="view" id="view-overview">
@@ -279,7 +307,7 @@
   <div class="view" id="view-states">
     <div class="chart-box">
       <h3>U.S. State Coverage Over Time</h3>
-      <div style="font-size:12px;color:#888;margin-bottom:8px">Based on geographic tags in U.S. section articles (2014-2024). NY and NJ excluded as local coverage outliers.</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">Based on geographic tags in U.S. section articles (2014-2024).</div>
       <div style="margin-bottom:8px">
         <select id="stateSelect" multiple style="width:100%;min-height:100px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
@@ -357,6 +385,7 @@ async function loadData() {
           print_section: a.ps,
           print_page: a.pp,
           glocations: a.g || [],
+          subjects: a.sb || [],
         });
       }
     }
@@ -742,134 +771,59 @@ function renderAuthors() {
   });
 }
 
-// Build corpus-wide word frequencies (computed once, cached)
-let corpusWordFreq = null;
-let corpusTotalDocs = 0;
-function ensureCorpusFreq() {
-  if (corpusWordFreq) return;
-  corpusWordFreq = {};
-  corpusTotalDocs = articles.length;
+// Build corpus-wide subject frequencies (computed once, cached)
+let corpusSubjectFreq = null;
+let corpusSubjectDocs = 0;
+function ensureCorpusSubjectFreq() {
+  if (corpusSubjectFreq) return;
+  corpusSubjectFreq = {};
+  corpusSubjectDocs = articles.length;
   for (const a of articles) {
-    const words = tokenize(a.headline);
     const seen = new Set();
-    for (const w of words) {
-      const st = stem(w);
-      if (!seen.has(st)) { corpusWordFreq[st] = (corpusWordFreq[st] || 0) + 1; seen.add(st); }
+    for (const s of a.subjects) {
+      if (!seen.has(s)) { corpusSubjectFreq[s] = (corpusSubjectFreq[s] || 0) + 1; seen.add(s); }
     }
   }
 }
 
-const BEAT_STOPWORDS = new Set([
-  // Grammar / function words
-  'the','a','an','and','or','but','in','on','at','to','for','of','is','are',
-  'was','were','be','been','being','have','has','had','do','does','did','will','would','shall',
-  'should','may','might','can','could','must','not','no','nor','so','yet','both','each','few',
-  'more','most','other','some','such','than','too','very','just','about','after','before','into',
-  'through','during','with','without','from','up','out','over','under','again','further','then',
-  'once','here','there','when','where','why','how','all','any','every','its','it','that','this',
-  'these','those','what','which','who','whom','whose','says','said','say','one','two',
-  'first','also','now','back','make','like','get','got','many','much','still','well','take',
-  'us','i','my','me','he','she','his','her','they','them','their','we','our','you','your',
-  'as','by','if','off','own',"can't","don't","won't","didn't","isn't","aren't","doesn't",
-  'three','four','five','six','seven','eight','nine','ten','hundred','thousand',
-  // Days, times, generic temporal
-  'monday','tuesday','wednesday','thursday','friday','saturday','sunday',
-  'january','february','march','april','june','july','august','september','october','november','december',
-  'day','days','year','years','time','times','week','weeks','month','months','today','tonight',
-  'morning','evening','night','long','last','next','late','early','ago','past','future','recent',
-  // Generic journalism / headline words
-  'new','says','said','say','report','reports','finds','asks','show','shows','goes','makes',
-  'keep','left','right','see','set','let','put','part','think','need','look','come','know',
-  'mr','mrs','ms','dr','york','review','life','big','old','world','way',
-  'people','men','women','man','woman','inside','amid','another','become','best','ever',
-  'american','state','united','states','country','city','national',
-  'help','case','plan','group','family','small','high','number','million','billion',
-  'face','turn','move','call','key','deal','push','use','offer','open','end','try',
-  'question','away','warn','rule','fight','claim','raise','test','start','point','bit','run',
-  'going','really','thing','things','lot','kind','work','works','working',
-  'want','wants','getting','give','gives','good','bad','real','top','full','home',
-  'tell','told','tells','ask','asked','great','letter','letters','here','why',
-  'area','place','south','north','east','west','part','side','second','age',
-  'bring','brought','lead','leads','former','death','dead','die','dies','kill','killed',
-  'power','court','house','white','black','president','officials','official','government','law',
-  'stop','read','live','lives','love','war','crisis','change','young',
-  'money','company','market','business','political','party','vote','election',
-  'feel','watch','music','movie','film','book','books','art','play','game',
-  'children','child','students','student','school','schools','college',
+// Generic subjects to exclude from beats (too broad to be informative)
+const GENERIC_SUBJECTS = new Set([
+  'United States Politics and Government', 'Content Type: Personal Profile',
+  'Content Type: Service', 'your-feed-science', 'your-feed-healthcare',
+  'your-feed-internet', 'your-feed-animals', 'your-feed-weather',
+  'States (US)', 'Research',
 ]);
 
-function tokenize(headline) {
-  return headline.toLowerCase().replace(/[^a-z\s'-]/g, '').split(/\s+/).filter(w => w.length > 2 && !BEAT_STOPWORDS.has(w));
-}
-
-// Minimal stemmer: collapse common English suffixes
-function stem(word) {
-  if (word.length <= 4) return word;
-  // Possessives and plurals of proper nouns (e.g., china's, chinas)
-  if (word.endsWith("'s")) return word.slice(0, -2);
-  // -ies -> -y (e.g., countries -> country)
-  if (word.endsWith('ies') && word.length > 5) return word.slice(0, -3) + 'y';
-  // -es -> remove (e.g.,aches -> ach) — only if long enough
-  if (word.endsWith('es') && word.length > 5) return word.slice(0, -2);
-  // -s (simple plural)
-  if (word.endsWith('s') && !word.endsWith('ss') && word.length > 4) return word.slice(0, -1);
-  // -ing
-  if (word.endsWith('ing') && word.length > 5) return word.slice(0, -3);
-  // -ed
-  if (word.endsWith('ed') && word.length > 5) return word.slice(0, -2);
-  // -ly
-  if (word.endsWith('ly') && word.length > 5) return word.slice(0, -2);
-  // -ness
-  if (word.endsWith('ness') && word.length > 6) return word.slice(0, -4);
-  return word;
-}
-
 function extractBeats(authorArticles) {
-  ensureCorpusFreq();
+  ensureCorpusSubjectFreq();
 
-  // Count stemmed words in this author's headlines
+  // Count subject keywords for this author
   const authorFreq = {};
-  const bestForm = {}; // track the most common unstemmed form per stem
-  const formCounts = {};
   for (const a of authorArticles) {
-    const words = tokenize(a.headline);
     const seen = new Set();
-    for (const w of words) {
-      const st = stem(w);
-      if (!seen.has(st)) { authorFreq[st] = (authorFreq[st] || 0) + 1; seen.add(st); }
-      formCounts[st] = formCounts[st] || {};
-      formCounts[st][w] = (formCounts[st][w] || 0) + 1;
+    for (const s of a.subjects) {
+      if (GENERIC_SUBJECTS.has(s)) continue;
+      if (!seen.has(s)) { authorFreq[s] = (authorFreq[s] || 0) + 1; seen.add(s); }
     }
   }
 
-  // Pick best display form for each stem
-  for (const [st, forms] of Object.entries(formCounts)) {
-    bestForm[st] = Object.entries(forms).sort((a, b) => b[1] - a[1])[0][0];
-  }
-
-  // Score by distinctiveness: how much more does this author use a word vs the corpus average?
-  // ratio = (author_freq / author_docs) / (corpus_freq / corpus_docs)
-  // A ratio of 5 means the author uses it 5x more than average.
-  // Then weight by log(count) to favor words used repeatedly, not just rare one-offs.
+  // Score by distinctiveness: author rate vs corpus rate
   const n = authorArticles.length;
-  const threshold = Math.max(4, Math.ceil(n * 0.05));
+  const threshold = Math.max(2, Math.ceil(n * 0.03));
   const scored = [];
-  for (const [st, count] of Object.entries(authorFreq)) {
+  for (const [subj, count] of Object.entries(authorFreq)) {
     if (count < threshold) continue;
-    const corpusCount = corpusWordFreq[st] || 1;
+    const corpusCount = corpusSubjectFreq[subj] || 1;
     const authorRate = count / n;
-    const corpusRate = corpusCount / corpusTotalDocs;
+    const corpusRate = corpusCount / corpusSubjectDocs;
     const ratio = authorRate / corpusRate;
-    // Must be at least 3x more frequent than corpus average to qualify as a "beat"
-    if (ratio < 3) continue;
+    if (ratio < 2) continue;
     const score = ratio * Math.log(count + 1);
-    scored.push({ stem: st, score, count, ratio, form: bestForm[st] });
+    scored.push({ subject: subj, score, count, ratio });
   }
 
   scored.sort((a, b) => b.score - a.score);
-
-  // Take top 3-7, capitalize the best display form
-  return scored.slice(0, 7).map(s => s.form.charAt(0).toUpperCase() + s.form.slice(1));
+  return scored.slice(0, 7).map(s => s.subject);
 }
 
 function showAuthorTimeline(name) {
@@ -1259,8 +1213,6 @@ const STATE_POP_M = {
   'Vermont':0.6,'Wyoming':0.6,
 };
 
-// NY and NJ excluded as local coverage outliers
-const STATE_EXCLUDE = new Set(['New York', 'New Jersey']);
 
 function initStates() {
   if (!dashboard.us_state_coverage) return;
@@ -1268,7 +1220,7 @@ function initStates() {
   const currentYear = String(new Date().getFullYear());
   // Also exclude 2025+ since glocations stopped being populated
   const years = sc.years.filter(y => y !== currentYear && parseInt(y) <= 2024);
-  const states = sc.states.filter(s => !STATE_EXCLUDE.has(s));
+  const states = sc.states;
 
   // Populate selector
   const select = document.getElementById('stateSelect');
