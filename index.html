@@ -662,7 +662,11 @@ function initAuthorFilters() {
   sectionSelect.addEventListener('change', renderAuthors);
 }
 
-document.getElementById('authorSearch').addEventListener('input', renderAuthors);
+document.getElementById('authorSearch').addEventListener('input', () => {
+  destroyChart('chartAuthorTimeline');
+  document.getElementById('authorTimeline').innerHTML = '';
+  renderAuthors();
+});
 document.getElementById('authorMin').addEventListener('input', renderAuthors);
 
 let authorSort = { col: 'article_count', asc: false };
@@ -755,24 +759,44 @@ function ensureCorpusFreq() {
   }
 }
 
-const BEAT_STOPWORDS = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','is','are',
+const BEAT_STOPWORDS = new Set([
+  // Grammar / function words
+  'the','a','an','and','or','but','in','on','at','to','for','of','is','are',
   'was','were','be','been','being','have','has','had','do','does','did','will','would','shall',
   'should','may','might','can','could','must','not','no','nor','so','yet','both','each','few',
   'more','most','other','some','such','than','too','very','just','about','after','before','into',
   'through','during','with','without','from','up','out','over','under','again','further','then',
   'once','here','there','when','where','why','how','all','any','every','its','it','that','this',
-  'these','those','what','which','who','whom','whose','new','says','said','say','one','two',
+  'these','those','what','which','who','whom','whose','says','said','say','one','two',
   'first','also','now','back','make','like','get','got','many','much','still','well','take',
-  'day','year','years','time','way','long','last','next','come','know','us','i','my','me','he',
-  'she','his','her','they','them','their','we','our','you','your','as','by','if','off','own',
-  'people','mr','mrs','ms','dr','times','york','review','look','life','big','old','world',
-  'need','finds','report','asks','show','shows','goes','makes','keep','left','right','see',
-  'set','let','put','part','think','men','women','man','woman','inside','amid','can\'t','don\'t',
-  'won\'t','didn\'t','isn\'t','aren\'t','doesn\'t','could','three','four','five','may',
-  'american','state','united','states','country','city','national','week','month','today',
-  'help','case','plan','group','family','small','high','number','million','face','turn',
-  'move','call','key','deal','push','use','offer','open','end','try','question','away',
-  'warn','rule','fight','claim','raise','test','start','point','bit','run','another']);
+  'us','i','my','me','he','she','his','her','they','them','their','we','our','you','your',
+  'as','by','if','off','own',"can't","don't","won't","didn't","isn't","aren't","doesn't",
+  'three','four','five','six','seven','eight','nine','ten','hundred','thousand',
+  // Days, times, generic temporal
+  'monday','tuesday','wednesday','thursday','friday','saturday','sunday',
+  'january','february','march','april','june','july','august','september','october','november','december',
+  'day','days','year','years','time','times','week','weeks','month','months','today','tonight',
+  'morning','evening','night','long','last','next','late','early','ago','past','future','recent',
+  // Generic journalism / headline words
+  'new','says','said','say','report','reports','finds','asks','show','shows','goes','makes',
+  'keep','left','right','see','set','let','put','part','think','need','look','come','know',
+  'mr','mrs','ms','dr','york','review','life','big','old','world','way',
+  'people','men','women','man','woman','inside','amid','another','become','best','ever',
+  'american','state','united','states','country','city','national',
+  'help','case','plan','group','family','small','high','number','million','billion',
+  'face','turn','move','call','key','deal','push','use','offer','open','end','try',
+  'question','away','warn','rule','fight','claim','raise','test','start','point','bit','run',
+  'going','really','thing','things','lot','kind','work','works','working',
+  'want','wants','getting','give','gives','good','bad','real','top','full','home',
+  'tell','told','tells','ask','asked','great','letter','letters','here','why',
+  'area','place','south','north','east','west','part','side','second','age',
+  'bring','brought','lead','leads','former','death','dead','die','dies','kill','killed',
+  'power','court','house','white','black','president','officials','official','government','law',
+  'stop','read','live','lives','love','war','crisis','change','young',
+  'money','company','market','business','political','party','vote','election',
+  'feel','watch','music','movie','film','book','books','art','play','game',
+  'children','child','students','student','school','schools','college',
+]);
 
 function tokenize(headline) {
   return headline.toLowerCase().replace(/[^a-z\s'-]/g, '').split(/\s+/).filter(w => w.length > 2 && !BEAT_STOPWORDS.has(w));
@@ -823,17 +847,23 @@ function extractBeats(authorArticles) {
     bestForm[st] = Object.entries(forms).sort((a, b) => b[1] - a[1])[0][0];
   }
 
-  // TF-IDF: score = (author_freq / author_docs) * log(corpus_docs / corpus_freq)
-  // This surfaces words distinctive to this author vs the whole corpus
+  // Score by distinctiveness: how much more does this author use a word vs the corpus average?
+  // ratio = (author_freq / author_docs) / (corpus_freq / corpus_docs)
+  // A ratio of 5 means the author uses it 5x more than average.
+  // Then weight by log(count) to favor words used repeatedly, not just rare one-offs.
   const n = authorArticles.length;
-  const threshold = Math.max(3, Math.ceil(n * 0.04));
+  const threshold = Math.max(4, Math.ceil(n * 0.05));
   const scored = [];
   for (const [st, count] of Object.entries(authorFreq)) {
     if (count < threshold) continue;
     const corpusCount = corpusWordFreq[st] || 1;
-    const tf = count / n;
-    const idf = Math.log(corpusTotalDocs / corpusCount);
-    scored.push({ stem: st, score: tf * idf, count, form: bestForm[st] });
+    const authorRate = count / n;
+    const corpusRate = corpusCount / corpusTotalDocs;
+    const ratio = authorRate / corpusRate;
+    // Must be at least 3x more frequent than corpus average to qualify as a "beat"
+    if (ratio < 3) continue;
+    const score = ratio * Math.log(count + 1);
+    scored.push({ stem: st, score, count, ratio, form: bestForm[st] });
   }
 
   scored.sort((a, b) => b.score - a.score);
