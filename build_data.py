@@ -136,13 +136,16 @@ def process_articles(raw_articles):
         print_page = doc.get("print_page", "") or ""
 
         # Keywords (geographic, subject)
+        # Note: keyword field names changed case in 2025
+        # (glocations -> Location, subject -> Subject)
         subsection = doc.get("subsection_name", "") or ""
         glocations = []
         subjects = []
         for kw in (doc.get("keywords") or []):
-            if kw.get("name") == "glocations":
+            kw_name = kw.get("name", "")
+            if kw_name in ("glocations", "Location"):
                 glocations.append(kw["value"])
-            elif kw.get("name") == "subject":
+            elif kw_name in ("subject", "Subject"):
                 subjects.append(kw["value"])
 
         articles.append({
