@@ -52,7 +52,7 @@
 
   .chart-box {
     background: #fff; border: 1px solid #ddd; border-radius: 6px;
-    padding: 20px; margin-bottom: 20px;
+    padding: 20px; margin-bottom: 20px; overflow: hidden;
   }
   .chart-box h3 { font-size: 16px; margin-bottom: 4px; }
   .chart-box .chart-controls { margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -263,6 +263,13 @@
     </div>
     <div class="chart-box">
       <h3>Top Covered Locations (All Time)</h3>
+      <div class="chart-controls">
+        <label>View:</label>
+        <select id="topLocationsMode">
+          <option value="total">Total articles</option>
+          <option value="percapita">Articles per million residents</option>
+        </select>
+      </div>
       <canvas id="chartTopLocations"></canvas>
     </div>
   </div>
@@ -275,8 +282,8 @@
         <input type="text" id="term1" placeholder="Term 1" value="Trump">
         <input type="text" id="term2" placeholder="Term 2" value="Biden">
         <input type="text" id="term3" placeholder="Term 3 (optional)">
-        <label><input type="checkbox" id="trackerFrontPage"> Front page only</label>
         <button id="trackBtn">Track</button>
+        <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="trackerFrontPage"> Front page only</label>
       </div>
       <canvas id="chartTracker"></canvas>
     </div>
@@ -706,6 +713,42 @@ function renderAuthors() {
   });
 }
 
+function extractBeats(authorArticles) {
+  // Extract recurring topic words from headlines (2+ word phrases and single keywords)
+  const stopwords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','is','are',
+    'was','were','be','been','being','have','has','had','do','does','did','will','would','shall',
+    'should','may','might','can','could','must','not','no','nor','so','yet','both','each','few',
+    'more','most','other','some','such','than','too','very','just','about','after','before','into',
+    'through','during','with','without','from','up','out','over','under','again','further','then',
+    'once','here','there','when','where','why','how','all','any','every','its','it','that','this',
+    'these','those','what','which','who','whom','whose','new','says','said','say','one','two',
+    'first','also','now','back','make','like','get','got','many','much','still','well','take',
+    'day','year','years','time','way','long','last','next','come','know','us','i','my','me','he',
+    'she','his','her','they','them','their','we','our','you','your','as','by','if','off','own',
+    'people','mr','mrs','ms','dr','times','york','review','look','life','big','old','world',
+    'need','finds','report','asks','show','shows','goes','makes','keep','left','right','see',
+    'set','let','put','part','think','men','women','man','woman','inside','amid']);
+
+  const freq = {};
+  for (const a of authorArticles) {
+    const words = a.headline.toLowerCase().replace(/[^a-z\s'-]/g, '').split(/\s+/).filter(w => w.length > 2 && !stopwords.has(w));
+    const seen = new Set();
+    for (const w of words) {
+      if (!seen.has(w)) { freq[w] = (freq[w] || 0) + 1; seen.add(w); }
+    }
+  }
+
+  // Need at least 3 mentions and 5% of articles to be a "beat"
+  const threshold = Math.max(3, Math.ceil(authorArticles.length * 0.05));
+  const candidates = Object.entries(freq)
+    .filter(([w, c]) => c >= threshold)
+    .sort((a, b) => b[1] - a[1]);
+
+  // Take top 3-7, capitalize
+  const beats = candidates.slice(0, 7).map(([w]) => w.charAt(0).toUpperCase() + w.slice(1));
+  return beats;
+}
+
 function showAuthorTimeline(name) {
   // Close any existing timeline first (destroy chart to prevent canvas reuse errors)
   destroyChart('chartAuthorTimeline');
@@ -737,6 +780,10 @@ function showAuthorTimeline(name) {
     m++; if (m > 12) { m = 1; y++; }
   }
 
+  // Extract beat topics from headlines using keyword frequency
+  const beats = extractBeats(authorArticles);
+  const beatsHtml = beats.length ? `<div style="font-size:13px;color:#555;margin-top:6px"><strong>Beats:</strong> ${beats.join(', ')}</div>` : '';
+
   const container = document.getElementById('authorTimeline');
   container.innerHTML = `
     <div class="author-timeline">
@@ -745,6 +792,7 @@ function showAuthorTimeline(name) {
       <div class="timeline-meta">
         ${authorInfo ? `${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg · Primary: ${authorInfo.primary_section} · ${authorInfo.year_range}` : ''}
       </div>
+      ${beatsHtml}
       <canvas id="chartAuthorTimeline" style="max-height:200px"></canvas>
       <div id="authorArticleList" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px"></div>
     </div>
@@ -852,6 +900,7 @@ function escapeHtml(s) {
 
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
+document.getElementById('trackerFrontPage').addEventListener('change', trackTerms);
 // Also trigger on Enter key
 ['term1','term2','term3'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
@@ -910,6 +959,46 @@ function trackTerms() {
 }
 
 // --- WORLD ---
+// 2025 population estimates (millions) for top covered locations
+const POPULATION_M = {
+  'China':1425,'India':1450,'United States':340,'Indonesia':280,'Pakistan':240,
+  'Nigeria':230,'Brazil':217,'Bangladesh':175,'Russia':144,'Mexico':130,
+  'Ethiopia':130,'Japan':123,'Philippines':118,'Egypt':112,'Congo':105,
+  'Vietnam':100,'Iran':90,'Turkey':87,'Germany':84,'Thailand':72,
+  'United Kingdom':69,'France':68,'Tanzania':67,'Italy':59,'South Africa':62,
+  'Myanmar':55,'Kenya':56,'South Korea':52,'Colombia':52,'Spain':48,
+  'Argentina':46,'Uganda':49,'Algeria':46,'Sudan':48,'Iraq':44,
+  'Afghanistan':42,'Poland':38,'Canada':40,'Morocco':38,'Saudi Arabia':37,
+  'Peru':34,'Angola':37,'Uzbekistan':36,'Malaysia':34,'Yemen':34,
+  'Ghana':34,'Mozambique':34,'Nepal':31,'Venezuela':29,'Australia':27,
+  'North Korea':26,'Taiwan':24,'Syria':23,'Sri Lanka':22,'Romania':19,
+  'Chile':20,'Netherlands':18,'Guatemala':18,'Cambodia':17,'Ecuador':18,
+  'Zimbabwe':17,'Somalia':18,'Senegal':18,'Chad':18,'Guinea':14,
+  'Rwanda':14,'Tunisia':12,'Belgium':12,'Cuba':11,'Greece':10,
+  'Czech Republic':11,'Portugal':10,'Jordan':11,'Sweden':11,'Azerbaijan':10,
+  'Hungary':10,'Israel':10,'Austria':9,'Switzerland':9,'Honduras':10,
+  'Tajikistan':10,'Serbia':7,'Papua New Guinea':10,'Libya':7,'Laos':8,
+  'Paraguay':7,'Sierra Leone':9,'Nicaragua':7,'Ireland':5,'New Zealand':5,
+  'Denmark':6,'Singapore':6,'Norway':5,'Lebanon':5,'Costa Rica':5,
+  'Palestine':5,'Liberia':5,'Georgia':4,'Croatia':4,'Bosnia and Herzegovina':3,
+  'Uruguay':4,'Mongolia':3,'Puerto Rico':3,'Jamaica':3,'Albania':3,
+  'Lithuania':3,'Qatar':3,'Armenia':3,'Namibia':3,'Botswana':3,
+  'Latvia':2,'Slovenia':2,'North Macedonia':2,'Kosovo':2,'Estonia':1,
+  'Luxembourg':1,'Malta':1,'Iceland':0.4,'Bahrain':2,
+  'Trinidad and Tobago':1,'Cyprus':1,'Fiji':1,'Bhutan':0.8,'Guyana':0.8,
+  'Haiti':12,'Dominican Republic':11,'El Salvador':6,'Panama':4,
+  'Kuwait':4,'Oman':4,'United Arab Emirates':10,'Turkmenistan':6,
+  'Kyrgyzstan':7,'Moldova':3,'Cameroon':29,'Ivory Coast':29,
+  'Niger':27,'Burkina Faso':23,'Mali':23,'Malawi':21,'Zambia':21,
+  'Madagascar':30,'Central African Republic':6,'Eritrea':4,'Togo':9,
+  'Mauritania':5,'Gabon':2,'Lesotho':2,'Gambia':3,'Guinea-Bissau':2,
+  'Equatorial Guinea':2,'Eswatini':1,'Djibouti':1,'Comoros':1,
+  'Cape Verde':0.6,'Sao Tome and Principe':0.2,'Seychelles':0.1,
+  'Mauritius':1,'Brunei':0.5,'Maldives':0.5,'Barbados':0.3,
+  'Belize':0.4,'Bahamas':0.4,'Suriname':0.6,'East Timor':1.4,
+  'Great Britain':69,'England':57,'Scotland':5,'Wales':3,
+};
+
 function initWorld() {
   if (!dashboard.world_coverage) return;
   const wc = dashboard.world_coverage;
@@ -954,7 +1043,8 @@ function initWorld() {
   select.addEventListener('change', renderLocationTrend);
   renderLocationTrend();
 
-  // Top locations bar chart
+  // Top locations bar chart with mode toggle
+  document.getElementById('topLocationsMode').addEventListener('change', renderTopLocations);
   renderTopLocations();
 }
 
@@ -990,22 +1080,32 @@ function renderLocationTrend() {
 
 function renderTopLocations() {
   const wc = dashboard.world_coverage;
-  // Sum all years for each location
+  const mode = document.getElementById('topLocationsMode').value;
+  const perCapita = mode === 'percapita';
+
   const totals = wc.locations.map(loc => {
     const trend = wc.location_trends[loc] || {};
     const total = Object.values(trend).reduce((s, v) => s + v, 0);
-    return { name: loc, count: total };
-  }).sort((a, b) => b.count - a.count);
+    const pop = POPULATION_M[loc];
+    const value = perCapita && pop ? Math.round(total / pop * 10) / 10 : total;
+    return { name: loc, count: total, value, hasPop: !!pop };
+  });
+
+  // For per capita, filter to locations with population data
+  const filtered = perCapita ? totals.filter(t => t.hasPop) : totals;
+  filtered.sort((a, b) => b.value - a.value);
+
+  const label = perCapita ? 'Articles per million residents' : 'Articles';
 
   destroyChart('chartTopLocations');
   chartInstances['chartTopLocations'] = new Chart(document.getElementById('chartTopLocations'), {
     type: 'bar',
     data: {
-      labels: totals.map(t => t.name),
+      labels: filtered.map(t => t.name),
       datasets: [{
-        label: 'Articles',
-        data: totals.map(t => t.count),
-        backgroundColor: 'rgba(50,104,145,0.7)',
+        label: label,
+        data: filtered.map(t => t.value),
+        backgroundColor: perCapita ? 'rgba(170,120,80,0.7)' : 'rgba(50,104,145,0.7)',
       }]
     },
     options: {
@@ -1013,10 +1113,10 @@ function renderTopLocations() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } }
+      scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
     }
   });
-  document.getElementById('chartTopLocations').parentElement.style.height = (totals.length * 24 + 40) + 'px';
+  document.getElementById('chartTopLocations').parentElement.style.height = (filtered.length * 24 + 40) + 'px';
   document.getElementById('chartTopLocations').style.maxHeight = 'none';
 }
 
