@@ -185,7 +185,7 @@
       <p>World and U.S. state coverage is based on the <code>glocations</code> keyword field in the API. City-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. This field was discontinued in the API in 2025, so geographic data covers 2014–2024 only. Per-capita figures use 2025 population estimates.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Section names</h4>
-      <p>"Fashion &amp; Style" and "Fashion" have been merged into "Style," reflecting the NYT's own renaming of this section around 2018–2020.</p>
+      <p>"Fashion &amp; Style" and "Fashion" have been merged into "Style," reflecting the NYT's own renaming of this section around 2018–2020. Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is published on a separate platform (nytimes.com/athletic/) and is not included in the Archive API, which explains the drop in Sports article counts.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
       <ul style="margin-left:20px">
@@ -512,10 +512,10 @@ function renderProlific() {
       scales: { x: { beginAtZero: true } }
     }
   });
-  // Dynamic height based on number of bars
-  const h1 = (top.length * 28 + 40) + 'px';
-  document.getElementById('chartTopAuthors').style.height = h1;
-  document.getElementById('chartTopAuthors').parentElement.style.minHeight = h1;
+  const chartEl = document.getElementById('chartTopAuthors');
+  const h = Math.max(200, top.length * 28 + 40);
+  chartEl.parentElement.style.height = h + 'px';
+  chartEl.style.height = h + 'px';
 }
 
 function renderWordiest() {
@@ -552,9 +552,10 @@ function renderWordiest() {
       scales: { x: { beginAtZero: true } }
     }
   });
-  const h2 = (top.length * 28 + 40) + 'px';
-  document.getElementById('chartWordiest').style.height = h2;
-  document.getElementById('chartWordiest').parentElement.style.minHeight = h2;
+  const chartEl2 = document.getElementById('chartWordiest');
+  const hw = Math.max(200, top.length * 28 + 40);
+  chartEl2.parentElement.style.height = hw + 'px';
+  chartEl2.style.height = hw + 'px';
 }
 
 // --- SECTIONS ---
@@ -580,9 +581,9 @@ function initSections() {
       scales: { x: { beginAtZero: true } }
     }
   });
-  const h3 = (sectionData.length * 28 + 40) + 'px';
-  document.getElementById('chartSections').style.height = h3;
-  document.getElementById('chartSections').parentElement.style.minHeight = h3;
+  const hs = Math.max(200, sectionData.length * 28 + 40);
+  document.getElementById('chartSections').parentElement.style.height = hs + 'px';
+  document.getElementById('chartSections').style.height = hs + 'px';
 
   // Populate section selectors for both trend charts
   const trendSections = Object.keys(dashboard.section_trends);
@@ -1190,9 +1191,9 @@ function renderTopLocations() {
       scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
     }
   });
-  const h4 = (filtered.length * 24 + 40) + 'px';
-  document.getElementById('chartTopLocations').style.height = h4;
-  document.getElementById('chartTopLocations').parentElement.style.minHeight = h4;
+  const hl = Math.max(200, filtered.length * 24 + 40);
+  document.getElementById('chartTopLocations').parentElement.style.height = hl + 'px';
+  document.getElementById('chartTopLocations').style.height = hl + 'px';
 }
 
 // --- STATES ---
@@ -1302,9 +1303,9 @@ function renderStateBar(states, years) {
       scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
     }
   });
-  const h5 = (filtered.length * 22 + 40) + 'px';
-  document.getElementById('chartStateBar').style.height = h5;
-  document.getElementById('chartStateBar').parentElement.style.minHeight = h5;
+  const hsb = Math.max(200, filtered.length * 22 + 40);
+  document.getElementById('chartStateBar').parentElement.style.height = hsb + 'px';
+  document.getElementById('chartStateBar').style.height = hsb + 'px';
 }
 
 function debounce(fn, ms) {
