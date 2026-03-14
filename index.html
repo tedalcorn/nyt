@@ -1,98 +1,838 @@
-<!doctype html>
-<html>
-  <head>
-    <title>Analysis of New York Times Articles</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        line-height: 1.6;
-        background-color: #f0f0f0; /* Fallback background color */
-      }
-      header {
-        background: rgba(51, 51, 51, 0.8); /* Slightly transparent background */
-        color: #fff;
-        padding: 1rem 0;
-        text-align: center;
-      }
-      .container {
-        width: 80%;
-        margin: auto;
-        overflow: hidden;
-        padding: 20px;
-        background: rgba(255, 255, 255, 0.8); /* Slightly transparent background for better readability */
-        border-radius: 8px;
-      }
-      img {
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 20px 0;
-      }
-      p {
-        margin-bottom: 20px;
-      }
-      .chart-container {
-        text-align: center;
-        margin-top: 40px;
-      }
-      .chart-container img {
-        max-width: 100%;
-        height: auto;
-        display: block;
-        margin: 10px auto;
-      }
-      .grouped-charts {
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-      .grouped-charts img {
-        width: 33%; /* Adjust width as needed */
-        margin: 10px; /* Add some margin around the images */
-      }
-    </style>
-  </head>
-  <body>
-    <header>
-      <h1>Analysis of New York Times Articles</h1>
-    </header>
-    <div class="container">
-      <p>This analysis delves into various aspects of New York Times articles from Jan. 1, 2014 to August 4, 2024.</p>
-      
-      <ul>
-        <li>524,762,428 printed words</li>
-        <li>641,503 articles (after dropping 10 articles mistakenly brought in from 2007)</li>
-        <li>30,238 unique authors</li>
-        <li>2,548 authors with 25+ articles over that time</li>
-        <li>76 named sections</li>
-      </ul>
-      
-      <!-- Display charts -->
-      <div class="chart-container">
-        <img src="chart1.png" alt="Chart 1">
-        <img src="chart2.png" alt="Chart 2">
-        <img src="chart3.png" alt="Chart 3">
-        <img src="chart4.png" alt="Chart 4">
-        <img src="chart5.png" alt="Chart 5">
-        <div class="grouped-charts">
-          <img src="chart6a.png" alt="Chart 6a">
-          <img src="chart6b.png" alt="Chart 6b">
-          <img src="chart6c.png" alt="Chart 6c">
-        </div>
-        <div class="grouped-charts">
-          <img src="chart7a.png" alt="Chart 7a">
-          <img src="chart7b.png" alt="Chart 7b">
-        </div>
-        <!-- New charts -->
-        <div class="grouped-charts">
-          <img src="chart9a.png" alt="Chart 9a">
-          <img src="chart9b.png" alt="Chart 9b">
-        </div>
-        <img src="chart8.jpg" alt="Chart 8">
-      </div>
-      <p>For more details, you can view <a href="20240805NYT.ipynb">my Python code</a>.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYT Article Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; }
+
+  header {
+    background: #fff; color: #121212; padding: 12px 24px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #121212; flex-wrap: wrap; gap: 8px;
+  }
+  header .logo-area { display: flex; align-items: center; gap: 14px; }
+  header .nyt-logo { height: 26px; opacity: 0.85; }
+  header h1 { font-family: 'nyt-cheltenham', Georgia, serif; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: #121212; }
+  header .subtitle { font-size: 12px; color: #999; font-family: 'nyt-franklin', Arial, sans-serif; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  nav {
+    display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e2e2e2;
+    overflow-x: auto;
+  }
+  nav button {
+    background: none; border: none; color: #666; padding: 10px 20px;
+    font-family: 'nyt-franklin', Arial, Helvetica, sans-serif; font-size: 13px;
+    font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
+    cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; transition: all 0.15s;
+  }
+  nav button:hover { color: #121212; }
+  nav button.active { color: #121212; border-bottom-color: #121212; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .stats-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fff; border: 1px solid #ddd; border-radius: 6px;
+    padding: 16px; text-align: center;
+  }
+  .stat-card .value { font-size: 28px; font-weight: 700; color: #121212; }
+  .stat-card .label { font-size: 11px; color: #999; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; font-family: 'nyt-franklin', Arial, sans-serif; }
+
+  .chart-box {
+    background: #fff; border: 1px solid #ddd; border-radius: 6px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .chart-box h3 { font-size: 16px; margin-bottom: 4px; }
+  .chart-box .chart-controls { margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chart-box .chart-controls select {
+    padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;
+    font-family: inherit; font-size: 13px;
+  }
+  .chart-box .chart-controls label { font-size: 13px; color: #666; }
+
+  /* Authors table */
+  .author-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .author-table th {
+    text-align: left; padding: 8px 12px; border-bottom: 2px solid #121212;
+    font-family: 'nyt-franklin', Arial, sans-serif;
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #666;
+    cursor: pointer; user-select: none;
+  }
+  .author-table th:hover { color: #333; }
+  .author-table td { padding: 6px 12px; border-bottom: 1px solid #eee; }
+  .author-table tr:hover { background: #f0ede6; }
+  .author-table tr.selected { background: #e8e0d4; }
+  .author-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .author-table td.author-name { cursor: pointer; color: #326891; }
+  .author-table td.author-name:hover { text-decoration: underline; }
+
+  /* Author timeline */
+  .author-timeline {
+    background: #fff; border: 1px solid #ddd; border-radius: 6px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .author-timeline h3 { font-size: 16px; margin-bottom: 4px; }
+  .author-timeline .timeline-meta { font-size: 13px; color: #888; margin-bottom: 12px; }
+  .author-timeline .close-btn {
+    float: right; background: none; border: 1px solid #ccc; border-radius: 4px;
+    padding: 2px 8px; cursor: pointer; font-size: 12px; color: #888;
+  }
+  .author-timeline .close-btn:hover { background: #eee; }
+
+  /* Search */
+  .search-box {
+    background: #fff; border: 1px solid #ddd; border-radius: 6px;
+    padding: 16px; margin-bottom: 20px; display: flex; gap: 12px;
+    flex-wrap: wrap; align-items: center;
+  }
+  .search-box input {
+    flex: 1; min-width: 200px; padding: 8px 12px; border: 1px solid #ccc;
+    border-radius: 4px; font-family: inherit; font-size: 14px;
+  }
+  .search-box select {
+    padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px;
+    font-family: inherit; font-size: 14px;
+  }
+  .search-box label { font-size: 13px; display: flex; align-items: center; gap: 4px; }
+
+  .headline-result {
+    background: #fff; border: 1px solid #eee; border-radius: 4px;
+    padding: 10px 14px; margin-bottom: 6px;
+  }
+  .headline-result .title { font-weight: 600; }
+  .headline-result .meta { font-size: 12px; color: #888; margin-top: 2px; }
+  .headline-result a { color: #326891; text-decoration: none; }
+  .headline-result a:hover { text-decoration: underline; }
+
+  .results-count { font-size: 13px; color: #888; margin-bottom: 12px; }
+
+  /* Headline tracker */
+  .term-inputs {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 12px;
+  }
+  .term-inputs input {
+    padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
+    font-family: inherit; font-size: 14px; width: 140px;
+  }
+  .term-inputs button {
+    padding: 6px 14px; background: #326891; color: #fff; border: none;
+    border-radius: 4px; cursor: pointer; font-family: 'nyt-franklin', Arial, sans-serif; font-size: 13px;
+    font-weight: 600; letter-spacing: 0.3px;
+  }
+  .term-inputs button:hover { background: #1a4a6e; }
+  .term-inputs label { font-size: 13px; }
+
+  .loading { text-align: center; padding: 60px; color: #888; font-size: 16px; }
+
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .container { padding: 12px; }
+    header h1 { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <img class="nyt-logo" src="https://static01.nyt.com/newsgraphics/2015/12/23/masthead-2016/1a2tried15/nyt-logo-185x26.svg" alt="The New York Times" onerror="this.style.display='none'">
+    <div>
+      <h1>Article Dashboard</h1>
+      <div class="subtitle" id="dateRange"></div>
     </div>
-  </body>
+  </div>
+</header>
+
+<nav id="nav">
+  <button data-view="overview" class="active">Overview</button>
+  <button data-view="authors">Authors</button>
+  <button data-view="sections">Sections</button>
+  <button data-view="headlines">Headline Search</button>
+  <button data-view="tracker">Headline Tracker</button>
+</nav>
+
+<div class="container">
+  <div class="loading" id="loading">Loading data...</div>
+
+  <!-- OVERVIEW -->
+  <div class="view" id="view-overview">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="chart-box">
+      <h3>Articles per Month</h3>
+      <canvas id="chartMonthly"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Most Prolific Authors</h3>
+      <div class="chart-controls">
+        <label>Section:</label>
+        <select id="prolificSection"><option value="">All sections</option></select>
+        <label>Show:</label>
+        <select id="prolificCount">
+          <option value="15">15</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+      <canvas id="chartTopAuthors"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Wordiest Writers <span style="font-weight:normal;font-size:12px;color:#888">(30+ articles, excl. Opinion/Magazine)</span></h3>
+      <div class="chart-controls">
+        <label>Section:</label>
+        <select id="wordiestSection"><option value="">All sections</option></select>
+        <label>Show:</label>
+        <select id="wordiestCount">
+          <option value="15">15</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+      <canvas id="chartWordiest"></canvas>
+    </div>
+  </div>
+
+  <!-- AUTHORS -->
+  <div class="view" id="view-authors">
+    <div class="search-box">
+      <input type="text" id="authorSearch" placeholder="Filter authors by name...">
+      <label>Min articles: <input type="number" id="authorMin" value="5" min="1" style="width:60px"></label>
+      <label>Section: <select id="authorSectionFilter"><option value="">All</option></select></label>
+    </div>
+    <div id="authorTimeline"></div>
+    <div id="authorTableContainer"></div>
+  </div>
+
+  <!-- SECTIONS -->
+  <div class="view" id="view-sections">
+    <div class="chart-box">
+      <h3>Articles by Section</h3>
+      <canvas id="chartSections"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Average Article Length by Section Over Time</h3>
+      <div style="margin-bottom:8px">
+        <select id="sectionSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
+      </div>
+      <canvas id="chartSectionTrend"></canvas>
+    </div>
+  </div>
+
+  <!-- HEADLINE SEARCH -->
+  <div class="view" id="view-headlines">
+    <div class="search-box">
+      <input type="text" id="headlineSearch" placeholder="Search headlines...">
+      <select id="headlineSection"><option value="">All sections</option></select>
+      <label><input type="checkbox" id="frontPageOnly"> Front page only</label>
+    </div>
+    <div class="results-count" id="headlineCount"></div>
+    <div id="headlineResults"></div>
+  </div>
+
+  <!-- HEADLINE TRACKER -->
+  <div class="view" id="view-tracker">
+    <div class="chart-box">
+      <h3>Track Terms in Headlines Over Time</h3>
+      <div class="term-inputs">
+        <input type="text" id="term1" placeholder="Term 1" value="Trump">
+        <input type="text" id="term2" placeholder="Term 2" value="Biden">
+        <input type="text" id="term3" placeholder="Term 3 (optional)">
+        <label><input type="checkbox" id="trackerFrontPage"> Front page only</label>
+        <button id="trackBtn">Track</button>
+      </div>
+      <canvas id="chartTracker"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+let dashboard = null;
+let articles = null;
+let authors = null;
+let chartInstances = {};
+
+function destroyChart(id) {
+  if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
+}
+
+async function loadData() {
+  try {
+    const [dRes, auRes] = await Promise.all([
+      fetch('data/dashboard.json'),
+      fetch('data/authors.json'),
+    ]);
+    dashboard = await dRes.json();
+    authors = await auRes.json();
+
+    // Load article files by year (split for GitHub size limits)
+    const years = dashboard.all_years.map(Number);
+    const articlePromises = years.map(y =>
+      fetch(`data/articles_${y}.json`).then(r => r.ok ? r.json() : [])
+    );
+    const yearlyData = await Promise.all(articlePromises);
+    // Expand compact field names
+    articles = [];
+    const URL_PREFIX = 'https://www.nytimes.com';
+    for (const yearArticles of yearlyData) {
+      for (const a of yearArticles) {
+        articles.push({
+          headline: a.h,
+          authors: a.a,
+          section: a.s,
+          pub_date: a.d,
+          year_month: a.m,
+          word_count: a.w,
+          web_url: a.u.startsWith('/') ? URL_PREFIX + a.u : a.u,
+          print_section: a.ps,
+          print_page: a.pp,
+        });
+      }
+    }
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('dateRange').textContent = dashboard.summary.date_range;
+    initOverview();
+    initSections();
+    initHeadlineSearch();
+    initAuthorFilters();
+    showView('overview');
+  } catch (e) {
+    document.getElementById('loading').textContent = 'Error loading data. Run build_data.py first, then serve with: python3 -m http.server 8080';
+    console.error(e);
+  }
+}
+
+// --- NAV ---
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => showView(btn.dataset.view));
+});
+
+function showView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  document.querySelector(`nav button[data-view="${view}"]`).classList.add('active');
+}
+
+// --- Unique sections list ---
+function getUniqueSections() {
+  const secs = new Set();
+  if (authors) authors.forEach(a => { if (a.primary_section) secs.add(a.primary_section); });
+  return [...secs].sort();
+}
+
+function populateSectionSelect(selectEl, onChange) {
+  const sections = getUniqueSections();
+  sections.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    selectEl.appendChild(opt);
+  });
+  selectEl.addEventListener('change', onChange);
+}
+
+// --- OVERVIEW ---
+function initOverview() {
+  const s = dashboard.summary;
+  document.getElementById('statsRow').innerHTML = [
+    { v: s.total_articles.toLocaleString(), l: 'Articles' },
+    { v: Math.round(s.total_words / 1e6).toLocaleString() + 'M', l: 'Words' },
+    { v: s.total_authors.toLocaleString(), l: 'Authors' },
+    { v: s.authors_25plus.toLocaleString(), l: 'Authors (25+)' },
+    { v: s.unique_sections, l: 'Sections' },
+  ].map(d => `<div class="stat-card"><div class="value">${d.v}</div><div class="label">${d.l}</div></div>`).join('');
+
+  // Monthly chart
+  const monthly = dashboard.articles_per_month;
+  destroyChart('chartMonthly');
+  chartInstances['chartMonthly'] = new Chart(document.getElementById('chartMonthly'), {
+    type: 'bar',
+    data: {
+      labels: monthly.map(m => m.month),
+      datasets: [{
+        label: 'Articles',
+        data: monthly.map(m => m.count),
+        backgroundColor: 'rgba(50,104,145,0.6)',
+        borderColor: 'rgba(50,104,145,1)',
+        borderWidth: 1,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 20, font: { size: 11 } } },
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Section filter for prolific authors
+  populateSectionSelect(document.getElementById('prolificSection'), renderProlific);
+  document.getElementById('prolificCount').addEventListener('change', renderProlific);
+  renderProlific();
+
+  // Section filter for wordiest authors
+  populateSectionSelect(document.getElementById('wordiestSection'), renderWordiest);
+  document.getElementById('wordiestCount').addEventListener('change', renderWordiest);
+  renderWordiest();
+}
+
+function renderProlific() {
+  const section = document.getElementById('prolificSection').value;
+  const count = parseInt(document.getElementById('prolificCount').value);
+  let pool = dashboard.top_authors;
+  if (section) pool = authors.filter(a => a.primary_section === section && a.article_count >= 25)
+    .sort((a, b) => b.article_count - a.article_count);
+  const top = pool.slice(0, count);
+
+  destroyChart('chartTopAuthors');
+  chartInstances['chartTopAuthors'] = new Chart(document.getElementById('chartTopAuthors'), {
+    type: 'bar',
+    data: {
+      labels: top.map(a => a.name),
+      datasets: [{
+        label: 'Articles',
+        data: top.map(a => a.article_count),
+        backgroundColor: 'rgba(50,104,145,0.7)',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+  // Dynamic height based on number of bars
+  document.getElementById('chartTopAuthors').parentElement.style.height = (top.length * 28 + 40) + 'px';
+  document.getElementById('chartTopAuthors').style.maxHeight = 'none';
+}
+
+function renderWordiest() {
+  const section = document.getElementById('wordiestSection').value;
+  const count = parseInt(document.getElementById('wordiestCount').value);
+  const excluded = new Set(['Opinion', 'Magazine', 'T Magazine']);
+
+  let pool;
+  if (section) {
+    pool = authors.filter(a => a.primary_section === section && a.article_count >= 30)
+      .sort((a, b) => b.avg_words - a.avg_words);
+  } else {
+    pool = authors.filter(a => a.article_count >= 30 && !excluded.has(a.primary_section))
+      .sort((a, b) => b.avg_words - a.avg_words);
+  }
+  const top = pool.slice(0, count);
+
+  destroyChart('chartWordiest');
+  chartInstances['chartWordiest'] = new Chart(document.getElementById('chartWordiest'), {
+    type: 'bar',
+    data: {
+      labels: top.map(a => a.name),
+      datasets: [{
+        label: 'Avg words/article',
+        data: top.map(a => a.avg_words),
+        backgroundColor: 'rgba(170,120,80,0.7)',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+  document.getElementById('chartWordiest').parentElement.style.height = (top.length * 28 + 40) + 'px';
+  document.getElementById('chartWordiest').style.maxHeight = 'none';
+}
+
+// --- SECTIONS ---
+function initSections() {
+  const sections = dashboard.sections.filter(s => s.name && s.count >= 100);
+  destroyChart('chartSections');
+  const sectionData = sections.slice(0, 30);
+  chartInstances['chartSections'] = new Chart(document.getElementById('chartSections'), {
+    type: 'bar',
+    data: {
+      labels: sectionData.map(s => s.name),
+      datasets: [{
+        label: 'Articles',
+        data: sectionData.map(s => s.count),
+        backgroundColor: 'rgba(50,104,145,0.7)',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+  document.getElementById('chartSections').parentElement.style.height = (sectionData.length * 28 + 40) + 'px';
+  document.getElementById('chartSections').style.maxHeight = 'none';
+
+  // Populate section selector for trends
+  const select = document.getElementById('sectionSelect');
+  Object.keys(dashboard.section_trends).forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    select.appendChild(opt);
+  });
+  ['U.S.', 'World', 'Opinion', 'Arts', 'Science'].forEach(s => {
+    const opt = select.querySelector(`option[value="${s}"]`);
+    if (opt) opt.selected = true;
+  });
+
+  select.addEventListener('change', renderSectionTrend);
+  renderSectionTrend();
+}
+
+const trendColors = [
+  '#567','#aa7850','#5a8a5c','#8b5a7c','#c4784a','#4a7c8b',
+  '#7c5a8b','#8b7c4a','#5a8b7c','#8b4a5a','#4a5a8b','#7c8b4a',
+];
+
+function renderSectionTrend() {
+  const selected = Array.from(document.getElementById('sectionSelect').selectedOptions).map(o => o.value);
+  const years = dashboard.all_years;
+
+  destroyChart('chartSectionTrend');
+  chartInstances['chartSectionTrend'] = new Chart(document.getElementById('chartSectionTrend'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: selected.map((s, i) => ({
+        label: s,
+        data: dashboard.section_trends[s]?.map(d => d.avg_words) || [],
+        borderColor: trendColors[i % trendColors.length],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: false, title: { display: true, text: 'Avg words/article' } }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+// --- AUTHORS ---
+function initAuthorFilters() {
+  const sectionSelect = document.getElementById('authorSectionFilter');
+  getUniqueSections().forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    sectionSelect.appendChild(opt);
+  });
+  sectionSelect.addEventListener('change', renderAuthors);
+}
+
+document.getElementById('authorSearch').addEventListener('input', renderAuthors);
+document.getElementById('authorMin').addEventListener('input', renderAuthors);
+
+let authorSort = { col: 'article_count', asc: false };
+
+function renderAuthors() {
+  const query = document.getElementById('authorSearch').value.toLowerCase();
+  const minArticles = parseInt(document.getElementById('authorMin').value) || 1;
+  const sectionFilter = document.getElementById('authorSectionFilter').value;
+
+  let filtered = authors.filter(a => a.article_count >= minArticles);
+  if (query) filtered = filtered.filter(a => a.name.toLowerCase().includes(query));
+  if (sectionFilter) filtered = filtered.filter(a => a.primary_section === sectionFilter);
+
+  filtered.sort((a, b) => {
+    let va = a[authorSort.col], vb = b[authorSort.col];
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb || '').toLowerCase(); }
+    if (va < vb) return authorSort.asc ? -1 : 1;
+    if (va > vb) return authorSort.asc ? 1 : -1;
+    return 0;
+  });
+
+  const cols = [
+    { key: 'name', label: 'Author' },
+    { key: 'article_count', label: 'Articles', cls: 'num' },
+    { key: 'total_words', label: 'Total Words', cls: 'num' },
+    { key: 'avg_words', label: 'Avg Words', cls: 'num' },
+    { key: 'primary_section', label: 'Primary Section' },
+    { key: 'year_range', label: 'Years' },
+  ];
+
+  const indicator = (col) => authorSort.col === col ? (authorSort.asc ? ' ▲' : ' ▼') : '';
+
+  let html = `<table class="author-table"><thead><tr>`;
+  cols.forEach(c => {
+    html += `<th class="${c.cls || ''}" data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
+  });
+  html += `</tr></thead><tbody>`;
+
+  filtered.slice(0, 500).forEach(a => {
+    html += `<tr data-author="${escapeHtml(a.name)}">`;
+    cols.forEach(c => {
+      let v = a[c.key];
+      if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
+      if (c.key === 'name') {
+        html += `<td class="author-name">${escapeHtml(v || '')}</td>`;
+      } else {
+        html += `<td class="${c.cls || ''}">${v || ''}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  if (filtered.length > 500) html += `<div style="font-size:12px;color:#888;margin-top:8px">Showing 500 of ${filtered.length.toLocaleString()} authors. Use the filter to narrow results.</div>`;
+
+  document.getElementById('authorTableContainer').innerHTML = html;
+
+  // Sort click handlers
+  document.querySelectorAll('.author-table th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (authorSort.col === col) authorSort.asc = !authorSort.asc;
+      else { authorSort.col = col; authorSort.asc = col === 'name'; }
+      renderAuthors();
+    });
+  });
+
+  // Author name click -> show timeline
+  document.querySelectorAll('.author-table td.author-name').forEach(td => {
+    td.addEventListener('click', () => {
+      const name = td.closest('tr').dataset.author;
+      showAuthorTimeline(name);
+    });
+  });
+}
+
+function showAuthorTimeline(name) {
+  // Find all articles by this author
+  const authorArticles = articles.filter(a => a.authors.includes(name))
+    .sort((a, b) => a.pub_date.localeCompare(b.pub_date));
+
+  if (!authorArticles.length) return;
+
+  const authorInfo = authors.find(a => a.name === name);
+
+  // Group by month for the chart
+  const byMonth = {};
+  authorArticles.forEach(a => {
+    byMonth[a.year_month] = (byMonth[a.year_month] || 0) + 1;
+  });
+
+  // Create a full month range
+  const allMonths = [];
+  const first = authorArticles[0].year_month;
+  const last = authorArticles[authorArticles.length - 1].year_month;
+  let [y, m] = first.split('-').map(Number);
+  const [ly, lm] = last.split('-').map(Number);
+  while (y < ly || (y === ly && m <= lm)) {
+    const key = `${y}-${String(m).padStart(2, '0')}`;
+    allMonths.push(key);
+    m++; if (m > 12) { m = 1; y++; }
+  }
+
+  const container = document.getElementById('authorTimeline');
+  container.innerHTML = `
+    <div class="author-timeline">
+      <button class="close-btn" onclick="document.getElementById('authorTimeline').innerHTML=''">Close</button>
+      <h3>${escapeHtml(name)}</h3>
+      <div class="timeline-meta">
+        ${authorInfo ? `${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg · Primary: ${authorInfo.primary_section} · ${authorInfo.year_range}` : ''}
+      </div>
+      <canvas id="chartAuthorTimeline" style="max-height:200px"></canvas>
+      <div id="authorArticleList" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px"></div>
+    </div>
+  `;
+
+  // Render timeline chart
+  destroyChart('chartAuthorTimeline');
+  chartInstances['chartAuthorTimeline'] = new Chart(document.getElementById('chartAuthorTimeline'), {
+    type: 'bar',
+    data: {
+      labels: allMonths,
+      datasets: [{
+        label: 'Articles',
+        data: allMonths.map(m => byMonth[m] || 0),
+        backgroundColor: 'rgba(50,104,145,0.7)',
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 15, font: { size: 10 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+
+  // Article list (reverse chronological)
+  const reversedArticles = [...authorArticles].reverse();
+  const listHtml = reversedArticles.map(a => {
+    const coauthors = a.authors.filter(n => n !== name);
+    const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
+    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+      <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+      <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
+      <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
+    </div>`;
+  }).join('');
+  document.getElementById('authorArticleList').innerHTML =
+    `<div style="font-size:12px;color:#888;margin-bottom:6px">${authorArticles.length} articles (newest first)</div>` + listHtml;
+
+  // Scroll to timeline
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Highlight the row
+  document.querySelectorAll('.author-table tr.selected').forEach(r => r.classList.remove('selected'));
+  const row = document.querySelector(`.author-table tr[data-author="${CSS.escape(name)}"]`);
+  if (row) row.classList.add('selected');
+}
+
+// --- HEADLINE SEARCH ---
+function initHeadlineSearch() {
+  const sections = new Set(articles.map(a => a.section).filter(Boolean));
+  const select = document.getElementById('headlineSection');
+  [...sections].sort().forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    select.appendChild(opt);
+  });
+
+  document.getElementById('headlineSearch').addEventListener('input', debounce(searchHeadlines, 300));
+  document.getElementById('headlineSection').addEventListener('change', searchHeadlines);
+  document.getElementById('frontPageOnly').addEventListener('change', searchHeadlines);
+}
+
+function searchHeadlines() {
+  const query = document.getElementById('headlineSearch').value.toLowerCase().trim();
+  const section = document.getElementById('headlineSection').value;
+  const frontOnly = document.getElementById('frontPageOnly').checked;
+
+  if (!query) {
+    document.getElementById('headlineResults').innerHTML = '';
+    document.getElementById('headlineCount').textContent = '';
+    return;
+  }
+
+  let results = articles.filter(a => a.headline.toLowerCase().includes(query));
+  if (section) results = results.filter(a => a.section === section);
+  if (frontOnly) results = results.filter(a => a.print_section === 'A' && a.print_page === '1');
+
+  document.getElementById('headlineCount').textContent = `${results.length.toLocaleString()} results`;
+
+  const html = results.slice(0, 200).map(a => `
+    <div class="headline-result">
+      <div class="title"><a href="${a.web_url}" target="_blank">${highlightMatch(a.headline, query)}</a></div>
+      <div class="meta">${a.pub_date} · ${a.section || 'No section'} · ${a.authors.join(', ') || 'No byline'} · ${a.word_count.toLocaleString()} words${a.print_section === 'A' && a.print_page === '1' ? ' · <strong>Front page</strong>' : ''}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('headlineResults').innerHTML = html +
+    (results.length > 200 ? `<div style="font-size:12px;color:#888;padding:8px">Showing 200 of ${results.length.toLocaleString()} results</div>` : '');
+}
+
+function highlightMatch(text, query) {
+  const idx = text.toLowerCase().indexOf(query);
+  if (idx === -1) return escapeHtml(text);
+  return escapeHtml(text.slice(0, idx)) +
+    '<mark>' + escapeHtml(text.slice(idx, idx + query.length)) + '</mark>' +
+    escapeHtml(text.slice(idx + query.length));
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// --- HEADLINE TRACKER ---
+document.getElementById('trackBtn').addEventListener('click', trackTerms);
+// Also trigger on Enter key
+['term1','term2','term3'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
+});
+
+function trackTerms() {
+  const terms = [
+    document.getElementById('term1').value.trim(),
+    document.getElementById('term2').value.trim(),
+    document.getElementById('term3').value.trim(),
+  ].filter(Boolean);
+  if (!terms.length) return;
+
+  const frontOnly = document.getElementById('trackerFrontPage').checked;
+  let pool = articles;
+  if (frontOnly) pool = pool.filter(a => a.print_section === 'A' && a.print_page === '1');
+
+  const months = [...new Set(pool.map(a => a.year_month))].sort();
+  const series = {};
+  terms.forEach(t => { series[t] = {}; months.forEach(m => series[t][m] = 0); });
+
+  pool.forEach(a => {
+    const hl = a.headline.toLowerCase();
+    terms.forEach(t => {
+      if (hl.includes(t.toLowerCase())) {
+        series[t][a.year_month] = (series[t][a.year_month] || 0) + 1;
+      }
+    });
+  });
+
+  const colors = ['#c44', '#44c', '#4a4', '#c84', '#84c'];
+  destroyChart('chartTracker');
+  chartInstances['chartTracker'] = new Chart(document.getElementById('chartTracker'), {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: terms.map((t, i) => ({
+        label: t,
+        data: months.map(m => series[t][m] || 0),
+        borderColor: colors[i % colors.length],
+        backgroundColor: 'transparent',
+        tension: 0.2,
+        pointRadius: 1.5,
+      }))
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { ticks: { maxTicksLimit: 20, font: { size: 11 } } },
+        y: { beginAtZero: true, title: { display: true, text: 'Headlines/month' } }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+function debounce(fn, ms) {
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+// Trigger author render when tab shown
+const observer = new MutationObserver(() => {
+  if (document.getElementById('view-authors').classList.contains('active')) {
+    if (!document.querySelector('.author-table')) renderAuthors();
+  }
+});
+observer.observe(document.getElementById('view-authors'), { attributes: true });
+
+loadData();
+</script>
+</body>
 </html>

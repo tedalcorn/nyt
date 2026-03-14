@@ -1,0 +1,40 @@
+name: Update NYT Data
+
+on:
+  schedule:
+    # Run on the 2nd of each month at 6am UTC
+    - cron: '0 6 2 * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Fetch new data
+        env:
+          NYT_API_KEY: ${{ secrets.NYT_API_KEY }}
+        run: python fetch_nyt.py
+
+      - name: Build dashboard data
+        run: python build_data.py
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update NYT data ($(date +%Y-%m))"
+            git push
+          fi
