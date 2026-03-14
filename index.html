@@ -440,8 +440,9 @@ function initOverview() {
     { v: s.unique_sections, l: 'Sections' },
   ].map(d => `<div class="stat-card"><div class="value">${d.v}</div><div class="label">${d.l}</div></div>`).join('');
 
-  // Monthly chart
-  const monthly = dashboard.articles_per_month;
+  // Monthly chart — exclude current year from line to avoid plummeting partial data
+  const cutoffYear = String(new Date().getFullYear());
+  const monthly = dashboard.articles_per_month.filter(m => !m.month.startsWith(cutoffYear));
   destroyChart('chartMonthly');
   chartInstances['chartMonthly'] = new Chart(document.getElementById('chartMonthly'), {
     type: 'bar',
@@ -470,7 +471,7 @@ function initOverview() {
       responsive: true,
       plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
       scales: {
-        x: { ticks: { callback: function(val, idx) { const l = monthly[idx].month; return l.endsWith('-01') ? l.slice(0,4) : ''; }, maxRotation: 0, font: { size: 11 } } },
+        x: { ticks: { callback: function(val, idx) { const l = monthly[idx].month; return l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 11 } } },
         y: { beginAtZero: true, title: { display: true, text: 'Articles', font: { size: 11 } } },
         y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Words (M)', font: { size: 11 } } }
       }
