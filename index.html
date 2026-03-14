@@ -145,7 +145,21 @@
   }
 </style>
 </head>
-<body>
+<body style="visibility:hidden">
+<script>
+(function() {
+  const k = 'btf_auth';
+  if (sessionStorage.getItem(k) === '1') { document.body.style.visibility = 'visible'; return; }
+  const pw = prompt('Enter password:');
+  if (pw && pw.toLowerCase().replace(/[^a-z]/g,'') === 'fughedaboutit') {
+    sessionStorage.setItem(k, '1');
+    document.body.style.visibility = 'visible';
+  } else {
+    document.body.innerHTML = '<p style="text-align:center;margin-top:40vh;font-size:18px;visibility:visible">Nope.</p>';
+    document.body.style.visibility = 'visible';
+  }
+})();
+</script>
 
 <header>
   <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px">
