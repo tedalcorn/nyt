@@ -383,6 +383,7 @@ def build_dashboard_data(articles, authors):
     }
 
     # --- US State coverage: glocations from U.S. section ---
+    # Map full state names and NYT-specific names to canonical display names
     US_STATES = {
         "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
         "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
@@ -396,11 +397,70 @@ def build_dashboard_data(articles, authors):
         "West Virginia", "Wisconsin", "Wyoming",
         "District of Columbia",
     }
-    # Map NYT glocation names to canonical state names
     STATE_ALIASES = {
         "New York State": "New York",
         "Washington State": "Washington",
         "District of Columbia": "D.C.",
+    }
+
+    # Map city-level abbreviations to canonical state names
+    # Covers abbreviations found in "City (Abbrev)" glocations
+    ABBREV_TO_STATE = {
+        "Ala": "Alabama", "ALA": "Alabama",
+        "Alaska": "Alaska", "ALASKA": "Alaska",
+        "Ariz": "Arizona", "ARIZ": "Arizona", "AZ": "Arizona",
+        "Ark": "Arkansas", "ARK": "Arkansas",
+        "Calif": "California", "CALIF": "California", "California": "California",
+        "Colo": "Colorado", "COLO": "Colorado", "Colorado": "Colorado",
+        "Conn": "Connecticut",
+        "Del": "Delaware",
+        "DC": "D.C.", "Washington, DC": "D.C.",
+        "Fla": "Florida", "FLA": "Florida", "Florida": "Florida",
+        "Ga": "Georgia", "GA": "Georgia",
+        "Hawaii": "Hawaii", "HAWAII": "Hawaii",
+        "Idaho": "Idaho", "IDAHO": "Idaho",
+        "Ill": "Illinois", "ILL": "Illinois",
+        "Ind": "Indiana", "IND": "Indiana",
+        "Iowa": "Iowa", "IOWA": "Iowa",
+        "Kan": "Kansas", "KAN": "Kansas",
+        "Ky": "Kentucky", "KY": "Kentucky",
+        "La": "Louisiana", "LA": "Louisiana",
+        "Me": "Maine",
+        "Md": "Maryland", "MD": "Maryland", "Baltimore, Md": "Maryland",
+        "Mass": "Massachusetts", "MASS": "Massachusetts",
+        "Mich": "Michigan", "MICH": "Michigan",
+        "Minn": "Minnesota", "MINN": "Minnesota", "Minnesota": "Minnesota",
+        "Miss": "Mississippi", "MISS": "Mississippi",
+        "Mo": "Missouri", "MO": "Missouri", "Missouri": "Missouri",
+        "Mont": "Montana",
+        "Neb": "Nebraska",
+        "Nev": "Nevada", "NEV": "Nevada", "Nevada": "Nevada",
+        "NH": "New Hampshire",
+        "NJ": "New Jersey",
+        "NM": "New Mexico", "New Mexico": "New Mexico",
+        "NY": "New York", "NYC": "New York", "NYS Area": "New York",
+        "Manhattan, NY": "New York", "Brooklyn, NY": "New York",
+        "Queens, NY": "New York", "Bronx, NY": "New York",
+        "Brooklyn-Queens, NY": "New York", "Newburgh, NY": "New York",
+        "Niagara Falls, NY": "New York",
+        "NC": "North Carolina", "North Carolina": "North Carolina",
+        "ND": "North Dakota",
+        "Ohio": "Ohio", "OHIO": "Ohio",
+        "Okla": "Oklahoma", "OKLA": "Oklahoma",
+        "Ore": "Oregon", "ORE": "Oregon", "Oregon": "Oregon",
+        "Pa": "Pennsylvania", "PA": "Pennsylvania", "Penn": "Pennsylvania",
+        "RI": "Rhode Island",
+        "SC": "South Carolina",
+        "SD": "South Dakota",
+        "Tenn": "Tennessee", "TENN": "Tennessee",
+        "Tex": "Texas", "TEX": "Texas",
+        "Utah": "Utah",
+        "Vt": "Vermont", "VT": "Vermont",
+        "Va": "Virginia", "VA": "Virginia",
+        "Wash": "Washington", "WASH": "Washington", "Wash.": "Washington",
+        "W Va": "West Virginia", "W VA": "West Virginia", "WVa": "West Virginia",
+        "Wis": "Wisconsin", "WIS": "Wisconsin",
+        "Wyo": "Wyoming", "Wyoming": "Wyoming",
     }
 
     us_articles = [a for a in articles if a["section"] == "U.S."]
@@ -409,11 +469,22 @@ def build_dashboard_data(articles, authors):
 
     for art in us_articles:
         y = str(art["year"])
+        states_counted = set()  # avoid double-counting if article has both "Illinois" and "Chicago (Ill)"
         for loc in art.get("glocations", []):
+            state = None
+            # Direct state match
             if loc in US_STATES:
-                canonical = STATE_ALIASES.get(loc, loc)
-                state_year[canonical][y] += 1
-                state_total[canonical] += 1
+                state = STATE_ALIASES.get(loc, loc)
+            else:
+                # Try to extract abbreviation from "City (Abbrev)" pattern
+                m = re.search(r'\(([^)]+)\)', loc)
+                if m:
+                    abbrev = m.group(1)
+                    state = ABBREV_TO_STATE.get(abbrev)
+            if state and state not in states_counted:
+                state_year[state][y] += 1
+                state_total[state] += 1
+                states_counted.add(state)
 
     top_states = [s for s, _ in state_total.most_common()]
     us_state_coverage = {
