@@ -382,6 +382,46 @@ def build_dashboard_data(articles, authors):
         "years": all_years,
     }
 
+    # --- US State coverage: glocations from U.S. section ---
+    US_STATES = {
+        "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
+        "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
+        "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
+        "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
+        "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
+        "New Hampshire", "New Jersey", "New Mexico", "New York State",
+        "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
+        "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+        "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington State",
+        "West Virginia", "Wisconsin", "Wyoming",
+        "District of Columbia",
+    }
+    # Map NYT glocation names to canonical state names
+    STATE_ALIASES = {
+        "New York State": "New York",
+        "Washington State": "Washington",
+        "District of Columbia": "D.C.",
+    }
+
+    us_articles = [a for a in articles if a["section"] == "U.S."]
+    state_year = defaultdict(lambda: defaultdict(int))
+    state_total = Counter()
+
+    for art in us_articles:
+        y = str(art["year"])
+        for loc in art.get("glocations", []):
+            if loc in US_STATES:
+                canonical = STATE_ALIASES.get(loc, loc)
+                state_year[canonical][y] += 1
+                state_total[canonical] += 1
+
+    top_states = [s for s, _ in state_total.most_common()]
+    us_state_coverage = {
+        "states": top_states,
+        "state_trends": {s: dict(state_year[s]) for s in top_states},
+        "years": all_years,
+    }
+
     # Summary stats
     total_words = sum(a["word_count"] for a in articles)
     total_articles = len(articles)
@@ -408,6 +448,7 @@ def build_dashboard_data(articles, authors):
         "top_authors": top_authors,
         "wordiest_authors": wordiest,
         "world_coverage": world_coverage,
+        "us_state_coverage": us_state_coverage,
     }
 
 
