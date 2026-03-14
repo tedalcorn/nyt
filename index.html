@@ -807,7 +807,7 @@ function extractBeats(authorArticles) {
   for (const a of authorArticles) {
     const seen = new Set();
     for (const s of a.subjects) {
-      if (GENERIC_SUBJECTS.has(s) || s.startsWith('internal-')) continue;
+      if (GENERIC_SUBJECTS.has(s) || s.startsWith('internal-') || s.startsWith('audio-') || s.startsWith('vis-') || s.startsWith('your-feed')) continue;
       if (!seen.has(s)) { authorFreq[s] = (authorFreq[s] || 0) + 1; seen.add(s); }
     }
   }
