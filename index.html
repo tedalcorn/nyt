@@ -437,7 +437,6 @@ function initOverview() {
     { v: s.total_articles.toLocaleString(), l: 'Articles' },
     { v: Math.round(s.total_words / 1e6).toLocaleString() + 'M', l: 'Words' },
     { v: s.total_authors.toLocaleString(), l: 'Authors' },
-    { v: s.authors_25plus.toLocaleString(), l: 'Authors (25+ articles)' },
     { v: s.unique_sections, l: 'Sections' },
   ].map(d => `<div class="stat-card"><div class="value">${d.v}</div><div class="label">${d.l}</div></div>`).join('');
 
@@ -460,7 +459,7 @@ function initOverview() {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { maxTicksLimit: 20, font: { size: 11 } } },
+        x: { ticks: { callback: function(val, idx) { const l = monthly[idx].month; return l.endsWith('-01') ? l.slice(0,4) : ''; }, maxRotation: 0, font: { size: 11 } } },
         y: { beginAtZero: true }
       }
     }
@@ -896,7 +895,7 @@ function showAuthorTimeline(name) {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { maxTicksLimit: 15, font: { size: 10 } } },
+        x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return l.endsWith('-01') ? l.slice(0,4) : ''; }, maxRotation: 0, font: { size: 10 } } },
         y: { beginAtZero: true, ticks: { stepSize: 1 } }
       }
     }
