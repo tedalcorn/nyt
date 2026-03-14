@@ -205,26 +205,16 @@
       <div class="chart-controls">
         <label>Section:</label>
         <select id="prolificSection"><option value="">All sections</option></select>
-        <label>Show:</label>
-        <select id="prolificCount">
-          <option value="15">15</option>
-          <option value="20" selected>20</option>
-          <option value="30">30</option>
-        </select>
       </div>
       <canvas id="chartTopAuthors"></canvas>
     </div>
     <div class="chart-box">
-      <h3>Wordiest Writers <span style="font-weight:normal;font-size:12px;color:#888">(30+ articles, excl. Opinion/Magazine)</span></h3>
+      <h3>Wordiest Writers <span style="font-weight:normal;font-size:12px;color:#888">(excl. Opinion/Magazine)</span></h3>
       <div class="chart-controls">
         <label>Section:</label>
         <select id="wordiestSection"><option value="">All sections</option></select>
-        <label>Show:</label>
-        <select id="wordiestCount">
-          <option value="15">15</option>
-          <option value="20" selected>20</option>
-          <option value="30">30</option>
-        </select>
+        <label>Min articles:</label>
+        <input type="number" id="wordiestMin" value="30" min="1" style="width:60px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
       </div>
       <canvas id="chartWordiest"></canvas>
     </div>
@@ -417,9 +407,12 @@ function showView(view) {
 
 // --- Unique sections list ---
 function getUniqueSections() {
-  const secs = new Set();
-  if (authors) authors.forEach(a => { if (a.primary_section) secs.add(a.primary_section); });
-  return [...secs].sort();
+  // Only include sections with 10+ authors to keep dropdowns clean
+  const counts = {};
+  if (authors) authors.forEach(a => {
+    if (a.primary_section) counts[a.primary_section] = (counts[a.primary_section] || 0) + 1;
+  });
+  return Object.entries(counts).filter(([, c]) => c >= 10).map(([s]) => s).sort();
 }
 
 function populateSectionSelect(selectEl, onChange) {
@@ -470,12 +463,11 @@ function initOverview() {
 
   // Section filter for prolific authors
   populateSectionSelect(document.getElementById('prolificSection'), renderProlific);
-  document.getElementById('prolificCount').addEventListener('change', renderProlific);
   renderProlific();
 
   // Section filter for wordiest authors
   populateSectionSelect(document.getElementById('wordiestSection'), renderWordiest);
-  document.getElementById('wordiestCount').addEventListener('change', renderWordiest);
+  document.getElementById('wordiestMin').addEventListener('input', renderWordiest);
   renderWordiest();
 }
 
@@ -489,15 +481,14 @@ const INSTITUTIONAL_BYLINES = new Set([
 
 function renderProlific() {
   const section = document.getElementById('prolificSection').value;
-  const count = parseInt(document.getElementById('prolificCount').value);
   let pool;
   if (section) {
-    pool = authors.filter(a => a.primary_section === section && a.article_count >= 25 && !INSTITUTIONAL_BYLINES.has(a.name))
+    pool = authors.filter(a => a.primary_section === section && !INSTITUTIONAL_BYLINES.has(a.name))
       .sort((a, b) => b.article_count - a.article_count);
   } else {
     pool = dashboard.top_authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
   }
-  const top = pool.slice(0, count);
+  const top = pool.slice(0, 20);
 
   destroyChart('chartTopAuthors');
   chartInstances['chartTopAuthors'] = new Chart(document.getElementById('chartTopAuthors'), {
@@ -519,24 +510,25 @@ function renderProlific() {
     }
   });
   // Dynamic height based on number of bars
-  document.getElementById('chartTopAuthors').parentElement.style.height = (top.length * 28 + 40) + 'px';
-  document.getElementById('chartTopAuthors').style.maxHeight = 'none';
+  const h1 = (top.length * 28 + 40) + 'px';
+  document.getElementById('chartTopAuthors').style.height = h1;
+  document.getElementById('chartTopAuthors').parentElement.style.minHeight = h1;
 }
 
 function renderWordiest() {
   const section = document.getElementById('wordiestSection').value;
-  const count = parseInt(document.getElementById('wordiestCount').value);
+  const minArticles = parseInt(document.getElementById('wordiestMin').value) || 30;
   const excluded = new Set(['Opinion', 'Magazine', 'T Magazine']);
 
   let pool;
   if (section) {
-    pool = authors.filter(a => a.primary_section === section && a.article_count >= 30)
+    pool = authors.filter(a => a.primary_section === section && a.article_count >= minArticles)
       .sort((a, b) => b.avg_words - a.avg_words);
   } else {
-    pool = authors.filter(a => a.article_count >= 30 && !excluded.has(a.primary_section))
+    pool = authors.filter(a => a.article_count >= minArticles && !excluded.has(a.primary_section))
       .sort((a, b) => b.avg_words - a.avg_words);
   }
-  const top = pool.slice(0, count);
+  const top = pool.slice(0, 20);
 
   destroyChart('chartWordiest');
   chartInstances['chartWordiest'] = new Chart(document.getElementById('chartWordiest'), {
@@ -557,8 +549,9 @@ function renderWordiest() {
       scales: { x: { beginAtZero: true } }
     }
   });
-  document.getElementById('chartWordiest').parentElement.style.height = (top.length * 28 + 40) + 'px';
-  document.getElementById('chartWordiest').style.maxHeight = 'none';
+  const h2 = (top.length * 28 + 40) + 'px';
+  document.getElementById('chartWordiest').style.height = h2;
+  document.getElementById('chartWordiest').parentElement.style.minHeight = h2;
 }
 
 // --- SECTIONS ---
@@ -584,8 +577,9 @@ function initSections() {
       scales: { x: { beginAtZero: true } }
     }
   });
-  document.getElementById('chartSections').parentElement.style.height = (sectionData.length * 28 + 40) + 'px';
-  document.getElementById('chartSections').style.maxHeight = 'none';
+  const h3 = (sectionData.length * 28 + 40) + 'px';
+  document.getElementById('chartSections').style.height = h3;
+  document.getElementById('chartSections').parentElement.style.minHeight = h3;
 
   // Populate section selectors for both trend charts
   const trendSections = Object.keys(dashboard.section_trends);
@@ -1193,8 +1187,9 @@ function renderTopLocations() {
       scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
     }
   });
-  document.getElementById('chartTopLocations').parentElement.style.height = (filtered.length * 24 + 40) + 'px';
-  document.getElementById('chartTopLocations').style.maxHeight = 'none';
+  const h4 = (filtered.length * 24 + 40) + 'px';
+  document.getElementById('chartTopLocations').style.height = h4;
+  document.getElementById('chartTopLocations').parentElement.style.minHeight = h4;
 }
 
 // --- STATES ---
@@ -1304,8 +1299,9 @@ function renderStateBar(states, years) {
       scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
     }
   });
-  document.getElementById('chartStateBar').parentElement.style.height = (filtered.length * 22 + 40) + 'px';
-  document.getElementById('chartStateBar').style.maxHeight = 'none';
+  const h5 = (filtered.length * 22 + 40) + 'px';
+  document.getElementById('chartStateBar').style.height = h5;
+  document.getElementById('chartStateBar').parentElement.style.minHeight = h5;
 }
 
 function debounce(fn, ms) {

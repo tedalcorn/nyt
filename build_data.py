@@ -121,6 +121,12 @@ def process_articles(raw_articles):
             word_count = 0
 
         section = doc.get("section_name", "") or ""
+        # Merge renamed sections
+        SECTION_MERGES = {
+            "Fashion & Style": "Style",
+            "Fashion": "Style",
+        }
+        section = SECTION_MERGES.get(section, section)
         news_desk = doc.get("news_desk", "") or ""
         doc_type = doc.get("document_type", "") or ""
         web_url = doc.get("web_url", "") or ""
