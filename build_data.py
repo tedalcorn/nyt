@@ -129,12 +129,15 @@ def process_articles(raw_articles):
         print_section = doc.get("print_section", "") or ""
         print_page = doc.get("print_page", "") or ""
 
-        # Geographic info (for World coverage analysis)
+        # Keywords (geographic, subject)
         subsection = doc.get("subsection_name", "") or ""
         glocations = []
+        subjects = []
         for kw in (doc.get("keywords") or []):
             if kw.get("name") == "glocations":
                 glocations.append(kw["value"])
+            elif kw.get("name") == "subject":
+                subjects.append(kw["value"])
 
         articles.append({
             "pub_date": pub_date.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -154,6 +157,7 @@ def process_articles(raw_articles):
             "print_page": print_page,
             "n_authors": len(authors),
             "glocations": glocations,
+            "subjects": subjects,
         })
 
     print(f"  {len(articles):,} processed, {skipped} skipped")
@@ -554,6 +558,8 @@ def main():
             rec["g"] = a["glocations"]  # glocations
         if a.get("subsection"):
             rec["ss"] = a["subsection"]  # subsection
+        if a.get("subjects"):
+            rec["sb"] = a["subjects"]  # subject keywords
         by_year[a["year"]].append(rec)
 
     years = sorted(by_year.keys())
