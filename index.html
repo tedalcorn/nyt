@@ -502,6 +502,8 @@ function renderProlific() {
         label: 'Articles',
         data: top.map(a => a.article_count),
         backgroundColor: 'rgba(50,104,145,0.7)',
+        barPercentage: 0.8,
+        categoryPercentage: 0.85,
       }]
     },
     options: {
@@ -509,11 +511,14 @@ function renderProlific() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } }
+      scales: {
+        x: { beginAtZero: true },
+        y: { ticks: { font: { size: 11 } } }
+      }
     }
   });
   const chartEl = document.getElementById('chartTopAuthors');
-  const h = Math.max(150, top.length * 22 + 30);
+  const h = top.length * 24 + 20;
   chartEl.parentElement.style.height = h + 'px';
   chartEl.style.height = h + 'px';
 }
@@ -542,6 +547,8 @@ function renderWordiest() {
         label: 'Avg words/article',
         data: top.map(a => a.avg_words),
         backgroundColor: 'rgba(170,120,80,0.7)',
+        barPercentage: 0.8,
+        categoryPercentage: 0.85,
       }]
     },
     options: {
@@ -549,11 +556,14 @@ function renderWordiest() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true } }
+      scales: {
+        x: { beginAtZero: true },
+        y: { ticks: { font: { size: 11 } } }
+      }
     }
   });
   const chartEl2 = document.getElementById('chartWordiest');
-  const hw = Math.max(150, top.length * 22 + 30);
+  const hw = top.length * 24 + 20;
   chartEl2.parentElement.style.height = hw + 'px';
   chartEl2.style.height = hw + 'px';
 }
