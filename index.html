@@ -157,8 +157,9 @@
   <button data-view="authors">Authors</button>
   <button data-view="sections">Sections</button>
   <button data-view="headlines">Headline Search</button>
-  <button data-view="tracker">Headline Tracker</button>
+  <button data-view="tracker">Headline Frequency</button>
   <button data-view="world">World</button>
+  <button data-view="states">States</button>
 </nav>
 
 <div class="container">
@@ -274,10 +275,34 @@
     </div>
   </div>
 
+  <!-- STATES -->
+  <div class="view" id="view-states">
+    <div class="chart-box">
+      <h3>U.S. State Coverage Over Time</h3>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">Based on geographic tags in U.S. section articles (2014-2024). NY and NJ excluded as local coverage outliers.</div>
+      <div style="margin-bottom:8px">
+        <select id="stateSelect" multiple style="width:100%;min-height:100px;font-size:13px"></select>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
+      </div>
+      <canvas id="chartStateTrend"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Total Coverage by State</h3>
+      <div class="chart-controls">
+        <label>View:</label>
+        <select id="stateBarMode">
+          <option value="total">Total articles</option>
+          <option value="percapita">Articles per million residents</option>
+        </select>
+      </div>
+      <canvas id="chartStateBar"></canvas>
+    </div>
+  </div>
+
   <!-- HEADLINE TRACKER -->
   <div class="view" id="view-tracker">
     <div class="chart-box">
-      <h3>Track Terms in Headlines Over Time</h3>
+      <h3>Headline Frequency Over Time</h3>
       <div class="term-inputs">
         <input type="text" id="term1" placeholder="Term 1" value="Trump">
         <input type="text" id="term2" placeholder="Term 2" value="Biden">
@@ -713,40 +738,108 @@ function renderAuthors() {
   });
 }
 
-function extractBeats(authorArticles) {
-  // Extract recurring topic words from headlines (2+ word phrases and single keywords)
-  const stopwords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','is','are',
-    'was','were','be','been','being','have','has','had','do','does','did','will','would','shall',
-    'should','may','might','can','could','must','not','no','nor','so','yet','both','each','few',
-    'more','most','other','some','such','than','too','very','just','about','after','before','into',
-    'through','during','with','without','from','up','out','over','under','again','further','then',
-    'once','here','there','when','where','why','how','all','any','every','its','it','that','this',
-    'these','those','what','which','who','whom','whose','new','says','said','say','one','two',
-    'first','also','now','back','make','like','get','got','many','much','still','well','take',
-    'day','year','years','time','way','long','last','next','come','know','us','i','my','me','he',
-    'she','his','her','they','them','their','we','our','you','your','as','by','if','off','own',
-    'people','mr','mrs','ms','dr','times','york','review','look','life','big','old','world',
-    'need','finds','report','asks','show','shows','goes','makes','keep','left','right','see',
-    'set','let','put','part','think','men','women','man','woman','inside','amid']);
-
-  const freq = {};
-  for (const a of authorArticles) {
-    const words = a.headline.toLowerCase().replace(/[^a-z\s'-]/g, '').split(/\s+/).filter(w => w.length > 2 && !stopwords.has(w));
+// Build corpus-wide word frequencies (computed once, cached)
+let corpusWordFreq = null;
+let corpusTotalDocs = 0;
+function ensureCorpusFreq() {
+  if (corpusWordFreq) return;
+  corpusWordFreq = {};
+  corpusTotalDocs = articles.length;
+  for (const a of articles) {
+    const words = tokenize(a.headline);
     const seen = new Set();
     for (const w of words) {
-      if (!seen.has(w)) { freq[w] = (freq[w] || 0) + 1; seen.add(w); }
+      const st = stem(w);
+      if (!seen.has(st)) { corpusWordFreq[st] = (corpusWordFreq[st] || 0) + 1; seen.add(st); }
+    }
+  }
+}
+
+const BEAT_STOPWORDS = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','is','are',
+  'was','were','be','been','being','have','has','had','do','does','did','will','would','shall',
+  'should','may','might','can','could','must','not','no','nor','so','yet','both','each','few',
+  'more','most','other','some','such','than','too','very','just','about','after','before','into',
+  'through','during','with','without','from','up','out','over','under','again','further','then',
+  'once','here','there','when','where','why','how','all','any','every','its','it','that','this',
+  'these','those','what','which','who','whom','whose','new','says','said','say','one','two',
+  'first','also','now','back','make','like','get','got','many','much','still','well','take',
+  'day','year','years','time','way','long','last','next','come','know','us','i','my','me','he',
+  'she','his','her','they','them','their','we','our','you','your','as','by','if','off','own',
+  'people','mr','mrs','ms','dr','times','york','review','look','life','big','old','world',
+  'need','finds','report','asks','show','shows','goes','makes','keep','left','right','see',
+  'set','let','put','part','think','men','women','man','woman','inside','amid','can\'t','don\'t',
+  'won\'t','didn\'t','isn\'t','aren\'t','doesn\'t','could','three','four','five','may',
+  'american','state','united','states','country','city','national','week','month','today',
+  'help','case','plan','group','family','small','high','number','million','face','turn',
+  'move','call','key','deal','push','use','offer','open','end','try','question','away',
+  'warn','rule','fight','claim','raise','test','start','point','bit','run','another']);
+
+function tokenize(headline) {
+  return headline.toLowerCase().replace(/[^a-z\s'-]/g, '').split(/\s+/).filter(w => w.length > 2 && !BEAT_STOPWORDS.has(w));
+}
+
+// Minimal stemmer: collapse common English suffixes
+function stem(word) {
+  if (word.length <= 4) return word;
+  // Possessives and plurals of proper nouns (e.g., china's, chinas)
+  if (word.endsWith("'s")) return word.slice(0, -2);
+  // -ies -> -y (e.g., countries -> country)
+  if (word.endsWith('ies') && word.length > 5) return word.slice(0, -3) + 'y';
+  // -es -> remove (e.g.,aches -> ach) — only if long enough
+  if (word.endsWith('es') && word.length > 5) return word.slice(0, -2);
+  // -s (simple plural)
+  if (word.endsWith('s') && !word.endsWith('ss') && word.length > 4) return word.slice(0, -1);
+  // -ing
+  if (word.endsWith('ing') && word.length > 5) return word.slice(0, -3);
+  // -ed
+  if (word.endsWith('ed') && word.length > 5) return word.slice(0, -2);
+  // -ly
+  if (word.endsWith('ly') && word.length > 5) return word.slice(0, -2);
+  // -ness
+  if (word.endsWith('ness') && word.length > 6) return word.slice(0, -4);
+  return word;
+}
+
+function extractBeats(authorArticles) {
+  ensureCorpusFreq();
+
+  // Count stemmed words in this author's headlines
+  const authorFreq = {};
+  const bestForm = {}; // track the most common unstemmed form per stem
+  const formCounts = {};
+  for (const a of authorArticles) {
+    const words = tokenize(a.headline);
+    const seen = new Set();
+    for (const w of words) {
+      const st = stem(w);
+      if (!seen.has(st)) { authorFreq[st] = (authorFreq[st] || 0) + 1; seen.add(st); }
+      formCounts[st] = formCounts[st] || {};
+      formCounts[st][w] = (formCounts[st][w] || 0) + 1;
     }
   }
 
-  // Need at least 3 mentions and 5% of articles to be a "beat"
-  const threshold = Math.max(3, Math.ceil(authorArticles.length * 0.05));
-  const candidates = Object.entries(freq)
-    .filter(([w, c]) => c >= threshold)
-    .sort((a, b) => b[1] - a[1]);
+  // Pick best display form for each stem
+  for (const [st, forms] of Object.entries(formCounts)) {
+    bestForm[st] = Object.entries(forms).sort((a, b) => b[1] - a[1])[0][0];
+  }
 
-  // Take top 3-7, capitalize
-  const beats = candidates.slice(0, 7).map(([w]) => w.charAt(0).toUpperCase() + w.slice(1));
-  return beats;
+  // TF-IDF: score = (author_freq / author_docs) * log(corpus_docs / corpus_freq)
+  // This surfaces words distinctive to this author vs the whole corpus
+  const n = authorArticles.length;
+  const threshold = Math.max(3, Math.ceil(n * 0.04));
+  const scored = [];
+  for (const [st, count] of Object.entries(authorFreq)) {
+    if (count < threshold) continue;
+    const corpusCount = corpusWordFreq[st] || 1;
+    const tf = count / n;
+    const idf = Math.log(corpusTotalDocs / corpusCount);
+    scored.push({ stem: st, score: tf * idf, count, form: bestForm[st] });
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+
+  // Take top 3-7, capitalize the best display form
+  return scored.slice(0, 7).map(s => s.form.charAt(0).toUpperCase() + s.form.slice(1));
 }
 
 function showAuthorTimeline(name) {
@@ -1120,6 +1213,119 @@ function renderTopLocations() {
   document.getElementById('chartTopLocations').style.maxHeight = 'none';
 }
 
+// --- STATES ---
+// 2025 US state populations (millions)
+const STATE_POP_M = {
+  'California':39.0,'Texas':30.5,'Florida':23.0,'New York':19.5,'Pennsylvania':13.0,
+  'Illinois':12.5,'Ohio':11.8,'Georgia':11.0,'North Carolina':10.8,'Michigan':10.0,
+  'New Jersey':9.3,'Virginia':8.7,'Washington':7.9,'Arizona':7.4,'Tennessee':7.1,
+  'Massachusetts':7.0,'Indiana':6.9,'Missouri':6.2,'Maryland':6.2,'Wisconsin':5.9,
+  'Colorado':5.9,'Minnesota':5.7,'South Carolina':5.4,'Alabama':5.1,'Louisiana':4.6,
+  'Kentucky':4.5,'Oregon':4.3,'Oklahoma':4.0,'Connecticut':3.6,'Utah':3.4,
+  'Iowa':3.2,'Nevada':3.2,'Arkansas':3.1,'Mississippi':2.9,'Kansas':2.9,
+  'New Mexico':2.1,'Nebraska':2.0,'Idaho':2.0,'West Virginia':1.8,'Hawaii':1.4,
+  'New Hampshire':1.4,'Maine':1.4,'Montana':1.1,'Rhode Island':1.1,'Delaware':1.0,
+  'South Dakota':0.9,'North Dakota':0.8,'Alaska':0.7,'D.C.':0.7,
+  'Vermont':0.6,'Wyoming':0.6,
+};
+
+// NY and NJ excluded as local coverage outliers
+const STATE_EXCLUDE = new Set(['New York', 'New Jersey']);
+
+function initStates() {
+  if (!dashboard.us_state_coverage) return;
+  const sc = dashboard.us_state_coverage;
+  const currentYear = String(new Date().getFullYear());
+  // Also exclude 2025+ since glocations stopped being populated
+  const years = sc.years.filter(y => y !== currentYear && parseInt(y) <= 2024);
+  const states = sc.states.filter(s => !STATE_EXCLUDE.has(s));
+
+  // Populate selector
+  const select = document.getElementById('stateSelect');
+  select.innerHTML = '';
+  const defaults = states.slice(0, 6);
+  states.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = s;
+    if (defaults.includes(s)) opt.selected = true;
+    select.appendChild(opt);
+  });
+  select.addEventListener('change', () => renderStateTrend(years));
+  renderStateTrend(years);
+
+  document.getElementById('stateBarMode').addEventListener('change', () => renderStateBar(states, years));
+  renderStateBar(states, years);
+}
+
+function renderStateTrend(years) {
+  const sc = dashboard.us_state_coverage;
+  const selected = Array.from(document.getElementById('stateSelect').selectedOptions).map(o => o.value);
+
+  destroyChart('chartStateTrend');
+  chartInstances['chartStateTrend'] = new Chart(document.getElementById('chartStateTrend'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: selected.map((s, i) => ({
+        label: s,
+        data: years.map(y => (sc.state_trends[s] || {})[y] || 0),
+        borderColor: trendColors[i % trendColors.length],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+function renderStateBar(states, years) {
+  const sc = dashboard.us_state_coverage;
+  const mode = document.getElementById('stateBarMode').value;
+  const perCapita = mode === 'percapita';
+
+  const data = states.map(s => {
+    const trend = sc.state_trends[s] || {};
+    // Sum only years with glocation data (through 2024)
+    const total = years.reduce((sum, y) => sum + (trend[y] || 0), 0);
+    const pop = STATE_POP_M[s];
+    const value = perCapita && pop ? Math.round(total / pop * 10) / 10 : total;
+    return { name: s, value, hasPop: !!pop };
+  });
+
+  const filtered = perCapita ? data.filter(d => d.hasPop) : data;
+  filtered.sort((a, b) => b.value - a.value);
+  const label = perCapita ? 'Articles per million residents' : 'Articles';
+
+  destroyChart('chartStateBar');
+  chartInstances['chartStateBar'] = new Chart(document.getElementById('chartStateBar'), {
+    type: 'bar',
+    data: {
+      labels: filtered.map(d => d.name),
+      datasets: [{
+        label: label,
+        data: filtered.map(d => d.value),
+        backgroundColor: perCapita ? 'rgba(170,120,80,0.7)' : 'rgba(50,104,145,0.7)',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
+    }
+  });
+  document.getElementById('chartStateBar').parentElement.style.height = (filtered.length * 22 + 40) + 'px';
+  document.getElementById('chartStateBar').style.maxHeight = 'none';
+}
+
 function debounce(fn, ms) {
   let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
@@ -1141,6 +1347,16 @@ const worldObserver = new MutationObserver(() => {
   }
 });
 worldObserver.observe(document.getElementById('view-world'), { attributes: true });
+
+// Trigger states render when tab shown (lazy init)
+let statesInitialized = false;
+const statesObserver = new MutationObserver(() => {
+  if (document.getElementById('view-states').classList.contains('active') && !statesInitialized) {
+    statesInitialized = true;
+    initStates();
+  }
+});
+statesObserver.observe(document.getElementById('view-states'), { attributes: true });
 
 loadData();
 </script>
