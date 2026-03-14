@@ -170,6 +170,7 @@
   <div class="view" id="view-about">
     <div class="chart-box" style="max-width:760px;margin:0 auto;font-size:14px;line-height:1.7">
       <h3 style="margin-bottom:12px">About</h3>
+      <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings they intend to share.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2014 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data refreshes automatically on the 2nd of each month.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Primary section</h4>
@@ -182,7 +183,7 @@
       <p>Author name variants (e.g., "Jonah E. Bromwich" and "Jonah Bromwich") are merged when they share first and last names with compatible middle names. Only minor variants are merged; if two forms each have substantial article counts, they are kept separate to avoid false merges. Institutional bylines (The Associated Press, The Editorial Board, Reuters, etc.) are excluded from author rankings.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Geographic data</h4>
-      <p>The States tab draws only from articles in the "U.S." section (the national desk). The World tab draws only from articles in the "World" section (the international desk). Coverage of these geographies that appears in other sections (Opinion, Business, etc.) is not included. Both tabs use the <code>glocations</code> keyword field in the API; city-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. This field was discontinued in the API in 2025, so country-level and state-level data covers 2014–2024 only. World region trends (Europe, Asia Pacific, etc.) use the <code>subsection</code> field, which remains available in 2025. Per-capita figures use 2025 population estimates.</p>
+      <p>The States tab draws only from articles in the "U.S." section (the national desk). The World tab draws only from articles in the "World" section (the international desk). Coverage of these geographies that appears in other sections (Opinion, Business, etc.) is not included. Both tabs use the API's geographic keyword field; city-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. Per-capita figures use 2025 population estimates.</p>
       <p style="margin-top:8px">New York and New Jersey are excluded from the States tab because the NYT publishes local coverage of these states in a dedicated "New York" section rather than the national "U.S." section. Since the state analysis draws only from the U.S. section, NY and NJ counts would be artificially low (capturing ~3% of actual coverage).</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Section names</h4>
@@ -301,7 +302,7 @@
   <div class="view" id="view-states">
     <div class="chart-box">
       <h3>U.S. State Coverage Over Time</h3>
-      <div style="font-size:12px;color:#888;margin-bottom:8px">Based on geographic tags in U.S. section articles (2014-2024). New York and New Jersey are excluded because their coverage lives primarily in the NYT's dedicated "New York" section, not the national U.S. section, making their counts here artificially low.</div>
+      <div style="font-size:12px;color:#888;margin-bottom:8px">Based on geographic tags in U.S. section articles. New York and New Jersey are excluded because their coverage lives primarily in the NYT's dedicated "New York" section, not the national U.S. section, making their counts here artificially low.</div>
       <div style="margin-bottom:8px">
         <select id="stateSelect" multiple style="width:100%;min-height:100px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
@@ -1090,8 +1091,7 @@ function initWorld() {
   const wc = dashboard.world_coverage;
   const currentYear = String(new Date().getFullYear());
   const regionYears = wc.years.filter(y => y !== currentYear);
-  // Country-level glocations stopped being populated in 2025
-  const countryYears = wc.years.filter(y => y !== currentYear && parseInt(y) <= 2024);
+  const countryYears = wc.years.filter(y => y !== currentYear);
 
   // Region trends (all regions, auto-selected)
   const regions = Object.keys(wc.region_trends).sort();
@@ -1139,8 +1139,7 @@ function initWorld() {
 function renderLocationTrend() {
   const wc = dashboard.world_coverage;
   const currentYear = String(new Date().getFullYear());
-  // Country glocations stopped in 2025
-  const years = wc.years.filter(y => y !== currentYear && parseInt(y) <= 2024);
+  const years = wc.years.filter(y => y !== currentYear);
   const selected = Array.from(document.getElementById('worldLocationSelect').selectedOptions).map(o => o.value);
 
   destroyChart('chartLocationTrend');
@@ -1232,7 +1231,7 @@ function initStates() {
   const sc = dashboard.us_state_coverage;
   const currentYear = String(new Date().getFullYear());
   // Also exclude 2025+ since glocations stopped being populated
-  const years = sc.years.filter(y => y !== currentYear && parseInt(y) <= 2024);
+  const years = sc.years.filter(y => y !== currentYear);
   // Exclude NY and NJ — their coverage lives in the "New York" section, not U.S.
   const states = sc.states.filter(s => s !== 'New York' && s !== 'New Jersey');
 
