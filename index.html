@@ -513,7 +513,7 @@ function renderProlific() {
     }
   });
   const chartEl = document.getElementById('chartTopAuthors');
-  const h = Math.max(200, top.length * 28 + 40);
+  const h = Math.max(150, top.length * 22 + 30);
   chartEl.parentElement.style.height = h + 'px';
   chartEl.style.height = h + 'px';
 }
@@ -553,7 +553,7 @@ function renderWordiest() {
     }
   });
   const chartEl2 = document.getElementById('chartWordiest');
-  const hw = Math.max(200, top.length * 28 + 40);
+  const hw = Math.max(150, top.length * 22 + 30);
   chartEl2.parentElement.style.height = hw + 'px';
   chartEl2.style.height = hw + 'px';
 }
@@ -581,7 +581,7 @@ function initSections() {
       scales: { x: { beginAtZero: true } }
     }
   });
-  const hs = Math.max(200, sectionData.length * 28 + 40);
+  const hs = Math.max(150, sectionData.length * 22 + 30);
   document.getElementById('chartSections').parentElement.style.height = hs + 'px';
   document.getElementById('chartSections').style.height = hs + 'px';
 
