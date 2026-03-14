@@ -1,0 +1,10 @@
+# Raw API data (large, regenerable)
+data/raw/
+
+# Python
+__pycache__/
+*.pyc
+
+# Old static charts (replaced by interactive dashboard)
+chart*.png
+chart*.jpg
