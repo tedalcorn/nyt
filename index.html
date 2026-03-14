@@ -158,6 +158,7 @@
   <button data-view="sections">Sections</button>
   <button data-view="headlines">Headline Search</button>
   <button data-view="tracker">Headline Tracker</button>
+  <button data-view="world">World</button>
 </nav>
 
 <div class="container">
@@ -246,6 +247,26 @@
     <div id="headlineResults"></div>
   </div>
 
+  <!-- WORLD -->
+  <div class="view" id="view-world">
+    <div class="chart-box">
+      <h3>World News by Region Over Time</h3>
+      <canvas id="chartRegionTrend"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Country Coverage Over Time</h3>
+      <div style="margin-bottom:8px">
+        <select id="worldLocationSelect" multiple style="width:100%;min-height:100px;font-size:13px"></select>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries. Showing top 40 most-covered locations.</div>
+      </div>
+      <canvas id="chartLocationTrend"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Top Covered Locations (All Time)</h3>
+      <canvas id="chartTopLocations"></canvas>
+    </div>
+  </div>
+
   <!-- HEADLINE TRACKER -->
   <div class="view" id="view-tracker">
     <div class="chart-box">
@@ -296,12 +317,14 @@ async function loadData() {
           headline: a.h,
           authors: a.a,
           section: a.s,
+          subsection: a.ss || '',
           pub_date: a.d,
           year_month: a.m,
           word_count: a.w,
           web_url: a.u.startsWith('/') ? URL_PREFIX + a.u : a.u,
           print_section: a.ps,
           print_page: a.pp,
+          glocations: a.g || [],
         });
       }
     }
@@ -355,7 +378,7 @@ function initOverview() {
     { v: s.total_articles.toLocaleString(), l: 'Articles' },
     { v: Math.round(s.total_words / 1e6).toLocaleString() + 'M', l: 'Words' },
     { v: s.total_authors.toLocaleString(), l: 'Authors' },
-    { v: s.authors_25plus.toLocaleString(), l: 'Authors (25+)' },
+    { v: s.authors_25plus.toLocaleString(), l: 'Authors (25+ articles)' },
     { v: s.unique_sections, l: 'Sections' },
   ].map(d => `<div class="stat-card"><div class="value">${d.v}</div><div class="label">${d.l}</div></div>`).join('');
 
@@ -532,21 +555,26 @@ const trendColors = [
 
 function renderSectionCountTrend() {
   const selected = Array.from(document.getElementById('sectionCountSelect').selectedOptions).map(o => o.value);
-  const years = dashboard.all_years;
+  const currentYear = String(new Date().getFullYear());
+  const years = dashboard.all_years.filter(y => y !== currentYear);
 
   destroyChart('chartSectionCount');
   chartInstances['chartSectionCount'] = new Chart(document.getElementById('chartSectionCount'), {
     type: 'line',
     data: {
       labels: years,
-      datasets: selected.map((s, i) => ({
-        label: s,
-        data: dashboard.section_trends[s]?.map(d => d.count) || [],
-        borderColor: trendColors[i % trendColors.length],
-        backgroundColor: 'transparent',
-        tension: 0.3,
-        pointRadius: 3,
-      }))
+      datasets: selected.map((s, i) => {
+        const trend = dashboard.section_trends[s] || [];
+        const byYear = {}; trend.forEach(d => byYear[d.year] = d.count);
+        return {
+          label: s,
+          data: years.map(y => byYear[y] || 0),
+          borderColor: trendColors[i % trendColors.length],
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 3,
+        };
+      })
     },
     options: {
       responsive: true,
@@ -560,21 +588,26 @@ function renderSectionCountTrend() {
 
 function renderSectionTrend() {
   const selected = Array.from(document.getElementById('sectionSelect').selectedOptions).map(o => o.value);
-  const years = dashboard.all_years;
+  const currentYear = String(new Date().getFullYear());
+  const years = dashboard.all_years.filter(y => y !== currentYear);
 
   destroyChart('chartSectionTrend');
   chartInstances['chartSectionTrend'] = new Chart(document.getElementById('chartSectionTrend'), {
     type: 'line',
     data: {
       labels: years,
-      datasets: selected.map((s, i) => ({
-        label: s,
-        data: dashboard.section_trends[s]?.map(d => d.avg_words) || [],
-        borderColor: trendColors[i % trendColors.length],
-        backgroundColor: 'transparent',
-        tension: 0.3,
-        pointRadius: 3,
-      }))
+      datasets: selected.map((s, i) => {
+        const trend = dashboard.section_trends[s] || [];
+        const byYear = {}; trend.forEach(d => byYear[d.year] = d.avg_words);
+        return {
+          label: s,
+          data: years.map(y => byYear[y] || 0),
+          borderColor: trendColors[i % trendColors.length],
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 3,
+        };
+      })
     },
     options: {
       responsive: true,
@@ -607,7 +640,7 @@ function renderAuthors() {
   const minArticles = parseInt(document.getElementById('authorMin').value) || 1;
   const sectionFilter = document.getElementById('authorSectionFilter').value;
 
-  let filtered = authors.filter(a => a.article_count >= minArticles);
+  let filtered = authors.filter(a => a.article_count >= minArticles && !INSTITUTIONAL_BYLINES.has(a.name));
   if (query) filtered = filtered.filter(a => a.name.toLowerCase().includes(query));
   if (sectionFilter) filtered = filtered.filter(a => a.primary_section === sectionFilter);
 
@@ -833,7 +866,8 @@ function trackTerms() {
   if (!terms.length) return;
 
   const frontOnly = document.getElementById('trackerFrontPage').checked;
-  let pool = articles;
+  const cutoffYear = String(new Date().getFullYear());
+  let pool = articles.filter(a => !a.year_month.startsWith(cutoffYear));
   if (frontOnly) pool = pool.filter(a => a.print_section === 'A' && a.print_page === '1');
 
   const months = [...new Set(pool.map(a => a.year_month))].sort();
@@ -875,6 +909,117 @@ function trackTerms() {
   });
 }
 
+// --- WORLD ---
+function initWorld() {
+  if (!dashboard.world_coverage) return;
+  const wc = dashboard.world_coverage;
+  const currentYear = String(new Date().getFullYear());
+  const years = wc.years.filter(y => y !== currentYear);
+
+  // Region trends (all regions, auto-selected)
+  const regions = Object.keys(wc.region_trends).sort();
+  destroyChart('chartRegionTrend');
+  chartInstances['chartRegionTrend'] = new Chart(document.getElementById('chartRegionTrend'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: regions.map((r, i) => ({
+        label: r,
+        data: years.map(y => wc.region_trends[r][y] || 0),
+        borderColor: trendColors[i % trendColors.length],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+
+  // Location selector
+  const select = document.getElementById('worldLocationSelect');
+  select.innerHTML = '';
+  const defaultLocations = wc.locations.slice(0, 8);
+  wc.locations.forEach(loc => {
+    const opt = document.createElement('option');
+    opt.value = loc; opt.textContent = loc;
+    if (defaultLocations.includes(loc)) opt.selected = true;
+    select.appendChild(opt);
+  });
+  select.addEventListener('change', renderLocationTrend);
+  renderLocationTrend();
+
+  // Top locations bar chart
+  renderTopLocations();
+}
+
+function renderLocationTrend() {
+  const wc = dashboard.world_coverage;
+  const currentYear = String(new Date().getFullYear());
+  const years = wc.years.filter(y => y !== currentYear);
+  const selected = Array.from(document.getElementById('worldLocationSelect').selectedOptions).map(o => o.value);
+
+  destroyChart('chartLocationTrend');
+  chartInstances['chartLocationTrend'] = new Chart(document.getElementById('chartLocationTrend'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: selected.map((loc, i) => ({
+        label: loc,
+        data: years.map(y => (wc.location_trends[loc] || {})[y] || 0),
+        borderColor: trendColors[i % trendColors.length],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
+
+function renderTopLocations() {
+  const wc = dashboard.world_coverage;
+  // Sum all years for each location
+  const totals = wc.locations.map(loc => {
+    const trend = wc.location_trends[loc] || {};
+    const total = Object.values(trend).reduce((s, v) => s + v, 0);
+    return { name: loc, count: total };
+  }).sort((a, b) => b.count - a.count);
+
+  destroyChart('chartTopLocations');
+  chartInstances['chartTopLocations'] = new Chart(document.getElementById('chartTopLocations'), {
+    type: 'bar',
+    data: {
+      labels: totals.map(t => t.name),
+      datasets: [{
+        label: 'Articles',
+        data: totals.map(t => t.count),
+        backgroundColor: 'rgba(50,104,145,0.7)',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true } }
+    }
+  });
+  document.getElementById('chartTopLocations').parentElement.style.height = (totals.length * 24 + 40) + 'px';
+  document.getElementById('chartTopLocations').style.maxHeight = 'none';
+}
+
 function debounce(fn, ms) {
   let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
@@ -886,6 +1031,16 @@ const observer = new MutationObserver(() => {
   }
 });
 observer.observe(document.getElementById('view-authors'), { attributes: true });
+
+// Trigger world render when tab shown (lazy init)
+let worldInitialized = false;
+const worldObserver = new MutationObserver(() => {
+  if (document.getElementById('view-world').classList.contains('active') && !worldInitialized) {
+    worldInitialized = true;
+    initWorld();
+  }
+});
+worldObserver.observe(document.getElementById('view-world'), { attributes: true });
 
 loadData();
 </script>

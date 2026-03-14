@@ -129,6 +129,13 @@ def process_articles(raw_articles):
         print_section = doc.get("print_section", "") or ""
         print_page = doc.get("print_page", "") or ""
 
+        # Geographic info (for World coverage analysis)
+        subsection = doc.get("subsection_name", "") or ""
+        glocations = []
+        for kw in (doc.get("keywords") or []):
+            if kw.get("name") == "glocations":
+                glocations.append(kw["value"])
+
         articles.append({
             "pub_date": pub_date.strftime("%Y-%m-%dT%H:%M:%S"),
             "year": pub_date.year,
@@ -139,12 +146,14 @@ def process_articles(raw_articles):
             "author_details": authors,
             "word_count": word_count,
             "section": section,
+            "subsection": subsection,
             "news_desk": news_desk,
             "type": doc_type,
             "web_url": web_url,
             "print_section": print_section,
             "print_page": print_page,
             "n_authors": len(authors),
+            "glocations": glocations,
         })
 
     print(f"  {len(articles):,} processed, {skipped} skipped")
@@ -349,6 +358,30 @@ def build_dashboard_data(articles, authors):
     wordiest.sort(key=lambda a: a["avg_words"], reverse=True)
     wordiest = wordiest[:25]
 
+    # --- World coverage: glocations by year ---
+    world_articles = [a for a in articles if a["section"] == "World"]
+    glocation_year = defaultdict(lambda: defaultdict(int))
+    glocation_total = Counter()
+    region_year = defaultdict(lambda: defaultdict(int))
+
+    for art in world_articles:
+        y = str(art["year"])
+        for loc in art.get("glocations", []):
+            glocation_year[loc][y] += 1
+            glocation_total[loc] += 1
+        sub = art.get("subsection", "")
+        if sub:
+            region_year[sub][y] += 1
+
+    # Top 40 locations
+    top_locations = [loc for loc, _ in glocation_total.most_common(40)]
+    world_coverage = {
+        "locations": top_locations,
+        "location_trends": {loc: dict(glocation_year[loc]) for loc in top_locations},
+        "region_trends": {r: dict(region_year[r]) for r in sorted(region_year.keys())},
+        "years": all_years,
+    }
+
     # Summary stats
     total_words = sum(a["word_count"] for a in articles)
     total_articles = len(articles)
@@ -374,6 +407,7 @@ def build_dashboard_data(articles, authors):
         "all_years": all_years,
         "top_authors": top_authors,
         "wordiest_authors": wordiest,
+        "world_coverage": world_coverage,
     }
 
 
@@ -393,7 +427,7 @@ def main():
         url = a["web_url"]
         if url.startswith(URL_PREFIX):
             url = url[len(URL_PREFIX):]
-        by_year[a["year"]].append({
+        rec = {
             "h": a["headline"],        # headline
             "a": a["authors"],         # authors
             "s": a["section"],         # section
@@ -403,7 +437,12 @@ def main():
             "u": url,                  # url (path only)
             "ps": a["print_section"],  # print section
             "pp": a["print_page"],     # print page
-        })
+        }
+        if a.get("glocations"):
+            rec["g"] = a["glocations"]  # glocations
+        if a.get("subsection"):
+            rec["ss"] = a["subsection"]  # subsection
+        by_year[a["year"]].append(rec)
 
     years = sorted(by_year.keys())
     for year in years:
