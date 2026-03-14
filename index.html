@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Below the Fold — A New York Times X-Ray Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; }
@@ -291,7 +292,7 @@
         <label>View:</label>
         <select id="topLocationsMode">
           <option value="total">Total articles</option>
-          <option value="percapita">Articles per million residents</option>
+          <option value="percapita">Articles per million residents per year</option>
         </select>
       </div>
       <div id="chartTopLocationsWrap" style="position:relative"><canvas id="chartTopLocations"></canvas></div>
@@ -315,7 +316,7 @@
         <label>View:</label>
         <select id="stateBarMode">
           <option value="total">Total articles</option>
-          <option value="percapita">Articles per million residents</option>
+          <option value="percapita">Articles per million residents per year</option>
         </select>
       </div>
       <div id="chartStateBarWrap" style="position:relative"><canvas id="chartStateBar"></canvas></div>
@@ -339,6 +340,7 @@
 </div>
 
 <script>
+Chart.defaults.plugins.datalabels = { display: false };
 let dashboard = null;
 let articles = null;
 let authors = null;
@@ -1101,7 +1103,8 @@ function initWorld() {
   const countryYears = wc.years.filter(y => y !== currentYear);
 
   // Region trends (all regions, auto-selected)
-  const regions = Object.keys(wc.region_trends).sort();
+  const skipRegions = new Set(['What in the World', 'Olympics']);
+  const regions = Object.keys(wc.region_trends).filter(r => !skipRegions.has(r)).sort();
   destroyChart('chartRegionTrend');
   chartInstances['chartRegionTrend'] = new Chart(document.getElementById('chartRegionTrend'), {
     type: 'line',
@@ -1177,12 +1180,14 @@ function renderTopLocations() {
   const wc = dashboard.world_coverage;
   const mode = document.getElementById('topLocationsMode').value;
   const perCapita = mode === 'percapita';
+  const currentYear = String(new Date().getFullYear());
+  const numYears = wc.years.filter(y => y !== currentYear).length;
 
   const totals = wc.locations.map(loc => {
     const trend = wc.location_trends[loc] || {};
     const total = Object.values(trend).reduce((s, v) => s + v, 0);
     const pop = POPULATION_M[loc];
-    const value = perCapita && pop ? Math.round(total / pop * 10) / 10 : total;
+    const value = perCapita && pop ? Math.round(total / pop / numYears * 100) / 100 : total;
     return { name: loc, count: total, value, hasPop: !!pop };
   });
 
@@ -1190,7 +1195,7 @@ function renderTopLocations() {
   const filtered = perCapita ? totals.filter(t => t.hasPop) : totals;
   filtered.sort((a, b) => b.value - a.value);
 
-  const label = perCapita ? 'Articles per million residents' : 'Articles';
+  const label = perCapita ? 'Articles per million residents per year' : 'Articles';
 
   destroyChart('chartTopLocations');
   chartInstances['chartTopLocations'] = new Chart(document.getElementById('chartTopLocations'), {
@@ -1207,7 +1212,14 @@ function renderTopLocations() {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: perCapita ? {
+          display: true, anchor: 'end', align: 'right',
+          font: { size: 10 }, color: '#555',
+          formatter: v => v.toFixed(1)
+        } : { display: false }
+      },
       scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
     }
   });
@@ -1290,19 +1302,20 @@ function renderStateBar(states, years) {
   const sc = dashboard.us_state_coverage;
   const mode = document.getElementById('stateBarMode').value;
   const perCapita = mode === 'percapita';
+  const numYears = years.length;
 
   const data = states.map(s => {
     const trend = sc.state_trends[s] || {};
     // Sum only years with glocation data (through 2024)
     const total = years.reduce((sum, y) => sum + (trend[y] || 0), 0);
     const pop = STATE_POP_M[s];
-    const value = perCapita && pop ? Math.round(total / pop * 10) / 10 : total;
+    const value = perCapita && pop ? Math.round(total / pop / numYears * 100) / 100 : total;
     return { name: s, value, hasPop: !!pop };
   });
 
   const filtered = perCapita ? data.filter(d => d.hasPop) : data;
   filtered.sort((a, b) => b.value - a.value);
-  const label = perCapita ? 'Articles per million residents' : 'Articles';
+  const label = perCapita ? 'Articles per million residents per year' : 'Articles';
 
   destroyChart('chartStateBar');
   chartInstances['chartStateBar'] = new Chart(document.getElementById('chartStateBar'), {
@@ -1319,7 +1332,14 @@ function renderStateBar(states, years) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: perCapita ? {
+          display: true, anchor: 'end', align: 'right',
+          font: { size: 10 }, color: '#555',
+          formatter: v => v.toFixed(1)
+        } : { display: false }
+      },
       scales: { x: { beginAtZero: true, title: { display: true, text: label } } }
     }
   });
