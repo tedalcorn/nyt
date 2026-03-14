@@ -10,14 +10,15 @@
   body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; }
 
   header {
-    background: #fff; color: #121212; padding: 12px 24px 10px;
-    display: flex; align-items: center; justify-content: space-between;
-    border-bottom: 2px solid #121212; flex-wrap: wrap; gap: 8px;
+    background: #fff; color: #121212; padding: 14px 24px 12px;
+    text-align: center;
+    border-bottom: 2px solid #121212;
   }
-  header .logo-area { display: flex; align-items: center; gap: 14px; }
-  header .nyt-logo { height: 26px; opacity: 0.85; }
-  header h1 { font-family: 'nyt-cheltenham', Georgia, serif; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; color: #121212; }
-  header .subtitle { font-size: 12px; color: #999; font-family: 'nyt-franklin', Arial, sans-serif; letter-spacing: 0.5px; text-transform: uppercase; }
+  header .nyt-wordmark { font-family: 'nyt-cheltenham', Georgia, 'Times New Roman', serif; font-size: 32px; font-weight: 700; font-style: italic; letter-spacing: -0.5px; color: #121212; line-height: 1.1; }
+  header .nyt-wordmark .the { font-size: 14px; font-style: italic; font-weight: 400; letter-spacing: 1px; display: block; margin-bottom: -2px; }
+  header h1 { font-family: 'nyt-cheltenham', Georgia, serif; font-size: 15px; font-weight: 400; color: #666; margin-top: 4px; letter-spacing: 0.5px; }
+  header .subtitle { font-size: 11px; color: #999; font-family: 'nyt-franklin', Arial, sans-serif; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
+  header .rule { border: none; border-top: 1px solid #e2e2e2; margin: 8px auto 0; width: 80%; }
 
   nav {
     display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e2e2e2;
@@ -146,13 +147,9 @@
 <body>
 
 <header>
-  <div class="logo-area">
-    <img class="nyt-logo" src="https://static01.nyt.com/newsgraphics/2015/12/23/masthead-2016/1a2tried15/nyt-logo-185x26.svg" alt="The New York Times" onerror="this.style.display='none'">
-    <div>
-      <h1>Article Dashboard</h1>
-      <div class="subtitle" id="dateRange"></div>
-    </div>
-  </div>
+  <div class="nyt-wordmark"><span class="the">The</span>New York Times</div>
+  <h1>Article Dashboard</h1>
+  <div class="subtitle" id="dateRange"></div>
 </header>
 
 <nav id="nav">
@@ -219,6 +216,14 @@
     <div class="chart-box">
       <h3>Articles by Section</h3>
       <canvas id="chartSections"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Articles by Section Over Time</h3>
+      <div style="margin-bottom:8px">
+        <select id="sectionCountSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
+      </div>
+      <canvas id="chartSectionCount"></canvas>
     </div>
     <div class="chart-box">
       <h3>Average Article Length by Section Over Time</h3>
@@ -390,12 +395,24 @@ function initOverview() {
   renderWordiest();
 }
 
+const INSTITUTIONAL_BYLINES = new Set([
+  'The New York Times', 'The Associated Press', 'The Editorial Board',
+  'The Learning Network', 'New York Times Games', 'International Herald Tribune',
+  'Reuters', 'The New York Times Books Staff', 'The Upshot Staff',
+  'The Staff', 'The Times Insider Staff', 'The New York Times Sports Staff',
+  'The New York Times Staff',
+]);
+
 function renderProlific() {
   const section = document.getElementById('prolificSection').value;
   const count = parseInt(document.getElementById('prolificCount').value);
-  let pool = dashboard.top_authors;
-  if (section) pool = authors.filter(a => a.primary_section === section && a.article_count >= 25)
-    .sort((a, b) => b.article_count - a.article_count);
+  let pool;
+  if (section) {
+    pool = authors.filter(a => a.primary_section === section && a.article_count >= 25 && !INSTITUTIONAL_BYLINES.has(a.name))
+      .sort((a, b) => b.article_count - a.article_count);
+  } else {
+    pool = dashboard.top_authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
+  }
   const top = pool.slice(0, count);
 
   destroyChart('chartTopAuthors');
@@ -486,19 +503,25 @@ function initSections() {
   document.getElementById('chartSections').parentElement.style.height = (sectionData.length * 28 + 40) + 'px';
   document.getElementById('chartSections').style.maxHeight = 'none';
 
-  // Populate section selector for trends
-  const select = document.getElementById('sectionSelect');
-  Object.keys(dashboard.section_trends).forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = s;
-    select.appendChild(opt);
-  });
-  ['U.S.', 'World', 'Opinion', 'Arts', 'Science'].forEach(s => {
-    const opt = select.querySelector(`option[value="${s}"]`);
-    if (opt) opt.selected = true;
+  // Populate section selectors for both trend charts
+  const trendSections = Object.keys(dashboard.section_trends);
+  const defaultSections = ['U.S.', 'World', 'Opinion', 'Arts', 'Science'];
+
+  [document.getElementById('sectionCountSelect'), document.getElementById('sectionSelect')].forEach(select => {
+    trendSections.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s; opt.textContent = s;
+      select.appendChild(opt);
+    });
+    defaultSections.forEach(s => {
+      const opt = select.querySelector(`option[value="${s}"]`);
+      if (opt) opt.selected = true;
+    });
   });
 
-  select.addEventListener('change', renderSectionTrend);
+  document.getElementById('sectionCountSelect').addEventListener('change', renderSectionCountTrend);
+  document.getElementById('sectionSelect').addEventListener('change', renderSectionTrend);
+  renderSectionCountTrend();
   renderSectionTrend();
 }
 
@@ -506,6 +529,34 @@ const trendColors = [
   '#567','#aa7850','#5a8a5c','#8b5a7c','#c4784a','#4a7c8b',
   '#7c5a8b','#8b7c4a','#5a8b7c','#8b4a5a','#4a5a8b','#7c8b4a',
 ];
+
+function renderSectionCountTrend() {
+  const selected = Array.from(document.getElementById('sectionCountSelect').selectedOptions).map(o => o.value);
+  const years = dashboard.all_years;
+
+  destroyChart('chartSectionCount');
+  chartInstances['chartSectionCount'] = new Chart(document.getElementById('chartSectionCount'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: selected.map((s, i) => ({
+        label: s,
+        data: dashboard.section_trends[s]?.map(d => d.count) || [],
+        borderColor: trendColors[i % trendColors.length],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { beginAtZero: false, title: { display: true, text: 'Articles per year' } }
+      },
+      plugins: { legend: { position: 'bottom' } }
+    }
+  });
+}
 
 function renderSectionTrend() {
   const selected = Array.from(document.getElementById('sectionSelect').selectedOptions).map(o => o.value);
@@ -623,6 +674,10 @@ function renderAuthors() {
 }
 
 function showAuthorTimeline(name) {
+  // Close any existing timeline first (destroy chart to prevent canvas reuse errors)
+  destroyChart('chartAuthorTimeline');
+  document.getElementById('authorTimeline').innerHTML = '';
+
   // Find all articles by this author
   const authorArticles = articles.filter(a => a.authors.includes(name))
     .sort((a, b) => a.pub_date.localeCompare(b.pub_date));
