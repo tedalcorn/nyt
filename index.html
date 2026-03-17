@@ -181,7 +181,7 @@
 <nav id="nav">
   <button data-view="about">About</button>
   <button data-view="overview" class="active">Overview</button>
-  <button data-view="authors">Authors</button>
+  <button data-view="authors">Reporters</button>
   <button data-view="beats">Beats</button>
   <button data-view="sections">Sections</button>
   <button data-view="headlines">Headline Search</button>
@@ -271,6 +271,7 @@
       <input type="text" id="beatSearch" placeholder="Start typing a subject (e.g. climate, immigration, housing)..." style="width:100%;padding:10px 14px;font-size:15px;border:1px solid #ccc;border-radius:4px;font-family:inherit;margin-bottom:4px">
       <div id="beatSuggestions" style="max-height:240px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;display:none"></div>
       <div id="beatResults" style="margin-top:16px"></div>
+      <div id="beatReporterDetail"></div>
     </div>
   </div>
 
@@ -1000,28 +1001,51 @@ function selectBeat(subject) {
   html += `<div style="margin-bottom:6px;font-size:12px;color:#888;font-weight:600">Top reporters</div>`;
   const top = reporters.slice(0, 30);
   html += top.map((r, i) =>
-    `<div class="beat-reporter"><span class="rank">${i + 1}.</span><span class="name">${r.name}</span><span class="section">${r.section}</span><span class="articles">${r.count} articles</span></div>`
+    `<div class="beat-reporter"><span class="rank">${i + 1}.</span><span class="name"><a href="#" class="beat-author-link" data-author="${escapeHtml(r.name)}" style="color:#326891;text-decoration:none">${escapeHtml(r.name)}</a></span><span class="section">${r.section}</span><span class="articles">${r.count} articles</span></div>`
   ).join('');
 
   resultsBox.innerHTML = html;
+
+  // Make reporter names clickable — show detail with articles filtered to this subject
+  resultsBox.querySelectorAll('.beat-author-link').forEach(el => {
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      showAuthorTimeline(el.dataset.author, {
+        containerId: 'beatReporterDetail',
+        chartId: 'chartBeatReporterTimeline',
+        listId: 'beatReporterArticleList',
+        subject: subject
+      });
+    });
+  });
 
   // Make related tags clickable
   resultsBox.querySelectorAll('.related-tag').forEach(el => {
     el.addEventListener('click', () => {
       document.getElementById('beatSearch').value = el.dataset.subject;
+      document.getElementById('beatReporterDetail').innerHTML = '';
       selectBeat(el.dataset.subject);
     });
   });
 }
 
-function showAuthorTimeline(name) {
+function showAuthorTimeline(name, opts = {}) {
+  const containerId = opts.containerId || 'authorTimeline';
+  const chartId = opts.chartId || 'chartAuthorTimeline';
+  const listId = opts.listId || 'authorArticleList';
+  const subjectFilter = opts.subject || null;
+
   // Close any existing timeline first (destroy chart to prevent canvas reuse errors)
-  destroyChart('chartAuthorTimeline');
-  document.getElementById('authorTimeline').innerHTML = '';
+  destroyChart(chartId);
+  document.getElementById(containerId).innerHTML = '';
 
   // Find all articles by this author
-  const authorArticles = articles.filter(a => a.authors.includes(name))
+  const allAuthorArticles = articles.filter(a => a.authors.includes(name))
     .sort((a, b) => a.pub_date.localeCompare(b.pub_date));
+  // Optionally filter to a specific subject
+  const authorArticles = subjectFilter
+    ? allAuthorArticles.filter(a => a.subjects.includes(subjectFilter))
+    : allAuthorArticles;
 
   if (!authorArticles.length) return;
 
@@ -1045,27 +1069,32 @@ function showAuthorTimeline(name) {
     m++; if (m > 12) { m = 1; y++; }
   }
 
-  // Extract beat topics from headlines using keyword frequency
-  const beats = extractBeats(authorArticles);
+  // Extract beat topics
+  const beats = extractBeats(allAuthorArticles);
   const beatsHtml = beats.length ? `<div style="font-size:13px;color:#555;margin-top:6px"><strong>Beats:</strong> ${beats.join(', ')}</div>` : '';
 
-  const container = document.getElementById('authorTimeline');
+  const subjectNote = subjectFilter
+    ? `<div style="font-size:12px;color:#326891;margin-top:4px">Showing ${authorArticles.length} of ${allAuthorArticles.length} articles tagged "${subjectFilter}"</div>`
+    : '';
+
+  const container = document.getElementById(containerId);
   container.innerHTML = `
     <div class="author-timeline">
-      <button class="close-btn" onclick="document.getElementById('authorTimeline').innerHTML=''">Close</button>
+      <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML=''">Close</button>
       <h3>${escapeHtml(name)}</h3>
       <div class="timeline-meta">
         ${authorInfo ? `${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg · Primary: ${authorInfo.primary_section} · ${authorInfo.year_range}` : ''}
       </div>
       ${beatsHtml}
-      <canvas id="chartAuthorTimeline" style="max-height:200px"></canvas>
-      <div id="authorArticleList" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px"></div>
+      ${subjectNote}
+      <canvas id="${chartId}" style="max-height:200px"></canvas>
+      <div id="${listId}" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px"></div>
     </div>
   `;
 
   // Render timeline chart
-  destroyChart('chartAuthorTimeline');
-  chartInstances['chartAuthorTimeline'] = new Chart(document.getElementById('chartAuthorTimeline'), {
+  destroyChart(chartId);
+  chartInstances[chartId] = new Chart(document.getElementById(chartId), {
     type: 'bar',
     data: {
       labels: allMonths,
@@ -1079,7 +1108,7 @@ function showAuthorTimeline(name) {
       responsive: true,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return l.endsWith('-01') ? l.slice(0,4) : ''; }, maxRotation: 0, font: { size: 10 } } },
+        x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
         y: { beginAtZero: true, ticks: { stepSize: 1 } }
       }
     }
@@ -1096,16 +1125,18 @@ function showAuthorTimeline(name) {
       <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
     </div>`;
   }).join('');
-  document.getElementById('authorArticleList').innerHTML =
+  document.getElementById(listId).innerHTML =
     `<div style="font-size:12px;color:#888;margin-bottom:6px">${authorArticles.length} articles (newest first)</div>` + listHtml;
 
   // Scroll to timeline
   container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // Highlight the row
-  document.querySelectorAll('.author-table tr.selected').forEach(r => r.classList.remove('selected'));
-  const row = document.querySelector(`.author-table tr[data-author="${CSS.escape(name)}"]`);
-  if (row) row.classList.add('selected');
+  // Highlight the row (only on authors tab)
+  if (!opts.containerId) {
+    document.querySelectorAll('.author-table tr.selected').forEach(r => r.classList.remove('selected'));
+    const row = document.querySelector(`.author-table tr[data-author="${CSS.escape(name)}"]`);
+    if (row) row.classList.add('selected');
+  }
 }
 
 // --- HEADLINE SEARCH ---
