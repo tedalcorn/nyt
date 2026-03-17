@@ -903,8 +903,9 @@ function ensureSubjectIndex() {
     }
   }
 
-  // For each author, count subjects
+  // For each author, count subjects (skip institutional bylines)
   for (const [name, arts] of Object.entries(byAuthor)) {
+    if (INSTITUTIONAL_BYLINES.has(name)) continue;
     const info = authors.find(a => a.name === name);
     const section = info ? info.primary_section : '';
     const freq = {};
@@ -952,7 +953,7 @@ function initBeats() {
     }
 
     sugBox.innerHTML = matches.map(m =>
-      `<div class="beat-suggestion" data-subject="${m.subject}">${m.subject}<span class="beat-count">${m.docCount.toLocaleString()} articles · ${m.reporters} reporters</span></div>`
+      `<div class="beat-suggestion" data-subject="${m.subject}">${toTitleCase(m.subject)}<span class="beat-count">${m.docCount.toLocaleString()} articles · ${m.reporters} reporters</span></div>`
     ).join('');
     sugBox.style.display = 'block';
 
@@ -960,7 +961,7 @@ function initBeats() {
       el.addEventListener('click', () => {
         selectBeat(el.dataset.subject);
         sugBox.style.display = 'none';
-        input.value = el.dataset.subject;
+        input.value = toTitleCase(el.dataset.subject);
       });
     });
   });
@@ -989,12 +990,12 @@ function selectBeat(subject) {
   }
   const related = Object.entries(cooccur).sort((a, b) => b[1] - a[1]).slice(0, 15);
 
-  let html = `<h4 style="margin-bottom:8px">${subject}</h4>`;
+  let html = `<h4 style="margin-bottom:8px">${toTitleCase(subject)}</h4>`;
   html += `<p style="font-size:12px;color:#888;margin-bottom:12px">${(corpusSubjectFreq[subject] || 0).toLocaleString()} articles tagged with this subject</p>`;
 
   if (related.length) {
     html += `<div style="margin-bottom:14px"><span style="font-size:12px;color:#888">Related subjects: </span>`;
-    html += related.map(([s, c]) => `<span class="related-tag" data-subject="${s}">${s}</span>`).join('');
+    html += related.map(([s, c]) => `<span class="related-tag" data-subject="${s}">${toTitleCase(s)}</span>`).join('');
     html += `</div>`;
   }
 
@@ -1071,10 +1072,10 @@ function showAuthorTimeline(name, opts = {}) {
 
   // Extract beat topics
   const beats = extractBeats(allAuthorArticles);
-  const beatsHtml = beats.length ? `<div style="font-size:13px;color:#555;margin-top:6px"><strong>Beats:</strong> ${beats.join(', ')}</div>` : '';
+  const beatsHtml = beats.length ? `<div style="font-size:13px;color:#555;margin-top:6px"><strong>Beats:</strong> ${beats.map(toTitleCase).join(', ')}</div>` : '';
 
   const subjectNote = subjectFilter
-    ? `<div style="font-size:12px;color:#326891;margin-top:4px">Showing ${authorArticles.length} of ${allAuthorArticles.length} articles tagged "${subjectFilter}"</div>`
+    ? `<div style="font-size:12px;color:#326891;margin-top:4px">Showing ${authorArticles.length} of ${allAuthorArticles.length} articles tagged "${toTitleCase(subjectFilter)}"</div>`
     : '';
 
   const container = document.getElementById(containerId);
@@ -1192,6 +1193,14 @@ function highlightMatch(text, query) {
 
 function escapeHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+const TITLE_CASE_SMALL = new Set(['a','an','and','as','at','but','by','for','in','nor','of','on','or','so','the','to','up','yet']);
+function toTitleCase(s) {
+  return s.replace(/\w\S*/g, (w, i) => {
+    if (i > 0 && TITLE_CASE_SMALL.has(w.toLowerCase())) return w.toLowerCase();
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  });
 }
 
 // --- HEADLINE TRACKER ---
