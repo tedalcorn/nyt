@@ -138,6 +138,17 @@
 
   .loading { text-align: center; padding: 60px; color: #888; font-size: 16px; }
 
+  .beat-suggestion { padding: 8px 12px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee; }
+  .beat-suggestion:hover { background: #f0ebe3; }
+  .beat-suggestion .beat-count { color: #888; font-size: 12px; float: right; }
+  .beat-reporter { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+  .beat-reporter .rank { color: #888; width: 28px; flex-shrink: 0; }
+  .beat-reporter .name { flex: 1; font-weight: 600; color: #326891; }
+  .beat-reporter .section { color: #666; font-size: 12px; margin-right: 12px; }
+  .beat-reporter .articles { color: #333; white-space: nowrap; }
+  .related-tag { display: inline-block; background: #e8e0d4; color: #555; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 3px 4px 3px 0; cursor: pointer; }
+  .related-tag:hover { background: #d4c9b8; }
+
   @media (max-width: 600px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .container { padding: 12px; }
@@ -171,6 +182,7 @@
   <button data-view="about">About</button>
   <button data-view="overview" class="active">Overview</button>
   <button data-view="authors">Authors</button>
+  <button data-view="beats">Beats</button>
   <button data-view="sections">Sections</button>
   <button data-view="headlines">Headline Search</button>
   <button data-view="tracker">Headline Frequency</button>
@@ -249,6 +261,17 @@
     </div>
     <div id="authorTimeline"></div>
     <div id="authorTableContainer"></div>
+  </div>
+
+  <!-- BEATS -->
+  <div class="view" id="view-beats">
+    <div class="chart-box" style="max-width:900px;margin:0 auto">
+      <h3>Find Reporters by Beat</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:12px">Search NYT subject tags to find which journalists cover a topic. Tags are drawn from the NYT's own metadata.</p>
+      <input type="text" id="beatSearch" placeholder="Start typing a subject (e.g. climate, immigration, housing)..." style="width:100%;padding:10px 14px;font-size:15px;border:1px solid #ccc;border-radius:4px;font-family:inherit;margin-bottom:4px">
+      <div id="beatSuggestions" style="max-height:240px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;display:none"></div>
+      <div id="beatResults" style="margin-top:16px"></div>
+    </div>
   </div>
 
   <!-- SECTIONS -->
@@ -407,6 +430,7 @@ async function loadData() {
     initSections();
     initHeadlineSearch();
     initAuthorFilters();
+    initBeats();
     showView('overview');
   } catch (e) {
     document.getElementById('loading').textContent = 'Error loading data. Run build_data.py first, then serve with: python3 -m http.server 8080';
@@ -857,6 +881,137 @@ function extractBeats(authorArticles) {
 
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, 7).map(s => s.subject);
+}
+
+// --- BEATS TAB ---
+// Build reverse index: subject → [{author, count, section}], sorted by count
+let subjectIndex = null;
+let subjectList = null; // sorted by total article count
+
+function ensureSubjectIndex() {
+  if (subjectIndex) return;
+  ensureCorpusSubjectFreq();
+  subjectIndex = {};
+
+  // Group articles by author
+  const byAuthor = {};
+  for (const a of articles) {
+    for (const name of a.authors) {
+      if (!byAuthor[name]) byAuthor[name] = [];
+      byAuthor[name].push(a);
+    }
+  }
+
+  // For each author, count subjects
+  for (const [name, arts] of Object.entries(byAuthor)) {
+    const info = authors.find(a => a.name === name);
+    const section = info ? info.primary_section : '';
+    const freq = {};
+    for (const a of arts) {
+      const seen = new Set();
+      for (const s of a.subjects) {
+        if (GENERIC_SUBJECTS.has(s) || s.startsWith('internal-') || s.startsWith('audio-') || s.startsWith('vis-') || s.startsWith('your-feed')) continue;
+        if (!seen.has(s)) { freq[s] = (freq[s] || 0) + 1; seen.add(s); }
+      }
+    }
+    for (const [subj, count] of Object.entries(freq)) {
+      if (count < 3) continue; // need at least 3 articles on the subject
+      if (!subjectIndex[subj]) subjectIndex[subj] = [];
+      subjectIndex[subj].push({ name, count, total: arts.length, section });
+    }
+  }
+
+  // Sort each subject's reporters by count desc
+  for (const subj of Object.keys(subjectIndex)) {
+    subjectIndex[subj].sort((a, b) => b.count - a.count);
+  }
+
+  // Build sorted subject list (by how many articles mention them)
+  subjectList = Object.keys(subjectIndex)
+    .map(s => ({ subject: s, docCount: corpusSubjectFreq[s] || 0, reporters: subjectIndex[s].length }))
+    .sort((a, b) => b.docCount - a.docCount);
+}
+
+function initBeats() {
+  ensureSubjectIndex();
+  const input = document.getElementById('beatSearch');
+  const sugBox = document.getElementById('beatSuggestions');
+  const resultsBox = document.getElementById('beatResults');
+
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    resultsBox.innerHTML = '';
+    if (q.length < 2) { sugBox.style.display = 'none'; return; }
+
+    const matches = subjectList.filter(s => s.subject.toLowerCase().includes(q)).slice(0, 40);
+    if (!matches.length) {
+      sugBox.innerHTML = '<div style="padding:10px;color:#888;font-size:13px">No matching subjects found</div>';
+      sugBox.style.display = 'block';
+      return;
+    }
+
+    sugBox.innerHTML = matches.map(m =>
+      `<div class="beat-suggestion" data-subject="${m.subject}">${m.subject}<span class="beat-count">${m.docCount.toLocaleString()} articles · ${m.reporters} reporters</span></div>`
+    ).join('');
+    sugBox.style.display = 'block';
+
+    sugBox.querySelectorAll('.beat-suggestion').forEach(el => {
+      el.addEventListener('click', () => {
+        selectBeat(el.dataset.subject);
+        sugBox.style.display = 'none';
+        input.value = el.dataset.subject;
+      });
+    });
+  });
+
+  // Close suggestions on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#beatSearch') && !e.target.closest('#beatSuggestions')) {
+      sugBox.style.display = 'none';
+    }
+  });
+}
+
+function selectBeat(subject) {
+  const resultsBox = document.getElementById('beatResults');
+  const reporters = subjectIndex[subject] || [];
+
+  // Find related subjects (co-occur in the same articles)
+  const cooccur = {};
+  for (const a of articles) {
+    if (!a.subjects.includes(subject)) continue;
+    for (const s of a.subjects) {
+      if (s !== subject && !GENERIC_SUBJECTS.has(s) && !s.startsWith('internal-') && !s.startsWith('audio-') && !s.startsWith('vis-') && !s.startsWith('your-feed')) {
+        cooccur[s] = (cooccur[s] || 0) + 1;
+      }
+    }
+  }
+  const related = Object.entries(cooccur).sort((a, b) => b[1] - a[1]).slice(0, 15);
+
+  let html = `<h4 style="margin-bottom:8px">${subject}</h4>`;
+  html += `<p style="font-size:12px;color:#888;margin-bottom:12px">${(corpusSubjectFreq[subject] || 0).toLocaleString()} articles tagged with this subject</p>`;
+
+  if (related.length) {
+    html += `<div style="margin-bottom:14px"><span style="font-size:12px;color:#888">Related subjects: </span>`;
+    html += related.map(([s, c]) => `<span class="related-tag" data-subject="${s}">${s}</span>`).join('');
+    html += `</div>`;
+  }
+
+  html += `<div style="margin-bottom:6px;font-size:12px;color:#888;font-weight:600">Top reporters</div>`;
+  const top = reporters.slice(0, 30);
+  html += top.map((r, i) =>
+    `<div class="beat-reporter"><span class="rank">${i + 1}.</span><span class="name">${r.name}</span><span class="section">${r.section}</span><span class="articles">${r.count} articles</span></div>`
+  ).join('');
+
+  resultsBox.innerHTML = html;
+
+  // Make related tags clickable
+  resultsBox.querySelectorAll('.related-tag').forEach(el => {
+    el.addEventListener('click', () => {
+      document.getElementById('beatSearch').value = el.dataset.subject;
+      selectBeat(el.dataset.subject);
+    });
+  });
 }
 
 function showAuthorTimeline(name) {
