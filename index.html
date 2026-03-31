@@ -767,6 +767,12 @@ function renderAuthors() {
   if (query) filtered = filtered.filter(a => a.name.toLowerCase().includes(query));
   if (sectionFilter) filtered = filtered.filter(a => a.primary_section === sectionFilter);
 
+  // Compute avg words per year before sorting so the column is sortable
+  filtered.forEach(a => {
+    const span = a.last_year && a.first_year ? (a.last_year - a.first_year + 1) : 1;
+    a._avg_words_per_year = Math.round(a.total_words / span);
+  });
+
   filtered.sort((a, b) => {
     let va = a[authorSort.col], vb = b[authorSort.col];
     if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb || '').toLowerCase(); }
@@ -777,11 +783,12 @@ function renderAuthors() {
 
   const cols = [
     { key: 'name', label: 'Author' },
+    { key: 'year_range', label: 'Period Active' },
+    { key: 'primary_section', label: 'Primary Section' },
     { key: 'article_count', label: 'Articles', cls: 'num' },
     { key: 'total_words', label: 'Total Words', cls: 'num' },
-    { key: 'avg_words', label: 'Avg Words', cls: 'num' },
-    { key: 'primary_section', label: 'Primary Section' },
-    { key: 'year_range', label: 'Period Active' },
+    { key: 'avg_words', label: 'Avg Words/Article', cls: 'num' },
+    { key: '_avg_words_per_year', label: 'Avg Words/Year', cls: 'num' },
   ];
 
   const indicator = (col) => authorSort.col === col ? (authorSort.asc ? ' ▲' : ' ▼') : '';
