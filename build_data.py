@@ -100,6 +100,93 @@ def extract_authors(byline):
     return authors
 
 
+US_STATES = {
+    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
+    "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
+    "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
+    "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
+    "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
+    "New Hampshire", "New Jersey", "New Mexico", "New York State",
+    "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
+    "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+    "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington State",
+    "West Virginia", "Wisconsin", "Wyoming",
+    "District of Columbia",
+}
+STATE_ALIASES = {
+    "New York State": "New York",
+    "Washington State": "Washington",
+    "District of Columbia": "D.C.",
+}
+ABBREV_TO_STATE = {
+    "Ala": "Alabama", "ALA": "Alabama",
+    "Alaska": "Alaska", "ALASKA": "Alaska",
+    "Ariz": "Arizona", "ARIZ": "Arizona", "AZ": "Arizona",
+    "Ark": "Arkansas", "ARK": "Arkansas",
+    "Calif": "California", "CALIF": "California", "California": "California",
+    "Colo": "Colorado", "COLO": "Colorado", "Colorado": "Colorado",
+    "Conn": "Connecticut",
+    "Del": "Delaware",
+    "DC": "D.C.", "Washington, DC": "D.C.",
+    "Fla": "Florida", "FLA": "Florida", "Florida": "Florida",
+    "Ga": "Georgia", "GA": "Georgia",
+    "Hawaii": "Hawaii", "HAWAII": "Hawaii",
+    "Idaho": "Idaho", "IDAHO": "Idaho",
+    "Ill": "Illinois", "ILL": "Illinois",
+    "Ind": "Indiana", "IND": "Indiana",
+    "Iowa": "Iowa", "IOWA": "Iowa",
+    "Kan": "Kansas", "KAN": "Kansas",
+    "Ky": "Kentucky", "KY": "Kentucky",
+    "La": "Louisiana", "LA": "Louisiana",
+    "Me": "Maine",
+    "Md": "Maryland", "MD": "Maryland", "Baltimore, Md": "Maryland",
+    "Mass": "Massachusetts", "MASS": "Massachusetts",
+    "Mich": "Michigan", "MICH": "Michigan",
+    "Minn": "Minnesota", "MINN": "Minnesota", "Minnesota": "Minnesota",
+    "Miss": "Mississippi", "MISS": "Mississippi",
+    "Mo": "Missouri", "MO": "Missouri", "Missouri": "Missouri",
+    "Mont": "Montana",
+    "Neb": "Nebraska",
+    "Nev": "Nevada", "NEV": "Nevada", "Nevada": "Nevada",
+    "NH": "New Hampshire",
+    "NJ": "New Jersey",
+    "NM": "New Mexico", "New Mexico": "New Mexico",
+    "NY": "New York", "NYC": "New York", "NYS Area": "New York",
+    "Manhattan, NY": "New York", "Brooklyn, NY": "New York",
+    "Queens, NY": "New York", "Bronx, NY": "New York",
+    "Brooklyn-Queens, NY": "New York", "Newburgh, NY": "New York",
+    "Niagara Falls, NY": "New York",
+    "NC": "North Carolina", "North Carolina": "North Carolina",
+    "ND": "North Dakota",
+    "Ohio": "Ohio", "OHIO": "Ohio",
+    "Okla": "Oklahoma", "OKLA": "Oklahoma",
+    "Ore": "Oregon", "ORE": "Oregon", "Oregon": "Oregon",
+    "Pa": "Pennsylvania", "PA": "Pennsylvania", "Penn": "Pennsylvania",
+    "RI": "Rhode Island",
+    "SC": "South Carolina",
+    "SD": "South Dakota",
+    "Tenn": "Tennessee", "TENN": "Tennessee",
+    "Tex": "Texas", "TEX": "Texas",
+    "Utah": "Utah",
+    "Vt": "Vermont", "VT": "Vermont",
+    "Va": "Virginia", "VA": "Virginia",
+    "Wash": "Washington", "WASH": "Washington", "Wash.": "Washington",
+    "W Va": "West Virginia", "W VA": "West Virginia", "WVa": "West Virginia",
+    "Wis": "Wisconsin", "WIS": "Wisconsin",
+    "Wyo": "Wyoming", "Wyoming": "Wyoming",
+}
+
+
+def glocation_to_state(loc):
+    """Return canonical state name for a glocation string, or None."""
+    if loc in US_STATES:
+        return STATE_ALIASES.get(loc, loc)
+    m = re.search(r'\(([^)]+)\)', loc)
+    if m:
+        return ABBREV_TO_STATE.get(m.group(1))
+    return None
+
+
 def process_articles(raw_articles):
     """Process raw API articles into clean records."""
     articles = []
@@ -138,6 +225,8 @@ def process_articles(raw_articles):
         SECTION_MERGES = {
             "Fashion & Style": "Style",
             "Fashion": "Style",
+            "Business Day": "Business",
+            "Gameplay": "Crosswords & Games",
         }
         section = SECTION_MERGES.get(section, section)
         news_desk = doc.get("news_desk", "") or ""
@@ -161,6 +250,16 @@ def process_articles(raw_articles):
             elif kw_name in ("subject", "Subject"):
                 subjects.append(kw["value"])
 
+        # Canonical state names (for U.S. section articles — used by state detail panel)
+        canonical_states = []
+        if section == "U.S.":
+            seen_states = set()
+            for loc in glocations:
+                st = glocation_to_state(loc)
+                if st and st not in seen_states:
+                    canonical_states.append(st)
+                    seen_states.add(st)
+
         articles.append({
             "pub_date": pub_date.strftime("%Y-%m-%dT%H:%M:%S"),
             "year": pub_date.year,
@@ -180,6 +279,7 @@ def process_articles(raw_articles):
             "n_authors": len(authors),
             "glocations": glocations,
             "subjects": subjects,
+            "canonical_states": canonical_states,
         })
 
     print(f"  {len(articles):,} processed, {skipped} skipped")
@@ -381,8 +481,10 @@ def build_author_stats(articles):
             fd = date_cls.fromisoformat(first_date)
             ld = date_cls.fromisoformat(last_date)
             span_days = max((ld - fd).days, 1)
-            span_years = span_days / 365.25
-            avg_words_per_year = round(d["total_words"] / max(span_years, 1/12))
+            # Don't compute for very short tenures — inflated by small denominator
+            if span_days >= 90:
+                span_years = span_days / 365.25
+                avg_words_per_year = round(d["total_words"] / span_years)
 
         # all_sections: union of each year's primary section — lets an author
         # appear under multiple sections if their beat shifted over time.
@@ -522,109 +624,17 @@ def build_dashboard_data(articles, authors):
         "years": all_years,
     }
 
-    # --- US State coverage: glocations from U.S. section ---
-    # Map full state names and NYT-specific names to canonical display names
-    US_STATES = {
-        "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
-        "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
-        "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana",
-        "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota",
-        "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada",
-        "New Hampshire", "New Jersey", "New Mexico", "New York State",
-        "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
-        "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
-        "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington State",
-        "West Virginia", "Wisconsin", "Wyoming",
-        "District of Columbia",
-    }
-    STATE_ALIASES = {
-        "New York State": "New York",
-        "Washington State": "Washington",
-        "District of Columbia": "D.C.",
-    }
-
-    # Map city-level abbreviations to canonical state names
-    # Covers abbreviations found in "City (Abbrev)" glocations
-    ABBREV_TO_STATE = {
-        "Ala": "Alabama", "ALA": "Alabama",
-        "Alaska": "Alaska", "ALASKA": "Alaska",
-        "Ariz": "Arizona", "ARIZ": "Arizona", "AZ": "Arizona",
-        "Ark": "Arkansas", "ARK": "Arkansas",
-        "Calif": "California", "CALIF": "California", "California": "California",
-        "Colo": "Colorado", "COLO": "Colorado", "Colorado": "Colorado",
-        "Conn": "Connecticut",
-        "Del": "Delaware",
-        "DC": "D.C.", "Washington, DC": "D.C.",
-        "Fla": "Florida", "FLA": "Florida", "Florida": "Florida",
-        "Ga": "Georgia", "GA": "Georgia",
-        "Hawaii": "Hawaii", "HAWAII": "Hawaii",
-        "Idaho": "Idaho", "IDAHO": "Idaho",
-        "Ill": "Illinois", "ILL": "Illinois",
-        "Ind": "Indiana", "IND": "Indiana",
-        "Iowa": "Iowa", "IOWA": "Iowa",
-        "Kan": "Kansas", "KAN": "Kansas",
-        "Ky": "Kentucky", "KY": "Kentucky",
-        "La": "Louisiana", "LA": "Louisiana",
-        "Me": "Maine",
-        "Md": "Maryland", "MD": "Maryland", "Baltimore, Md": "Maryland",
-        "Mass": "Massachusetts", "MASS": "Massachusetts",
-        "Mich": "Michigan", "MICH": "Michigan",
-        "Minn": "Minnesota", "MINN": "Minnesota", "Minnesota": "Minnesota",
-        "Miss": "Mississippi", "MISS": "Mississippi",
-        "Mo": "Missouri", "MO": "Missouri", "Missouri": "Missouri",
-        "Mont": "Montana",
-        "Neb": "Nebraska",
-        "Nev": "Nevada", "NEV": "Nevada", "Nevada": "Nevada",
-        "NH": "New Hampshire",
-        "NJ": "New Jersey",
-        "NM": "New Mexico", "New Mexico": "New Mexico",
-        "NY": "New York", "NYC": "New York", "NYS Area": "New York",
-        "Manhattan, NY": "New York", "Brooklyn, NY": "New York",
-        "Queens, NY": "New York", "Bronx, NY": "New York",
-        "Brooklyn-Queens, NY": "New York", "Newburgh, NY": "New York",
-        "Niagara Falls, NY": "New York",
-        "NC": "North Carolina", "North Carolina": "North Carolina",
-        "ND": "North Dakota",
-        "Ohio": "Ohio", "OHIO": "Ohio",
-        "Okla": "Oklahoma", "OKLA": "Oklahoma",
-        "Ore": "Oregon", "ORE": "Oregon", "Oregon": "Oregon",
-        "Pa": "Pennsylvania", "PA": "Pennsylvania", "Penn": "Pennsylvania",
-        "RI": "Rhode Island",
-        "SC": "South Carolina",
-        "SD": "South Dakota",
-        "Tenn": "Tennessee", "TENN": "Tennessee",
-        "Tex": "Texas", "TEX": "Texas",
-        "Utah": "Utah",
-        "Vt": "Vermont", "VT": "Vermont",
-        "Va": "Virginia", "VA": "Virginia",
-        "Wash": "Washington", "WASH": "Washington", "Wash.": "Washington",
-        "W Va": "West Virginia", "W VA": "West Virginia", "WVa": "West Virginia",
-        "Wis": "Wisconsin", "WIS": "Wisconsin",
-        "Wyo": "Wyoming", "Wyoming": "Wyoming",
-    }
-
-    us_articles = [a for a in articles if a["section"] == "U.S."]
+    # --- US State coverage: use canonical_states pre-computed per article ---
     state_year = defaultdict(lambda: defaultdict(int))
     state_total = Counter()
 
-    for art in us_articles:
+    for art in articles:
+        if art["section"] != "U.S.":
+            continue
         y = str(art["year"])
-        states_counted = set()  # avoid double-counting if article has both "Illinois" and "Chicago (Ill)"
-        for loc in art.get("glocations", []):
-            state = None
-            # Direct state match
-            if loc in US_STATES:
-                state = STATE_ALIASES.get(loc, loc)
-            else:
-                # Try to extract abbreviation from "City (Abbrev)" pattern
-                m = re.search(r'\(([^)]+)\)', loc)
-                if m:
-                    abbrev = m.group(1)
-                    state = ABBREV_TO_STATE.get(abbrev)
-            if state and state not in states_counted:
-                state_year[state][y] += 1
-                state_total[state] += 1
-                states_counted.add(state)
+        for state in art.get("canonical_states", []):
+            state_year[state][y] += 1
+            state_total[state] += 1
 
     top_states = [s for s, _ in state_total.most_common()]
     us_state_coverage = {
@@ -692,6 +702,8 @@ def main():
         }
         if a.get("glocations"):
             rec["g"] = a["glocations"]  # glocations
+        if a.get("canonical_states"):
+            rec["st"] = a["canonical_states"]  # canonical US state names
         if a.get("subsection"):
             rec["ss"] = a["subsection"]  # subsection
         if a.get("subjects"):
