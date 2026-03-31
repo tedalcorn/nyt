@@ -385,6 +385,12 @@ Chart.defaults.plugins.datalabels = { display: false };
 let dashboard = null;
 let articles = null;
 let authors = null;
+
+// ── Multi-section display toggle ─────────────────────────────────────────────
+// Set SHOW_MULTI_SECTIONS = false to revert to single primary section in table.
+const SHOW_MULTI_SECTIONS = true;
+const MAX_SECTIONS_DISPLAY = 3; // cap display; authors with more get "… +N"
+// ─────────────────────────────────────────────────────────────────────────────
 let chartInstances = {};
 
 function destroyChart(id) {
@@ -801,7 +807,7 @@ function renderAuthors() {
   const cols = [
     { key: 'name', label: 'Author' },
     { key: 'year_range', label: 'Period Active' },
-    { key: 'primary_section', label: 'Primary Section' },
+    { key: 'primary_section', label: SHOW_MULTI_SECTIONS ? 'Primary Section(s)' : 'Primary Section' },
     { key: 'article_count', label: 'Articles', cls: 'num' },
     { key: 'total_words', label: 'Total Words', cls: 'num' },
     { key: 'avg_words', label: 'Avg Words/Article', cls: 'num' },
@@ -823,6 +829,11 @@ function renderAuthors() {
       if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
       if (c.key === 'name') {
         html += `<td class="author-name">${escapeHtml(v || '')}</td>`;
+      } else if (c.key === 'primary_section' && SHOW_MULTI_SECTIONS) {
+        const secs = a.all_sections && a.all_sections.length ? a.all_sections : (a.primary_section ? [a.primary_section] : []);
+        const shown = secs.slice(0, MAX_SECTIONS_DISPLAY).join(', ');
+        const overflow = secs.length > MAX_SECTIONS_DISPLAY ? ` <span style="color:#aaa">+${secs.length - MAX_SECTIONS_DISPLAY}</span>` : '';
+        html += `<td>${escapeHtml(shown)}${overflow}</td>`;
       } else {
         html += `<td class="${c.cls || ''}">${v || ''}</td>`;
       }
