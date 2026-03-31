@@ -198,7 +198,7 @@
     <div class="chart-box" style="max-width:760px;margin:0 auto;font-size:14px;line-height:1.7">
       <h3 style="margin-bottom:12px">About</h3>
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings they intend to share.</p>
-      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2014 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data refreshes automatically on the 2nd of each month.</p>
+      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2014 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated manually each month.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Primary section</h4>
       <p>Each author is assigned a "primary section" based on the section in which they have the most published articles. This is a rough proxy for their beat and may not reflect their actual desk assignment, especially for authors who write across sections.</p>
@@ -305,8 +305,7 @@
     <div class="search-box">
       <input type="text" id="headlineSearch" placeholder="Search headlines...">
       <select id="headlineSection"><option value="">All sections</option></select>
-      <label><input type="checkbox" id="frontPageOnly"> Front page only</label>
-      <label><input type="checkbox" id="headlineWholeWord"> Whole word only</label>
+      <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="frontPageOnly"> Front page only</label>
     </div>
     <div class="results-count" id="headlineCount"></div>
     <div id="headlineResults"></div>
@@ -375,7 +374,6 @@
         <input type="text" id="term3" placeholder="Term 3 (optional)">
         <button id="trackBtn">Track</button>
         <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="trackerFrontPage"> Front page only</label>
-        <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="trackerWholeWord"> Whole word only</label>
       </div>
       <canvas id="chartTracker"></canvas>
     </div>
@@ -1268,7 +1266,6 @@ function initHeadlineSearch() {
   document.getElementById('headlineSearch').addEventListener('input', debounce(searchHeadlines, 300));
   document.getElementById('headlineSection').addEventListener('change', searchHeadlines);
   document.getElementById('frontPageOnly').addEventListener('change', searchHeadlines);
-  document.getElementById('headlineWholeWord').addEventListener('change', searchHeadlines);
 }
 
 function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -1277,7 +1274,6 @@ function searchHeadlines() {
   const query = document.getElementById('headlineSearch').value.toLowerCase().trim();
   const section = document.getElementById('headlineSection').value;
   const frontOnly = document.getElementById('frontPageOnly').checked;
-  const wholeWord = document.getElementById('headlineWholeWord').checked;
 
   if (!query) {
     document.getElementById('headlineResults').innerHTML = '';
@@ -1285,19 +1281,14 @@ function searchHeadlines() {
     return;
   }
 
+  let results = articles.filter(a => a.headline.toLowerCase().includes(query));
+  // Show breakdown of exact-word vs partial matches (informational only)
   const reWhole = new RegExp('\\b' + escapeRegex(query) + '\\b', 'i');
-  const reSub = new RegExp(escapeRegex(query), 'i');
-  let results = articles.filter(a => wholeWord ? reWhole.test(a.headline) : reSub.test(a.headline));
-  if (!wholeWord) {
-    // Show breakdown: how many are whole-word matches vs partial
-    const wholeCount = results.filter(a => reWhole.test(a.headline)).length;
-    const partialCount = results.length - wholeCount;
-    window._lastHeadlineMatchBreakdown = partialCount > 0
-      ? ` (${wholeCount.toLocaleString()} exact word, ${partialCount.toLocaleString()} within longer words)`
-      : '';
-  } else {
-    window._lastHeadlineMatchBreakdown = '';
-  }
+  const wholeCount = results.filter(a => reWhole.test(a.headline)).length;
+  const partialCount = results.length - wholeCount;
+  window._lastHeadlineMatchBreakdown = partialCount > 0
+    ? ` (${wholeCount.toLocaleString()} as standalone word, ${partialCount.toLocaleString()} within longer words)`
+    : '';
   if (section) results = results.filter(a => a.section === section);
   if (frontOnly) results = results.filter(a => a.print_section === 'A' && a.print_page === '1');
 
@@ -1337,7 +1328,6 @@ function toTitleCase(s) {
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
 document.getElementById('trackerFrontPage').addEventListener('change', trackTerms);
-document.getElementById('trackerWholeWord').addEventListener('change', trackTerms);
 // Also trigger on Enter key
 ['term1','term2','term3'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
@@ -1352,22 +1342,18 @@ function trackTerms() {
   if (!terms.length) return;
 
   const frontOnly = document.getElementById('trackerFrontPage').checked;
-  const wholeWord = document.getElementById('trackerWholeWord').checked;
   const cutoffYear = String(new Date().getFullYear());
   let pool = articles.filter(a => !a.year_month.startsWith(cutoffYear));
   if (frontOnly) pool = pool.filter(a => a.print_section === 'A' && a.print_page === '1');
 
   const months = [...new Set(pool.map(a => a.year_month))].sort();
   const series = {};
-  const termRes = terms.map(t => wholeWord
-    ? new RegExp('\\b' + escapeRegex(t) + '\\b', 'i')
-    : new RegExp(escapeRegex(t), 'i'));
   terms.forEach(t => { series[t] = {}; months.forEach(m => series[t][m] = 0); });
 
   pool.forEach(a => {
-    const hl = a.headline;
-    terms.forEach((t, i) => {
-      if (termRes[i].test(hl)) {
+    const hl = a.headline.toLowerCase();
+    terms.forEach(t => {
+      if (hl.includes(t.toLowerCase())) {
         series[t][a.year_month] = (series[t][a.year_month] || 0) + 1;
       }
     });
