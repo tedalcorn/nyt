@@ -421,7 +421,7 @@
   },
   {
     "canonical": "Brent McDonald",
-    "canonical_count": 144,
+    "canonical_count": 145,
     "merged": [
       {
         "name": "Brent McDONALD",
@@ -1029,7 +1029,7 @@
   },
   {
     "canonical": "Devin Yalkin",
-    "canonical_count": 9,
+    "canonical_count": 10,
     "merged": [
       {
         "name": "Devin Oktar Yalkin",
@@ -1546,16 +1546,6 @@
     ]
   },
   {
-    "canonical": "Illustrations Nathan Huang",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Illustrations Liang-hsin Huang",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Isabel V. Sawhill",
     "canonical_count": 3,
     "merged": [
@@ -1895,6 +1885,16 @@
     "merged": [
       {
         "name": "Jill Bolte Taylor",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Joanna McCLURE",
+    "canonical_count": 6,
+    "merged": [
+      {
+        "name": "Joanna Mcclure",
         "count": 1
       }
     ]
@@ -3378,70 +3378,6 @@
     ]
   },
   {
-    "canonical": "Photographs Richard Barnes",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Photographs by Miranda Barnes",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Photographs Todd Heisler",
-    "canonical_count": 13,
-    "merged": [
-      {
-        "name": "Photographs By Todd Heisler",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Photographs Greg Kessler",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Photographs Calla Kessler",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Photographs Russ McCLINTOCK",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Photographs Russ Mcclintock",
-        "count": 2
-      },
-      {
-        "name": "Photographs Russ McClintock",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Photographs Joanna McCLURE",
-    "canonical_count": 6,
-    "merged": [
-      {
-        "name": "Photographs Joanna Mcclure",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Photographs Giles Price",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Photographs Hannah Price",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Pierre Brian\u00e7on",
     "canonical_count": 1,
     "merged": [
@@ -3767,11 +3703,15 @@
   },
   {
     "canonical": "Russ McClintock",
-    "canonical_count": 46,
+    "canonical_count": 47,
     "merged": [
       {
         "name": "Russ McCLINTOCK",
-        "count": 1
+        "count": 5
+      },
+      {
+        "name": "Russ Mcclintock",
+        "count": 2
       }
     ]
   },
@@ -3815,6 +3755,16 @@
       },
       {
         "name": "Ryan D. McCarthy",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "s Nathan Huang",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "s Liang-hsin Huang",
         "count": 1
       }
     ]

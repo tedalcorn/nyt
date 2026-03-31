@@ -306,6 +306,7 @@
       <input type="text" id="headlineSearch" placeholder="Search headlines...">
       <select id="headlineSection"><option value="">All sections</option></select>
       <label><input type="checkbox" id="frontPageOnly"> Front page only</label>
+      <label><input type="checkbox" id="headlineWholeWord"> Whole word only</label>
     </div>
     <div class="results-count" id="headlineCount"></div>
     <div id="headlineResults"></div>
@@ -359,7 +360,9 @@
         </select>
       </div>
       <div id="chartStateBarWrap" style="position:relative"><canvas id="chartStateBar"></canvas></div>
+      <div style="font-size:12px;color:#888;margin-top:6px">Click a state bar to see coverage details.</div>
     </div>
+    <div id="stateDetailPanel" style="display:none"></div>
   </div>
 
   <!-- HEADLINE TRACKER -->
@@ -372,6 +375,7 @@
         <input type="text" id="term3" placeholder="Term 3 (optional)">
         <button id="trackBtn">Track</button>
         <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="trackerFrontPage"> Front page only</label>
+        <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="trackerWholeWord"> Whole word only</label>
       </div>
       <canvas id="chartTracker"></canvas>
     </div>
@@ -421,6 +425,7 @@ async function loadData() {
           print_section: a.ps,
           print_page: a.pp,
           glocations: a.g || [],
+          canonical_states: a.st || [],
           subjects: a.sb || [],
         });
       }
@@ -1263,12 +1268,16 @@ function initHeadlineSearch() {
   document.getElementById('headlineSearch').addEventListener('input', debounce(searchHeadlines, 300));
   document.getElementById('headlineSection').addEventListener('change', searchHeadlines);
   document.getElementById('frontPageOnly').addEventListener('change', searchHeadlines);
+  document.getElementById('headlineWholeWord').addEventListener('change', searchHeadlines);
 }
+
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 function searchHeadlines() {
   const query = document.getElementById('headlineSearch').value.toLowerCase().trim();
   const section = document.getElementById('headlineSection').value;
   const frontOnly = document.getElementById('frontPageOnly').checked;
+  const wholeWord = document.getElementById('headlineWholeWord').checked;
 
   if (!query) {
     document.getElementById('headlineResults').innerHTML = '';
@@ -1276,11 +1285,23 @@ function searchHeadlines() {
     return;
   }
 
-  let results = articles.filter(a => a.headline.toLowerCase().includes(query));
+  const reWhole = new RegExp('\\b' + escapeRegex(query) + '\\b', 'i');
+  const reSub = new RegExp(escapeRegex(query), 'i');
+  let results = articles.filter(a => wholeWord ? reWhole.test(a.headline) : reSub.test(a.headline));
+  if (!wholeWord) {
+    // Show breakdown: how many are whole-word matches vs partial
+    const wholeCount = results.filter(a => reWhole.test(a.headline)).length;
+    const partialCount = results.length - wholeCount;
+    window._lastHeadlineMatchBreakdown = partialCount > 0
+      ? ` (${wholeCount.toLocaleString()} exact word, ${partialCount.toLocaleString()} within longer words)`
+      : '';
+  } else {
+    window._lastHeadlineMatchBreakdown = '';
+  }
   if (section) results = results.filter(a => a.section === section);
   if (frontOnly) results = results.filter(a => a.print_section === 'A' && a.print_page === '1');
 
-  document.getElementById('headlineCount').textContent = `${results.length.toLocaleString()} results`;
+  document.getElementById('headlineCount').textContent = `${results.length.toLocaleString()} results${window._lastHeadlineMatchBreakdown || ''}`;
 
   const html = results.slice(0, 200).map(a => `
     <div class="headline-result">
@@ -1316,6 +1337,7 @@ function toTitleCase(s) {
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
 document.getElementById('trackerFrontPage').addEventListener('change', trackTerms);
+document.getElementById('trackerWholeWord').addEventListener('change', trackTerms);
 // Also trigger on Enter key
 ['term1','term2','term3'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
@@ -1330,18 +1352,22 @@ function trackTerms() {
   if (!terms.length) return;
 
   const frontOnly = document.getElementById('trackerFrontPage').checked;
+  const wholeWord = document.getElementById('trackerWholeWord').checked;
   const cutoffYear = String(new Date().getFullYear());
   let pool = articles.filter(a => !a.year_month.startsWith(cutoffYear));
   if (frontOnly) pool = pool.filter(a => a.print_section === 'A' && a.print_page === '1');
 
   const months = [...new Set(pool.map(a => a.year_month))].sort();
   const series = {};
+  const termRes = terms.map(t => wholeWord
+    ? new RegExp('\\b' + escapeRegex(t) + '\\b', 'i')
+    : new RegExp(escapeRegex(t), 'i'));
   terms.forEach(t => { series[t] = {}; months.forEach(m => series[t][m] = 0); });
 
   pool.forEach(a => {
-    const hl = a.headline.toLowerCase();
-    terms.forEach(t => {
-      if (hl.includes(t.toLowerCase())) {
+    const hl = a.headline;
+    terms.forEach((t, i) => {
+      if (termRes[i].test(hl)) {
         series[t][a.year_month] = (series[t][a.year_month] || 0) + 1;
       }
     });
@@ -1637,6 +1663,8 @@ function renderStateBar(states, years) {
   const label = perCapita ? 'Articles per million residents per year' : 'Articles';
 
   destroyChart('chartStateBar');
+  // Keep filtered array accessible for click handler
+  const stateBarFiltered = filtered;
   chartInstances['chartStateBar'] = new Chart(document.getElementById('chartStateBar'), {
     type: 'bar',
     data: {
@@ -1651,6 +1679,9 @@ function renderStateBar(states, years) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      onClick: function(evt, elements) {
+        if (elements.length) openStateDetail(stateBarFiltered[elements[0].index].name);
+      },
       plugins: {
         legend: { display: false },
         datalabels: perCapita ? {
@@ -1664,6 +1695,59 @@ function renderStateBar(states, years) {
   });
   const hsb = filtered.length * 22 + 20;
   document.getElementById('chartStateBarWrap').style.height = hsb + 'px';
+}
+
+function openStateDetail(state) {
+  const sc = dashboard.us_state_coverage;
+  const currentYear = String(new Date().getFullYear());
+  const years = sc.years.filter(y => y !== currentYear);
+  const trend = sc.state_trends[state] || {};
+  const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
+
+  const panel = document.getElementById('stateDetailPanel');
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div class="author-timeline">
+      <button class="close-btn" onclick="document.getElementById('stateDetailPanel').style.display='none';destroyChart('chartStateDetail')">Close</button>
+      <h3>${escapeHtml(state)}</h3>
+      <div class="timeline-meta">${total.toLocaleString()} articles in U.S. section · ${years[0]}–${years[years.length-1]}</div>
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
+        <canvas id="chartStateDetail" style="max-height:180px"></canvas>
+      </div>
+      <div id="stateArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
+    </div>
+  `;
+
+  destroyChart('chartStateDetail');
+  chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [{ label: 'Articles', data: years.map(y => trend[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  // List articles for this state
+  const stateArticles = articles
+    .filter(a => a.canonical_states && a.canonical_states.includes(state))
+    .sort((a, b) => b.pub_date.localeCompare(a.pub_date));
+
+  const listHtml = stateArticles.slice(0, 300).map(a => `
+    <div class="headline-result">
+      <div class="title"><a href="${a.web_url}" target="_blank">${escapeHtml(a.headline || '(no headline)')}</a></div>
+      <div class="meta">${a.pub_date} · ${a.authors.join(', ') || 'No byline'} · ${a.word_count.toLocaleString()} words</div>
+    </div>
+  `).join('');
+  document.getElementById('stateArticleList').innerHTML =
+    `<div style="font-size:12px;color:#888;margin-bottom:8px">${stateArticles.length.toLocaleString()} articles total${stateArticles.length > 300 ? ' · showing 300 most recent' : ''}</div>` + listHtml;
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function debounce(fn, ms) {
