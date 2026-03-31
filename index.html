@@ -259,14 +259,7 @@
       <label>Min articles: <input type="number" id="authorMin" value="5" min="1" style="width:60px"></label>
       <label>Section: <select id="authorSectionFilter"><option value="">All</option></select></label>
     </div>
-    <div class="chart-box" style="margin-bottom:16px">
-      <div style="margin-bottom:8px">
-        <h3 style="font-size:15px">Words/Year Distribution</h3>
-        <div style="font-size:12px;color:#888;margin-top:2px">Annualized word output · reflects section and min-articles filters above · click a bar to filter the table</div>
-      </div>
-      <div style="position:relative;height:180px"><canvas id="chartWordsDist"></canvas></div>
-      <div id="distInfo" style="font-size:12px;color:#888;margin-top:6px;font-family:sans-serif;min-height:16px"></div>
-    </div>
+    <div id="distInfo" style="font-size:12px;color:#888;margin-bottom:12px;font-family:sans-serif;min-height:16px"></div>
     <div id="authorTimeline"></div>
     <div id="authorTableContainer"></div>
   </div>
@@ -767,89 +760,31 @@ document.getElementById('authorSearch').addEventListener('input', () => {
 document.getElementById('authorMin').addEventListener('input', () => { renderAuthors(); renderWordsDist(); });
 
 let authorSort = { col: 'article_count', asc: false };
-let distFilterRange = null;  // [lo, hi] words/year to filter table to
 
 // ── Shared author filter ───────────────────────────────────────────
-// Both the table and the distribution chart use this so they always match.
 function getFilteredAuthors() {
   const query = document.getElementById('authorSearch').value.toLowerCase();
   const minArticles = parseInt(document.getElementById('authorMin').value) || 1;
   const sectionFilter = document.getElementById('authorSectionFilter').value;
-  let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name) && a.article_count >= minArticles && a.avg_words_per_year > 0);
+  let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name) && a.article_count >= minArticles);
   if (query) f = f.filter(a => a.name.toLowerCase().includes(query));
-  if (sectionFilter) f = f.filter(a => a.primary_section === sectionFilter);
+  if (sectionFilter) f = f.filter(a => (a.all_sections || [a.primary_section]).includes(sectionFilter));
   return f;
 }
 
-// ── Words/Year Distribution Chart ─────────────────────────────────
-// 10k-wide bins 0→200k, then 200k+
-const DIST_BUCKETS = Array.from({length: 20}, (_, i) => [i*10000, (i+1)*10000, `${i*10}–${(i+1)*10}k`])
-  .concat([[200000, Infinity, '200k+']]);
-
+// ── Words/Year stats line (no chart) ─────────────────────────────
 function renderWordsDist() {
-  const qualified = getFilteredAuthors();
-
-  const counts = DIST_BUCKETS.map(([lo, hi]) =>
-    qualified.filter(a => a.avg_words_per_year >= lo && a.avg_words_per_year < hi).length
-  );
-
-  const mean = Math.round(qualified.reduce((s,a) => s+a.avg_words_per_year, 0) / (qualified.length||1));
+  const qualified = getFilteredAuthors().filter(a => a.avg_words_per_year > 0);
+  if (!qualified.length) { document.getElementById('distInfo').innerHTML = ''; return; }
+  const mean = Math.round(qualified.reduce((s,a) => s + a.avg_words_per_year, 0) / qualified.length);
   const sorted = [...qualified].sort((a,b) => a.avg_words_per_year - b.avg_words_per_year);
-  const median = sorted[Math.floor(sorted.length/2)]?.avg_words_per_year || 0;
-
-  const bgColors = DIST_BUCKETS.map((b, i) =>
-    distFilterRange && distFilterRange[0] === b[0] ? 'rgba(50,104,145,0.95)' : 'rgba(50,104,145,0.55)'
-  );
-
-  destroyChart('chartWordsDist');
-  chartInstances['chartWordsDist'] = new Chart(document.getElementById('chartWordsDist'), {
-    type: 'bar',
-    data: {
-      labels: DIST_BUCKETS.map(b => b[2]),
-      datasets: [{ data: counts, backgroundColor: bgColors, borderWidth: 0 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      onClick(evt, elems) {
-        if (!elems.length) { distFilterRange = null; renderAuthors(); renderWordsDist(); return; }
-        const i = elems[0].index;
-        const [lo, hi] = DIST_BUCKETS[i];
-        distFilterRange = (distFilterRange && distFilterRange[0] === lo) ? null : [lo, hi];
-        renderAuthors();
-        renderWordsDist();
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: {
-          label: ctx => `${ctx.parsed.y} authors`,
-          afterLabel: ctx => {
-            const [lo, hi] = DIST_BUCKETS[ctx.dataIndex];
-            const names = qualified
-              .filter(a => a.avg_words_per_year >= lo && a.avg_words_per_year < hi)
-              .sort((a,b) => b.avg_words_per_year - a.avg_words_per_year)
-              .slice(0,3).map(a => `${a.name} (${(a.avg_words_per_year/1000).toFixed(0)}k)`);
-            return names.length ? 'e.g. ' + names.join(', ') : '';
-          }
-        }}
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-        y: { beginAtZero: true, title: { display: true, text: 'Authors', font: { size: 11 } } }
-      }
-    }
-  });
-
-  const filterNote = distFilterRange ? ' · click bar again to clear' : '';
+  const median = sorted[Math.floor(sorted.length / 2)].avg_words_per_year;
   document.getElementById('distInfo').innerHTML =
-    `${qualified.length.toLocaleString()} authors · median <strong>${median.toLocaleString()}</strong> words/year · mean <strong>${mean.toLocaleString()}</strong> words/year${filterNote}`;
+    `${qualified.length.toLocaleString()} authors · median <strong>${median.toLocaleString()}</strong> words/yr · mean <strong>${mean.toLocaleString()}</strong> words/yr`;
 }
 
 function renderAuthors() {
   let filtered = getFilteredAuthors();
-  if (distFilterRange) {
-    const [lo, hi] = distFilterRange;
-    filtered = filtered.filter(a => a.avg_words_per_year >= lo && a.avg_words_per_year < hi);
-  }
   filtered.forEach(a => { a._avg_words_per_year = a.avg_words_per_year || 0; });
 
   filtered.sort((a, b) => {
@@ -1213,7 +1148,23 @@ function showAuthorTimeline(name, opts = {}) {
 
   // Productivity chart: words/year (annualized from build_data)
   if (authorInfo && authorInfo.annual_words_norm) {
-    const prodYears = Object.keys(authorInfo.annual_words_norm).sort();
+    // Drop edge years where the author was active fewer than 90 days —
+    // those annualized values are too distorted to be meaningful.
+    const MIN_DAYS = 90;
+    let allYears = Object.keys(authorInfo.annual_words_norm).sort();
+    if (allYears.length > 1 && authorInfo.first_date) {
+      const fd = new Date(authorInfo.first_date);
+      const firstYearEnd = new Date(allYears[0] + '-12-31');
+      const daysInFirst = (firstYearEnd - fd) / 86400000 + 1;
+      if (daysInFirst < MIN_DAYS) allYears = allYears.slice(1);
+    }
+    if (allYears.length > 1 && authorInfo.last_date) {
+      const ld = new Date(authorInfo.last_date);
+      const lastYearStart = new Date(allYears[allYears.length-1] + '-01-01');
+      const daysInLast = (ld - lastYearStart) / 86400000 + 1;
+      if (daysInLast < MIN_DAYS) allYears = allYears.slice(0, -1);
+    }
+    const prodYears = allYears;
     const prodVals  = prodYears.map(y => authorInfo.annual_words_norm[y]);
     const avgLine   = authorInfo.avg_words_per_year || 0;
 

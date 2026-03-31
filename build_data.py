@@ -38,11 +38,18 @@ def extract_authors(byline):
     """Extract list of author dicts from a byline field."""
     if not byline or not isinstance(byline, dict):
         return []
+    # Strip multimedia credit prefixes from any name component
+    # (e.g. firstname="Photographs", making fullname "Photographs George Etheredge")
+    CREDIT_PREFIX = re.compile(
+        r'^(Photographs?|Illustration|Illustrations|Drawing|Drawings|Map|Video|Graphic|Graphics|Photo)\s*',
+        re.IGNORECASE
+    )
+
     persons = byline.get("person", [])
     if persons:
         authors = []
         for p in persons:
-            first = (p.get("firstname") or "").strip()
+            first = CREDIT_PREFIX.sub('', (p.get("firstname") or "").strip()).strip()
             middle = (p.get("middlename") or "").strip()
             last = (p.get("lastname") or "").strip()
             if not last:
@@ -51,7 +58,7 @@ def extract_authors(byline):
             if last.isupper():
                 last = last.title()
             parts = [first, middle, last]
-            fullname = " ".join(p for p in parts if p)
+            fullname = " ".join(x for x in parts if x)
             authors.append({
                 "firstname": first,
                 "middlename": middle,
@@ -68,9 +75,15 @@ def extract_authors(byline):
     text = re.sub(r'^by\s+', '', original, flags=re.IGNORECASE)
     # Split on " and ", ", and ", ", "
     names = re.split(r',\s+and\s+|\s+and\s+|,\s+', text)
+    # Multimedia credit prefixes to strip (e.g. "Photographs Leonard Greco")
+    CREDIT_PREFIX = re.compile(
+        r'^(Photographs?|Illustration|Illustrations|Drawing|Drawings|Map|Video|Graphic|Graphics|Photo)\s+',
+        re.IGNORECASE
+    )
     authors = []
     for name in names:
         name = name.strip()
+        name = CREDIT_PREFIX.sub('', name).strip()
         if not name or len(name) < 3:
             continue
         parts = name.split()
@@ -179,6 +192,10 @@ def process_articles(raw_articles):
         "Nicholas St":  "Nicholas St. Fleur",
         # Other "St" truncations (Emily St, Brian St, Zach St, etc.) need
         # manual verification before adding — leave them for now.
+        # Trailing "Photographs" suffix (byline parsed as "Name; Photographs by ...")
+        "Ken Belson Photographs":   "Ken Belson",
+        "Ilana Kaplan Photographs": "Ilana Kaplan",
+        "Sarah Bahr Photographs":   "Sarah Bahr",
     }
 
     # Apply overrides to all articles so counts accumulate on the correct name
@@ -291,9 +308,10 @@ def build_author_stats(articles):
         "total_words": 0,
         "sections": Counter(),
         "years": set(),
-        "first_date": None,   # earliest pub_date string
-        "last_date": None,    # latest pub_date string
-        "annual_words": defaultdict(int),  # year -> words
+        "first_date": None,
+        "last_date": None,
+        "annual_words": defaultdict(int),    # year -> words
+        "annual_sections": defaultdict(Counter),  # year -> section counts
     })
 
     for art in articles:
@@ -308,6 +326,7 @@ def build_author_stats(articles):
             d["sections"][art["section"]] += 1
             d["years"].add(year)
             d["annual_words"][year] += author_words
+            d["annual_sections"][year][art["section"]] += 1
             if d["first_date"] is None or pub_date < d["first_date"]:
                 d["first_date"] = pub_date
             if d["last_date"] is None or pub_date > d["last_date"]:
@@ -354,11 +373,26 @@ def build_author_stats(articles):
                     # Interior full year: no normalization needed
                     annual_words_norm[y] = raw
 
-        # avg_words_per_year: mean of the normalized annual rates across active years
-        avg_words_per_year = (
-            round(sum(annual_words_norm.values()) / len(annual_words_norm))
-            if annual_words_norm else 0
-        )
+        # avg_words_per_year: total words / actual date span in fractional years.
+        # This avoids the distortion of averaging annualized edge years (which can
+        # be wildly inflated when the first/last article falls in a short window).
+        avg_words_per_year = 0
+        if first_date and last_date and d["total_words"]:
+            fd = date_cls.fromisoformat(first_date)
+            ld = date_cls.fromisoformat(last_date)
+            span_days = max((ld - fd).days, 1)
+            span_years = span_days / 365.25
+            avg_words_per_year = round(d["total_words"] / max(span_years, 1/12))
+
+        # all_sections: union of each year's primary section — lets an author
+        # appear under multiple sections if their beat shifted over time.
+        annual_primary = {
+            y: ctr.most_common(1)[0][0]
+            for y, ctr in d["annual_sections"].items() if ctr
+        }
+        all_sections = sorted(set(annual_primary.values()))
+        if primary_section and primary_section not in all_sections:
+            all_sections.insert(0, primary_section)
 
         authors.append({
             "name": name,
@@ -368,12 +402,13 @@ def build_author_stats(articles):
             "avg_words_per_year": avg_words_per_year,
             "primary_section": primary_section,
             "secondary_section": secondary_section,
+            "all_sections": all_sections,
             "year_range": f"{years[0]}-{years[-1]}" if years else "",
             "first_year": years[0] if years else None,
             "last_year": years[-1] if years else None,
             "first_date": first_date,
             "last_date": last_date,
-            "annual_words_norm": annual_words_norm,  # {year: annualized_words}
+            "annual_words_norm": annual_words_norm,
         })
 
     authors.sort(key=lambda a: a["article_count"], reverse=True)
