@@ -171,6 +171,20 @@ def process_articles(raw_articles):
 
     print(f"  {len(articles):,} processed, {skipped} skipped")
 
+    # Manual overrides for names the NYT API consistently truncates or misspells.
+    # Key: wrong form as it appears in the API data. Value: correct full name.
+    AUTHOR_OVERRIDES = {
+        # "St." compound last names — API drops the second word of the last name.
+        # Only add entries here when the correct full name is confirmed.
+        "Nicholas St":  "Nicholas St. Fleur",
+        # Other "St" truncations (Emily St, Brian St, Zach St, etc.) need
+        # manual verification before adding — leave them for now.
+    }
+
+    # Apply overrides to all articles so counts accumulate on the correct name
+    for art in articles:
+        art["authors"] = [AUTHOR_OVERRIDES.get(a, a) for a in art["authors"]]
+
     # Deduplicate author names: merge variants like "Jonah Engel Bromwich" / "Jonah E. Bromwich" / "Jonah Bromwich"
     # by mapping all to the most frequent version sharing the same first+last name
     print("  Deduplicating author names...")
