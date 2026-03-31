@@ -283,23 +283,35 @@ def process_articles(raw_articles):
 
 
 def build_author_stats(articles):
-    """Build per-author statistics."""
+    """Build per-author statistics with precise annual productivity."""
+    from datetime import date as date_cls
+
     author_data = defaultdict(lambda: {
         "article_count": 0,
         "total_words": 0,
         "sections": Counter(),
         "years": set(),
+        "first_date": None,   # earliest pub_date string
+        "last_date": None,    # latest pub_date string
+        "annual_words": defaultdict(int),  # year -> words
     })
 
     for art in articles:
         n = art["n_authors"] or 1
         author_words = art["word_count"] // n if n > 0 else 0
+        pub_date = art["pub_date"][:10]  # "YYYY-MM-DD"
+        year = art["year"]
         for name in art["authors"]:
             d = author_data[name]
             d["article_count"] += 1
             d["total_words"] += author_words
             d["sections"][art["section"]] += 1
-            d["years"].add(art["year"])
+            d["years"].add(year)
+            d["annual_words"][year] += author_words
+            if d["first_date"] is None or pub_date < d["first_date"]:
+                d["first_date"] = pub_date
+            if d["last_date"] is None or pub_date > d["last_date"]:
+                d["last_date"] = pub_date
 
     authors = []
     for name, d in author_data.items():
@@ -308,16 +320,60 @@ def build_author_stats(articles):
         secondary_section = sections_ranked[1][0] if len(sections_ranked) > 1 else ""
         years = sorted(d["years"])
 
+        first_date = d["first_date"]  # "YYYY-MM-DD"
+        last_date = d["last_date"]
+
+        # --- Compute normalized annual words ---
+        # For full interior years: use raw annual words directly.
+        # For the first year: scale up by (365 / days_remaining_in_year_from_first_article).
+        # For the last year: scale up by (365 / days_elapsed_in_year_to_last_article).
+        # This annualizes partial years to a "words/year if they wrote at this rate all year" rate.
+        # When first_year == last_year the whole period is one partial year; normalize over actual days span.
+        annual_words_norm = {}
+        if years and first_date and last_date:
+            fd = date_cls.fromisoformat(first_date)
+            ld = date_cls.fromisoformat(last_date)
+
+            for y in years:
+                raw = d["annual_words"][y]
+                if len(years) == 1:
+                    # Only one active year: normalize over actual span of activity
+                    span_days = max((ld - fd).days + 1, 1)
+                    annual_words_norm[y] = round(raw * 365 / span_days)
+                elif y == years[0]:
+                    # First year: days from first article to Dec 31
+                    year_end = date_cls(y, 12, 31)
+                    active_days = max((year_end - fd).days + 1, 1)
+                    annual_words_norm[y] = round(raw * 365 / active_days)
+                elif y == years[-1]:
+                    # Last year: days from Jan 1 to last article
+                    year_start = date_cls(y, 1, 1)
+                    active_days = max((ld - year_start).days + 1, 1)
+                    annual_words_norm[y] = round(raw * 365 / active_days)
+                else:
+                    # Interior full year: no normalization needed
+                    annual_words_norm[y] = raw
+
+        # avg_words_per_year: mean of the normalized annual rates across active years
+        avg_words_per_year = (
+            round(sum(annual_words_norm.values()) / len(annual_words_norm))
+            if annual_words_norm else 0
+        )
+
         authors.append({
             "name": name,
             "article_count": d["article_count"],
             "total_words": d["total_words"],
             "avg_words": round(d["total_words"] / d["article_count"]) if d["article_count"] else 0,
+            "avg_words_per_year": avg_words_per_year,
             "primary_section": primary_section,
             "secondary_section": secondary_section,
             "year_range": f"{years[0]}-{years[-1]}" if years else "",
             "first_year": years[0] if years else None,
             "last_year": years[-1] if years else None,
+            "first_date": first_date,
+            "last_date": last_date,
+            "annual_words_norm": annual_words_norm,  # {year: annualized_words}
         })
 
     authors.sort(key=lambda a: a["article_count"], reverse=True)
