@@ -372,6 +372,27 @@ def build_dashboard_data(articles, authors):
     wordiest = wordiest[:25]
 
     # --- World coverage: glocations by year ---
+    # Merge city-level tags into their parent country, and fix all-caps names.
+    # Contested/ambiguous geographies (Gaza Strip, West Bank, Taiwan, Hong Kong, etc.) are left as-is.
+    LOCATION_NORMALIZE = {
+        "London (England)":      "Great Britain",
+        "Paris (France)":        "France",
+        "Beijing (China)":       "China",
+        "Moscow (Russia)":       "Russia",
+        "Berlin (Germany)":      "Germany",
+        "Rome (Italy)":          "Italy",
+        "Tokyo (Japan)":         "Japan",
+        "Seoul (South Korea)":   "South Korea",
+        "Baghdad (Iraq)":        "Iraq",
+        "Cairo (Egypt)":         "Egypt",
+        "Tehran (Iran)":         "Iran",
+        "Kabul (Afghanistan)":   "Afghanistan",
+        "Damascus (Syria)":      "Syria",
+        "Kyiv (Ukraine)":        "Ukraine",
+        "AFGHANISTAN":           "Afghanistan",
+        "AFRICA":                "Africa",
+    }
+
     world_articles = [a for a in articles if a["section"] == "World"]
     glocation_year = defaultdict(lambda: defaultdict(int))
     glocation_total = Counter()
@@ -380,6 +401,7 @@ def build_dashboard_data(articles, authors):
     for art in world_articles:
         y = str(art["year"])
         for loc in art.get("glocations", []):
+            loc = LOCATION_NORMALIZE.get(loc, loc)
             glocation_year[loc][y] += 1
             glocation_total[loc] += 1
         sub = art.get("subsection", "")
