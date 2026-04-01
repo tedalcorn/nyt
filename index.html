@@ -335,7 +335,9 @@
         </select>
       </div>
       <div id="chartTopLocationsWrap" style="position:relative"><canvas id="chartTopLocations"></canvas></div>
+      <div style="font-size:12px;color:#888;margin-top:6px">Click a country bar to see coverage details.</div>
     </div>
+    <div id="countryDetailPanel" style="display:none"></div>
   </div>
 
   <!-- STATES -->
@@ -1540,6 +1542,7 @@ function renderTopLocations() {
   const label = perCapita ? 'Articles per million residents per year' : 'Articles';
 
   destroyChart('chartTopLocations');
+  const topLocFiltered = filtered;
   chartInstances['chartTopLocations'] = new Chart(document.getElementById('chartTopLocations'), {
     type: 'bar',
     data: {
@@ -1554,6 +1557,9 @@ function renderTopLocations() {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      onClick: function(evt, elements) {
+        if (elements.length) openCountryDetail(topLocFiltered[elements[0].index].name);
+      },
       plugins: {
         legend: { display: false },
         datalabels: perCapita ? {
@@ -1567,6 +1573,60 @@ function renderTopLocations() {
   });
   const hl = filtered.length * 24 + 20;
   document.getElementById('chartTopLocationsWrap').style.height = hl + 'px';
+}
+
+function openCountryDetail(country) {
+  const wc = dashboard.world_coverage;
+  const currentYear = String(new Date().getFullYear());
+  const years = wc.years.filter(y => y !== currentYear);
+  const trend = wc.location_trends[country] || {};
+  const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
+
+  const panel = document.getElementById('countryDetailPanel');
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <div class="author-timeline">
+      <button class="close-btn" onclick="document.getElementById('countryDetailPanel').style.display='none';destroyChart('chartCountryDetail')">Close</button>
+      <h3>${escapeHtml(country)}</h3>
+      <div class="timeline-meta">${total.toLocaleString()} articles in World section · ${years[0]}–${years[years.length-1]}</div>
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
+        <canvas id="chartCountryDetail" style="max-height:180px"></canvas>
+      </div>
+      <div id="countryArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
+    </div>
+  `;
+
+  destroyChart('chartCountryDetail');
+  chartInstances['chartCountryDetail'] = new Chart(document.getElementById('chartCountryDetail'), {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [{ label: 'Articles', data: years.map(y => trend[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true } }
+    }
+  });
+
+  const countryArticles = articles
+    .filter(a => a.section === 'World' && a.glocations && a.glocations.includes(country))
+    .sort((a, b) => b.pub_date.localeCompare(a.pub_date));
+
+  const listHtml = countryArticles.slice(0, 300).map(a => {
+    const byline = a.authors.join(', ') || 'No byline';
+    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+      <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+      <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
+      <span style="color:#aaa;font-size:11px"> · ${byline} · ${a.word_count.toLocaleString()} words</span>
+    </div>`;
+  }).join('');
+  document.getElementById('countryArticleList').innerHTML =
+    `<div style="font-size:12px;color:#888;margin-bottom:6px">${countryArticles.length.toLocaleString()} articles${countryArticles.length > 300 ? ' · showing 300 most recent' : ''}</div>` + listHtml;
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // --- STATES ---
