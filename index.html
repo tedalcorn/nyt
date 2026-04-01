@@ -1198,7 +1198,11 @@ function showAuthorTimeline(name, opts = {}) {
     });
     const stripePattern = prodCanvas.getContext('2d').createPattern(patEl, 'repeat');
     const solidBlue = 'rgba(50,104,145,0.7)';
-    const isEdge = (i) => prodYears.length > 1 && (i === 0 || i === prodYears.length - 1);
+    const thisYear = String(new Date().getFullYear());
+    const isEdge = (i) => prodYears.length > 1 && (
+      i === 0 ||
+      (i === prodYears.length - 1 && prodYears[i] === thisYear)
+    );
 
     destroyChart(chartId + '_prod');
     chartInstances[chartId + '_prod'] = new Chart(prodCanvas, {
