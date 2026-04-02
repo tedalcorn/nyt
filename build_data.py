@@ -548,8 +548,8 @@ def build_dashboard_data(articles, authors):
             "avg_words": round(section_words[s] / count) if count else 0,
         })
 
-    # Words per section over time (for top sections)
-    top_sections = [s["name"] for s in sections[:20] if s["name"] not in ("", "(none)")]
+    # Words per section over time (all sections)
+    top_sections = [s["name"] for s in sections if s["name"] not in ("", "(none)")]
     section_time = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0}))
     for art in articles:
         s = art["section"]
