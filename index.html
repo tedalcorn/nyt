@@ -250,6 +250,17 @@
       </div>
       <div id="chartWordiestWrap" style="position:relative"><canvas id="chartWordiest"></canvas></div>
     </div>
+    <div class="chart-box">
+      <h3>Share of Articles With Multiple Bylines <span style="font-weight:normal;font-size:12px;color:#888">(% of all articles per year)</span></h3>
+      <div style="position:relative;height:90px"><canvas id="chartMultiByline"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3>Most Collaborative Authors <span style="font-weight:normal;font-size:12px;color:#888">(ranked by share of bylines with co-authors)</span></h3>
+      <div class="chart-controls">
+        <label>Min articles: <input type="number" id="multiBylineMin" value="20" min="1" style="width:60px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px"></label>
+      </div>
+      <div id="multiBylineTable"></div>
+    </div>
   </div>
 
   <!-- AUTHORS -->
@@ -542,6 +553,10 @@ function initOverview() {
   populateSectionSelect(document.getElementById('wordiestSection'), renderWordiest);
   document.getElementById('wordiestMin').addEventListener('input', renderWordiest);
   renderWordiest();
+
+  renderMultiBylineTrend();
+  renderMultiBylineTable();
+  document.getElementById('multiBylineMin').addEventListener('input', renderMultiBylineTable);
 }
 
 const INSTITUTIONAL_BYLINES = new Set([
@@ -632,6 +647,104 @@ function renderWordiest() {
   });
   const hw = top.length * 24 + 20;
   document.getElementById('chartWordiestWrap').style.height = hw + 'px';
+}
+
+// --- MULTI-BYLINE ---
+function renderMultiBylineTrend() {
+  const currentYear = String(new Date().getFullYear());
+  const years = dashboard.all_years.filter(y => y !== currentYear);
+  const byYear = {};
+  for (const y of years) byYear[y] = { total: 0, multi: 0 };
+  for (const a of articles) {
+    const y = a.year_month.slice(0, 4);
+    if (!byYear[y]) continue;
+    byYear[y].total++;
+    if (a.authors.length > 1) byYear[y].multi++;
+  }
+  const shares = years.map(y => byYear[y].total > 0
+    ? Math.round(byYear[y].multi / byYear[y].total * 1000) / 10
+    : 0);
+
+  destroyChart('chartMultiByline');
+  chartInstances['chartMultiByline'] = new Chart(document.getElementById('chartMultiByline'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: [{
+        label: '% multi-byline',
+        data: shares,
+        borderColor: 'rgba(90,140,90,0.85)',
+        backgroundColor: 'rgba(90,140,90,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { callback: v => v + '%' }, title: { display: true, text: '% multi-byline' } },
+        x: { ticks: { maxRotation: 0 } }
+      }
+    }
+  });
+}
+
+function renderMultiBylineTable() {
+  const minArticles = parseInt(document.getElementById('multiBylineMin').value) || 20;
+  const authorStats = {};
+  for (const a of articles) {
+    for (const name of a.authors) {
+      if (INSTITUTIONAL_BYLINES.has(name)) continue;
+      if (!authorStats[name]) authorStats[name] = { total: 0, multi: 0, coauthors: {} };
+      authorStats[name].total++;
+      if (a.authors.length > 1) {
+        authorStats[name].multi++;
+        for (const co of a.authors) {
+          if (co !== name && !INSTITUTIONAL_BYLINES.has(co)) {
+            authorStats[name].coauthors[co] = (authorStats[name].coauthors[co] || 0) + 1;
+          }
+        }
+      }
+    }
+  }
+  const ranked = Object.entries(authorStats)
+    .filter(([, s]) => s.total >= minArticles && s.multi > 0)
+    .map(([name, s]) => {
+      const share = s.multi / s.total;
+      const topCo = Object.entries(s.coauthors).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const info = authors.find(a => a.name === name);
+      return { name, total: s.total, multi: s.multi, share, topCo, section: info ? info.primary_section : '' };
+    })
+    .sort((a, b) => b.share - a.share);
+
+  const shown = ranked.slice(0, 50);
+  let html = '<table class="author-table"><thead><tr>';
+  html += '<th>Author</th><th>Section</th><th class="num">Articles</th><th class="num">Co-Bylined</th><th class="num">Share</th><th>Top Co-Authors</th>';
+  html += '</tr></thead><tbody>';
+  for (const r of shown) {
+    const coStr = r.topCo.map(([co, n]) => `${escapeHtml(co)} (${n})`).join(', ');
+    html += `<tr>
+      <td class="author-name" data-author="${escapeHtml(r.name)}">${escapeHtml(r.name)}</td>
+      <td>${escapeHtml(r.section)}</td>
+      <td class="num">${r.total.toLocaleString()}</td>
+      <td class="num">${r.multi.toLocaleString()}</td>
+      <td class="num">${(r.share * 100).toFixed(1)}%</td>
+      <td style="font-size:12px;color:#666">${coStr}</td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  if (ranked.length > 50) html += `<div style="font-size:12px;color:#888;margin-top:6px">Showing top 50 of ${ranked.length.toLocaleString()} authors.</div>`;
+  document.getElementById('multiBylineTable').innerHTML = html;
+
+  document.querySelectorAll('#multiBylineTable td.author-name').forEach(td => {
+    td.addEventListener('click', () => {
+      showView('authors');
+      showAuthorTimeline(td.dataset.author);
+    });
+  });
 }
 
 // --- SECTIONS ---
@@ -1661,14 +1774,14 @@ function initStates() {
   // Exclude NY and NJ — their coverage lives in the "New York" section, not U.S.
   const states = sc.states.filter(s => s !== 'New York' && s !== 'New Jersey');
 
-  // Populate selector
+  // Populate selector — alphabetical order, 4 specific defaults
   const select = document.getElementById('stateSelect');
   select.innerHTML = '';
-  const defaults = states.slice(0, 6);
-  states.forEach(s => {
+  const defaultStates = new Set(['Arizona', 'Georgia', 'South Carolina', 'Missouri']);
+  [...states].sort().forEach(s => {
     const opt = document.createElement('option');
     opt.value = s; opt.textContent = s;
-    if (defaults.includes(s)) opt.selected = true;
+    if (defaultStates.has(s)) opt.selected = true;
     select.appendChild(opt);
   });
   select.addEventListener('change', () => renderStateTrend(years));

@@ -18,7 +18,7 @@ if not API_KEY:
 
 BASE_URL = "https://api.nytimes.com/svc/archive/v1/{year}/{month}.json"
 RAW_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "raw")
-START_YEAR = 2014
+START_YEAR = 2000
 START_MONTH = 1
 
 
