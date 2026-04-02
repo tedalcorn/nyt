@@ -54,6 +54,11 @@ def extract_authors(byline):
             last = (p.get("lastname") or "").strip()
             if not last:
                 continue
+            # Skip entries where the entire firstname was a media credit word
+            # (e.g. firstname="Photographs", lastname="Smith") — these are photo
+            # credits, not actual co-authors, and inflate multi-byline counts.
+            if not first and not middle:
+                continue
             # Normalize ALL CAPS last names
             if last.isupper():
                 last = last.title()
@@ -227,6 +232,9 @@ def process_articles(raw_articles):
             "Fashion": "Style",
             "Business Day": "Business",
             "Gameplay": "Crosswords & Games",
+            "Book Review": "Books",
+            "Guides": "Guide",
+            "en Español": "En español",
         }
         section = SECTION_MERGES.get(section, section)
         news_desk = doc.get("news_desk", "") or ""
