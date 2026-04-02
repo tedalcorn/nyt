@@ -777,8 +777,20 @@ function initSections() {
   const hs = sectionData.length * 24 + 20;
   document.getElementById('chartSectionsWrap').style.height = hs + 'px';
 
-  // Populate section selectors for both trend charts
-  const trendSections = Object.keys(dashboard.section_trends);
+  // Sections to hide from selectors: API noise and housekeeping artifacts
+  const SECTION_BLOCKLIST = new Set([
+    'Admin', 'Archives', 'Feeds', 'Homepage', 'membercenter',
+    'Open', 'Slideshows', 'Topics', 'Universal',
+    'Multimedia/Photos',  // photo-desk tag, not an editorial section
+    'Today\u2019s Paper', // print duplicate aggregator
+    'Great Homes & Destinations', // defunct 2014 supplement
+    'Washington',         // 26 articles in one year, not a real section
+    'Video',              // sparse standalone video tag
+  ]);
+  // Populate section selectors for both trend charts (alphabetical, noise filtered)
+  const trendSections = Object.keys(dashboard.section_trends)
+    .filter(s => !SECTION_BLOCKLIST.has(s))
+    .sort();
   const defaultSections = ['U.S.', 'World', 'Opinion', 'Arts', 'Science'];
 
   [document.getElementById('sectionCountSelect'), document.getElementById('sectionSelect')].forEach(select => {
