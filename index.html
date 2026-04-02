@@ -251,11 +251,11 @@
       <div id="chartWordiestWrap" style="position:relative"><canvas id="chartWordiest"></canvas></div>
     </div>
     <div class="chart-box">
-      <h3>Share of Articles With Multiple Bylines <span style="font-weight:normal;font-size:12px;color:#888">(% of all articles per year)</span></h3>
+      <h3>Articles With Multiple Bylines <span style="font-weight:normal;font-size:12px;color:#888">(% per year — includes photo credits)</span></h3>
       <div style="position:relative;height:90px"><canvas id="chartMultiByline"></canvas></div>
     </div>
     <div class="chart-box">
-      <h3>Most Shared Bylines <span style="font-weight:normal;font-size:12px;color:#888">(ranked by share of bylines with co-authors)</span></h3>
+      <h3>Multiple Bylines by Author <span style="font-weight:normal;font-size:12px;color:#888">(includes photo credits — not all reflect editorial collaboration)</span></h3>
       <div class="chart-controls">
         <label>Min articles: <input type="number" id="multiBylineMin" value="20" min="1" style="width:60px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px"></label>
         <label>Section: <select id="multiBylineSection"><option value="">All sections</option></select></label>
@@ -726,7 +726,7 @@ function renderMultiBylineTable() {
 
   const shown = ranked.slice(0, 50);
   let html = '<table class="author-table"><thead><tr>';
-  html += '<th>Author</th><th>Section</th><th class="num">Articles</th><th class="num">Co-Bylined</th><th class="num">Share</th><th>Top Co-Authors</th>';
+  html += '<th>Author</th><th>Section</th><th class="num">Articles</th><th class="num">Multi-Byline</th><th class="num">Share</th><th>Frequent Byline Partners</th>';
   html += '</tr></thead><tbody>';
   for (const r of shown) {
     const coStr = r.topCo.map(([co, n]) => `${escapeHtml(co)} (${n})`).join(', ');
