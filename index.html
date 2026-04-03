@@ -198,7 +198,7 @@
     <div class="chart-box" style="max-width:760px;margin:0 auto;font-size:14px;line-height:1.7">
       <h3 style="margin-bottom:12px">About</h3>
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings they intend to share.</p>
-      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2014 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated manually each month.</p>
+      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated nightly.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Primary section</h4>
       <p>Each author is assigned a "primary section" based on the section in which they have the most published articles. This is a rough proxy for their beat and may not reflect their actual desk assignment, especially for authors who write across sections.</p>
@@ -214,7 +214,10 @@
       <p style="margin-top:8px">New York and New Jersey are excluded from the States tab because the NYT publishes local coverage of these states in a dedicated "New York" section rather than the national "U.S." section. Since the state analysis draws only from the U.S. section, NY and NJ counts would be artificially low (capturing ~3% of actual coverage).</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Section names</h4>
-      <p>"Fashion &amp; Style" and "Fashion" have been merged into "Style," reflecting the NYT's own renaming of this section around 2018–2020. Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is published on a separate platform (nytimes.com/athletic/) and is not included in the Archive API, which explains the drop in Sports article counts.</p>
+      <p>Several sections were renamed by the NYT over the years and have been merged here under their current names: "Week in Review" (discontinued 2014) is shown as "Sunday Review"; "Fashion &amp; Style" and "Fashion" are shown as "Style"; "Business Day" is shown as "Business." These reflect the NYT's own renaming decisions, not editorial judgment. Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is not included in the Archive API.</p>
+
+      <h4 style="margin-top:16px;margin-bottom:4px">Excluded content</h4>
+      <p>Articles in the "Archives" section — predominantly paid death notices published as classified-style announcements, not reported obituaries — are excluded from all counts. These appear mainly from 2000 to 2006 and total roughly 90,000 items. Blog articles (published at <em>*.blogs.nytimes.com</em> subdomains) are included in the data; the NYT launched and wound down dozens of staff blogs between 2006 and 2017, which accounts for the elevated article counts and lower average word counts during that period.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
       <ul style="margin-left:20px">
@@ -399,6 +402,7 @@ Chart.defaults.plugins.datalabels = { display: false };
 let dashboard = null;
 let articles = null;
 let authors = null;
+let articlesReady = false;
 
 // ── Multi-section display toggle ─────────────────────────────────────────────
 // Set SHOW_MULTI_SECTIONS = false to revert to single primary section in table.
@@ -413,6 +417,7 @@ function destroyChart(id) {
 
 async function loadData() {
   try {
+    // Phase 1: load dashboard summary + authors — show the site immediately
     const [dRes, auRes] = await Promise.all([
       fetch('data/dashboard.json'),
       fetch('data/authors.json'),
@@ -420,16 +425,25 @@ async function loadData() {
     dashboard = await dRes.json();
     authors = await auRes.json();
 
-    // Load article files by year (split for GitHub size limits)
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('dateRange').textContent = dashboard.summary.date_range;
+    initOverview();       // uses dashboard data only (multi-byline from dashboard.multi_byline_trend)
+    initSections();
+    initHeadlineSearch(); // sets up UI; search shows "loading" until articles ready
+    initAuthorFilters();
+    renderWordsDist();
+    initBeats();          // sets up UI; beats show "loading" until articles ready
+    showView('overview');
+
+    // Phase 2: load article files in background — non-blocking
     const years = dashboard.all_years.map(Number);
-    const articlePromises = years.map(y =>
-      fetch(`data/articles_${y}.json`).then(r => r.ok ? r.json() : [])
-    );
-    const yearlyData = await Promise.all(articlePromises);
-    // Expand compact field names
-    articles = [];
     const URL_PREFIX = 'https://www.nytimes.com';
-    for (const yearArticles of yearlyData) {
+    articles = [];
+    // Fetch years sequentially to avoid saturating the connection pool
+    for (const y of years) {
+      const res = await fetch(`data/articles_${y}.json`);
+      if (!res.ok) continue;
+      const yearArticles = await res.json();
       for (const a of yearArticles) {
         articles.push({
           headline: a.h,
@@ -448,16 +462,11 @@ async function loadData() {
         });
       }
     }
-
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('dateRange').textContent = dashboard.summary.date_range;
-    initOverview();
-    initSections();
-    initHeadlineSearch();
-    initAuthorFilters();
-    renderWordsDist();
-    initBeats();
-    showView('overview');
+    articlesReady = true;
+    // Re-render anything that was waiting on articles
+    renderMultiBylineTable();
+    subjectIndex = null; // force rebuild now that all articles are loaded
+    corpusSubjectFreq = null;
   } catch (e) {
     document.getElementById('loading').textContent = 'Error loading data. Run build_data.py first, then serve with: python3 -m http.server 8080';
     console.error(e);
@@ -654,18 +663,9 @@ function renderWordiest() {
 // --- MULTI-BYLINE ---
 function renderMultiBylineTrend() {
   const currentYear = String(new Date().getFullYear());
-  const years = dashboard.all_years.filter(y => y !== currentYear);
-  const byYear = {};
-  for (const y of years) byYear[y] = { total: 0, multi: 0 };
-  for (const a of articles) {
-    const y = a.year_month.slice(0, 4);
-    if (!byYear[y]) continue;
-    byYear[y].total++;
-    if (a.authors.length > 1) byYear[y].multi++;
-  }
-  const shares = years.map(y => byYear[y].total > 0
-    ? Math.round(byYear[y].multi / byYear[y].total * 1000) / 10
-    : 0);
+  const trend = (dashboard.multi_byline_trend || []).filter(d => d.year !== currentYear);
+  const years = trend.map(d => d.year);
+  const shares = trend.map(d => d.pct);
 
   destroyChart('chartMultiByline');
   chartInstances['chartMultiByline'] = new Chart(document.getElementById('chartMultiByline'), {
@@ -695,6 +695,10 @@ function renderMultiBylineTrend() {
 }
 
 function renderMultiBylineTable() {
+  if (!articlesReady) {
+    document.getElementById('multiBylineTableWrap').innerHTML = '<p style="color:#888;font-size:13px;padding:12px 0">Loading article data…</p>';
+    return;
+  }
   const minArticles = parseInt(document.getElementById('multiBylineMin').value) || 20;
   const sectionFilter = document.getElementById('multiBylineSection').value;
   const authorStats = {};
@@ -1059,6 +1063,7 @@ let subjectList = null; // sorted by total article count
 
 function ensureSubjectIndex() {
   if (subjectIndex) return;
+  if (!articlesReady) return; // will be rebuilt once articles are loaded
   ensureCorpusSubjectFreq();
   subjectIndex = {};
 
@@ -1112,6 +1117,12 @@ function initBeats() {
     const q = input.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
     if (q.length < 2) { sugBox.style.display = 'none'; return; }
+
+    if (!articlesReady || !subjectList) {
+      sugBox.innerHTML = '<div style="padding:10px;color:#888;font-size:13px">Loading article data — beats will be available shortly…</div>';
+      sugBox.style.display = 'block';
+      return;
+    }
 
     const matches = subjectList.filter(s => s.subject.toLowerCase().includes(q)).slice(0, 40);
     if (!matches.length) {
@@ -1208,6 +1219,11 @@ function showAuthorTimeline(name, opts = {}) {
   destroyChart(chartId);
   destroyChart(chartId + '_prod');
   document.getElementById(containerId).innerHTML = '';
+
+  if (!articlesReady) {
+    document.getElementById(containerId).innerHTML = '<p style="color:#888;font-size:13px;padding:8px 0">Loading article data — article timeline will be available shortly…</p>';
+    return;
+  }
 
   // Find all articles by this author
   const allAuthorArticles = articles.filter(a => a.authors.includes(name))
@@ -1425,6 +1441,12 @@ function searchHeadlines() {
 
   if (!query) {
     document.getElementById('headlineResults').innerHTML = '';
+    document.getElementById('headlineCount').textContent = '';
+    return;
+  }
+
+  if (!articlesReady) {
+    document.getElementById('headlineResults').innerHTML = '<p style="color:#888;font-size:13px">Loading article data — search will be available shortly…</p>';
     document.getElementById('headlineCount').textContent = '';
     return;
   }
@@ -1746,6 +1768,10 @@ function openCountryDetail(country) {
     }
   });
 
+  if (!articlesReady) {
+    document.getElementById('worldArticleList').innerHTML = '<p style="color:#888;font-size:13px">Loading article data…</p>';
+    return;
+  }
   const countryArticles = articles
     .filter(a => a.section === 'World' && a.glocations && a.glocations.includes(country))
     .sort((a, b) => b.pub_date.localeCompare(a.pub_date));
@@ -1926,6 +1952,10 @@ function openStateDetail(state) {
   });
 
   // List articles for this state
+  if (!articlesReady) {
+    document.getElementById('stateArticleList').innerHTML = '<p style="color:#888;font-size:13px">Loading article data…</p>';
+    return;
+  }
   const stateArticles = articles
     .filter(a => a.canonical_states && a.canonical_states.includes(state))
     .sort((a, b) => b.pub_date.localeCompare(a.pub_date));

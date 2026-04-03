@@ -210,8 +210,8 @@ def process_articles(raw_articles):
             skipped += 1
             continue
 
-        # Skip anything before 2014
-        if pub_date.year < 2014:
+        # Skip records with implausible dates (API sometimes returns year 0001)
+        if pub_date.year < 1990:
             skipped += 1
             continue
 
@@ -226,6 +226,13 @@ def process_articles(raw_articles):
             word_count = 0
 
         section = doc.get("section_name", "") or ""
+
+        # Exclude non-journalism content
+        mat = doc.get("type_of_material", "") or ""
+        if section == "Archives" or mat == "Paid Death Notice":
+            skipped += 1
+            continue
+
         # Merge renamed sections
         SECTION_MERGES = {
             "Fashion & Style": "Style",
@@ -235,6 +242,7 @@ def process_articles(raw_articles):
             "Book Review": "Books",
             "Guides": "Guide",
             "en Español": "En español",
+            "Week in Review": "Sunday Review",
         }
         section = SECTION_MERGES.get(section, section)
         news_desk = doc.get("news_desk", "") or ""
@@ -651,6 +659,23 @@ def build_dashboard_data(articles, authors):
         "years": all_years,
     }
 
+    # Multi-byline trend by year (precomputed so Overview tab works without full articles array)
+    multi_byline_by_year = defaultdict(lambda: {"total": 0, "multi": 0})
+    for art in articles:
+        y = str(art["year"])
+        multi_byline_by_year[y]["total"] += 1
+        if art["n_authors"] > 1:
+            multi_byline_by_year[y]["multi"] += 1
+    multi_byline_trend = [
+        {
+            "year": y,
+            "total": d["total"],
+            "multi": d["multi"],
+            "pct": round(100 * d["multi"] / d["total"], 1) if d["total"] else 0,
+        }
+        for y, d in sorted(multi_byline_by_year.items())
+    ]
+
     # Summary stats
     total_words = sum(a["word_count"] for a in articles)
     total_articles = len(articles)
@@ -676,6 +701,7 @@ def build_dashboard_data(articles, authors):
         "all_years": all_years,
         "top_authors": top_authors,
         "wordiest_authors": wordiest,
+        "multi_byline_trend": multi_byline_trend,
         "world_coverage": world_coverage,
         "us_state_coverage": us_state_coverage,
     }
