@@ -63,6 +63,26 @@
   }
   .chart-box .chart-controls label { font-size: 13px; color: #666; }
 
+  /* Year range dual slider */
+  .yr-slider-wrap { position: relative; height: 22px; flex: 1; min-width: 180px; max-width: 320px; }
+  .yr-slider-track { position: absolute; height: 3px; background: #ddd; border-radius: 2px; left: 0; right: 0; top: 50%; transform: translateY(-50%); }
+  .yr-slider-fill { position: absolute; height: 3px; background: #326891; border-radius: 2px; top: 50%; transform: translateY(-50%); }
+  .yr-slider-wrap input[type=range] {
+    position: absolute; width: 100%; pointer-events: none;
+    -webkit-appearance: none; appearance: none;
+    background: transparent; height: 100%; margin: 0; top: 0;
+  }
+  .yr-slider-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; pointer-events: all;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: #326891; cursor: pointer; border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  }
+  .yr-slider-wrap input[type=range]::-moz-range-thumb {
+    pointer-events: all; width: 15px; height: 15px; border-radius: 50%;
+    background: #326891; cursor: pointer; border: 2px solid #fff; border: none;
+  }
+
   /* Authors table */
   .author-table { width: 100%; border-collapse: collapse; font-size: 14px; }
   .author-table th {
@@ -262,7 +282,18 @@
       <label>Min articles: <input type="number" id="authorMin" value="5" min="1" style="width:60px"></label>
       <label>Section: <select id="authorSectionFilter"><option value="">All</option></select></label>
     </div>
-    <div id="distInfo" style="font-size:12px;color:#888;margin-bottom:12px;font-family:sans-serif;min-height:16px"></div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+      <span style="font-size:12px;color:#888;white-space:nowrap">Years:</span>
+      <span id="yrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
+      <div class="yr-slider-wrap" id="yrSliderWrap">
+        <div class="yr-slider-track"></div>
+        <div class="yr-slider-fill" id="yrSliderFill"></div>
+        <input type="range" id="yrStart">
+        <input type="range" id="yrEnd">
+      </div>
+      <span id="yrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
+      <div id="distInfo" style="font-size:12px;color:#888;margin-left:auto;white-space:nowrap;font-family:sans-serif"></div>
+    </div>
     <div id="authorTimeline"></div>
     <div id="authorTableContainer"></div>
   </div>
@@ -396,10 +427,15 @@
         <input type="text" id="term1" placeholder="Term 1" value="Trump">
         <input type="text" id="term2" placeholder="Term 2" value="Biden">
         <input type="text" id="term3" placeholder="Term 3 (optional)">
+        <input type="text" id="term4" placeholder="Term 4 (optional)">
         <button id="trackBtn">Track</button>
-        <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="trackerFrontPage"> Front page only</label>
+        <label style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" id="trackerFrontPage"><span>Front page only</span></label>
+        <span style="font-size:13px;color:#888">Years:</span>
+        <select id="trackerYearStart" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
+        <span style="font-size:13px;color:#888">–</span>
+        <select id="trackerYearEnd" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
       </div>
-      <div style="position:relative;height:192px"><canvas id="chartTracker"></canvas></div>
+      <div style="position:relative;height:calc(100vh - 210px)"><canvas id="chartTracker"></canvas></div>
     </div>
   </div>
 </div>
@@ -542,6 +578,7 @@ function populateSectionSelect(selectEl, onChange) {
 
 // --- OVERVIEW ---
 function initOverview() {
+  initTrackerYears();
   const s = dashboard.summary;
   document.getElementById('statsRow').innerHTML = [
     { v: s.total_articles.toLocaleString(), l: 'Articles' },
@@ -945,6 +982,7 @@ function initAuthorFilters() {
     sectionSelect.appendChild(opt);
   });
   sectionSelect.addEventListener('change', () => { renderAuthors(); renderWordsDist(); });
+  initYearSlider();
 }
 
 document.getElementById('authorSearch').addEventListener('input', () => {
@@ -958,45 +996,85 @@ document.getElementById('authorMin').addEventListener('input', () => { renderAut
 let authorSort = { col: 'article_count', asc: false };
 
 // ── Shared author filter ───────────────────────────────────────────
+// Returns authors enriched with _rangeArticles and _rangeWords for the selected year range
 function getFilteredAuthors() {
   const query = document.getElementById('authorSearch').value.toLowerCase();
   const minArticles = parseInt(document.getElementById('authorMin').value) || 1;
   const sectionFilter = document.getElementById('authorSectionFilter').value;
-  let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name) && a.article_count >= minArticles);
+  const yr = getYearRange();
+  const allYears = dashboard.all_years.map(Number);
+  const fullRange = !yr || (yr.start <= allYears[0] && yr.end >= allYears[allYears.length - 1]);
+
+  let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
   if (query) f = f.filter(a => a.name.toLowerCase().includes(query));
   if (sectionFilter) f = f.filter(a => (a.all_sections || [a.primary_section]).includes(sectionFilter));
+
+  // Attach range-specific stats
+  f = f.map(a => {
+    if (fullRange) {
+      return { ...a, _rangeArticles: a.article_count, _rangeWords: a.total_words };
+    }
+    const rs = computeRangeStats(a, yr.start, yr.end);
+    return { ...a, _rangeArticles: rs.articles, _rangeWords: rs.words };
+  }).filter(a => a._rangeArticles >= minArticles);
+
   return f;
 }
 
 // ── Words/Year stats line (no chart) ─────────────────────────────
 function renderWordsDist() {
-  const qualified = getFilteredAuthors().filter(a => a.avg_words_per_year > 0);
+  const qualified = getFilteredAuthors().filter(a => a._rangeWords > 0);
   if (!qualified.length) { document.getElementById('distInfo').innerHTML = ''; return; }
-  const mean = Math.round(qualified.reduce((s,a) => s + a.avg_words_per_year, 0) / qualified.length);
-  const sorted = [...qualified].sort((a,b) => a.avg_words_per_year - b.avg_words_per_year);
-  const median = sorted[Math.floor(sorted.length / 2)].avg_words_per_year;
+  const yr = getYearRange();
+  const allYears = dashboard.all_years.map(Number);
+  const fullRange = !yr || (yr.start <= allYears[0] && yr.end >= allYears[allYears.length - 1]);
+  const wordsPerYear = a => {
+    const span = fullRange ? (a.last_year - a.first_year + 1) || 1 : (yr.end - yr.start + 1);
+    return Math.round(a._rangeWords / span);
+  };
+  const vals = qualified.map(wordsPerYear);
+  const mean = Math.round(vals.reduce((s, v) => s + v, 0) / vals.length);
+  const sorted = [...vals].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
   document.getElementById('distInfo').innerHTML =
     `${qualified.length.toLocaleString()} authors · median <strong>${median.toLocaleString()}</strong> words/yr · mean <strong>${mean.toLocaleString()}</strong> words/yr`;
 }
 
 function renderAuthors() {
   let filtered = getFilteredAuthors();
-  filtered.forEach(a => { a._avg_words_per_year = a.avg_words_per_year || 0; });
+  const yr = getYearRange();
+  const allYears = dashboard.all_years.map(Number);
+  const fullRange = !yr || (yr.start <= allYears[0] && yr.end >= allYears[allYears.length - 1]);
+  const rangeSpan = yr ? (yr.end - yr.start + 1) : 1;
+
+  filtered.forEach(a => {
+    a._displayArticles = a._rangeArticles;
+    a._displayWords = a._rangeWords;
+    a._avg_words_per_year = fullRange
+      ? (a.avg_words_per_year || 0)
+      : (rangeSpan > 0 ? Math.round(a._rangeWords / rangeSpan) : 0);
+  });
+
+  // Remap sort keys that changed meaning in range mode
+  const sortKey = authorSort.col === 'article_count' ? '_displayArticles'
+                : authorSort.col === 'total_words'   ? '_displayWords'
+                : authorSort.col;
 
   filtered.sort((a, b) => {
-    let va = a[authorSort.col], vb = b[authorSort.col];
+    let va = a[sortKey] ?? a[authorSort.col], vb = b[sortKey] ?? b[authorSort.col];
     if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb || '').toLowerCase(); }
     if (va < vb) return authorSort.asc ? -1 : 1;
     if (va > vb) return authorSort.asc ? 1 : -1;
     return 0;
   });
 
+  const rangeLabel = fullRange ? '' : ` (${yr.start}–${yr.end})`;
   const cols = [
     { key: 'name', label: 'Author' },
     { key: 'year_range', label: 'Period Active' },
     { key: 'primary_section', label: SHOW_MULTI_SECTIONS ? 'Primary Section(s)' : 'Primary Section' },
-    { key: 'article_count', label: 'Articles', cls: 'num' },
-    { key: 'total_words', label: 'Total Words', cls: 'num' },
+    { key: 'article_count', label: 'Articles' + rangeLabel, cls: 'num' },
+    { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num' },
     { key: 'avg_words', label: 'Avg Words/Article', cls: 'num' },
     { key: '_avg_words_per_year', label: 'Avg Words/Year', cls: 'num' },
   ];
@@ -1012,7 +1090,9 @@ function renderAuthors() {
   filtered.slice(0, 500).forEach(a => {
     html += `<tr data-author="${escapeHtml(a.name)}">`;
     cols.forEach(c => {
-      let v = a[c.key];
+      let v = c.key === 'article_count' ? a._displayArticles
+            : c.key === 'total_words'   ? a._displayWords
+            : a[c.key];
       if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
       if (c.key === 'name') {
         html += `<td class="author-name">${escapeHtml(v || '')}</td>`;
@@ -1549,22 +1629,42 @@ function toTitleCase(s) {
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
 document.getElementById('trackerFrontPage').addEventListener('change', trackTerms);
-// Also trigger on Enter key
-['term1','term2','term3'].forEach(id => {
+document.getElementById('trackerYearStart').addEventListener('change', trackTerms);
+document.getElementById('trackerYearEnd').addEventListener('change', trackTerms);
+['term1','term2','term3','term4'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
 });
+
+// Populate tracker year selects once dashboard loads — called from initOverview
+function initTrackerYears() {
+  const years = dashboard.all_years.map(Number).filter(y => y < new Date().getFullYear());
+  const startSel = document.getElementById('trackerYearStart');
+  const endSel = document.getElementById('trackerYearEnd');
+  years.forEach(y => {
+    startSel.appendChild(Object.assign(document.createElement('option'), {value: y, textContent: y}));
+    endSel.appendChild(Object.assign(document.createElement('option'), {value: y, textContent: y}));
+  });
+  startSel.value = years[0];
+  endSel.value = years[years.length - 1];
+}
 
 function trackTerms() {
   const terms = [
     document.getElementById('term1').value.trim(),
     document.getElementById('term2').value.trim(),
     document.getElementById('term3').value.trim(),
+    document.getElementById('term4').value.trim(),
   ].filter(Boolean);
   if (!terms.length) return;
 
   const frontOnly = document.getElementById('trackerFrontPage').checked;
   const cutoffYear = String(new Date().getFullYear());
-  let pool = articles.filter(a => !a.year_month.startsWith(cutoffYear));
+  const startYear = document.getElementById('trackerYearStart').value;
+  const endYear = document.getElementById('trackerYearEnd').value;
+  let pool = articles.filter(a => {
+    const y = a.year_month.slice(0, 4);
+    return y !== cutoffYear && y >= startYear && y <= endYear;
+  });
   if (frontOnly) pool = pool.filter(a => a.print_section === 'A' && a.print_page === '1');
 
   const months = [...new Set(pool.map(a => a.year_month))].sort();
@@ -1580,7 +1680,7 @@ function trackTerms() {
     });
   });
 
-  const colors = ['#c44', '#44c', '#4a4', '#c84', '#84c'];
+  const colors = ['#c44', '#44c', '#4a4', '#c84'];
   destroyChart('chartTracker');
   chartInstances['chartTracker'] = new Chart(document.getElementById('chartTracker'), {
     type: 'line',
@@ -2073,6 +2173,54 @@ const sectionsObserver = new MutationObserver(() => {
   }
 });
 sectionsObserver.observe(document.getElementById('view-sections'), { attributes: true });
+
+// ── Authors year-range dual slider ───────────────────────────────────────────
+function initYearSlider() {
+  const years = dashboard.all_years.map(Number);
+  const minY = years[0], maxY = years[years.length - 1];
+  const sInput = document.getElementById('yrStart');
+  const eInput = document.getElementById('yrEnd');
+  sInput.min = eInput.min = minY;
+  sInput.max = eInput.max = maxY;
+  sInput.value = minY;
+  eInput.value = maxY;
+
+  function update() {
+    let s = parseInt(sInput.value), e = parseInt(eInput.value);
+    if (s > e - 1) { s = e - 1; sInput.value = s; }
+    const range = maxY - minY;
+    document.getElementById('yrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
+    document.getElementById('yrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
+    document.getElementById('yrStartLbl').textContent = s;
+    document.getElementById('yrEndLbl').textContent = e;
+    renderAuthors();
+    renderWordsDist();
+  }
+  sInput.addEventListener('input', update);
+  eInput.addEventListener('input', update);
+  update();
+}
+
+function getYearRange() {
+  const s = document.getElementById('yrStart');
+  const e = document.getElementById('yrEnd');
+  if (!s) return null;
+  return { start: parseInt(s.value), end: parseInt(e.value) };
+}
+
+// Compute per-author article count and word proxy for a year range
+function computeRangeStats(a, start, end) {
+  let articles = 0;
+  for (const [ym, n] of Object.entries(a.monthly_counts || {})) {
+    const y = parseInt(ym.slice(0, 4));
+    if (y >= start && y <= end) articles += n;
+  }
+  let words = 0;
+  for (const [y, w] of Object.entries(a.annual_words_norm || {})) {
+    if (parseInt(y) >= start && parseInt(y) <= end) words += Math.round(w);
+  }
+  return { articles, words };
+}
 
 // Careers tab: lazy init
 let careersInitialized = false;
