@@ -428,6 +428,7 @@ def build_author_stats(articles):
         "last_date": None,
         "annual_words": defaultdict(int),    # year -> words
         "annual_sections": defaultdict(Counter),  # year -> section counts
+        "monthly_counts": defaultdict(int),  # YYYY-MM -> article count
     })
 
     for art in articles:
@@ -443,6 +444,7 @@ def build_author_stats(articles):
             d["years"].add(year)
             d["annual_words"][year] += author_words
             d["annual_sections"][year][art["section"]] += 1
+            d["monthly_counts"][art["year_month"]] += 1
             if d["first_date"] is None or pub_date < d["first_date"]:
                 d["first_date"] = pub_date
             if d["last_date"] is None or pub_date > d["last_date"]:
@@ -527,11 +529,142 @@ def build_author_stats(articles):
             "first_date": first_date,
             "last_date": last_date,
             "annual_words_norm": annual_words_norm,
+            "monthly_counts": dict(d["monthly_counts"]),
+            "beats": [],  # filled in later by build_beats()
         })
 
     authors.sort(key=lambda a: a["article_count"], reverse=True)
     print(f"  {len(authors):,} unique authors")
     return authors
+
+
+_GENERIC_SUBJECTS = {
+    'United States Politics and Government', 'Content Type: Personal Profile',
+    'Content Type: Service', 'your-feed-science', 'your-feed-healthcare',
+    'your-feed-internet', 'your-feed-animals', 'your-feed-weather',
+    'States (US)', 'Research',
+}
+_GENERIC_PREFIXES = ('internal-', 'audio-', 'vis-', 'your-feed')
+_INSTITUTIONAL_BYLINES = {
+    'The New York Times', 'The Associated Press', 'The Editorial Board',
+    'The Learning Network', 'New York Times Games', 'International Herald Tribune',
+    'Reuters', 'The New York Times Books Staff', 'The Upshot Staff',
+    'The Staff', 'The Times Insider Staff', 'The New York Times Sports Staff',
+    'The New York Times Staff',
+    'Bloomberg News', 'Associated Press', 'Bridge News', 'Field Level Media',
+    'Der Spiegel', 'der Spiegel', 'The International Herald Tribune',
+    'New York Times', 'New York Times Audio', 'New York Times Opinion',
+    'The New York Times Opinion', 'The New York Times Magazine',
+    'The Styles Desk', 'Retro Report', 'New York Times Cooking',
+    'Insider Staff', 'the staff of The Morning',
+    'Compiled by The New York Times',
+}
+
+
+def _is_generic_subject(s):
+    if s in _GENERIC_SUBJECTS:
+        return True
+    return any(s.startswith(p) for p in _GENERIC_PREFIXES)
+
+
+def build_beats(articles, authors_list):
+    """Precompute beats data for instant Beats tab and author timelines.
+
+    Returns (beats_json, author_beats_map) where:
+      beats_json    — dict to write as beats.json
+      author_beats_map — {name: [subject, ...]} top beats per author
+    """
+    import math
+
+    author_section = {a['name']: a.get('primary_section', '') for a in authors_list}
+
+    # Corpus subject frequency: docs per subject (deduplicated per article)
+    corpus_freq = Counter()
+    corpus_docs = len(articles)
+    for art in articles:
+        seen = set()
+        for s in art.get('subjects', []):
+            if not _is_generic_subject(s) and s not in seen:
+                corpus_freq[s] += 1
+                seen.add(s)
+
+    # Group articles by author
+    by_author = defaultdict(list)
+    for art in articles:
+        for name in art['authors']:
+            by_author[name].append(art)
+
+    subject_index = defaultdict(list)
+    author_beats_map = {}
+
+    for name, arts in by_author.items():
+        if name in _INSTITUTIONAL_BYLINES:
+            continue
+        section = author_section.get(name, '')
+        n = len(arts)
+        freq = Counter()
+        for art in arts:
+            seen = set()
+            for s in art.get('subjects', []):
+                if not _is_generic_subject(s) and s not in seen:
+                    freq[s] += 1
+                    seen.add(s)
+
+        # subject_index: require ≥3 articles on subject
+        for subj, count in freq.items():
+            if count >= 3:
+                subject_index[subj].append({'name': name, 'count': count, 'total': n, 'section': section})
+
+        # Per-author beats: same scoring as extractBeats() in index.html
+        threshold = max(2, math.ceil(n * 0.03))
+        scored = []
+        for subj, count in freq.items():
+            if count < threshold:
+                continue
+            corpus_count = corpus_freq.get(subj, 1)
+            author_rate = count / n
+            corpus_rate = corpus_count / corpus_docs
+            ratio = author_rate / corpus_rate
+            if ratio < 2:
+                continue
+            score = ratio * math.log(count + 1)
+            scored.append((subj, score))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        author_beats_map[name] = [s for s, _ in scored[:7]]
+
+    # Sort each subject's reporters by count desc
+    for subj in subject_index:
+        subject_index[subj].sort(key=lambda x: x['count'], reverse=True)
+
+    # Subject list sorted by corpus frequency
+    subject_list = [
+        {'subject': s, 'docCount': corpus_freq[s], 'reporters': len(subject_index[s])}
+        for s in subject_index
+    ]
+    subject_list.sort(key=lambda x: x['docCount'], reverse=True)
+
+    # Co-occurrences per subject: top 15 related subjects
+    known = set(subject_index.keys())
+    cooccur = defaultdict(Counter)
+    for art in articles:
+        subs = [s for s in art.get('subjects', []) if not _is_generic_subject(s) and s in known]
+        for s1 in subs:
+            for s2 in subs:
+                if s2 != s1:
+                    cooccur[s1][s2] += 1
+    cooccur_top = {
+        s: [[k, v] for k, v in c.most_common(15)]
+        for s, c in cooccur.items() if s in known
+    }
+
+    beats_json = {
+        'subjectList': subject_list,
+        'subjectIndex': dict(subject_index),
+        'corpusSubjectFreq': dict(corpus_freq),
+        'corpusSubjectDocs': corpus_docs,
+        'cooccur': cooccur_top,
+    }
+    return beats_json, author_beats_map
 
 
 def build_dashboard_data(articles, authors):
@@ -711,6 +844,13 @@ def main():
     raw = load_all_articles()
     articles = process_articles(raw)
     authors = build_author_stats(articles)
+
+    print("Building beats data...")
+    beats_json, author_beats_map = build_beats(articles, authors)
+    for a in authors:
+        a['beats'] = author_beats_map.get(a['name'], [])
+    print(f"  {len(beats_json['subjectList'])} unique beats subjects")
+
     dashboard = build_dashboard_data(articles, authors)
 
     os.makedirs(DATA_DIR, exist_ok=True)
@@ -758,6 +898,10 @@ def main():
     with open(os.path.join(DATA_DIR, "dashboard.json"), "w") as f:
         json.dump(dashboard, f)
     print(f"Saved dashboard.json")
+
+    with open(os.path.join(DATA_DIR, "beats.json"), "w") as f:
+        json.dump(beats_json, f, separators=(',', ':'))
+    print(f"Saved beats.json ({len(beats_json['subjectList'])} subjects)")
 
 
 if __name__ == "__main__":

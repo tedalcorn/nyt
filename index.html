@@ -184,7 +184,6 @@
   <button data-view="authors">Reporters</button>
   <button data-view="beats">Beats</button>
   <button data-view="sections">Sections</button>
-  <button data-view="headlines">Headline Search</button>
   <button data-view="tracker">Headline Frequency</button>
   <button data-view="world">World</button>
   <button data-view="states">States</button>
@@ -233,7 +232,7 @@
     <div class="stats-row" id="statsRow"></div>
     <div class="chart-box">
       <h3>Articles and Words per Month</h3>
-      <div style="position:relative;height:240px"><canvas id="chartMonthly"></canvas></div>
+      <div style="position:relative;height:192px"><canvas id="chartMonthly"></canvas></div>
     </div>
     <div class="chart-box">
       <h3>Most Prolific Authors</h3>
@@ -304,21 +303,13 @@
   </div>
 
   <!-- HEADLINE SEARCH -->
-  <div class="view" id="view-headlines">
-    <div class="search-box">
-      <input type="text" id="headlineSearch" placeholder="Search headlines...">
-      <select id="headlineSection"><option value="">All sections</option></select>
-      <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="frontPageOnly"> Front page only</label>
-    </div>
-    <div class="results-count" id="headlineCount"></div>
-    <div id="headlineResults"></div>
-  </div>
+  <!-- Headline Search removed -->
 
   <!-- WORLD -->
   <div class="view" id="view-world">
     <div class="chart-box">
       <h3>World News by Region Over Time</h3>
-      <canvas id="chartRegionTrend"></canvas>
+      <div style="position:relative;height:220px"><canvas id="chartRegionTrend"></canvas></div>
     </div>
     <div class="chart-box">
       <h3>Country Coverage Over Time</h3>
@@ -352,7 +343,7 @@
         <select id="stateSelect" multiple style="width:100%;min-height:100px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
       </div>
-      <canvas id="chartStateTrend"></canvas>
+      <div style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
     </div>
     <div class="chart-box">
       <h3>Total Coverage by State</h3>
@@ -380,7 +371,7 @@
         <button id="trackBtn">Track</button>
         <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="trackerFrontPage"> Front page only</label>
       </div>
-      <canvas id="chartTracker"></canvas>
+      <div style="position:relative;height:192px"><canvas id="chartTracker"></canvas></div>
     </div>
   </div>
 </div>
@@ -398,66 +389,91 @@ const SHOW_MULTI_SECTIONS = true;
 const MAX_SECTIONS_DISPLAY = 3; // cap display; authors with more get "… +N"
 // ─────────────────────────────────────────────────────────────────────────────
 let chartInstances = {};
-let pendingTimelineRefresh = null; // set when an author timeline is shown before articles load
+let pendingTimelineRefresh = null; // legacy; no longer used
 
 function destroyChart(id) {
   if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
 }
 
+// Year file cache: compact raw records keyed by year (populated on demand + background)
+const yearCache = {};
+
+function _parseYearRecords(yearArticles) {
+  const URL_PREFIX = 'https://www.nytimes.com';
+  return yearArticles.map(a => ({
+    headline: a.h,
+    authors: a.a,
+    section: a.s,
+    subsection: a.ss || '',
+    pub_date: a.d,
+    year_month: a.m,
+    word_count: a.w,
+    web_url: a.u && a.u.startsWith('/') ? URL_PREFIX + a.u : (a.u || ''),
+    print_section: a.ps,
+    print_page: a.pp,
+    glocations: a.g || [],
+    canonical_states: a.st || [],
+    subjects: a.sb || [],
+  }));
+}
+
+// Ensure a specific year file is loaded; returns the parsed records.
+async function ensureYearLoaded(year) {
+  if (yearCache[year]) return yearCache[year];
+  // Mark as in-flight to avoid duplicate fetches
+  if (yearCache[year] === null) {
+    // Another request is fetching this; wait by polling (rare)
+    while (yearCache[year] === null) await new Promise(r => setTimeout(r, 50));
+    return yearCache[year];
+  }
+  yearCache[year] = null; // sentinel: in-flight
+  try {
+    const res = await fetch(`data/articles_${year}.json`);
+    yearCache[year] = res.ok ? _parseYearRecords(await res.json()) : [];
+  } catch (_) {
+    yearCache[year] = [];
+  }
+  return yearCache[year];
+}
+
 async function loadData() {
   try {
-    // Phase 1: load dashboard summary + authors — show the site immediately
-    const [dRes, auRes] = await Promise.all([
+    // Phase 1: load dashboard, authors, beats — show the site immediately
+    const [dRes, auRes, bRes] = await Promise.all([
       fetch('data/dashboard.json'),
       fetch('data/authors.json'),
+      fetch('data/beats.json'),
     ]);
     dashboard = await dRes.json();
     authors = await auRes.json();
+    const beatsData = await bRes.json();
+
+    // Populate beats globals from precomputed data (no articles needed)
+    subjectIndex = beatsData.subjectIndex;
+    subjectList = beatsData.subjectList;
+    corpusSubjectFreq = beatsData.corpusSubjectFreq;
+    corpusSubjectDocs = beatsData.corpusSubjectDocs;
+    window._beatsCooccur = beatsData.cooccur;
 
     document.getElementById('loading').style.display = 'none';
     const allYears = dashboard.all_years;
     document.getElementById('dateRange').textContent = `${allYears[0]} \u2013 ${allYears[allYears.length - 1]}`;
-    initOverview();       // uses dashboard data only
-    // initSections is lazy — runs on first tab visit
-    initHeadlineSearch(); // sets up UI; search shows "loading" until articles ready
+    initOverview();
+    initHeadlineSearch();
     initAuthorFilters();
     renderWordsDist();
-    initBeats();          // sets up UI; beats show "loading" until articles ready
+    initBeats();
     showView('overview');
 
-    // Phase 2: load article files in background — non-blocking
+    // Phase 2: load all article files sequentially in the background
     const years = dashboard.all_years.map(Number);
-    const URL_PREFIX = 'https://www.nytimes.com';
     articles = [];
-    // Fetch years sequentially to avoid saturating the connection pool
     for (const y of years) {
-      const res = await fetch(`data/articles_${y}.json`);
-      if (!res.ok) continue;
-      const yearArticles = await res.json();
-      for (const a of yearArticles) {
-        articles.push({
-          headline: a.h,
-          authors: a.a,
-          section: a.s,
-          subsection: a.ss || '',
-          pub_date: a.d,
-          year_month: a.m,
-          word_count: a.w,
-          web_url: a.u.startsWith('/') ? URL_PREFIX + a.u : a.u,
-          print_section: a.ps,
-          print_page: a.pp,
-          glocations: a.g || [],
-          canonical_states: a.st || [],
-          subjects: a.sb || [],
-        });
-      }
+      const yearArticles = await ensureYearLoaded(y);
+      for (const a of yearArticles) articles.push(a);
     }
     articlesReady = true;
-    // Re-render anything that was waiting on articles
-    if (pendingTimelineRefresh) { pendingTimelineRefresh(); pendingTimelineRefresh = null; }
     populateHeadlineSection();
-    subjectIndex = null; // force rebuild now that all articles are loaded
-    corpusSubjectFreq = null;
   } catch (e) {
     document.getElementById('loading').textContent = 'Error loading data. Run build_data.py first, then serve with: python3 -m http.server 8080';
     console.error(e);
@@ -999,19 +1015,11 @@ function renderAuthors() {
   });
 }
 
-// Build corpus-wide subject frequencies (computed once, cached)
+// Corpus subject frequency — populated from beats.json in Phase 1
 let corpusSubjectFreq = null;
 let corpusSubjectDocs = 0;
 function ensureCorpusSubjectFreq() {
-  if (corpusSubjectFreq) return;
-  corpusSubjectFreq = {};
-  corpusSubjectDocs = articles.length;
-  for (const a of articles) {
-    const seen = new Set();
-    for (const s of a.subjects) {
-      if (!seen.has(s)) { corpusSubjectFreq[s] = (corpusSubjectFreq[s] || 0) + 1; seen.add(s); }
-    }
-  }
+  // Already loaded from beats.json; nothing to do
 }
 
 // Generic subjects to exclude from beats (too broad to be informative)
@@ -1055,54 +1063,12 @@ function extractBeats(authorArticles) {
 }
 
 // --- BEATS TAB ---
-// Build reverse index: subject → [{author, count, section}], sorted by count
+// subjectIndex + subjectList are populated from beats.json in Phase 1 (instant)
 let subjectIndex = null;
-let subjectList = null; // sorted by total article count
+let subjectList = null;
 
 function ensureSubjectIndex() {
-  if (subjectIndex) return;
-  if (!articlesReady) return; // will be rebuilt once articles are loaded
-  ensureCorpusSubjectFreq();
-  subjectIndex = {};
-
-  // Group articles by author
-  const byAuthor = {};
-  for (const a of articles) {
-    for (const name of a.authors) {
-      if (!byAuthor[name]) byAuthor[name] = [];
-      byAuthor[name].push(a);
-    }
-  }
-
-  // For each author, count subjects (skip institutional bylines)
-  for (const [name, arts] of Object.entries(byAuthor)) {
-    if (INSTITUTIONAL_BYLINES.has(name)) continue;
-    const info = authors.find(a => a.name === name);
-    const section = info ? info.primary_section : '';
-    const freq = {};
-    for (const a of arts) {
-      const seen = new Set();
-      for (const s of a.subjects) {
-        if (GENERIC_SUBJECTS.has(s) || s.startsWith('internal-') || s.startsWith('audio-') || s.startsWith('vis-') || s.startsWith('your-feed')) continue;
-        if (!seen.has(s)) { freq[s] = (freq[s] || 0) + 1; seen.add(s); }
-      }
-    }
-    for (const [subj, count] of Object.entries(freq)) {
-      if (count < 3) continue; // need at least 3 articles on the subject
-      if (!subjectIndex[subj]) subjectIndex[subj] = [];
-      subjectIndex[subj].push({ name, count, total: arts.length, section });
-    }
-  }
-
-  // Sort each subject's reporters by count desc
-  for (const subj of Object.keys(subjectIndex)) {
-    subjectIndex[subj].sort((a, b) => b.count - a.count);
-  }
-
-  // Build sorted subject list (by how many articles mention them)
-  subjectList = Object.keys(subjectIndex)
-    .map(s => ({ subject: s, docCount: corpusSubjectFreq[s] || 0, reporters: subjectIndex[s].length }))
-    .sort((a, b) => b.docCount - a.docCount);
+  // Already loaded from beats.json in Phase 1; nothing to do
 }
 
 function initBeats() {
@@ -1116,8 +1082,8 @@ function initBeats() {
     resultsBox.innerHTML = '';
     if (q.length < 2) { sugBox.style.display = 'none'; return; }
 
-    if (!articlesReady || !subjectList) {
-      sugBox.innerHTML = '<div style="padding:10px;color:#888;font-size:13px">Loading article data — beats will be available shortly…</div>';
+    if (!subjectList) {
+      sugBox.innerHTML = '<div style="padding:10px;color:#888;font-size:13px">Loading beats data…</div>';
       sugBox.style.display = 'block';
       return;
     }
@@ -1155,17 +1121,8 @@ function selectBeat(subject) {
   const resultsBox = document.getElementById('beatResults');
   const reporters = subjectIndex[subject] || [];
 
-  // Find related subjects (co-occur in the same articles)
-  const cooccur = {};
-  for (const a of articles) {
-    if (!a.subjects.includes(subject)) continue;
-    for (const s of a.subjects) {
-      if (s !== subject && !GENERIC_SUBJECTS.has(s) && !s.startsWith('internal-') && !s.startsWith('audio-') && !s.startsWith('vis-') && !s.startsWith('your-feed')) {
-        cooccur[s] = (cooccur[s] || 0) + 1;
-      }
-    }
-  }
-  const related = Object.entries(cooccur).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  // Use precomputed co-occurrences from beats.json
+  const related = (window._beatsCooccur && window._beatsCooccur[subject]) || [];
 
   let html = `<h4 style="margin-bottom:8px">${toTitleCase(subject)}</h4>`;
   html += `<p style="font-size:12px;color:#888;margin-bottom:12px">${(corpusSubjectFreq[subject] || 0).toLocaleString()} articles tagged with this subject</p>`;
@@ -1221,10 +1178,12 @@ function showAuthorTimeline(name, opts = {}) {
   const authorInfo = authors.find(a => a.name === name);
   if (!authorInfo) return;
 
-  // Phase 1: render charts + metadata immediately from authors.json
-  // Phase 2: fill article list once articles are loaded (or now if already ready)
+  // Phase 1: render productivity chart, monthly chart, beats immediately from authors.json
+  // Phase 2: fill article list (needs year files; loaded on-demand)
 
-  const beatsHtml = ''; // computed after articles load
+  const beatsHtml = (!subjectFilter && authorInfo.beats && authorInfo.beats.length)
+    ? `<strong>Beats:</strong> ${authorInfo.beats.map(toTitleCase).join(', ')}`
+    : '';
   const subjectNote = subjectFilter
     ? `<div style="font-size:12px;color:#326891;margin-top:4px">Filtered to articles tagged "${toTitleCase(subjectFilter)}"</div>`
     : '';
@@ -1238,7 +1197,7 @@ function showAuthorTimeline(name, opts = {}) {
         ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}Primary Section(s): ${(authorInfo.all_sections && authorInfo.all_sections.length ? authorInfo.all_sections : [authorInfo.primary_section]).join(', ')} · ${authorInfo.year_range}
       </div>
       ${subjectNote}
-      <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:6px"></div>
+      <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:6px">${beatsHtml}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
         <div>
           <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per month</div>
@@ -1335,62 +1294,107 @@ function showAuthorTimeline(name, opts = {}) {
     }
   }
 
-  // --- Article list + monthly chart + beats (need articles array) ---
-  function fillArticleDetails() {
-    if (!articlesReady) return;
+  // --- Monthly chart: render immediately from monthly_counts in authors.json ---
+  // (when no subject filter; subject-filtered chart is rendered in fillArticleDetails)
+  if (!subjectFilter && authorInfo.monthly_counts && Object.keys(authorInfo.monthly_counts).length) {
+    const byMonth = authorInfo.monthly_counts;
+    const first = authorInfo.first_date ? authorInfo.first_date.slice(0, 7) : null;
+    const last = authorInfo.last_date ? authorInfo.last_date.slice(0, 7) : null;
+    if (first && last) {
+      const allMonths = [];
+      let [ym, mm] = first.split('-').map(Number);
+      const [ly, lm] = last.split('-').map(Number);
+      while (ym < ly || (ym === ly && mm <= lm)) {
+        allMonths.push(`${ym}-${String(mm).padStart(2, '0')}`);
+        mm++; if (mm > 12) { mm = 1; ym++; }
+      }
+      const monthCanvas = document.getElementById(chartId);
+      if (monthCanvas) {
+        destroyChart(chartId);
+        chartInstances[chartId] = new Chart(monthCanvas, {
+          type: 'bar',
+          data: {
+            labels: allMonths,
+            datasets: [{ label: 'Articles', data: allMonths.map(k => byMonth[k] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return (l.endsWith('-01') && parseInt(l.slice(0,4)) % 5 === 0) ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
+              y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+          }
+        });
+      }
+    }
+  }
 
-    // Find all articles by this author
-    const allAuthorArticles = articles.filter(a => a.authors.includes(name))
-    .sort((a, b) => a.pub_date.localeCompare(b.pub_date));
-  // Optionally filter to a specific subject
-  const authorArticles = subjectFilter
-    ? allAuthorArticles.filter(a => a.subjects.includes(subjectFilter))
-    : allAuthorArticles;
+  // --- Article list (+ subject-filtered monthly chart + beats) ---
+  // Loads on-demand: only the year files covering this author's active range.
+  async function fillArticleDetails() {
+    const firstYear = authorInfo.first_year;
+    const lastYear = authorInfo.last_year;
+    if (!firstYear || !lastYear) return;
 
-  if (!authorArticles.length) return;
+    // Load only the years this author was active (sequentially to avoid memory pressure on mobile)
+    const allAuthorArticles = [];
+    for (let y = firstYear; y <= lastYear; y++) {
+      const yd = await ensureYearLoaded(y);
+      for (const a of yd) {
+        if (a.authors.includes(name)) allAuthorArticles.push(a);
+      }
+    }
+    allAuthorArticles.sort((a, b) => a.pub_date.localeCompare(b.pub_date));
 
-  const authorInfo = authors.find(a => a.name === name);
+    const authorArticles = subjectFilter
+      ? allAuthorArticles.filter(a => a.subjects.includes(subjectFilter))
+      : allAuthorArticles;
 
     if (!authorArticles.length) return;
 
-    // Monthly articles chart
-    const byMonth = {};
-    authorArticles.forEach(a => { byMonth[a.year_month] = (byMonth[a.year_month] || 0) + 1; });
-    const allMonths = [];
-    const first = authorArticles[0].year_month;
-    const last = authorArticles[authorArticles.length - 1].year_month;
-    let [ym, mm] = first.split('-').map(Number);
-    const [ly, lm] = last.split('-').map(Number);
-    while (ym < ly || (ym === ly && mm <= lm)) {
-      const key = `${ym}-${String(mm).padStart(2, '0')}`;
-      allMonths.push(key);
-      mm++; if (mm > 12) { mm = 1; ym++; }
-    }
-    const monthCanvas = document.getElementById(chartId);
-    if (monthCanvas) {
-      destroyChart(chartId);
-      chartInstances[chartId] = new Chart(monthCanvas, {
-        type: 'bar',
-        data: {
-          labels: allMonths,
-          datasets: [{ label: 'Articles', data: allMonths.map(k => byMonth[k] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
-            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+    // Subject-filtered monthly chart (when subject filter is active)
+    if (subjectFilter) {
+      const byMonth = {};
+      authorArticles.forEach(a => { byMonth[a.year_month] = (byMonth[a.year_month] || 0) + 1; });
+      const allMonths = [];
+      const first = authorArticles[0].year_month;
+      const last = authorArticles[authorArticles.length - 1].year_month;
+      let [ym, mm] = first.split('-').map(Number);
+      const [ly, lm] = last.split('-').map(Number);
+      while (ym < ly || (ym === ly && mm <= lm)) {
+        const key = `${ym}-${String(mm).padStart(2, '0')}`;
+        allMonths.push(key);
+        mm++; if (mm > 12) { mm = 1; ym++; }
+      }
+      const monthCanvas = document.getElementById(chartId);
+      if (monthCanvas) {
+        destroyChart(chartId);
+        chartInstances[chartId] = new Chart(monthCanvas, {
+          type: 'bar',
+          data: {
+            labels: allMonths,
+            datasets: [{ label: 'Articles', data: allMonths.map(k => byMonth[k] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return (l.endsWith('-01') && parseInt(l.slice(0,4)) % 5 === 0) ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
+              y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
           }
-        }
-      });
+        });
+      }
     }
 
-    // Beats
-    const beats = extractBeats(allAuthorArticles);
-    const beatsEl = document.getElementById(listId + '-beats');
-    if (beatsEl && beats.length) {
-      beatsEl.innerHTML = `<strong>Beats:</strong> ${beats.map(toTitleCase).join(', ')}`;
+    // Beats (subject-filtered only; unfiltered beats already shown from authors.json)
+    if (subjectFilter) {
+      const beats = extractBeats(allAuthorArticles);
+      const beatsEl = document.getElementById(listId + '-beats');
+      if (beatsEl && beats.length) {
+        beatsEl.innerHTML = `<strong>Beats:</strong> ${beats.map(toTitleCase).join(', ')}`;
+      }
     }
 
     // Article list (reverse chronological)
@@ -1419,11 +1423,8 @@ function showAuthorTimeline(name, opts = {}) {
     }
   } // end fillArticleDetails
 
-  if (articlesReady) {
-    fillArticleDetails();
-  } else {
-    pendingTimelineRefresh = fillArticleDetails;
-  }
+  // fillArticleDetails loads year files on demand — always call immediately
+  fillArticleDetails();
 }
 
 // --- HEADLINE SEARCH ---
@@ -1558,6 +1559,7 @@ function trackTerms() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         x: { ticks: { maxTicksLimit: 20, font: { size: 11 } } },
         y: { beginAtZero: true, title: { display: true, text: 'Headlines/month' } }
@@ -1634,6 +1636,7 @@ function initWorld() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
       },
@@ -1865,6 +1868,7 @@ function renderStateTrend(years) {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
       },
