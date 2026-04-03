@@ -184,6 +184,7 @@
   <button data-view="authors">Reporters</button>
   <button data-view="beats">Beats</button>
   <button data-view="sections">Sections</button>
+  <button data-view="careers">Careers</button>
   <button data-view="tracker">Headline Frequency</button>
   <button data-view="world">World</button>
   <button data-view="states">States</button>
@@ -302,8 +303,32 @@
     </div>
   </div>
 
-  <!-- HEADLINE SEARCH -->
-  <!-- Headline Search removed -->
+  <!-- CAREERS -->
+  <div class="view" id="view-careers">
+    <p style="font-size:13px;color:#666;margin-bottom:16px">Career productivity patterns for reporters with 10+ active years and 150+ articles. Author names are clickable.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="chart-box" id="careers-seasonal">
+        <h3>Most Seasonal Writers</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Biggest gap between most and least productive season (by article count).</p>
+        <div id="careers-seasonal-list"></div>
+      </div>
+      <div class="chart-box" id="careers-consistent">
+        <h3>Most Consistent Writers</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Lowest year-to-year variation in output over a long career (coefficient of variation).</p>
+        <div id="careers-consistent-list"></div>
+      </div>
+      <div class="chart-box" id="careers-rising">
+        <h3>Career Builders</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Biggest increase in output from early career to recent years.</p>
+        <div id="careers-rising-list"></div>
+      </div>
+      <div class="chart-box" id="careers-declining">
+        <h3>Fading Output</h3>
+        <p style="font-size:12px;color:#888;margin-bottom:10px">Biggest drop in output among reporters still active in recent years.</p>
+        <div id="careers-declining-list"></div>
+      </div>
+    </div>
+  </div>
 
   <!-- WORLD -->
   <div class="view" id="view-world">
@@ -2031,6 +2056,138 @@ const sectionsObserver = new MutationObserver(() => {
   }
 });
 sectionsObserver.observe(document.getElementById('view-sections'), { attributes: true });
+
+// Careers tab: lazy init
+let careersInitialized = false;
+const careersObserver = new MutationObserver(() => {
+  if (document.getElementById('view-careers').classList.contains('active') && !careersInitialized) {
+    careersInitialized = true;
+    initCareers();
+  }
+});
+careersObserver.observe(document.getElementById('view-careers'), { attributes: true });
+
+function initCareers() {
+  const INSTITUTIONAL = new Set([
+    'The New York Times','Reuters','Associated Press','AP','Bloomberg','Staff','Editors',
+    'Editorial Board','The Editorial Board','Times Staff','Wire Services'
+  ]);
+  const MIN_ARTICLES = 150;
+  const MIN_YEARS = 10;
+
+  // Filter to qualifying individual authors
+  const pool = (authors || []).filter(a => {
+    if (!a || !a.name) return false;
+    if (INSTITUTIONAL.has(a.name)) return false;
+    if ((a.article_count || 0) < MIN_ARTICLES) return false;
+    const ywn = a.annual_words_norm || {};
+    const years = Object.keys(ywn).map(Number).sort();
+    if (years.length < MIN_YEARS) return false;
+    return true;
+  });
+
+  // --- Seasonality ---
+  // Group monthly_counts by season, average per season month-slot, compute max/min ratio
+  const seasonality = pool.map(a => {
+    const mc = a.monthly_counts || {};
+    const seasons = {winter:[], spring:[], summer:[], fall:[]};
+    for (const [ym, n] of Object.entries(mc)) {
+      const mo = parseInt(ym.slice(5, 7));
+      if ([12,1,2].includes(mo)) seasons.winter.push(n);
+      else if ([3,4,5].includes(mo)) seasons.spring.push(n);
+      else if ([6,7,8].includes(mo)) seasons.summer.push(n);
+      else seasons.fall.push(n);
+    }
+    const avgs = Object.values(seasons).map(arr => arr.length ? arr.reduce((s,v)=>s+v,0)/arr.length : 0);
+    const mx = Math.max(...avgs), mn = Math.min(...avgs);
+    const ratio = mn > 0 ? mx / mn : mx > 0 ? Infinity : 1;
+    return {name: a.name, score: ratio, detail: avgs};
+  }).filter(x => isFinite(x.score) && x.score > 1)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 20);
+
+  // --- Consistency (lowest CV of annual_words_norm interior years) ---
+  const consistency = pool.map(a => {
+    const ywn = a.annual_words_norm || {};
+    const years = Object.keys(ywn).map(Number).sort();
+    // Interior years: exclude first and last (partial years)
+    const interior = years.slice(1, -1);
+    if (interior.length < 8) return null;
+    const vals = interior.map(y => ywn[y]);
+    const mean = vals.reduce((s,v)=>s+v,0) / vals.length;
+    if (mean < 1000) return null; // skip low-output authors
+    const std = Math.sqrt(vals.map(v=>(v-mean)**2).reduce((s,v)=>s+v,0) / vals.length);
+    const cv = std / mean;
+    return {name: a.name, score: cv, years: interior.length};
+  }).filter(Boolean)
+    .sort((a,b) => a.score - b.score)
+    .slice(0, 20);
+
+  // --- Career rise: last3 avg / first3 avg ---
+  const currentYear = new Date().getFullYear();
+  const rising = pool.map(a => {
+    const ywn = a.annual_words_norm || {};
+    const years = Object.keys(ywn).map(Number).sort();
+    if (years.length < 8) return null;
+    if ((a.last_year || 0) < currentYear - 3) return null; // must be recent
+    const first3 = years.slice(0,3).map(y=>ywn[y]);
+    const last3 = years.slice(-3).map(y=>ywn[y]);
+    const f = first3.reduce((s,v)=>s+v,0)/3;
+    const l = last3.reduce((s,v)=>s+v,0)/3;
+    if (f < 500) return null;
+    const ratio = l / f;
+    return {name: a.name, score: ratio};
+  }).filter(x => x && x.score > 1.2)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 20);
+
+  // --- Career decline: first3 avg / last3 avg, but still active ---
+  const declining = pool.map(a => {
+    const ywn = a.annual_words_norm || {};
+    const years = Object.keys(ywn).map(Number).sort();
+    if (years.length < 8) return null;
+    if ((a.last_year || 0) < 2022) return null; // still active
+    const first3 = years.slice(0,3).map(y=>ywn[y]);
+    const last3 = years.slice(-3).map(y=>ywn[y]);
+    const f = first3.reduce((s,v)=>s+v,0)/3;
+    const l = last3.reduce((s,v)=>s+v,0)/3;
+    if (f < 5000) return null; // must have been meaningfully productive
+    if (l < 500) return null; // but not completely gone
+    const ratio = f / l;
+    return {name: a.name, score: ratio};
+  }).filter(x => x && x.score > 1.5)
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 20);
+
+  function renderList(containerId, items, labelFn) {
+    const el = document.getElementById(containerId);
+    if (!items.length) { el.innerHTML = '<p style="color:#999;font-size:13px">Not enough data.</p>'; return; }
+    el.innerHTML = items.map((item, i) =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:13px">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          <span style="color:#999;margin-right:6px">${i+1}.</span>
+          <a href="#" onclick="showAuthorTimeline(${JSON.stringify(item.name)});return false" style="color:#1a0dab;text-decoration:none">${item.name}</a>
+        </span>
+        <span style="color:#666;margin-left:8px;white-space:nowrap">${labelFn(item)}</span>
+      </div>`
+    ).join('');
+  }
+
+  const seasonNames = ['Winter','Spring','Summer','Fall'];
+  renderList('careers-seasonal-list', seasonality, item => {
+    const peak = seasonNames[item.detail.indexOf(Math.max(...item.detail))];
+    return `${item.score.toFixed(1)}× (peaks ${peak})`;
+  });
+  renderList('careers-consistent-list', consistency, item =>
+    `CV ${(item.score * 100).toFixed(0)}% over ${item.years}y`
+  );
+  renderList('careers-rising-list', rising, item =>
+    `${item.score.toFixed(1)}× output growth`
+  );
+  renderList('careers-declining-list', declining, item =>
+    `${item.score.toFixed(1)}× decline`
+  );
+}
 
 loadData();
 </script>
