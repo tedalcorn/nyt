@@ -283,6 +283,7 @@
   <div class="view" id="view-sections">
     <div class="chart-box">
       <h3>Articles by Section</h3>
+      <div style="margin-bottom:8px"><label style="font-size:13px;color:#666"><input type="checkbox" id="sectionsShowAll" style="margin-right:4px">Show all sections</label></div>
       <div id="chartSectionsWrap" style="position:relative"><canvas id="chartSections"></canvas></div>
     </div>
     <div class="chart-box">
@@ -291,7 +292,7 @@
         <select id="sectionCountSelect" multiple style="width:100%;min-height:200px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
       </div>
-      <canvas id="chartSectionCount"></canvas>
+      <div style="position:relative;height:220px"><canvas id="chartSectionCount"></canvas></div>
     </div>
     <div class="chart-box">
       <h3>Average Article Length by Section Over Time</h3>
@@ -299,7 +300,7 @@
         <select id="sectionSelect" multiple style="width:100%;min-height:200px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
       </div>
-      <canvas id="chartSectionTrend"></canvas>
+      <div style="position:relative;height:220px"><canvas id="chartSectionTrend"></canvas></div>
     </div>
   </div>
 
@@ -328,6 +329,7 @@
         <div id="careers-declining-list"></div>
       </div>
     </div>
+    <div id="careersAuthorDetail" style="margin-top:16px"></div>
   </div>
 
   <!-- WORLD -->
@@ -342,7 +344,7 @@
         <select id="worldLocationSelect" multiple style="width:100%;min-height:100px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries. Showing top 40 most-covered locations.</div>
       </div>
-      <canvas id="chartLocationTrend"></canvas>
+      <div style="position:relative;height:220px"><canvas id="chartLocationTrend"></canvas></div>
     </div>
     <div class="chart-box">
       <h3>Top Covered Locations (All Time)</h3>
@@ -352,6 +354,7 @@
           <option value="total">Total articles</option>
           <option value="percapita">Articles per million residents per year</option>
         </select>
+        <label style="display:inline-flex;align-items:center;gap:4px"><input type="checkbox" id="topLocationsShowAll"> Show all</label>
       </div>
       <div id="chartTopLocationsWrap" style="position:relative"><canvas id="chartTopLocations"></canvas></div>
       <div style="font-size:12px;color:#888;margin-top:6px">Click a country bar to see coverage details.</div>
@@ -795,10 +798,11 @@ function renderMultiBylineTable() {
 }
 
 // --- SECTIONS ---
-function initSections() {
+function renderSectionsBar() {
   const sections = dashboard.sections.filter(s => s.name && s.count >= 100);
+  const showAll = document.getElementById('sectionsShowAll').checked;
+  const sectionData = showAll ? sections : sections.slice(0, 20);
   destroyChart('chartSections');
-  const sectionData = sections.slice(0, 30);
   chartInstances['chartSections'] = new Chart(document.getElementById('chartSections'), {
     type: 'bar',
     data: {
@@ -819,6 +823,11 @@ function initSections() {
   });
   const hs = sectionData.length * 24 + 20;
   document.getElementById('chartSectionsWrap').style.height = hs + 'px';
+}
+
+function initSections() {
+  document.getElementById('sectionsShowAll').addEventListener('change', renderSectionsBar);
+  renderSectionsBar();
 
   // Sections to hide from selectors: API noise and housekeeping artifacts
   const SECTION_BLOCKLIST = new Set([
@@ -884,6 +893,7 @@ function renderSectionCountTrend() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
       },
@@ -917,6 +927,7 @@ function renderSectionTrend() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         y: { beginAtZero: true, title: { display: true, text: 'Avg words/article' } }
       },
@@ -1455,7 +1466,9 @@ function showAuthorTimeline(name, opts = {}) {
 // --- HEADLINE SEARCH ---
 function initHeadlineSearch() {
   // Set up listeners immediately; section dropdown populated once articles load
-  document.getElementById('headlineSearch').addEventListener('input', debounce(searchHeadlines, 300));
+  const hs = document.getElementById('headlineSearch');
+  if (!hs) return; // tab removed
+  hs.addEventListener('input', debounce(searchHeadlines, 300));
   document.getElementById('headlineSection').addEventListener('change', searchHeadlines);
   document.getElementById('frontPageOnly').addEventListener('change', searchHeadlines);
 }
@@ -1682,8 +1695,9 @@ function initWorld() {
   select.addEventListener('change', renderLocationTrend);
   renderLocationTrend();
 
-  // Top locations bar chart with mode toggle
+  // Top locations bar chart with mode toggle / show-all toggle
   document.getElementById('topLocationsMode').addEventListener('change', renderTopLocations);
+  document.getElementById('topLocationsShowAll').addEventListener('change', renderTopLocations);
   renderTopLocations();
 }
 
@@ -1709,6 +1723,7 @@ function renderLocationTrend() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
         y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
       },
@@ -1733,8 +1748,10 @@ function renderTopLocations() {
   });
 
   // For per capita, filter to locations with population data
-  const filtered = perCapita ? totals.filter(t => t.hasPop) : totals;
+  let filtered = perCapita ? totals.filter(t => t.hasPop) : totals;
   filtered.sort((a, b) => b.value - a.value);
+  const showAll = document.getElementById('topLocationsShowAll').checked;
+  if (!showAll) filtered = filtered.slice(0, 20);
 
   const label = perCapita ? 'Articles per million residents per year' : 'Articles';
 
@@ -2166,11 +2183,22 @@ function initCareers() {
       `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:13px">
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
           <span style="color:#999;margin-right:6px">${i+1}.</span>
-          <a href="#" onclick="showAuthorTimeline(${JSON.stringify(item.name)});return false" style="color:#1a0dab;text-decoration:none">${item.name}</a>
+          <a href="#" class="careers-author-link" data-name="${escapeHtml(item.name)}" style="color:#1a0dab;text-decoration:none">${escapeHtml(item.name)}</a>
         </span>
         <span style="color:#666;margin-left:8px;white-space:nowrap">${labelFn(item)}</span>
       </div>`
     ).join('');
+    el.querySelectorAll('.careers-author-link').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        document.getElementById('careersAuthorDetail').scrollIntoView({behavior:'smooth',block:'nearest'});
+        showAuthorTimeline(a.dataset.name, {
+          containerId: 'careersAuthorDetail',
+          chartId: 'chartCareersAuthor',
+          listId: 'careersAuthorList',
+        });
+      });
+    });
   }
 
   const seasonNames = ['Winter','Spring','Summer','Fall'];
