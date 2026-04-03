@@ -64,7 +64,7 @@
   .chart-box .chart-controls label { font-size: 13px; color: #666; }
 
   /* Year range dual slider */
-  .yr-slider-wrap { position: relative; height: 22px; flex: 1; min-width: 180px; max-width: 320px; }
+  .yr-slider-wrap { position: relative; height: 22px; flex: 1; min-width: 240px; max-width: 520px; }
   .yr-slider-track { position: absolute; height: 3px; background: #ddd; border-radius: 2px; left: 0; right: 0; top: 50%; transform: translateY(-50%); }
   .yr-slider-fill { position: absolute; height: 3px; background: #326891; border-radius: 2px; top: 50%; transform: translateY(-50%); }
   .yr-slider-wrap input[type=range] {
@@ -260,6 +260,10 @@
       <div class="chart-controls">
         <label>Section:</label>
         <select id="prolificSection"><option value="">All sections</option></select>
+        <label style="margin-left:12px">Years:</label>
+        <select id="prolificYrStart" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
+        <span style="color:#888">–</span>
+        <select id="prolificYrEnd" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
       </div>
       <div id="chartTopAuthorsWrap" style="position:relative"><canvas id="chartTopAuthors"></canvas></div>
     </div>
@@ -270,6 +274,10 @@
         <select id="wordiestSection"><option value="">All sections</option></select>
         <label>Min articles:</label>
         <input type="number" id="wordiestMin" value="30" min="1" style="width:60px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
+        <label style="margin-left:12px">Years:</label>
+        <select id="wordiestYrStart" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
+        <span style="color:#888">–</span>
+        <select id="wordiestYrEnd" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
       </div>
       <div id="chartWordiestWrap" style="position:relative"><canvas id="chartWordiest"></canvas></div>
     </div>
@@ -283,7 +291,7 @@
       <label>Section: <select id="authorSectionFilter"><option value="">All</option></select></label>
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-      <span style="font-size:12px;color:#888;white-space:nowrap">Years:</span>
+      <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
       <span id="yrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
       <div class="yr-slider-wrap" id="yrSliderWrap">
         <div class="yr-slider-track"></div>
@@ -627,6 +635,18 @@ function initOverview() {
     }
   });
 
+  // Populate overview year selects
+  const ovYears = dashboard.all_years.map(Number).filter(y => y < new Date().getFullYear());
+  ['prolificYrStart','prolificYrEnd','wordiestYrStart','wordiestYrEnd'].forEach(id => {
+    const sel = document.getElementById(id);
+    ovYears.forEach(y => sel.appendChild(Object.assign(document.createElement('option'), {value:y, textContent:y})));
+    sel.value = id.endsWith('Start') ? ovYears[0] : ovYears[ovYears.length - 1];
+  });
+  document.getElementById('prolificYrStart').addEventListener('change', renderProlific);
+  document.getElementById('prolificYrEnd').addEventListener('change', renderProlific);
+  document.getElementById('wordiestYrStart').addEventListener('change', renderWordiest);
+  document.getElementById('wordiestYrEnd').addEventListener('change', renderWordiest);
+
   // Section filter for prolific authors
   populateSectionSelect(document.getElementById('prolificSection'), renderProlific);
   renderProlific();
@@ -657,14 +677,32 @@ const INSTITUTIONAL_BYLINES = new Set([
   'Compiled by The New York Times',
 ]);
 
+function getOverviewYearRange(prefix) {
+  const s = document.getElementById(prefix + 'YrStart');
+  const e = document.getElementById(prefix + 'YrEnd');
+  if (!s || !e) return null;
+  const start = parseInt(s.value), end = parseInt(e.value);
+  const allYears = dashboard.all_years.map(Number).filter(y => y < new Date().getFullYear());
+  const fullRange = start <= allYears[0] && end >= allYears[allYears.length - 1];
+  return { start, end, fullRange };
+}
+
 function renderProlific() {
   const section = document.getElementById('prolificSection').value;
-  let pool;
-  if (section) {
-    pool = authors.filter(a => a.primary_section === section && !INSTITUTIONAL_BYLINES.has(a.name))
-      .sort((a, b) => b.article_count - a.article_count);
+  const yr = getOverviewYearRange('prolific');
+
+  let pool = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
+  if (section) pool = pool.filter(a => a.primary_section === section);
+
+  if (yr && !yr.fullRange) {
+    pool = pool.map(a => {
+      const rs = computeRangeStats(a, yr.start, yr.end);
+      return { ...a, _displayCount: rs.articles };
+    }).filter(a => a._displayCount > 0)
+      .sort((a, b) => b._displayCount - a._displayCount);
   } else {
-    pool = dashboard.top_authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
+    pool = pool.map(a => ({ ...a, _displayCount: a.article_count }))
+      .sort((a, b) => b._displayCount - a._displayCount);
   }
   const top = pool.slice(0, 20);
 
@@ -675,7 +713,7 @@ function renderProlific() {
       labels: top.map(a => a.name),
       datasets: [{
         label: 'Articles',
-        data: top.map(a => a.article_count),
+        data: top.map(a => a._displayCount),
         backgroundColor: 'rgba(50,104,145,0.7)',
         barPercentage: 0.8,
         categoryPercentage: 0.85,
@@ -700,14 +738,26 @@ function renderWordiest() {
   const section = document.getElementById('wordiestSection').value;
   const minArticles = parseInt(document.getElementById('wordiestMin').value) || 30;
   const excluded = new Set(['Opinion', 'Magazine', 'T Magazine']);
+  const yr = getOverviewYearRange('wordiest');
 
-  let pool;
+  let pool = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
   if (section) {
-    pool = authors.filter(a => a.primary_section === section && a.article_count >= minArticles)
-      .sort((a, b) => b.avg_words - a.avg_words);
+    pool = pool.filter(a => a.primary_section === section);
   } else {
-    pool = authors.filter(a => a.article_count >= minArticles && !excluded.has(a.primary_section))
-      .sort((a, b) => b.avg_words - a.avg_words);
+    pool = pool.filter(a => !excluded.has(a.primary_section));
+  }
+
+  if (yr && !yr.fullRange) {
+    pool = pool.map(a => {
+      const rs = computeRangeStats(a, yr.start, yr.end);
+      const avgWords = rs.articles >= minArticles ? Math.round(rs.words / rs.articles) : 0;
+      return { ...a, _displayAvg: avgWords, _displayCount: rs.articles };
+    }).filter(a => a._displayCount >= minArticles)
+      .sort((a, b) => b._displayAvg - a._displayAvg);
+  } else {
+    pool = pool.filter(a => a.article_count >= minArticles)
+      .map(a => ({ ...a, _displayAvg: a.avg_words, _displayCount: a.article_count }))
+      .sort((a, b) => b._displayAvg - a._displayAvg);
   }
   const top = pool.slice(0, 20);
 
@@ -718,7 +768,7 @@ function renderWordiest() {
       labels: top.map(a => a.name),
       datasets: [{
         label: 'Avg words/article',
-        data: top.map(a => a.avg_words),
+        data: top.map(a => a._displayAvg),
         backgroundColor: 'rgba(170,120,80,0.7)',
         barPercentage: 0.8,
         categoryPercentage: 0.85,
@@ -2187,7 +2237,7 @@ function initYearSlider() {
 
   function update() {
     let s = parseInt(sInput.value), e = parseInt(eInput.value);
-    if (s > e - 1) { s = e - 1; sInput.value = s; }
+    if (s > e) { s = e; sInput.value = s; } // allow start === end (single year)
     const range = maxY - minY;
     document.getElementById('yrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
     document.getElementById('yrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
