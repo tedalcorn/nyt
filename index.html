@@ -253,18 +253,6 @@
       </div>
       <div id="chartWordiestWrap" style="position:relative"><canvas id="chartWordiest"></canvas></div>
     </div>
-    <div class="chart-box">
-      <h3>Articles With Multiple Bylines <span style="font-weight:normal;font-size:12px;color:#888">(% per year — includes photo credits)</span></h3>
-      <div style="position:relative;height:90px"><canvas id="chartMultiByline"></canvas></div>
-    </div>
-    <div class="chart-box">
-      <h3>Multiple Bylines by Author <span style="font-weight:normal;font-size:12px;color:#888">(includes photo credits — not all reflect editorial collaboration)</span></h3>
-      <div class="chart-controls">
-        <label>Min articles: <input type="number" id="multiBylineMin" value="20" min="1" style="width:60px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px"></label>
-        <label>Section: <select id="multiBylineSection"><option value="">All sections</option></select></label>
-      </div>
-      <div id="multiBylineTable"></div>
-    </div>
   </div>
 
   <!-- AUTHORS -->
@@ -410,6 +398,7 @@ const SHOW_MULTI_SECTIONS = true;
 const MAX_SECTIONS_DISPLAY = 3; // cap display; authors with more get "… +N"
 // ─────────────────────────────────────────────────────────────────────────────
 let chartInstances = {};
+let pendingTimelineRefresh = null; // set when an author timeline is shown before articles load
 
 function destroyChart(id) {
   if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
@@ -426,9 +415,10 @@ async function loadData() {
     authors = await auRes.json();
 
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('dateRange').textContent = dashboard.summary.date_range;
-    initOverview();       // uses dashboard data only (multi-byline from dashboard.multi_byline_trend)
-    initSections();
+    const allYears = dashboard.all_years;
+    document.getElementById('dateRange').textContent = `${allYears[0]} \u2013 ${allYears[allYears.length - 1]}`;
+    initOverview();       // uses dashboard data only
+    // initSections is lazy — runs on first tab visit
     initHeadlineSearch(); // sets up UI; search shows "loading" until articles ready
     initAuthorFilters();
     renderWordsDist();
@@ -464,7 +454,8 @@ async function loadData() {
     }
     articlesReady = true;
     // Re-render anything that was waiting on articles
-    renderMultiBylineTable();
+    if (pendingTimelineRefresh) { pendingTimelineRefresh(); pendingTimelineRefresh = null; }
+    populateHeadlineSection();
     subjectIndex = null; // force rebuild now that all articles are loaded
     corpusSubjectFreq = null;
   } catch (e) {
@@ -564,18 +555,25 @@ function initOverview() {
   document.getElementById('wordiestMin').addEventListener('input', renderWordiest);
   renderWordiest();
 
-  renderMultiBylineTrend();
-  populateSectionSelect(document.getElementById('multiBylineSection'), renderMultiBylineTable);
-  renderMultiBylineTable();
-  document.getElementById('multiBylineMin').addEventListener('input', renderMultiBylineTable);
 }
 
 const INSTITUTIONAL_BYLINES = new Set([
+  // Already excluded
   'The New York Times', 'The Associated Press', 'The Editorial Board',
   'The Learning Network', 'New York Times Games', 'International Herald Tribune',
   'Reuters', 'The New York Times Books Staff', 'The Upshot Staff',
   'The Staff', 'The Times Insider Staff', 'The New York Times Sports Staff',
   'The New York Times Staff',
+  // Wire services and syndicated sources
+  'Bloomberg News', 'Associated Press', 'Bridge News', 'Field Level Media',
+  'Der Spiegel', 'der Spiegel', 'The International Herald Tribune',
+  // Internal product/desk aggregations
+  'New York Times', 'New York Times Audio', 'New York Times Opinion',
+  'The New York Times Opinion', 'The New York Times Magazine',
+  'The Styles Desk', 'Retro Report', 'The Upshot Staff',
+  'Insider Staff', 'the staff of The Morning', 'New York Times Cooking',
+  // Compiled/aggregated bylines
+  'Compiled by The New York Times',
 ]);
 
 function renderProlific() {
@@ -1220,59 +1218,27 @@ function showAuthorTimeline(name, opts = {}) {
   destroyChart(chartId + '_prod');
   document.getElementById(containerId).innerHTML = '';
 
-  if (!articlesReady) {
-    document.getElementById(containerId).innerHTML = '<p style="color:#888;font-size:13px;padding:8px 0">Loading article data — article timeline will be available shortly…</p>';
-    return;
-  }
-
-  // Find all articles by this author
-  const allAuthorArticles = articles.filter(a => a.authors.includes(name))
-    .sort((a, b) => a.pub_date.localeCompare(b.pub_date));
-  // Optionally filter to a specific subject
-  const authorArticles = subjectFilter
-    ? allAuthorArticles.filter(a => a.subjects.includes(subjectFilter))
-    : allAuthorArticles;
-
-  if (!authorArticles.length) return;
-
   const authorInfo = authors.find(a => a.name === name);
+  if (!authorInfo) return;
 
-  // Group by month for the chart
-  const byMonth = {};
-  authorArticles.forEach(a => {
-    byMonth[a.year_month] = (byMonth[a.year_month] || 0) + 1;
-  });
+  // Phase 1: render charts + metadata immediately from authors.json
+  // Phase 2: fill article list once articles are loaded (or now if already ready)
 
-  // Create a full month range
-  const allMonths = [];
-  const first = authorArticles[0].year_month;
-  const last = authorArticles[authorArticles.length - 1].year_month;
-  let [y, m] = first.split('-').map(Number);
-  const [ly, lm] = last.split('-').map(Number);
-  while (y < ly || (y === ly && m <= lm)) {
-    const key = `${y}-${String(m).padStart(2, '0')}`;
-    allMonths.push(key);
-    m++; if (m > 12) { m = 1; y++; }
-  }
-
-  // Extract beat topics
-  const beats = extractBeats(allAuthorArticles);
-  const beatsHtml = beats.length ? `<div style="font-size:13px;color:#555;margin-top:6px"><strong>Beats:</strong> ${beats.map(toTitleCase).join(', ')}</div>` : '';
-
+  const beatsHtml = ''; // computed after articles load
   const subjectNote = subjectFilter
-    ? `<div style="font-size:12px;color:#326891;margin-top:4px">Showing ${authorArticles.length} of ${allAuthorArticles.length} articles tagged "${toTitleCase(subjectFilter)}"</div>`
+    ? `<div style="font-size:12px;color:#326891;margin-top:4px">Filtered to articles tagged "${toTitleCase(subjectFilter)}"</div>`
     : '';
 
   const container = document.getElementById(containerId);
   container.innerHTML = `
     <div class="author-timeline">
-      <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_prod')">Close</button>
+      <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_prod');pendingTimelineRefresh=null">Close</button>
       <h3>${escapeHtml(name)}</h3>
       <div class="timeline-meta">
-        ${authorInfo ? `${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}Primary Section(s): ${(authorInfo.all_sections && authorInfo.all_sections.length ? authorInfo.all_sections : [authorInfo.primary_section]).join(', ')} · ${authorInfo.year_range}` : ''}
+        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}Primary Section(s): ${(authorInfo.all_sections && authorInfo.all_sections.length ? authorInfo.all_sections : [authorInfo.primary_section]).join(', ')} · ${authorInfo.year_range}
       </div>
-      ${beatsHtml}
       ${subjectNote}
+      <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:6px"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
         <div>
           <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per month</div>
@@ -1283,36 +1249,14 @@ function showAuthorTimeline(name, opts = {}) {
           <canvas id="${chartId}_prod" style="max-height:160px"></canvas>
         </div>
       </div>
-      <div id="${listId}" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px"></div>
+      <div id="${listId}" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px">
+        ${articlesReady ? '' : '<div style="color:#888;padding:8px 0">Article list loading…</div>'}
+      </div>
     </div>
   `;
 
-  // Render timeline chart
-  destroyChart(chartId);
-  chartInstances[chartId] = new Chart(document.getElementById(chartId), {
-    type: 'bar',
-    data: {
-      labels: allMonths,
-      datasets: [{
-        label: 'Articles',
-        data: allMonths.map(m => byMonth[m] || 0),
-        backgroundColor: 'rgba(50,104,145,0.7)',
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
-        y: { beginAtZero: true, ticks: { stepSize: 1 } }
-      }
-    }
-  });
-
-  // Productivity chart: words/year (annualized from build_data)
-  if (authorInfo && authorInfo.annual_words_norm) {
-    // Drop edge years where the author was active fewer than 90 days —
-    // those annualized values are too distorted to be meaningful.
+  // --- Productivity chart (from authors.json — available immediately) ---
+  if (authorInfo.annual_words_norm) {
     const MIN_DAYS = 90;
     let allYears = Object.keys(authorInfo.annual_words_norm).sort();
     if (allYears.length > 1 && authorInfo.first_date) {
@@ -1331,94 +1275,166 @@ function showAuthorTimeline(name, opts = {}) {
     const prodVals  = prodYears.map(y => authorInfo.annual_words_norm[y]);
     const avgLine   = authorInfo.avg_words_per_year || 0;
 
-    // Build a diagonal-stripe canvas pattern for partial (edge) years
     const prodCanvas = document.getElementById(chartId + '_prod');
-    const patEl = document.createElement('canvas');
-    patEl.width = 10; patEl.height = 10;
-    const pc = patEl.getContext('2d');
-    pc.fillStyle = 'rgba(50,104,145,0.2)';
-    pc.fillRect(0, 0, 10, 10);
-    pc.strokeStyle = 'rgba(50,104,145,0.75)';
-    pc.lineWidth = 2.5;
-    [[-2,10,8,0],[3,10,13,0],[8,10,18,0]].forEach(([x1,y1,x2,y2]) => {
-      pc.beginPath(); pc.moveTo(x1,y1); pc.lineTo(x2,y2); pc.stroke();
-    });
-    const stripePattern = prodCanvas.getContext('2d').createPattern(patEl, 'repeat');
-    const solidBlue = 'rgba(50,104,145,0.7)';
-    const thisYear = String(new Date().getFullYear());
-    const isEdge = (i) => prodYears.length > 1 && (
-      i === 0 ||
-      (i === prodYears.length - 1 && prodYears[i] === thisYear)
-    );
-
-    destroyChart(chartId + '_prod');
-    chartInstances[chartId + '_prod'] = new Chart(prodCanvas, {
-      type: 'bar',
-      data: {
-        labels: prodYears,
-        datasets: [
-          {
-            label: 'Words/year',
-            data: prodVals,
-            backgroundColor: prodYears.map((_, i) => isEdge(i) ? stripePattern : solidBlue),
-          },
-          {
-            label: 'Avg',
-            data: prodYears.map(() => avgLine),
-            type: 'line',
-            borderColor: 'rgba(180,50,50,0.7)',
-            borderDash: [4,3],
-            borderWidth: 1.5,
-            pointRadius: 0,
-            fill: false,
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: {
-            label: ctx => ctx.datasetIndex === 0
-              ? (ctx.parsed.y/1000).toFixed(0) + 'k words'
-              : 'avg ' + (ctx.parsed.y/1000).toFixed(0) + 'k'
-          }}
+    if (prodCanvas) {
+      const patEl = document.createElement('canvas');
+      patEl.width = 10; patEl.height = 10;
+      const pc = patEl.getContext('2d');
+      pc.fillStyle = 'rgba(50,104,145,0.2)';
+      pc.fillRect(0, 0, 10, 10);
+      pc.strokeStyle = 'rgba(50,104,145,0.75)';
+      pc.lineWidth = 2.5;
+      [[-2,10,8,0],[3,10,13,0],[8,10,18,0]].forEach(([x1,y1,x2,y2]) => {
+        pc.beginPath(); pc.moveTo(x1,y1); pc.lineTo(x2,y2); pc.stroke();
+      });
+      const stripePattern = prodCanvas.getContext('2d').createPattern(patEl, 'repeat');
+      const solidBlue = 'rgba(50,104,145,0.7)';
+      const thisYear = String(new Date().getFullYear());
+      const isEdge = (i) => prodYears.length > 1 && (
+        i === 0 || (i === prodYears.length - 1 && prodYears[i] === thisYear)
+      );
+      destroyChart(chartId + '_prod');
+      chartInstances[chartId + '_prod'] = new Chart(prodCanvas, {
+        type: 'bar',
+        data: {
+          labels: prodYears,
+          datasets: [
+            {
+              label: 'Words/year',
+              data: prodVals,
+              backgroundColor: prodYears.map((_, i) => isEdge(i) ? stripePattern : solidBlue),
+            },
+            {
+              label: 'Avg',
+              data: prodYears.map(() => avgLine),
+              type: 'line',
+              borderColor: 'rgba(180,50,50,0.7)',
+              borderDash: [4,3],
+              borderWidth: 1.5,
+              pointRadius: 0,
+              fill: false,
+            }
+          ]
         },
-        scales: {
-          x: { ticks: { font: { size: 10 }, maxRotation: 0 } },
-          y: { beginAtZero: true, ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } }
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: {
+              label: ctx => ctx.datasetIndex === 0
+                ? (ctx.parsed.y/1000).toFixed(0) + 'k words'
+                : 'avg ' + (ctx.parsed.y/1000).toFixed(0) + 'k'
+            }}
+          },
+          scales: {
+            x: { ticks: { font: { size: 10 }, maxRotation: 0 } },
+            y: { beginAtZero: true, ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } }
+          }
         }
-      }
-    });
+      });
+    }
   }
 
-  // Article list (reverse chronological)
-  const reversedArticles = [...authorArticles].reverse();
-  const listHtml = reversedArticles.map(a => {
-    const coauthors = a.authors.filter(n => n !== name);
-    const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
-    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
-      <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
-      <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
-      <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
-    </div>`;
-  }).join('');
-  document.getElementById(listId).innerHTML =
-    `<div style="font-size:12px;color:#888;margin-bottom:6px">${authorArticles.length} articles (newest first)</div>` + listHtml;
+  // --- Article list + monthly chart + beats (need articles array) ---
+  function fillArticleDetails() {
+    if (!articlesReady) return;
 
-  // Scroll to timeline
-  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Find all articles by this author
+    const allAuthorArticles = articles.filter(a => a.authors.includes(name))
+    .sort((a, b) => a.pub_date.localeCompare(b.pub_date));
+  // Optionally filter to a specific subject
+  const authorArticles = subjectFilter
+    ? allAuthorArticles.filter(a => a.subjects.includes(subjectFilter))
+    : allAuthorArticles;
 
-  // Highlight the row (only on authors tab)
-  if (!opts.containerId) {
-    document.querySelectorAll('.author-table tr.selected').forEach(r => r.classList.remove('selected'));
-    const row = document.querySelector(`.author-table tr[data-author="${CSS.escape(name)}"]`);
-    if (row) row.classList.add('selected');
+  if (!authorArticles.length) return;
+
+  const authorInfo = authors.find(a => a.name === name);
+
+    if (!authorArticles.length) return;
+
+    // Monthly articles chart
+    const byMonth = {};
+    authorArticles.forEach(a => { byMonth[a.year_month] = (byMonth[a.year_month] || 0) + 1; });
+    const allMonths = [];
+    const first = authorArticles[0].year_month;
+    const last = authorArticles[authorArticles.length - 1].year_month;
+    let [ym, mm] = first.split('-').map(Number);
+    const [ly, lm] = last.split('-').map(Number);
+    while (ym < ly || (ym === ly && mm <= lm)) {
+      const key = `${ym}-${String(mm).padStart(2, '0')}`;
+      allMonths.push(key);
+      mm++; if (mm > 12) { mm = 1; ym++; }
+    }
+    const monthCanvas = document.getElementById(chartId);
+    if (monthCanvas) {
+      destroyChart(chartId);
+      chartInstances[chartId] = new Chart(monthCanvas, {
+        type: 'bar',
+        data: {
+          labels: allMonths,
+          datasets: [{ label: 'Articles', data: allMonths.map(k => byMonth[k] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    // Beats
+    const beats = extractBeats(allAuthorArticles);
+    const beatsEl = document.getElementById(listId + '-beats');
+    if (beatsEl && beats.length) {
+      beatsEl.innerHTML = `<strong>Beats:</strong> ${beats.map(toTitleCase).join(', ')}`;
+    }
+
+    // Article list (reverse chronological)
+    const reversedArticles = [...authorArticles].reverse();
+    const listHtml = reversedArticles.map(a => {
+      const coauthors = a.authors.filter(n => n !== name);
+      const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
+      return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+        <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+        <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
+        <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
+      </div>`;
+    }).join('');
+    document.getElementById(listId).innerHTML =
+      `<div style="font-size:12px;color:#888;margin-bottom:6px">${authorArticles.length} articles (newest first)</div>` + listHtml;
+
+    // Scroll to timeline
+    const container2 = document.getElementById(containerId);
+    if (container2) container2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Highlight the row (only on authors tab)
+    if (!opts.containerId) {
+      document.querySelectorAll('.author-table tr.selected').forEach(r => r.classList.remove('selected'));
+      const row = document.querySelector(`.author-table tr[data-author="${CSS.escape(name)}"]`);
+      if (row) row.classList.add('selected');
+    }
+  } // end fillArticleDetails
+
+  if (articlesReady) {
+    fillArticleDetails();
+  } else {
+    pendingTimelineRefresh = fillArticleDetails;
   }
 }
 
 // --- HEADLINE SEARCH ---
 function initHeadlineSearch() {
+  // Set up listeners immediately; section dropdown populated once articles load
+  document.getElementById('headlineSearch').addEventListener('input', debounce(searchHeadlines, 300));
+  document.getElementById('headlineSection').addEventListener('change', searchHeadlines);
+  document.getElementById('frontPageOnly').addEventListener('change', searchHeadlines);
+}
+
+function populateHeadlineSection() {
   const sections = new Set(articles.map(a => a.section).filter(Boolean));
   const select = document.getElementById('headlineSection');
   [...sections].sort().forEach(s => {
@@ -1426,10 +1442,6 @@ function initHeadlineSearch() {
     opt.value = s; opt.textContent = s;
     select.appendChild(opt);
   });
-
-  document.getElementById('headlineSearch').addEventListener('input', debounce(searchHeadlines, 300));
-  document.getElementById('headlineSection').addEventListener('change', searchHeadlines);
-  document.getElementById('frontPageOnly').addEventListener('change', searchHeadlines);
 }
 
 function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
@@ -2005,6 +2017,16 @@ const statesObserver = new MutationObserver(() => {
   }
 });
 statesObserver.observe(document.getElementById('view-states'), { attributes: true });
+
+// Trigger sections render when tab shown (lazy init)
+let sectionsInitialized = false;
+const sectionsObserver = new MutationObserver(() => {
+  if (document.getElementById('view-sections').classList.contains('active') && !sectionsInitialized) {
+    sectionsInitialized = true;
+    initSections();
+  }
+});
+sectionsObserver.observe(document.getElementById('view-sections'), { attributes: true });
 
 loadData();
 </script>
