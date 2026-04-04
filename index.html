@@ -144,7 +144,7 @@
     display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
     margin-bottom: 12px;
   }
-  .term-inputs input {
+  .term-inputs input[type=text] {
     padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px;
     font-family: inherit; font-size: 14px; width: 140px;
   }
@@ -199,12 +199,10 @@
 </header>
 
 <nav id="nav">
-  <button data-view="about">About</button>
-  <button data-view="overview" class="active">Overview</button>
+  <button data-view="about" class="active">About</button>
   <button data-view="authors">Reporters</button>
   <button data-view="beats">Beats</button>
   <button data-view="sections">Sections</button>
-  <button data-view="careers">Careers</button>
   <button data-view="tracker">Headline Frequency</button>
   <button data-view="world">World</button>
   <button data-view="states">States</button>
@@ -215,8 +213,12 @@
 
   <!-- ABOUT -->
   <div class="view" id="view-about">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="chart-box" style="margin-bottom:20px">
+      <h3>Articles and Words per Month</h3>
+      <div style="position:relative;height:192px"><canvas id="chartMonthly"></canvas></div>
+    </div>
     <div class="chart-box" style="max-width:760px;margin:0 auto;font-size:14px;line-height:1.7">
-      <h3 style="margin-bottom:12px">About</h3>
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings they intend to share.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated nightly.</p>
 
@@ -248,40 +250,6 @@
     </div>
   </div>
 
-  <!-- OVERVIEW -->
-  <div class="view" id="view-overview">
-    <div class="stats-row" id="statsRow"></div>
-    <div class="chart-box">
-      <h3>Articles and Words per Month</h3>
-      <div style="position:relative;height:192px"><canvas id="chartMonthly"></canvas></div>
-    </div>
-    <div class="chart-box">
-      <h3>Most Prolific Authors</h3>
-      <div class="chart-controls">
-        <label>Section:</label>
-        <select id="prolificSection"><option value="">All sections</option></select>
-        <label style="margin-left:12px">Years:</label>
-        <select id="prolificYrStart" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
-        <span style="color:#888">–</span>
-        <select id="prolificYrEnd" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
-      </div>
-      <div id="chartTopAuthorsWrap" style="position:relative"><canvas id="chartTopAuthors"></canvas></div>
-    </div>
-    <div class="chart-box">
-      <h3>Wordiest Writers <span style="font-weight:normal;font-size:12px;color:#888">(excl. Opinion/Magazine)</span></h3>
-      <div class="chart-controls">
-        <label>Section:</label>
-        <select id="wordiestSection"><option value="">All sections</option></select>
-        <label>Min articles:</label>
-        <input type="number" id="wordiestMin" value="30" min="1" style="width:60px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px">
-        <label style="margin-left:12px">Years:</label>
-        <select id="wordiestYrStart" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
-        <span style="color:#888">–</span>
-        <select id="wordiestYrEnd" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
-      </div>
-      <div id="chartWordiestWrap" style="position:relative"><canvas id="chartWordiest"></canvas></div>
-    </div>
-  </div>
 
   <!-- AUTHORS -->
   <div class="view" id="view-authors">
@@ -343,33 +311,6 @@
     </div>
   </div>
 
-  <!-- CAREERS -->
-  <div class="view" id="view-careers">
-    <p style="font-size:13px;color:#666;margin-bottom:16px">Career productivity patterns for reporters with 10+ active years and 150+ articles. Author names are clickable.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div class="chart-box" id="careers-seasonal">
-        <h3>Most Seasonal Writers</h3>
-        <p style="font-size:12px;color:#888;margin-bottom:10px">Biggest gap between most and least productive season (by article count).</p>
-        <div id="careers-seasonal-list"></div>
-      </div>
-      <div class="chart-box" id="careers-consistent">
-        <h3>Most Consistent Writers</h3>
-        <p style="font-size:12px;color:#888;margin-bottom:10px">Lowest year-to-year variation in output over a long career (coefficient of variation).</p>
-        <div id="careers-consistent-list"></div>
-      </div>
-      <div class="chart-box" id="careers-rising">
-        <h3>Career Builders</h3>
-        <p style="font-size:12px;color:#888;margin-bottom:10px">Biggest increase in output from early career to recent years.</p>
-        <div id="careers-rising-list"></div>
-      </div>
-      <div class="chart-box" id="careers-declining">
-        <h3>Fading Output</h3>
-        <p style="font-size:12px;color:#888;margin-bottom:10px">Biggest drop in output among reporters still active in recent years.</p>
-        <div id="careers-declining-list"></div>
-      </div>
-    </div>
-    <div id="careersAuthorDetail" style="margin-top:16px"></div>
-  </div>
 
   <!-- WORLD -->
   <div class="view" id="view-world">
@@ -535,7 +476,7 @@ async function loadData() {
     initAuthorFilters();
     renderWordsDist();
     initBeats();
-    showView('overview');
+    showView('about');
 
     // Phase 2: load all article files sequentially in the background
     const years = dashboard.all_years.map(Number);
@@ -635,27 +576,6 @@ function initOverview() {
     }
   });
 
-  // Populate overview year selects
-  const ovYears = dashboard.all_years.map(Number).filter(y => y < new Date().getFullYear());
-  ['prolificYrStart','prolificYrEnd','wordiestYrStart','wordiestYrEnd'].forEach(id => {
-    const sel = document.getElementById(id);
-    ovYears.forEach(y => sel.appendChild(Object.assign(document.createElement('option'), {value:y, textContent:y})));
-    sel.value = id.endsWith('Start') ? ovYears[0] : ovYears[ovYears.length - 1];
-  });
-  document.getElementById('prolificYrStart').addEventListener('change', renderProlific);
-  document.getElementById('prolificYrEnd').addEventListener('change', renderProlific);
-  document.getElementById('wordiestYrStart').addEventListener('change', renderWordiest);
-  document.getElementById('wordiestYrEnd').addEventListener('change', renderWordiest);
-
-  // Section filter for prolific authors
-  populateSectionSelect(document.getElementById('prolificSection'), renderProlific);
-  renderProlific();
-
-  // Section filter for wordiest authors
-  populateSectionSelect(document.getElementById('wordiestSection'), renderWordiest);
-  document.getElementById('wordiestMin').addEventListener('input', renderWordiest);
-  renderWordiest();
-
 }
 
 const INSTITUTIONAL_BYLINES = new Set([
@@ -677,117 +597,6 @@ const INSTITUTIONAL_BYLINES = new Set([
   'Compiled by The New York Times',
 ]);
 
-function getOverviewYearRange(prefix) {
-  const s = document.getElementById(prefix + 'YrStart');
-  const e = document.getElementById(prefix + 'YrEnd');
-  if (!s || !e) return null;
-  const start = parseInt(s.value), end = parseInt(e.value);
-  const allYears = dashboard.all_years.map(Number).filter(y => y < new Date().getFullYear());
-  const fullRange = start <= allYears[0] && end >= allYears[allYears.length - 1];
-  return { start, end, fullRange };
-}
-
-function renderProlific() {
-  const section = document.getElementById('prolificSection').value;
-  const yr = getOverviewYearRange('prolific');
-
-  let pool = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
-  if (section) pool = pool.filter(a => a.primary_section === section);
-
-  if (yr && !yr.fullRange) {
-    pool = pool.map(a => {
-      const rs = computeRangeStats(a, yr.start, yr.end);
-      return { ...a, _displayCount: rs.articles };
-    }).filter(a => a._displayCount > 0)
-      .sort((a, b) => b._displayCount - a._displayCount);
-  } else {
-    pool = pool.map(a => ({ ...a, _displayCount: a.article_count }))
-      .sort((a, b) => b._displayCount - a._displayCount);
-  }
-  const top = pool.slice(0, 20);
-
-  destroyChart('chartTopAuthors');
-  chartInstances['chartTopAuthors'] = new Chart(document.getElementById('chartTopAuthors'), {
-    type: 'bar',
-    data: {
-      labels: top.map(a => a.name),
-      datasets: [{
-        label: 'Articles',
-        data: top.map(a => a._displayCount),
-        backgroundColor: 'rgba(50,104,145,0.7)',
-        barPercentage: 0.8,
-        categoryPercentage: 0.85,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { beginAtZero: true },
-        y: { ticks: { font: { size: 11 } } }
-      }
-    }
-  });
-  const h = top.length * 24 + 20;
-  document.getElementById('chartTopAuthorsWrap').style.height = h + 'px';
-}
-
-function renderWordiest() {
-  const section = document.getElementById('wordiestSection').value;
-  const minArticles = parseInt(document.getElementById('wordiestMin').value) || 30;
-  const excluded = new Set(['Opinion', 'Magazine', 'T Magazine']);
-  const yr = getOverviewYearRange('wordiest');
-
-  let pool = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
-  if (section) {
-    pool = pool.filter(a => a.primary_section === section);
-  } else {
-    pool = pool.filter(a => !excluded.has(a.primary_section));
-  }
-
-  if (yr && !yr.fullRange) {
-    pool = pool.map(a => {
-      const rs = computeRangeStats(a, yr.start, yr.end);
-      const avgWords = rs.articles >= minArticles ? Math.round(rs.words / rs.articles) : 0;
-      return { ...a, _displayAvg: avgWords, _displayCount: rs.articles };
-    }).filter(a => a._displayCount >= minArticles)
-      .sort((a, b) => b._displayAvg - a._displayAvg);
-  } else {
-    pool = pool.filter(a => a.article_count >= minArticles)
-      .map(a => ({ ...a, _displayAvg: a.avg_words, _displayCount: a.article_count }))
-      .sort((a, b) => b._displayAvg - a._displayAvg);
-  }
-  const top = pool.slice(0, 20);
-
-  destroyChart('chartWordiest');
-  chartInstances['chartWordiest'] = new Chart(document.getElementById('chartWordiest'), {
-    type: 'bar',
-    data: {
-      labels: top.map(a => a.name),
-      datasets: [{
-        label: 'Avg words/article',
-        data: top.map(a => a._displayAvg),
-        backgroundColor: 'rgba(170,120,80,0.7)',
-        barPercentage: 0.8,
-        categoryPercentage: 0.85,
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { beginAtZero: true },
-        y: { ticks: { font: { size: 11 } } }
-      }
-    }
-  });
-  const hw = top.length * 24 + 20;
-  document.getElementById('chartWordiestWrap').style.height = hw + 'px';
-}
 
 // --- MULTI-BYLINE ---
 function renderMultiBylineTrend() {
@@ -2272,17 +2081,7 @@ function computeRangeStats(a, start, end) {
   return { articles, words };
 }
 
-// Careers tab: lazy init
-let careersInitialized = false;
-const careersObserver = new MutationObserver(() => {
-  if (document.getElementById('view-careers').classList.contains('active') && !careersInitialized) {
-    careersInitialized = true;
-    initCareers();
-  }
-});
-careersObserver.observe(document.getElementById('view-careers'), { attributes: true });
-
-function initCareers() {
+function initCareers() { // dead code kept for reference, no longer called
   const INSTITUTIONAL = new Set([
     'The New York Times','Reuters','Associated Press','AP','Bloomberg','Staff','Editors',
     'Editorial Board','The Editorial Board','Times Staff','Wire Services'
