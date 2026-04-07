@@ -554,16 +554,6 @@
     ]
   },
   {
-    "canonical": "Abby Goodnough Nyt",
-    "canonical_count": 51,
-    "merged": [
-      {
-        "name": "Abby Gruen Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Abby Goodnough With",
     "canonical_count": 3,
     "merged": [
@@ -674,24 +664,6 @@
       {
         "name": "Adam Lebor",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Adam Liptak Nyt",
-    "canonical_count": 93,
-    "merged": [
-      {
-        "name": "Adam Clymer Nyt",
-        "count": 9
-      },
-      {
-        "name": "Adam Nagourney Nyt",
-        "count": 7
-      },
-      {
-        "name": "Adam Nossiter Nyt",
-        "count": 3
       }
     ]
   },
@@ -827,28 +799,10 @@
   },
   {
     "canonical": "Alan Cowell",
-    "canonical_count": 2941,
+    "canonical_count": 3303,
     "merged": [
       {
         "name": "Alan S. Cowell",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Alan Cowell Nyt",
-    "canonical_count": 362,
-    "merged": [
-      {
-        "name": "Alan Feuer Nyt",
-        "count": 31
-      },
-      {
-        "name": "Alan Riding Nyt",
-        "count": 8
-      },
-      {
-        "name": "Alan Finder Nyt",
         "count": 1
       }
     ]
@@ -934,20 +888,6 @@
       {
         "name": "Alex Frew McMILLAN",
         "count": 8
-      }
-    ]
-  },
-  {
-    "canonical": "Alex Berenson Nyt",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Alex Kuczynski Nyt",
-        "count": 1
-      },
-      {
-        "name": "Alex Mindlin Nyt",
-        "count": 1
       }
     ]
   },
@@ -1120,20 +1060,6 @@
     ]
   },
   {
-    "canonical": "Alison Langley Nyt",
-    "canonical_count": 58,
-    "merged": [
-      {
-        "name": "Alison Mitchell Nyt",
-        "count": 4
-      },
-      {
-        "name": "Alison Smale Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Alison J. Peterson",
     "canonical_count": 17,
     "merged": [
@@ -1230,20 +1156,6 @@
       {
         "name": "Amy L. Fairchild",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Amy Waldman Nyt",
-    "canonical_count": 76,
-    "merged": [
-      {
-        "name": "Amy Harmon Nyt",
-        "count": 32
-      },
-      {
-        "name": "Amy Green Nyt",
-        "count": 1
       }
     ]
   },
@@ -1363,7 +1275,7 @@
     "merged": [
       {
         "name": "Andrew Kramer",
-        "count": 47
+        "count": 69
       }
     ]
   },
@@ -1412,42 +1324,12 @@
     ]
   },
   {
-    "canonical": "Andrew Zipern Nyt",
-    "canonical_count": 234,
-    "merged": [
-      {
-        "name": "Andrew Jacobs Nyt",
-        "count": 62
-      },
-      {
-        "name": "Andrew Salmon Nyt",
-        "count": 25
-      },
-      {
-        "name": "Andrew Kramer Nyt",
-        "count": 22
-      },
-      {
-        "name": "Andrew Pollack Nyt",
-        "count": 20
-      },
-      {
-        "name": "Andrew Tangel Nyt",
-        "count": 1
-      },
-      {
-        "name": "Andrew Revkin Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Andrew C. Revkin",
     "canonical_count": 3981,
     "merged": [
       {
         "name": "Andrew Revkin",
-        "count": 4
+        "count": 5
       }
     ]
   },
@@ -1497,16 +1379,6 @@
     "merged": [
       {
         "name": "Andrew S. Zimbalist",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Andy Newman Nyt",
-    "canonical_count": 84,
-    "merged": [
-      {
-        "name": "Andy Jacobs Nyt",
         "count": 1
       }
     ]
@@ -1582,16 +1454,6 @@
     ]
   },
   {
-    "canonical": "Ann Farmer Nyt",
-    "canonical_count": 11,
-    "merged": [
-      {
-        "name": "Ann Wozencraft Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Anna Mcdonald",
     "canonical_count": 3,
     "merged": [
@@ -1662,16 +1524,6 @@
     ]
   },
   {
-    "canonical": "Anne Raver Nyt",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Anne Berryman Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Anne Ruderman",
     "canonical_count": 65,
     "merged": [
@@ -1693,7 +1545,7 @@
   },
   {
     "canonical": "Anthony Depalma",
-    "canonical_count": 422,
+    "canonical_count": 485,
     "merged": [
       {
         "name": "Anthony DePalma",
@@ -1702,16 +1554,6 @@
       {
         "name": "Anthony DePALMA",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Anthony Depalma Nyt",
-    "canonical_count": 63,
-    "merged": [
-      {
-        "name": "Anthony Ramirez Nyt",
-        "count": 19
       }
     ]
   },
@@ -1940,24 +1782,6 @@
     ]
   },
   {
-    "canonical": "Barbara Whitaker Nyt",
-    "canonical_count": 63,
-    "merged": [
-      {
-        "name": "Barbara Crossette Nyt",
-        "count": 57
-      },
-      {
-        "name": "Barbara Stewart Nyt",
-        "count": 3
-      },
-      {
-        "name": "Barbara Novovitch Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Barbara S. Peterson",
     "canonical_count": 26,
     "merged": [
@@ -1993,17 +1817,7 @@
     "merged": [
       {
         "name": "Barnaby Feder",
-        "count": 38
-      }
-    ]
-  },
-  {
-    "canonical": "Barry Bearak Nyt",
-    "canonical_count": 64,
-    "merged": [
-      {
-        "name": "Barry Meier Nyt",
-        "count": 1
+        "count": 55
       }
     ]
   },
@@ -2068,20 +1882,6 @@
     ]
   },
   {
-    "canonical": "Ben Shpigel Nyt",
-    "canonical_count": 18,
-    "merged": [
-      {
-        "name": "Ben Lefebvre Nyt",
-        "count": 4
-      },
-      {
-        "name": "Ben Bergman Nyt",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Ben Rothenberg",
     "canonical_count": 1142,
     "merged": [
@@ -2133,20 +1933,10 @@
   },
   {
     "canonical": "Benjamin Jones",
-    "canonical_count": 47,
+    "canonical_count": 48,
     "merged": [
       {
         "name": "Benjamin F. Jones",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Benjamin Weiser Nyt",
-    "canonical_count": 80,
-    "merged": [
-      {
-        "name": "Benjamin Jones Nyt",
         "count": 1
       }
     ]
@@ -2187,16 +1977,6 @@
     "merged": [
       {
         "name": "Bernard W. Aronson",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Bernard Simon Nyt",
-    "canonical_count": 193,
-    "merged": [
-      {
-        "name": "Bernard Weinraub Nyt",
         "count": 1
       }
     ]
@@ -2258,28 +2038,6 @@
       {
         "name": "Bill McCLINTICK",
         "count": 5
-      }
-    ]
-  },
-  {
-    "canonical": "Bill Carter Nyt",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Bill Dedman Nyt",
-        "count": 3
-      },
-      {
-        "name": "Bill Dawson Nyt",
-        "count": 3
-      },
-      {
-        "name": "Bill Pennington Nyt",
-        "count": 2
-      },
-      {
-        "name": "Bill Finley Nyt",
-        "count": 1
       }
     ]
   },
@@ -2427,7 +2185,7 @@
   },
   {
     "canonical": "Brian Knowlton",
-    "canonical_count": 968,
+    "canonical_count": 969,
     "merged": [
       {
         "name": "Brian K. Knowlton",
@@ -2492,28 +2250,6 @@
       {
         "name": "Brian P. Murphy",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Brian Lavery Nyt",
-    "canonical_count": 348,
-    "merged": [
-      {
-        "name": "Brian Wingfield Nyt",
-        "count": 13
-      },
-      {
-        "name": "Brian Ellsworth Nyt",
-        "count": 5
-      },
-      {
-        "name": "Brian Alexander Nyt",
-        "count": 4
-      },
-      {
-        "name": "Brian Knowlton Nyt",
-        "count": 1
       }
     ]
   },
@@ -2679,7 +2415,7 @@
   },
   {
     "canonical": "Carl Hulse",
-    "canonical_count": 3792,
+    "canonical_count": 3807,
     "merged": [
       {
         "name": "Carl E. Hulse",
@@ -2708,11 +2444,11 @@
     ]
   },
   {
-    "canonical": "Carla Baranauckas Nyt",
-    "canonical_count": 3,
+    "canonical": "Carla D'nan Bass",
+    "canonical_count": 1,
     "merged": [
       {
-        "name": "Carla Bass Nyt",
+        "name": "Carla Bass",
         "count": 1
       }
     ]
@@ -2744,16 +2480,6 @@
       {
         "name": "Carlton Chin",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Carol Pogash Nyt",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Carol Vogel Nyt",
-        "count": 3
       }
     ]
   },
@@ -2838,16 +2564,6 @@
     ]
   },
   {
-    "canonical": "Catherine Billey Nyt",
-    "canonical_count": 20,
-    "merged": [
-      {
-        "name": "Catherine Greenman Nyt",
-        "count": 10
-      }
-    ]
-  },
-  {
     "canonical": "Cathy Park Hong",
     "canonical_count": 4,
     "merged": [
@@ -2917,7 +2633,7 @@
       },
       {
         "name": "Charles Bagli",
-        "count": 1
+        "count": 2
       }
     ]
   },
@@ -3013,7 +2729,7 @@
   },
   {
     "canonical": "Charlie Leduff",
-    "canonical_count": 446,
+    "canonical_count": 459,
     "merged": [
       {
         "name": "Charlie LeDuff",
@@ -3096,38 +2812,6 @@
     ]
   },
   {
-    "canonical": "Chris Gaither Nyt",
-    "canonical_count": 113,
-    "merged": [
-      {
-        "name": "Chris Mason Nyt",
-        "count": 20
-      },
-      {
-        "name": "Chris Buckley Nyt",
-        "count": 10
-      },
-      {
-        "name": "Chris Dixon Nyt",
-        "count": 4
-      }
-    ]
-  },
-  {
-    "canonical": "Christine Whitehouse Nyt",
-    "canonical_count": 26,
-    "merged": [
-      {
-        "name": "Christine Hauser Nyt",
-        "count": 2
-      },
-      {
-        "name": "Christine Haughney Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Christine Thomas",
     "canonical_count": 1,
     "merged": [
@@ -3193,32 +2877,6 @@
     "merged": [
       {
         "name": "Christopher R. Miller",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Christopher Marquis Nyt",
-    "canonical_count": 14,
-    "merged": [
-      {
-        "name": "Christopher Mason Nyt",
-        "count": 9
-      },
-      {
-        "name": "Christopher Pala Nyt",
-        "count": 6
-      },
-      {
-        "name": "Christopher Drew Nyt",
-        "count": 3
-      },
-      {
-        "name": "Christopher Elliott Nyt",
-        "count": 1
-      },
-      {
-        "name": "Christopher Maag Nyt",
         "count": 1
       }
     ]
@@ -3380,16 +3038,6 @@
     ]
   },
   {
-    "canonical": "Colin Campbell Nyt",
-    "canonical_count": 91,
-    "merged": [
-      {
-        "name": "Colin Moynihan Nyt",
-        "count": 23
-      }
-    ]
-  },
-  {
     "canonical": "Colin L. Powell",
     "canonical_count": 3,
     "merged": [
@@ -3489,7 +3137,7 @@
     "merged": [
       {
         "name": "Craig Smith",
-        "count": 18
+        "count": 22
       },
       {
         "name": "Craig R. Smith",
@@ -3572,16 +3220,6 @@
     ]
   },
   {
-    "canonical": "Daisy Hern\u00e1ndez Nyt",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Daisy Hernandez Nyt",
-        "count": 3
-      }
-    ]
-  },
-  {
     "canonical": "Dale Ho",
     "canonical_count": 5,
     "merged": [
@@ -3612,39 +3250,11 @@
     ]
   },
   {
-    "canonical": "Dan Barry Nyt",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Dan Heyman Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Dan Reicher",
     "canonical_count": 2,
     "merged": [
       {
         "name": "Dan W. Reicher",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Dana Canedy Nyt",
-    "canonical_count": 27,
-    "merged": [
-      {
-        "name": "Dana Beyerle Nyt",
-        "count": 18
-      },
-      {
-        "name": "Dana Byerele Nyt",
-        "count": 1
-      },
-      {
-        "name": "Dana Bayerle Nyt",
         "count": 1
       }
     ]
@@ -3997,7 +3607,7 @@
   },
   {
     "canonical": "David Bernstein",
-    "canonical_count": 38,
+    "canonical_count": 44,
     "merged": [
       {
         "name": "David S. Bernstein",
@@ -4245,7 +3855,7 @@
     "merged": [
       {
         "name": "David Halbfinger",
-        "count": 12
+        "count": 13
       },
       {
         "name": "David A. Halbfinger",
@@ -4319,7 +3929,7 @@
   },
   {
     "canonical": "David Johnston",
-    "canonical_count": 897,
+    "canonical_count": 908,
     "merged": [
       {
         "name": "David Cay Johnston",
@@ -4538,92 +4148,6 @@
     ]
   },
   {
-    "canonical": "David Rohde Nyt",
-    "canonical_count": 76,
-    "merged": [
-      {
-        "name": "David Gonzalez Nyt",
-        "count": 74
-      },
-      {
-        "name": "David Firestone Nyt",
-        "count": 51
-      },
-      {
-        "name": "David Kocieniewski Nyt",
-        "count": 19
-      },
-      {
-        "name": "David Johnston Nyt",
-        "count": 11
-      },
-      {
-        "name": "David Enders Nyt",
-        "count": 10
-      },
-      {
-        "name": "David Stout Nyt",
-        "count": 6
-      },
-      {
-        "name": "David Bernstein Nyt",
-        "count": 6
-      },
-      {
-        "name": "David Staba Nyt",
-        "count": 4
-      },
-      {
-        "name": "David Barstow Nyt",
-        "count": 3
-      },
-      {
-        "name": "David Carr Nyt",
-        "count": 3
-      },
-      {
-        "name": "David Barboza Nyt",
-        "count": 3
-      },
-      {
-        "name": "David Binder Nyt",
-        "count": 2
-      },
-      {
-        "name": "David Scharfenberg Nyt",
-        "count": 2
-      },
-      {
-        "name": "David Herszenhorn Nyt",
-        "count": 2
-      },
-      {
-        "name": "David Montero Nyt",
-        "count": 2
-      },
-      {
-        "name": "David Kocienewski Nyt",
-        "count": 1
-      },
-      {
-        "name": "David Halbfinger Nyt",
-        "count": 1
-      },
-      {
-        "name": "David Kirpatrick Nyt",
-        "count": 1
-      },
-      {
-        "name": "David Winzelberg Nyt",
-        "count": 1
-      },
-      {
-        "name": "David Picker Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "David Paterson",
     "canonical_count": 1,
     "merged": [
@@ -4665,7 +4189,7 @@
   },
   {
     "canonical": "David Rohde",
-    "canonical_count": 675,
+    "canonical_count": 751,
     "merged": [
       {
         "name": "David W. Rohde",
@@ -4945,7 +4469,7 @@
     "merged": [
       {
         "name": "Dean Murphy",
-        "count": 4
+        "count": 6
       }
     ]
   },
@@ -5014,16 +4538,6 @@
     ]
   },
   {
-    "canonical": "Dennis Blank Nyt",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Dennis Overbye Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "der Spiegel",
     "canonical_count": 38,
     "merged": [
@@ -5035,7 +4549,7 @@
   },
   {
     "canonical": "Desmond Butler",
-    "canonical_count": 70,
+    "canonical_count": 103,
     "merged": [
       {
         "name": "Desmond Oates Butler",
@@ -5247,21 +4761,11 @@
   },
   {
     "canonical": "Doug McInnis",
-    "canonical_count": 4,
+    "canonical_count": 5,
     "merged": [
       {
         "name": "Doug McINNIS",
         "count": 4
-      }
-    ]
-  },
-  {
-    "canonical": "Doug Frantz Nyt",
-    "canonical_count": 9,
-    "merged": [
-      {
-        "name": "Doug Mcinnis Nyt",
-        "count": 1
       }
     ]
   },
@@ -5306,16 +4810,6 @@
       {
         "name": "Douglas C. McInnis",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Douglas Frantz Nyt",
-    "canonical_count": 37,
-    "merged": [
-      {
-        "name": "Douglas Jehl Nyt",
-        "count": 9
       }
     ]
   },
@@ -5413,7 +4907,7 @@
       },
       {
         "name": "Dylan Mcclain",
-        "count": 11
+        "count": 12
       },
       {
         "name": "Dylan McClain",
@@ -5422,16 +4916,6 @@
       {
         "name": "Dylan McCLAIN",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Eddy Ram\u00edrez Nyt",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Eddy Ramirez Nyt",
-        "count": 1
       }
     ]
   },
@@ -5514,16 +4998,6 @@
     ]
   },
   {
-    "canonical": "Edward Wong Nyt",
-    "canonical_count": 44,
-    "merged": [
-      {
-        "name": "Edward Wyatt Nyt",
-        "count": 40
-      }
-    ]
-  },
-  {
     "canonical": "Edward Sherman",
     "canonical_count": 2,
     "merged": [
@@ -5593,24 +5067,6 @@
     "merged": [
       {
         "name": "Elena Santos",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Elisabeth Malkin Nyt",
-    "canonical_count": 92,
-    "merged": [
-      {
-        "name": "Elisabeth Rosenthal Nyt",
-        "count": 16
-      },
-      {
-        "name": "Elisabeth Bumiller Nyt",
-        "count": 8
-      },
-      {
-        "name": "Elisabeth Becker Nyt",
         "count": 1
       }
     ]
@@ -5725,32 +5181,6 @@
     "merged": [
       {
         "name": "Elizabeth Laura Nelson",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Elizabeth Olson Nyt",
-    "canonical_count": 200,
-    "merged": [
-      {
-        "name": "Elizabeth Stanton Nyt",
-        "count": 77
-      },
-      {
-        "name": "Elizabeth Becker Nyt",
-        "count": 34
-      },
-      {
-        "name": "Elizabeth Ahlin Nyt",
-        "count": 8
-      },
-      {
-        "name": "Elizabeth Nash Nyt",
-        "count": 2
-      },
-      {
-        "name": "Elizabeth Olsen Nyt",
         "count": 1
       }
     ]
@@ -5884,16 +5314,6 @@
     ]
   },
   {
-    "canonical": "Emily Vasquez Nyt",
-    "canonical_count": 37,
-    "merged": [
-      {
-        "name": "Emily Yellin Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Emily Parker",
     "canonical_count": 7,
     "merged": [
@@ -5978,16 +5398,6 @@
     ]
   },
   {
-    "canonical": "Emma Daly Nyt",
-    "canonical_count": 74,
-    "merged": [
-      {
-        "name": "Emma Daley Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Eric L. Adams",
     "canonical_count": 3,
     "merged": [
@@ -6027,7 +5437,7 @@
   },
   {
     "canonical": "Eric Dash",
-    "canonical_count": 1036,
+    "canonical_count": 1042,
     "merged": [
       {
         "name": "Eric L. Dash",
@@ -6077,7 +5487,7 @@
   },
   {
     "canonical": "Eric Lipton",
-    "canonical_count": 1723,
+    "canonical_count": 1769,
     "merged": [
       {
         "name": "Eric S. Lipton",
@@ -6131,44 +5541,6 @@
     "merged": [
       {
         "name": "Eric S. Nguyen",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Eric Lipton Nyt",
-    "canonical_count": 46,
-    "merged": [
-      {
-        "name": "Eric Lichtblau Nyt",
-        "count": 37
-      },
-      {
-        "name": "Eric Sylvers Nyt",
-        "count": 37
-      },
-      {
-        "name": "Eric Schmitt Nyt",
-        "count": 6
-      },
-      {
-        "name": "Eric Dash Nyt",
-        "count": 6
-      },
-      {
-        "name": "Eric O'keefe Nyt",
-        "count": 4
-      },
-      {
-        "name": "Eric Wilson Nyt",
-        "count": 2
-      },
-      {
-        "name": "Eric Sylver Nyt",
-        "count": 1
-      },
-      {
-        "name": "Eric Ferkenhoff Nyt",
         "count": 1
       }
     ]
@@ -6239,7 +5611,7 @@
   },
   {
     "canonical": "Eric Wilson",
-    "canonical_count": 1322,
+    "canonical_count": 1324,
     "merged": [
       {
         "name": "Eric G. Wilson",
@@ -6283,7 +5655,7 @@
   },
   {
     "canonical": "Erika Kinetz",
-    "canonical_count": 277,
+    "canonical_count": 278,
     "merged": [
       {
         "name": "Erika Kinetzerika Kinetz",
@@ -6412,16 +5784,6 @@
     ]
   },
   {
-    "canonical": "Evelyn Nieves Nyt",
-    "canonical_count": 16,
-    "merged": [
-      {
-        "name": "Evelyn Rusli Nyt",
-        "count": 7
-      }
-    ]
-  },
-  {
     "canonical": "Ezekiel J. Emanuel",
     "canonical_count": 88,
     "merged": [
@@ -6496,16 +5858,6 @@
     ]
   },
   {
-    "canonical": "Ford Fessenden Nyt",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Ford Burkhart Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Frank Decaro",
     "canonical_count": 34,
     "merged": [
@@ -6522,16 +5874,6 @@
       {
         "name": "Frank F. Furstenberg",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Frank Litsky Nyt",
-    "canonical_count": 27,
-    "merged": [
-      {
-        "name": "Frank Bruni Nyt",
-        "count": 25
       }
     ]
   },
@@ -6695,20 +6037,6 @@
     "merged": [
       {
         "name": "Gary E. MacDougal",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Gary Gately Nyt",
-    "canonical_count": 101,
-    "merged": [
-      {
-        "name": "Gary Fineout Nyt",
-        "count": 23
-      },
-      {
-        "name": "Gary Rivlin Nyt",
         "count": 1
       }
     ]
@@ -6908,20 +6236,6 @@
     ]
   },
   {
-    "canonical": "Glenn Fleishman Nyt",
-    "canonical_count": 15,
-    "merged": [
-      {
-        "name": "Glenn Collins Nyt",
-        "count": 10
-      },
-      {
-        "name": "Glenn Justice Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Glenn Harlan Reynolds",
     "canonical_count": 2,
     "merged": [
@@ -6972,39 +6286,11 @@
     ]
   },
   {
-    "canonical": "Graham Gori Nyt",
-    "canonical_count": 15,
-    "merged": [
-      {
-        "name": "Graham Bowley Nyt",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Greg C. Bruno",
     "canonical_count": 6,
     "merged": [
       {
         "name": "Greg Bruno",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Greg Myre Nyt",
-    "canonical_count": 88,
-    "merged": [
-      {
-        "name": "Greg Winter Nyt",
-        "count": 17
-      },
-      {
-        "name": "Greg Retsinas Nyt",
-        "count": 2
-      },
-      {
-        "name": "Greg Myer Nyt",
         "count": 1
       }
     ]
@@ -7025,16 +6311,6 @@
     "merged": [
       {
         "name": "Gregory Clark",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Gretchen Ruethling Nyt",
-    "canonical_count": 119,
-    "merged": [
-      {
-        "name": "Gretchen Reuthling Nyt",
         "count": 1
       }
     ]
@@ -7150,16 +6426,6 @@
     ]
   },
   {
-    "canonical": "Heather Timmons Nyt",
-    "canonical_count": 289,
-    "merged": [
-      {
-        "name": "Heather Stewart Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Heather Ann Thompson",
     "canonical_count": 3,
     "merged": [
@@ -7235,20 +6501,10 @@
   },
   {
     "canonical": "Helene Cooper",
-    "canonical_count": 2308,
+    "canonical_count": 2309,
     "merged": [
       {
         "name": "Helene C. Cooper",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Helene Fouquet Nyt",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Helene Cooper Nyt",
         "count": 1
       }
     ]
@@ -7259,7 +6515,7 @@
     "merged": [
       {
         "name": "Henri Cauvin",
-        "count": 5
+        "count": 10
       }
     ]
   },
@@ -7369,7 +6625,7 @@
     "merged": [
       {
         "name": "Howard French",
-        "count": 12
+        "count": 16
       }
     ]
   },
@@ -7380,16 +6636,6 @@
       {
         "name": "Howard Goldberg",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Howard French Nyt",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Howard Beck Nyt",
-        "count": 4
       }
     ]
   },
@@ -7418,20 +6664,6 @@
       {
         "name": "Iain R <missing Dot> Webb",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Ian Austen Nyt",
-    "canonical_count": 124,
-    "merged": [
-      {
-        "name": "Ian Fisher Nyt",
-        "count": 106
-      },
-      {
-        "name": "Ian Urbina Nyt",
-        "count": 32
       }
     ]
   },
@@ -7600,16 +6832,6 @@
     ]
   },
   {
-    "canonical": "Jack Bell Nyt",
-    "canonical_count": 14,
-    "merged": [
-      {
-        "name": "Jack Curry Nyt",
-        "count": 3
-      }
-    ]
-  },
-  {
     "canonical": "Jack Rakove",
     "canonical_count": 6,
     "merged": [
@@ -7630,6 +6852,16 @@
       {
         "name": "Jack Welch With",
         "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Jacob H. Fries",
+    "canonical_count": 228,
+    "merged": [
+      {
+        "name": "Jacob Fries",
+        "count": 4
       }
     ]
   },
@@ -7705,7 +6937,7 @@
   },
   {
     "canonical": "James Dao",
-    "canonical_count": 1116,
+    "canonical_count": 1135,
     "merged": [
       {
         "name": "James C. Dao",
@@ -7863,40 +7095,6 @@
     "merged": [
       {
         "name": "James Morone",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "James Brooke Nyt",
-    "canonical_count": 92,
-    "merged": [
-      {
-        "name": "James Sterngold Nyt",
-        "count": 22
-      },
-      {
-        "name": "James Dao Nyt",
-        "count": 19
-      },
-      {
-        "name": "James Barron Nyt",
-        "count": 12
-      },
-      {
-        "name": "James Glanz Nyt",
-        "count": 2
-      },
-      {
-        "name": "James Gorman Nyt",
-        "count": 2
-      },
-      {
-        "name": "James Risen Nyt",
-        "count": 1
-      },
-      {
-        "name": "James Willhite Nyt",
         "count": 1
       }
     ]
@@ -8111,29 +7309,11 @@
     "merged": [
       {
         "name": "Jane Levere",
-        "count": 17
+        "count": 18
       },
       {
         "name": "Jane I. Levere",
         "count": 4
-      }
-    ]
-  },
-  {
-    "canonical": "Jane Perlez Nyt",
-    "canonical_count": 22,
-    "merged": [
-      {
-        "name": "Jane Fritsch Nyt",
-        "count": 10
-      },
-      {
-        "name": "Jane Allande-hession Nyt",
-        "count": 6
-      },
-      {
-        "name": "Jane Levere Nyt",
-        "count": 1
       }
     ]
   },
@@ -8232,24 +7412,6 @@
     ]
   },
   {
-    "canonical": "Jason Horowitz Nyt",
-    "canonical_count": 130,
-    "merged": [
-      {
-        "name": "Jason George Nyt",
-        "count": 18
-      },
-      {
-        "name": "Jason Begay Nyt",
-        "count": 4
-      },
-      {
-        "name": "Jason Diamos Nyt",
-        "count": 3
-      }
-    ]
-  },
-  {
     "canonical": "Jason K. Stearns",
     "canonical_count": 1,
     "merged": [
@@ -8306,16 +7468,6 @@
       {
         "name": "Jeff Klein",
         "count": 6
-      }
-    ]
-  },
-  {
-    "canonical": "Jeff Leeds Nyt",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Jeff Zeleny Nyt",
-        "count": 1
       }
     ]
   },
@@ -8544,24 +7696,6 @@
     ]
   },
   {
-    "canonical": "Jennifer Steinhauer Nyt",
-    "canonical_count": 148,
-    "merged": [
-      {
-        "name": "Jennifer Medina Nyt",
-        "count": 66
-      },
-      {
-        "name": "Jennifer Dunning Nyt",
-        "count": 3
-      },
-      {
-        "name": "Jennifer Rich Nyt",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Jennifer Reese",
     "canonical_count": 34,
     "merged": [
@@ -8577,13 +7711,13 @@
     "merged": [
       {
         "name": "Jennifer Rich",
-        "count": 4
+        "count": 6
       }
     ]
   },
   {
     "canonical": "Jennifer Steinhauer",
-    "canonical_count": 2538,
+    "canonical_count": 2686,
     "merged": [
       {
         "name": "Jennifer E. Steinhauer",
@@ -8607,16 +7741,6 @@
     "merged": [
       {
         "name": "Jennifer Ashley Wright",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Jenny Hontz Nyt",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Jenny Medina Nyt",
         "count": 1
       }
     ]
@@ -8657,7 +7781,7 @@
     "merged": [
       {
         "name": "Jeremy Peters",
-        "count": 25
+        "count": 26
       }
     ]
   },
@@ -8703,7 +7827,7 @@
   },
   {
     "canonical": "Jesse McKinley",
-    "canonical_count": 2539,
+    "canonical_count": 2558,
     "merged": [
       {
         "name": "Jesse McKINLEY",
@@ -8838,32 +7962,6 @@
     ]
   },
   {
-    "canonical": "Jim Rutenberg Nyt",
-    "canonical_count": 44,
-    "merged": [
-      {
-        "name": "Jim Yardley Nyt",
-        "count": 43
-      },
-      {
-        "name": "Jim Robbins Nyt",
-        "count": 5
-      },
-      {
-        "name": "Jim Dwyer Nyt",
-        "count": 3
-      },
-      {
-        "name": "Jim O'grady Nyt",
-        "count": 2
-      },
-      {
-        "name": "Jim Noles Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Jim Rutenberg With",
     "canonical_count": 10,
     "merged": [
@@ -8884,16 +7982,6 @@
       {
         "name": "Jo Craven McGINTY",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Jo Napolitano Nyt",
-    "canonical_count": 247,
-    "merged": [
-      {
-        "name": "Jo Thomas Nyt",
-        "count": 3
       }
     ]
   },
@@ -8978,44 +8066,12 @@
     ]
   },
   {
-    "canonical": "Jodi Wilgoren Nyt",
-    "canonical_count": 62,
-    "merged": [
-      {
-        "name": "Jodi Rudoren Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Joe Depaolo",
     "canonical_count": 21,
     "merged": [
       {
         "name": "Joe DePaolo",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Joe Drape Nyt",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Joe Sharkey Nyt",
-        "count": 1
-      },
-      {
-        "name": "Joe Brescia Nyt",
-        "count": 1
-      },
-      {
-        "name": "Joe Follick Nyt",
-        "count": 1
-      },
-      {
-        "name": "Joe Ward Nyt",
-        "count": 1
       }
     ]
   },
@@ -9030,16 +8086,6 @@
       {
         "name": "Joel E. Cohen",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Joel Greenberg Nyt",
-    "canonical_count": 15,
-    "merged": [
-      {
-        "name": "Joel Brinkley Nyt",
-        "count": 10
       }
     ]
   },
@@ -9115,7 +8161,7 @@
   },
   {
     "canonical": "John Broder",
-    "canonical_count": 23,
+    "canonical_count": 28,
     "merged": [
       {
         "name": "John W. Broder",
@@ -9209,7 +8255,7 @@
   },
   {
     "canonical": "John Desantis",
-    "canonical_count": 11,
+    "canonical_count": 16,
     "merged": [
       {
         "name": "John DeSantis",
@@ -9554,84 +8600,6 @@
     ]
   },
   {
-    "canonical": "John Tagliabue Nyt",
-    "canonical_count": 177,
-    "merged": [
-      {
-        "name": "John Files Nyt",
-        "count": 145
-      },
-      {
-        "name": "John Holl Nyt",
-        "count": 137
-      },
-      {
-        "name": "John Shaw Nyt",
-        "count": 77
-      },
-      {
-        "name": "John Schwartz Nyt",
-        "count": 45
-      },
-      {
-        "name": "John Markoff Nyt",
-        "count": 19
-      },
-      {
-        "name": "John Rather Nyt",
-        "count": 13
-      },
-      {
-        "name": "John Branch Nyt",
-        "count": 13
-      },
-      {
-        "name": "John Eligon Nyt",
-        "count": 12
-      },
-      {
-        "name": "John Carpenter Nyt",
-        "count": 5
-      },
-      {
-        "name": "John Moody Nyt",
-        "count": 5
-      },
-      {
-        "name": "John Broder Nyt",
-        "count": 5
-      },
-      {
-        "name": "John Desantis Nyt",
-        "count": 5
-      },
-      {
-        "name": "John Sullivan Nyt",
-        "count": 4
-      },
-      {
-        "name": "John Holusha Nyt",
-        "count": 2
-      },
-      {
-        "name": "John Kifner Nyt",
-        "count": 2
-      },
-      {
-        "name": "John Biggs Nyt",
-        "count": 1
-      },
-      {
-        "name": "John Branston Nyt",
-        "count": 1
-      },
-      {
-        "name": "John Harney Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "John Curtis Perry",
     "canonical_count": 1,
     "merged": [
@@ -9683,7 +8651,7 @@
   },
   {
     "canonical": "John Schwartz",
-    "canonical_count": 2051,
+    "canonical_count": 2096,
     "merged": [
       {
         "name": "John Burnham Schwartz",
@@ -9693,7 +8661,7 @@
   },
   {
     "canonical": "John Sullivan",
-    "canonical_count": 420,
+    "canonical_count": 424,
     "merged": [
       {
         "name": "John Jeremiah Sullivan",
@@ -9893,7 +8861,7 @@
   },
   {
     "canonical": "Jonathan Glater",
-    "canonical_count": 15,
+    "canonical_count": 19,
     "merged": [
       {
         "name": "Jonathan D. Glater",
@@ -9917,7 +8885,7 @@
     "merged": [
       {
         "name": "Jonathan Hicks",
-        "count": 5
+        "count": 8
       }
     ]
   },
@@ -9953,33 +8921,11 @@
   },
   {
     "canonical": "Jonathan Miller",
-    "canonical_count": 249,
+    "canonical_count": 257,
     "merged": [
       {
         "name": "Jonathan J. Miller",
         "count": 6
-      }
-    ]
-  },
-  {
-    "canonical": "Jonathan Miller Nyt",
-    "canonical_count": 8,
-    "merged": [
-      {
-        "name": "Jonathan Glater Nyt",
-        "count": 4
-      },
-      {
-        "name": "Jonathan Hicks Nyt",
-        "count": 3
-      },
-      {
-        "name": "Jonathan Fuerbringer Nyt",
-        "count": 2
-      },
-      {
-        "name": "Jonathan Marino Nyt",
-        "count": 1
       }
     ]
   },
@@ -10118,12 +9064,12 @@
     ]
   },
   {
-    "canonical": "Joseph J. Kolb",
-    "canonical_count": 5,
+    "canonical": "Joseph Kolb",
+    "canonical_count": 7,
     "merged": [
       {
-        "name": "Joseph Kolb",
-        "count": 3
+        "name": "Joseph J. Kolb",
+        "count": 5
       }
     ]
   },
@@ -10133,24 +9079,6 @@
     "merged": [
       {
         "name": "Joseph Ledoux",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Joseph Kahn Nyt",
-    "canonical_count": 50,
-    "merged": [
-      {
-        "name": "Joseph Kolb Nyt",
-        "count": 4
-      },
-      {
-        "name": "Joseph Berger Nyt",
-        "count": 2
-      },
-      {
-        "name": "Joseph Treaster Nyt",
         "count": 1
       }
     ]
@@ -10196,6 +9124,16 @@
     ]
   },
   {
+    "canonical": "Joseph B. Treaster",
+    "canonical_count": 2,
+    "merged": [
+      {
+        "name": "Joseph Treaster",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Joseph Kahn With",
     "canonical_count": 14,
     "merged": [
@@ -10212,16 +9150,6 @@
       {
         "name": "Josh E. Katz",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Josh Benson Nyt",
-    "canonical_count": 11,
-    "merged": [
-      {
-        "name": "Josh Barbanel Nyt",
-        "count": 2
       }
     ]
   },
@@ -10320,32 +9248,12 @@
     ]
   },
   {
-    "canonical": "Judith Berck Nyt",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Judith Miller Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Judith Shapiro",
     "canonical_count": 7,
     "merged": [
       {
         "name": "Judith R. Shapiro",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Judy Battista Nyt",
-    "canonical_count": 6,
-    "merged": [
-      {
-        "name": "Judy Berck Nyt",
-        "count": 3
       }
     ]
   },
@@ -10380,25 +9288,21 @@
     ]
   },
   {
-    "canonical": "Julia Meurling",
-    "canonical_count": 11,
+    "canonical": "Julia C. Mead",
+    "canonical_count": 377,
     "merged": [
       {
-        "name": "Julia E. Meurling",
+        "name": "Julia Mead",
         "count": 1
       }
     ]
   },
   {
-    "canonical": "Julia Preston Nyt",
-    "canonical_count": 62,
+    "canonical": "Julia Meurling",
+    "canonical_count": 11,
     "merged": [
       {
-        "name": "Julia Moskin Nyt",
-        "count": 3
-      },
-      {
-        "name": "Julia Mead Nyt",
+        "name": "Julia E. Meurling",
         "count": 1
       }
     ]
@@ -10455,7 +9359,7 @@
   },
   {
     "canonical": "Julie Bosman",
-    "canonical_count": 2438,
+    "canonical_count": 2439,
     "merged": [
       {
         "name": "JULIE BOSMAN",
@@ -10514,20 +9418,6 @@
     ]
   },
   {
-    "canonical": "Julie Flaherty Nyt",
-    "canonical_count": 59,
-    "merged": [
-      {
-        "name": "Julie Dunn Nyt",
-        "count": 1
-      },
-      {
-        "name": "Julie Bosman Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Julie Walton Shaver",
     "canonical_count": 7,
     "merged": [
@@ -10549,7 +9439,7 @@
   },
   {
     "canonical": "Juliet Macur",
-    "canonical_count": 1570,
+    "canonical_count": 1573,
     "merged": [
       {
         "name": "Juliet MacUR",
@@ -10603,7 +9493,7 @@
     "merged": [
       {
         "name": "Karen Arenson",
-        "count": 6
+        "count": 7
       }
     ]
   },
@@ -10629,7 +9519,7 @@
   },
   {
     "canonical": "Karen Demasters",
-    "canonical_count": 565,
+    "canonical_count": 566,
     "merged": [
       {
         "name": "Karen DeMasters",
@@ -10643,20 +9533,6 @@
     "merged": [
       {
         "name": "Karen Katz",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Karen Crouse Nyt",
-    "canonical_count": 10,
-    "merged": [
-      {
-        "name": "Karen Demasters Nyt",
-        "count": 1
-      },
-      {
-        "name": "Karen Arenson Nyt",
         "count": 1
       }
     ]
@@ -10726,20 +9602,6 @@
     ]
   },
   {
-    "canonical": "Kate Zernike Nyt",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Kate Hammer Nyt",
-        "count": 4
-      },
-      {
-        "name": "Kate Phillips Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Kate Elizabeth Russell",
     "canonical_count": 3,
     "merged": [
@@ -10765,20 +9627,6 @@
     "merged": [
       {
         "name": "Katharine Seelye",
-        "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Katherine Zezima Nyt",
-    "canonical_count": 75,
-    "merged": [
-      {
-        "name": "Katherine Zoepf Nyt",
-        "count": 4
-      },
-      {
-        "name": "Katherine Boas Nyt",
         "count": 2
       }
     ]
@@ -10855,7 +9703,7 @@
   },
   {
     "canonical": "Kathryn Shattuck",
-    "canonical_count": 3074,
+    "canonical_count": 3075,
     "merged": [
       {
         "name": "Kathryn L. Shattuck",
@@ -10874,16 +9722,6 @@
       {
         "name": "Katie Baker",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Katie Zezima Nyt",
-    "canonical_count": 214,
-    "merged": [
-      {
-        "name": "Katie Kelley Nyt",
-        "count": 12
       }
     ]
   },
@@ -11012,16 +9850,6 @@
     ]
   },
   {
-    "canonical": "Ken Belson Nyt",
-    "canonical_count": 683,
-    "merged": [
-      {
-        "name": "Ken Belsen Nyt",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Kenneth L. Adelman",
     "canonical_count": 2,
     "merged": [
@@ -11144,16 +9972,6 @@
     ]
   },
   {
-    "canonical": "Kevin Sack Nyt",
-    "canonical_count": 54,
-    "merged": [
-      {
-        "name": "Kevin Flynn Nyt",
-        "count": 30
-      }
-    ]
-  },
-  {
     "canonical": "Kevin J. O'Brien",
     "canonical_count": 385,
     "merged": [
@@ -11215,7 +10033,7 @@
   },
   {
     "canonical": "Kimberly Chase",
-    "canonical_count": 1,
+    "canonical_count": 2,
     "merged": [
       {
         "name": "Kimberly N. Chase",
@@ -11245,7 +10063,7 @@
   },
   {
     "canonical": "Kirk Johnson",
-    "canonical_count": 1238,
+    "canonical_count": 1264,
     "merged": [
       {
         "name": "Kirk W. Johnson",
@@ -11254,16 +10072,6 @@
       {
         "name": "Kirk Wallace Johnson",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Kirk Semple Nyt",
-    "canonical_count": 30,
-    "merged": [
-      {
-        "name": "Kirk Johnson Nyt",
-        "count": 26
       }
     ]
   },
@@ -11338,16 +10146,6 @@
     ]
   },
   {
-    "canonical": "Larry Rohter Nyt",
-    "canonical_count": 175,
-    "merged": [
-      {
-        "name": "Larry Zuckerman Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Laura E <missing Dot> Adkins",
     "canonical_count": 1,
     "merged": [
@@ -11379,7 +10177,7 @@
   },
   {
     "canonical": "Laura Holson",
-    "canonical_count": 14,
+    "canonical_count": 15,
     "merged": [
       {
         "name": "Laura M. Holson",
@@ -11403,20 +10201,6 @@
     "merged": [
       {
         "name": "Laura Munson",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Laura Mansnerus Nyt",
-    "canonical_count": 41,
-    "merged": [
-      {
-        "name": "Laura Lee Nyt",
-        "count": 1
-      },
-      {
-        "name": "Laura Holson Nyt",
         "count": 1
       }
     ]
@@ -11592,16 +10376,6 @@
     ]
   },
   {
-    "canonical": "Leslie Eaton Nyt",
-    "canonical_count": 43,
-    "merged": [
-      {
-        "name": "Leslie Kaufman Nyt",
-        "count": 18
-      }
-    ]
-  },
-  {
     "canonical": "Leslie Kaufman With",
     "canonical_count": 10,
     "merged": [
@@ -11711,7 +10485,7 @@
     "merged": [
       {
         "name": "Lisa Bacon",
-        "count": 4
+        "count": 5
       }
     ]
   },
@@ -11721,7 +10495,7 @@
     "merged": [
       {
         "name": "Lisa Foderaro",
-        "count": 7
+        "count": 12
       }
     ]
   },
@@ -11766,20 +10540,6 @@
     ]
   },
   {
-    "canonical": "Lisa Foderaro Nyt",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Lisa Guernsey Nyt",
-        "count": 2
-      },
-      {
-        "name": "Lisa Bacon Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Lisa Tucker",
     "canonical_count": 2,
     "merged": [
@@ -11796,16 +10556,6 @@
       {
         "name": "Lizzy  Goodman",
         "count": 4
-      }
-    ]
-  },
-  {
-    "canonical": "Lloyd Dunkelberger Nyt",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Lloyd Dunkeberger Nyt",
-        "count": 1
       }
     ]
   },
@@ -11900,28 +10650,8 @@
     ]
   },
   {
-    "canonical": "Lynette Holloway Nyt",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Lynette Clemetson Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Lynn Zinser Nyt",
-    "canonical_count": 8,
-    "merged": [
-      {
-        "name": "Lynn Waddell Nyt",
-        "count": 3
-      }
-    ]
-  },
-  {
     "canonical": "Lynnley Browning",
-    "canonical_count": 543,
+    "canonical_count": 544,
     "merged": [
       {
         "name": "Lynnley F. Browning",
@@ -12098,18 +10828,8 @@
     ]
   },
   {
-    "canonical": "Marc Lacey Nyt",
-    "canonical_count": 232,
-    "merged": [
-      {
-        "name": "Marc Santora Nyt",
-        "count": 39
-      }
-    ]
-  },
-  {
     "canonical": "Marc Santora",
-    "canonical_count": 2316,
+    "canonical_count": 2355,
     "merged": [
       {
         "name": "Marc A. Santora",
@@ -12218,16 +10938,6 @@
     ]
   },
   {
-    "canonical": "Marian Burros Nyt",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Marian Smith Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Marie-helene Bertino",
     "canonical_count": 4,
     "merged": [
@@ -12263,16 +10973,6 @@
     "merged": [
       {
         "name": "Marina Martinez",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Marina Harss Nyt",
-    "canonical_count": 13,
-    "merged": [
-      {
-        "name": "Marina Harssome Nyt",
         "count": 1
       }
     ]
@@ -12358,16 +11058,6 @@
       {
         "name": "Mark Crispin Miller",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Mark Landler Nyt",
-    "canonical_count": 77,
-    "merged": [
-      {
-        "name": "Mark Glassman Nyt",
-        "count": 5
       }
     ]
   },
@@ -12480,16 +11170,6 @@
     ]
   },
   {
-    "canonical": "Martin Fackler Nyt",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "Martin Stolz Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Martin Plissner",
     "canonical_count": 5,
     "merged": [
@@ -12545,16 +11225,6 @@
     "merged": [
       {
         "name": "Mary R. Lefkowitz",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Mary Spicuzza Nyt",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "Mary Reinholz Nyt",
         "count": 1
       }
     ]
@@ -12630,20 +11300,6 @@
     ]
   },
   {
-    "canonical": "Matt Richtel Nyt",
-    "canonical_count": 83,
-    "merged": [
-      {
-        "name": "Matt Viser Nyt",
-        "count": 3
-      },
-      {
-        "name": "Matt Birkbeck Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Matt A. V",
     "canonical_count": 179,
     "merged": [
@@ -12693,20 +11349,6 @@
       },
       {
         "name": "Matthew T. Miller",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Matthew Preusch Nyt",
-    "canonical_count": 251,
-    "merged": [
-      {
-        "name": "Matthew Sweeney Nyt",
-        "count": 8
-      },
-      {
-        "name": "Matthew Healey Nyt",
         "count": 1
       }
     ]
@@ -12901,7 +11543,7 @@
   },
   {
     "canonical": "Melena Ryzik",
-    "canonical_count": 2258,
+    "canonical_count": 2259,
     "merged": [
       {
         "name": "Melena Z. Ryzik",
@@ -13147,7 +11789,7 @@
   },
   {
     "canonical": "Michael Janofsky",
-    "canonical_count": 733,
+    "canonical_count": 840,
     "merged": [
       {
         "name": "Michael K. Janofsky",
@@ -13349,60 +11991,6 @@
     "merged": [
       {
         "name": "Michael Nichols",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Michael Wines Nyt",
-    "canonical_count": 333,
-    "merged": [
-      {
-        "name": "Michael Wilson Nyt",
-        "count": 216
-      },
-      {
-        "name": "Michael Cooper Nyt",
-        "count": 113
-      },
-      {
-        "name": "Michael Janofsky Nyt",
-        "count": 107
-      },
-      {
-        "name": "Michael Brick Nyt",
-        "count": 78
-      },
-      {
-        "name": "Michael Luo Nyt",
-        "count": 24
-      },
-      {
-        "name": "Michael Slackman Nyt",
-        "count": 14
-      },
-      {
-        "name": "Michael Schwirtz Nyt",
-        "count": 5
-      },
-      {
-        "name": "Michael Kamber Nyt",
-        "count": 3
-      },
-      {
-        "name": "Michael Moss Nyt",
-        "count": 1
-      },
-      {
-        "name": "Michael Mcintire Nyt",
-        "count": 1
-      },
-      {
-        "name": "Michael Amon Nyt",
-        "count": 1
-      },
-      {
-        "name": "Michael Weinreb Nyt",
         "count": 1
       }
     ]
@@ -13698,22 +12286,8 @@
     ]
   },
   {
-    "canonical": "Michelle O'donnell Nyt",
-    "canonical_count": 234,
-    "merged": [
-      {
-        "name": "Michelle York Nyt",
-        "count": 12
-      },
-      {
-        "name": "Michelle Kayal Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Mike McIntire",
-    "canonical_count": 493,
+    "canonical_count": 550,
     "merged": [
       {
         "name": "Mike McINTIRE",
@@ -13763,7 +12337,7 @@
   },
   {
     "canonical": "Miki Tanikawa",
-    "canonical_count": 193,
+    "canonical_count": 228,
     "merged": [
       {
         "name": "Miki Tanakawa Tanikawa",
@@ -13852,26 +12426,6 @@
     ]
   },
   {
-    "canonical": "Mona El-naggar Nyt",
-    "canonical_count": 6,
-    "merged": [
-      {
-        "name": "Mona Al-naggar Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Monica Davey Nyt",
-    "canonical_count": 8,
-    "merged": [
-      {
-        "name": "Monica Potts Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Myryah IRBy",
     "canonical_count": 19,
     "merged": [
@@ -13883,7 +12437,7 @@
   },
   {
     "canonical": "Naila-jean Meyers",
-    "canonical_count": 439,
+    "canonical_count": 440,
     "merged": [
       {
         "name": "Naila-Jean Meyers",
@@ -14061,13 +12615,13 @@
     "merged": [
       {
         "name": "Neil Lewis",
-        "count": 3
+        "count": 4
       }
     ]
   },
   {
     "canonical": "Neil MacFarquhar",
-    "canonical_count": 1884,
+    "canonical_count": 1914,
     "merged": [
       {
         "name": "Neil MacFARQUHAR",
@@ -14076,16 +12630,6 @@
       {
         "name": "Neil Macfarquhar",
         "count": 8
-      }
-    ]
-  },
-  {
-    "canonical": "Neil Macfarquhar Nyt",
-    "canonical_count": 30,
-    "merged": [
-      {
-        "name": "Neil Lewis Nyt",
-        "count": 1
       }
     ]
   },
@@ -14174,20 +12718,6 @@
     ]
   },
   {
-    "canonical": "Nicholas Wood Nyt",
-    "canonical_count": 48,
-    "merged": [
-      {
-        "name": "Nicholas Confessore Nyt",
-        "count": 23
-      },
-      {
-        "name": "Nicholas Wade Nyt",
-        "count": 4
-      }
-    ]
-  },
-  {
     "canonical": "Nicole Chung",
     "canonical_count": 4,
     "merged": [
@@ -14214,16 +12744,6 @@
       {
         "name": "Nicole Laporte",
         "count": 5
-      }
-    ]
-  },
-  {
-    "canonical": "Nicole Itano Nyt",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Nicole Cotroneo Nyt",
-        "count": 1
       }
     ]
   },
@@ -14309,7 +12829,7 @@
   },
   {
     "canonical": "Nora Krug",
-    "canonical_count": 40,
+    "canonical_count": 41,
     "merged": [
       {
         "name": "Nora Berkley Krug",
@@ -14533,7 +13053,7 @@
   },
   {
     "canonical": "Patrick Healy",
-    "canonical_count": 4021,
+    "canonical_count": 4087,
     "merged": [
       {
         "name": "Patrick O'gilfoil Healy",
@@ -14603,7 +13123,7 @@
   },
   {
     "canonical": "Patrick McGeehan",
-    "canonical_count": 2295,
+    "canonical_count": 2340,
     "merged": [
       {
         "name": "Patrick McGEEHAN",
@@ -14612,16 +13132,6 @@
       {
         "name": "Patrick Mcgeehan",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Patrick Healy Nyt",
-    "canonical_count": 66,
-    "merged": [
-      {
-        "name": "Patrick Mcgeehan Nyt",
-        "count": 45
       }
     ]
   },
@@ -14766,20 +13276,6 @@
     ]
   },
   {
-    "canonical": "Paul Meller Nyt",
-    "canonical_count": 168,
-    "merged": [
-      {
-        "name": "Paul Zielbauer Nyt",
-        "count": 55
-      },
-      {
-        "name": "Paul Vitello Nyt",
-        "count": 5
-      }
-    ]
-  },
-  {
     "canonical": "Paul O'Neill",
     "canonical_count": 5,
     "merged": [
@@ -14845,7 +13341,7 @@
   },
   {
     "canonical": "Paul Zielbauer",
-    "canonical_count": 319,
+    "canonical_count": 374,
     "merged": [
       {
         "name": "Paul Von Zielbauer",
@@ -14913,7 +13409,7 @@
     "merged": [
       {
         "name": "Peter Beller",
-        "count": 45
+        "count": 47
       }
     ]
   },
@@ -14979,7 +13475,7 @@
   },
   {
     "canonical": "Peter Gelling",
-    "canonical_count": 135,
+    "canonical_count": 136,
     "merged": [
       {
         "name": "Peter L. Gelling",
@@ -15053,20 +13549,6 @@
     "merged": [
       {
         "name": "Peter N. Miller",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Peter Kiefer Nyt",
-    "canonical_count": 15,
-    "merged": [
-      {
-        "name": "Peter Beller Nyt",
-        "count": 2
-      },
-      {
-        "name": "Peter Gelling Nyt",
         "count": 1
       }
     ]
@@ -15304,20 +13786,6 @@
     ]
   },
   {
-    "canonical": "Rachel Thorner Nyt",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Rachel Swarns Nyt",
-        "count": 4
-      },
-      {
-        "name": "Rachel Metz Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Rachel Nierenberg Pasternak",
     "canonical_count": 4,
     "merged": [
@@ -15333,7 +13801,7 @@
     "merged": [
       {
         "name": "Rachel Swarns",
-        "count": 7
+        "count": 11
       }
     ]
   },
@@ -15359,7 +13827,7 @@
   },
   {
     "canonical": "Ralph Blumenthal",
-    "canonical_count": 865,
+    "canonical_count": 883,
     "merged": [
       {
         "name": "Ralph A. Blumenthal",
@@ -15438,26 +13906,6 @@
     ]
   },
   {
-    "canonical": "Ray Glier Nyt",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Ray Rivera Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Raymond Bonner Nyt",
-    "canonical_count": 52,
-    "merged": [
-      {
-        "name": "Raymond Hernandez Nyt",
-        "count": 12
-      }
-    ]
-  },
-  {
     "canonical": "Raymond Bonner With",
     "canonical_count": 11,
     "merged": [
@@ -15528,6 +13976,10 @@
       {
         "name": "Rebecca O'Brien",
         "count": 5
+      },
+      {
+        "name": "Rebecca O'brien",
+        "count": 1
       }
     ]
   },
@@ -15583,21 +14035,11 @@
   },
   {
     "canonical": "Renwick McLean",
-    "canonical_count": 254,
+    "canonical_count": 312,
     "merged": [
       {
         "name": "Renwick McLEAN",
         "count": 5
-      }
-    ]
-  },
-  {
-    "canonical": "Renwick Mclean Nyt",
-    "canonical_count": 58,
-    "merged": [
-      {
-        "name": "Renwick Mcclean Nyt",
-        "count": 1
       }
     ]
   },
@@ -15723,7 +14165,7 @@
   },
   {
     "canonical": "Richard Bernstein",
-    "canonical_count": 690,
+    "canonical_count": 700,
     "merged": [
       {
         "name": "Richard J. Bernstein",
@@ -15902,24 +14344,6 @@
       {
         "name": "Richard Nisbett",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Richard P\u00e9rez-pe\u00f1a Nyt",
-    "canonical_count": 53,
-    "merged": [
-      {
-        "name": "Richard Sandomir Nyt",
-        "count": 22
-      },
-      {
-        "name": "Richard Bernstein Nyt",
-        "count": 10
-      },
-      {
-        "name": "Richard Perez-pena Nyt",
-        "count": 7
       }
     ]
   },
@@ -16111,7 +14535,7 @@
     "merged": [
       {
         "name": "Rita Farrell",
-        "count": 2
+        "count": 3
       },
       {
         "name": "Rita Katz Farrell",
@@ -16412,24 +14836,6 @@
     ]
   },
   {
-    "canonical": "Robert Hanley Nyt",
-    "canonical_count": 49,
-    "merged": [
-      {
-        "name": "Robert Worth Nyt",
-        "count": 16
-      },
-      {
-        "name": "Robert Pear Nyt",
-        "count": 8
-      },
-      {
-        "name": "Robert Strauss Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Robert Orttung",
     "canonical_count": 2,
     "merged": [
@@ -16551,7 +14957,7 @@
   },
   {
     "canonical": "Robert Strauss",
-    "canonical_count": 834,
+    "canonical_count": 835,
     "merged": [
       {
         "name": "Robert S. Strauss",
@@ -16617,7 +15023,7 @@
     "merged": [
       {
         "name": "Robert Worth",
-        "count": 167
+        "count": 183
       }
     ]
   },
@@ -16696,18 +15102,8 @@
     ]
   },
   {
-    "canonical": "Robin Pogrebin Nyt",
-    "canonical_count": 8,
-    "merged": [
-      {
-        "name": "Robin Shulman Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Robin Pogrebin",
-    "canonical_count": 2596,
+    "canonical_count": 2604,
     "merged": [
       {
         "name": "Robin J. Pogrebin",
@@ -16825,7 +15221,7 @@
   },
   {
     "canonical": "Ronald Smothers",
-    "canonical_count": 797,
+    "canonical_count": 878,
     "merged": [
       {
         "name": "Ronald L. Smothers",
@@ -16913,7 +15309,7 @@
     "merged": [
       {
         "name": "Ross Milloy",
-        "count": 3
+        "count": 4
       }
     ]
   },
@@ -17116,20 +15512,6 @@
     ]
   },
   {
-    "canonical": "Sam Len Nyt",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "Sam Dillon Nyt",
-        "count": 1
-      },
-      {
-        "name": "Sam Roberts Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Samantha J. Cooper",
     "canonical_count": 4,
     "merged": [
@@ -17154,31 +15536,11 @@
     ]
   },
   {
-    "canonical": "Samuel Len Nyt",
-    "canonical_count": 15,
-    "merged": [
-      {
-        "name": "Samuel Abt Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Sandra Blakeslee",
-    "canonical_count": 198,
+    "canonical_count": 200,
     "merged": [
       {
         "name": "Sandra J. Blakeslee",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Sandra Blakeslee Nyt",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Sandra Harwitt Nyt",
         "count": 1
       }
     ]
@@ -17273,24 +15635,6 @@
       },
       {
         "name": "SARAH MASLIN NIR",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Sarah Lyall Nyt",
-    "canonical_count": 78,
-    "merged": [
-      {
-        "name": "Sarah Kershaw Nyt",
-        "count": 35
-      },
-      {
-        "name": "Sarah Plass Nyt",
-        "count": 2
-      },
-      {
-        "name": "Sarah Garland Nyt",
         "count": 1
       }
     ]
@@ -17394,16 +15738,6 @@
     ]
   },
   {
-    "canonical": "Scott Shane Nyt",
-    "canonical_count": 7,
-    "merged": [
-      {
-        "name": "Scott Veale Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Scott N. Paul",
     "canonical_count": 2,
     "merged": [
@@ -17415,7 +15749,7 @@
   },
   {
     "canonical": "Scott Shane",
-    "canonical_count": 1179,
+    "canonical_count": 1186,
     "merged": [
       {
         "name": "Scott A. Shane",
@@ -17504,20 +15838,6 @@
     ]
   },
   {
-    "canonical": "Seth Mydans Nyt",
-    "canonical_count": 278,
-    "merged": [
-      {
-        "name": "Seth Schiesel Nyt",
-        "count": 9
-      },
-      {
-        "name": "Seth Mydens Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Seth Schiesel With",
     "canonical_count": 15,
     "merged": [
@@ -17529,7 +15849,7 @@
   },
   {
     "canonical": "Shaila Dewan",
-    "canonical_count": 868,
+    "canonical_count": 877,
     "merged": [
       {
         "name": "Shaila K. Dewan",
@@ -17553,7 +15873,7 @@
   },
   {
     "canonical": "Sharon LaFraniere",
-    "canonical_count": 747,
+    "canonical_count": 763,
     "merged": [
       {
         "name": "Sharon Lafraniere",
@@ -17562,16 +15882,6 @@
       {
         "name": "Sharon LaFRANIERE",
         "count": 4
-      }
-    ]
-  },
-  {
-    "canonical": "Sharon Lafraniere Nyt",
-    "canonical_count": 16,
-    "merged": [
-      {
-        "name": "Sharon Waxman Nyt",
-        "count": 1
       }
     ]
   },
@@ -17636,16 +15946,6 @@
     ]
   },
   {
-    "canonical": "Simon Romero Nyt",
-    "canonical_count": 80,
-    "merged": [
-      {
-        "name": "Simon Shifrin Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Simon C. Y",
     "canonical_count": 1,
     "merged": [
@@ -17700,16 +16000,6 @@
     ]
   },
   {
-    "canonical": "Sophia Kishkovsky Nyt",
-    "canonical_count": 143,
-    "merged": [
-      {
-        "name": "Sophia Chang Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Souad Mekhennet",
     "canonical_count": 106,
     "merged": [
@@ -17740,22 +16030,12 @@
     ]
   },
   {
-    "canonical": "Stacy Albin Nyt",
-    "canonical_count": 376,
-    "merged": [
-      {
-        "name": "Stacy Stowe Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Stefano S. Coledan",
     "canonical_count": 41,
     "merged": [
       {
         "name": "Stefano Coledan",
-        "count": 3
+        "count": 4
       }
     ]
   },
@@ -17766,20 +16046,6 @@
       {
         "name": "Stephan G. Richter",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Stephanie Strom Nyt",
-    "canonical_count": 20,
-    "merged": [
-      {
-        "name": "Stephanie Saul Nyt",
-        "count": 3
-      },
-      {
-        "name": "Stephanie Flanders Nyt",
-        "count": 2
       }
     ]
   },
@@ -17928,28 +16194,6 @@
     ]
   },
   {
-    "canonical": "Steve Barnes Nyt",
-    "canonical_count": 311,
-    "merged": [
-      {
-        "name": "Steve Strunsky Nyt",
-        "count": 137
-      },
-      {
-        "name": "Steve Lohr Nyt",
-        "count": 39
-      },
-      {
-        "name": "Steve Strunksy Nyt",
-        "count": 3
-      },
-      {
-        "name": "Steve Friess Nyt",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Steven C. Clemons",
     "canonical_count": 3,
     "merged": [
@@ -17976,16 +16220,6 @@
       {
         "name": "Steven McELROY",
         "count": 33
-      }
-    ]
-  },
-  {
-    "canonical": "Steven Greenhouse Nyt",
-    "canonical_count": 226,
-    "merged": [
-      {
-        "name": "Steven Erlanger Nyt",
-        "count": 37
       }
     ]
   },
@@ -18035,20 +16269,10 @@
   },
   {
     "canonical": "Stuart Elliott",
-    "canonical_count": 5468,
+    "canonical_count": 5483,
     "merged": [
       {
         "name": "Stuart J. Elliott",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Stuart Elliott Nyt",
-    "canonical_count": 15,
-    "merged": [
-      {
-        "name": "Stuart Elliot Nyt",
         "count": 1
       }
     ]
@@ -18129,28 +16353,6 @@
     "merged": [
       {
         "name": "Susan Mckay",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Susan Saulny Nyt",
-    "canonical_count": 177,
-    "merged": [
-      {
-        "name": "Susan Stellin Nyt",
-        "count": 70
-      },
-      {
-        "name": "Susan Sachs Nyt",
-        "count": 14
-      },
-      {
-        "name": "Susan Catto Nyt",
-        "count": 5
-      },
-      {
-        "name": "Susan Gotthelf Nyt",
         "count": 1
       }
     ]
@@ -18242,16 +16444,6 @@
       {
         "name": "Suzanne MacNEILLE",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Suzanne Kapner Nyt",
-    "canonical_count": 330,
-    "merged": [
-      {
-        "name": "Suzanne Daley Nyt",
-        "count": 47
       }
     ]
   },
@@ -18369,24 +16561,6 @@
     "merged": [
       {
         "name": "Terrence Mcnally",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Terry Aguayo Nyt",
-    "canonical_count": 51,
-    "merged": [
-      {
-        "name": "Terry Pristin Nyt",
-        "count": 45
-      },
-      {
-        "name": "Terry Prisitn Nyt",
-        "count": 1
-      },
-      {
-        "name": "Terry Aquayo Nyt",
         "count": 1
       }
     ]
@@ -19037,7 +17211,7 @@
     "merged": [
       {
         "name": "Thomas Lueck",
-        "count": 4
+        "count": 6
       }
     ]
   },
@@ -19061,20 +17235,6 @@
     "merged": [
       {
         "name": "Thomas De Monchaux",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Thomas Crampton Nyt",
-    "canonical_count": 10,
-    "merged": [
-      {
-        "name": "Thomas Lueck Nyt",
-        "count": 2
-      },
-      {
-        "name": "Thomas Fuller Nyt",
         "count": 1
       }
     ]
@@ -19184,20 +17344,6 @@
     ]
   },
   {
-    "canonical": "Tim Weiner Nyt",
-    "canonical_count": 80,
-    "merged": [
-      {
-        "name": "Tim Eaton Nyt",
-        "count": 2
-      },
-      {
-        "name": "Tim Golden Nyt",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Tim Weiner With",
     "canonical_count": 5,
     "merged": [
@@ -19238,20 +17384,6 @@
     ]
   },
   {
-    "canonical": "Timothy Williams Nyt",
-    "canonical_count": 20,
-    "merged": [
-      {
-        "name": "Timothy Egan Nyt",
-        "count": 5
-      },
-      {
-        "name": "Timothy Pritchard Nyt",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Timothy L. O'Brien",
     "canonical_count": 206,
     "merged": [
@@ -19283,7 +17415,7 @@
   },
   {
     "canonical": "Timothy Williams",
-    "canonical_count": 980,
+    "canonical_count": 1000,
     "merged": [
       {
         "name": "Timothy R. Williams",
@@ -19308,20 +17440,6 @@
       {
         "name": "Todd Buchholz",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Todd Zaun Nyt",
-    "canonical_count": 193,
-    "merged": [
-      {
-        "name": "Todd Benson Nyt",
-        "count": 169
-      },
-      {
-        "name": "Todd Halvorson Nyt",
-        "count": 2
       }
     ]
   },
@@ -19362,16 +17480,6 @@
       {
         "name": "Tom Leclair",
         "count": 3
-      }
-    ]
-  },
-  {
-    "canonical": "Tom Zeller Nyt",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Tom Wright Nyt",
-        "count": 1
       }
     ]
   },
@@ -19496,16 +17604,6 @@
     ]
   },
   {
-    "canonical": "Victor Homola Nyt",
-    "canonical_count": 311,
-    "merged": [
-      {
-        "name": "Victor Homolo Nyt",
-        "count": 3
-      }
-    ]
-  },
-  {
     "canonical": "Victoria Desilverio",
     "canonical_count": 10,
     "merged": [
@@ -19601,20 +17699,10 @@
     "merged": [
       {
         "name": "Warren Leary",
-        "count": 10
+        "count": 11
       },
       {
         "name": "Warren L. Leary",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Warren Hoge Nyt",
-    "canonical_count": 316,
-    "merged": [
-      {
-        "name": "Warren Leary Nyt",
         "count": 1
       }
     ]
@@ -19645,7 +17733,7 @@
     "merged": [
       {
         "name": "William Beaver",
-        "count": 2
+        "count": 3
       }
     ]
   },
@@ -19790,28 +17878,6 @@
       {
         "name": "William Niederkorn",
         "count": 6
-      }
-    ]
-  },
-  {
-    "canonical": "William Glaberson Nyt",
-    "canonical_count": 96,
-    "merged": [
-      {
-        "name": "William Yardley Nyt",
-        "count": 25
-      },
-      {
-        "name": "William Neuman Nyt",
-        "count": 7
-      },
-      {
-        "name": "William Beaver Nyt",
-        "count": 1
-      },
-      {
-        "name": "William K. raum NYT",
-        "count": 1
       }
     ]
   },
