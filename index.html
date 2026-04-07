@@ -306,12 +306,13 @@
 
   <!-- WORLD -->
   <div class="view" id="view-world">
+    <div id="countryDetailPanel" style="display:none"></div>
     <div class="chart-box">
       <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws only from articles in the NYT's "World" section (international desk). Geographic tags are drawn from the NYT's own metadata; note that tagging coverage was inconsistent in 2000–2003.</p>
       <h3>Country Coverage Over Time</h3>
       <div style="margin-bottom:8px">
         <select id="worldLocationSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
-        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries. Showing top 40 most-covered locations.</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries. Click a country to see articles and year-by-year trends. US cities, regional tags, and locations without population data show '—' for per-capita figures.</div>
       </div>
       <div style="position:relative;height:220px"><canvas id="chartLocationTrend"></canvas></div>
     </div>
@@ -319,11 +320,11 @@
       <h3>Coverage by Country</h3>
       <div id="worldTableContainer"></div>
     </div>
-    <div id="countryDetailPanel" style="display:none"></div>
   </div>
 
   <!-- STATES -->
   <div class="view" id="view-states">
+    <div id="stateDetailPanel" style="display:none"></div>
     <div class="chart-box">
       <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws only from articles in the NYT's national "U.S." section. New York and New Jersey are excluded — their coverage appears in the dedicated "New York" section, not the national desk. Geographic tags are drawn from the NYT's own metadata.</p>
       <h3>U.S. State Coverage Over Time</h3>
@@ -337,7 +338,6 @@
       <h3>Coverage by State</h3>
       <div id="stateTableContainer"></div>
     </div>
-    <div id="stateDetailPanel" style="display:none"></div>
   </div>
 
   <!-- HEADLINE TRACKER -->
@@ -421,44 +421,61 @@ async function ensureYearLoaded(year) {
   return yearCache[year];
 }
 
+let lastOpenedState = null;
+let lastOpenedCountry = null;
+
 async function loadData() {
   try {
-    // Phase 1: load dashboard, authors, beats — show the site immediately
-    const [dRes, auRes, bRes] = await Promise.all([
-      fetch('data/dashboard.json'),
-      fetch('data/authors.json'),
-      fetch('data/beats.json'),
-    ]);
+    // Phase 1a: load dashboard only → show page immediately
+    const dRes = await fetch('data/dashboard.json');
     dashboard = await dRes.json();
-    authors = await auRes.json();
-    const beatsData = await bRes.json();
-
-    // Populate beats globals from precomputed data (no articles needed)
-    subjectIndex = beatsData.subjectIndex;
-    subjectList = beatsData.subjectList;
-    corpusSubjectFreq = beatsData.corpusSubjectFreq;
-    corpusSubjectDocs = beatsData.corpusSubjectDocs;
-    window._beatsCooccur = beatsData.cooccur;
 
     document.getElementById('loading').style.display = 'none';
     const allYears = dashboard.all_years;
     document.getElementById('dateRange').textContent = `${allYears[0]} \u2013 ${allYears[allYears.length - 1]}`;
     initOverview();
     initHeadlineSearch();
-    initAuthorFilters();
     renderWordsDist();
-    initBeats();
     showView('about');
 
-    // Phase 2: load all article files sequentially in the background
-    const years = dashboard.all_years.map(Number);
-    articles = [];
-    for (const y of years) {
-      const yearArticles = await ensureYearLoaded(y);
-      for (const a of yearArticles) articles.push(a);
-    }
-    articlesReady = true;
-    populateHeadlineSection();
+    // Phase 1b: authors + beats in background (non-blocking)
+    Promise.all([
+      fetch('data/authors.json').then(r => r.json()),
+      fetch('data/beats.json').then(r => r.json()),
+    ]).then(([authData, beatsData]) => {
+      authors = authData;
+      subjectIndex = beatsData.subjectIndex;
+      subjectList = beatsData.subjectList;
+      corpusSubjectFreq = beatsData.corpusSubjectFreq;
+      corpusSubjectDocs = beatsData.corpusSubjectDocs;
+      window._beatsCooccur = beatsData.cooccur;
+      initAuthorFilters();
+      initBeats();
+      // Re-render authors tab if it is currently visible
+      if (document.getElementById('view-authors').classList.contains('active')) {
+        renderAuthors();
+      }
+    }).catch(e => console.error('Failed to load authors/beats:', e));
+
+    // Phase 2: article files in background (non-blocking)
+    (async () => {
+      const years = dashboard.all_years.map(Number);
+      articles = [];
+      for (const y of years) {
+        const yearArticles = await ensureYearLoaded(y);
+        for (const a of yearArticles) articles.push(a);
+      }
+      articlesReady = true;
+      populateHeadlineSection();
+      // Refresh any open detail panels that were waiting for article data
+      if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
+        openStateDetail(lastOpenedState);
+      }
+      if (lastOpenedCountry && document.getElementById('countryDetailPanel')?.style.display !== 'none') {
+        openCountryDetail(lastOpenedCountry);
+      }
+    })().catch(e => console.error('Failed to load articles:', e));
+
   } catch (e) {
     document.getElementById('loading').textContent = 'Error loading data. Run build_data.py first, then serve with: python3 -m http.server 8080';
     console.error(e);
@@ -718,10 +735,28 @@ function renderSectionsTable() {
     .map(s => {
       const trend = dashboard.section_trends[s.name] || [];
       const activeYears = trend.filter(d => d.count > 0 && d.year !== currentYear).map(d => d.year).sort();
+      const prevYear = String(new Date().getFullYear() - 1);
+      const lastActiveYear = activeYears[activeYears.length - 1] || '';
+      const periodEnd = lastActiveYear === prevYear ? 'present' : lastActiveYear;
       const period = activeYears.length >= 2
-        ? `${activeYears[0]}–${activeYears[activeYears.length - 1]}`
-        : activeYears[0] || '—';
-      return { name: s.name, count: s.count, avg_words: s.avg_words, total_words: s.total_words, period };
+        ? `${activeYears[0]}–${periodEnd}`
+        : periodEnd || '—';
+      // Build sparkline from yearly counts
+      const yearCounts = activeYears.map(y => {
+        const d = trend.find(t => t.year === y);
+        return d ? d.count : 0;
+      });
+      const sparkMax = Math.max(...yearCounts, 1);
+      const W = 80, H = 18;
+      const pts = yearCounts.map((v, i) => {
+        const x = yearCounts.length > 1 ? (i / (yearCounts.length - 1)) * W : W / 2;
+        const y = H - (v / sparkMax) * (H - 2) - 1;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      const spark = yearCounts.length >= 2
+        ? `<svg width="${W}" height="${H}" style="display:block;overflow:visible"><polyline points="${pts}" fill="none" stroke="#326891" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/></svg>`
+        : '';
+      return { name: s.name, count: s.count, avg_words: s.avg_words, total_words: s.total_words, period, _spark: spark };
     });
 
   rows.sort((a, b) => {
@@ -736,19 +771,30 @@ function renderSectionsTable() {
   const cols = [
     { key: 'name', label: 'Section' },
     { key: 'period', label: 'Period Active' },
+    { key: '_spark', label: '' },
     { key: 'count', label: 'Articles', cls: 'num' },
-    { key: 'avg_words', label: 'Avg Words', cls: 'num' },
+    { key: 'avg_words', label: 'Avg Words/Article', cls: 'num' },
   ];
 
   let html = `<table class="author-table"><thead><tr>`;
-  cols.forEach(c => { html += `<th class="${c.cls||''}" data-sort="${c.key}">${c.label}${ind(c.key)}</th>`; });
+  cols.forEach(c => {
+    if (c.key === '_spark') {
+      html += `<th></th>`;
+    } else {
+      html += `<th class="${c.cls||''}" data-sort="${c.key}">${c.label}${ind(c.key)}</th>`;
+    }
+  });
   html += `</tr></thead><tbody>`;
   rows.forEach(r => {
     html += `<tr>`;
     cols.forEach(c => {
       let v = r[c.key];
-      if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
-      html += `<td class="${c.cls||''}">${escapeHtml(String(v ?? ''))}</td>`;
+      if (c.key === '_spark') {
+        html += `<td style="padding:2px 8px">${v || ''}</td>`;
+      } else {
+        if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
+        html += `<td class="${c.cls||''}">${escapeHtml(String(v ?? ''))}</td>`;
+      }
     });
     html += `</tr>`;
   });
@@ -830,6 +876,7 @@ let authorSort = { col: 'article_count', asc: false };
 // ── Shared author filter ───────────────────────────────────────────
 // Returns authors enriched with _rangeArticles and _rangeWords for the selected year range
 function getFilteredAuthors() {
+  if (!authors || authors.length === 0) return [];
   const query = document.getElementById('authorSearch').value.toLowerCase();
   const minArticles = parseInt(document.getElementById('authorMin').value) || 1;
   const sectionFilter = document.getElementById('authorSectionFilter').value;
@@ -888,6 +935,10 @@ function makeSparkline(author) {
 }
 
 function renderAuthors() {
+  if (!authors || authors.length === 0) {
+    document.getElementById('authorTableContainer').innerHTML = '<p style="color:#888;padding:16px">Loading reporter data…</p>';
+    return;
+  }
   let filtered = getFilteredAuthors();
   const yr = getYearRange();
   const allYears = dashboard.all_years.map(Number);
@@ -1609,7 +1660,7 @@ const POPULATION_M = {
   'United Kingdom':69,'France':68,'Tanzania':67,'Italy':59,'South Africa':62,
   'Myanmar':55,'Kenya':56,'South Korea':52,'Colombia':52,'Spain':48,
   'Argentina':46,'Uganda':49,'Algeria':46,'Sudan':48,'Iraq':44,
-  'Afghanistan':42,'Poland':38,'Canada':40,'Morocco':38,'Saudi Arabia':37,
+  'Afghanistan':42,'Poland':38,'Ukraine':38,'Canada':40,'Morocco':38,'Saudi Arabia':37,
   'Peru':34,'Angola':37,'Uzbekistan':36,'Malaysia':34,'Yemen':34,
   'Ghana':34,'Mozambique':34,'Nepal':31,'Venezuela':29,'Australia':27,
   'North Korea':26,'Taiwan':24,'Syria':23,'Sri Lanka':22,'Romania':19,
@@ -1668,7 +1719,8 @@ function renderWorldTable(years) {
   const wc = dashboard.world_coverage;
   const numYears = years.length;
 
-  const rows = wc.locations.map(loc => {
+  const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa']);
+  const rows = wc.locations.filter(loc => !WORLD_TABLE_EXCLUDE.has(loc)).map(loc => {
     const trend = wc.location_trends[loc] || {};
     const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
     const pop = POPULATION_M[loc];
@@ -1757,6 +1809,7 @@ function renderLocationTrend() {
 }
 
 function openCountryDetail(country) {
+  lastOpenedCountry = country;
   const wc = dashboard.world_coverage;
   const currentYear = String(new Date().getFullYear());
   const years = wc.years.filter(y => y !== currentYear);
@@ -1793,7 +1846,7 @@ function openCountryDetail(country) {
   });
 
   if (!articlesReady) {
-    document.getElementById('worldArticleList').innerHTML = '<p style="color:#888;font-size:13px">Loading article data…</p>';
+    document.getElementById('countryArticleList').innerHTML = '<p style="color:#888;font-size:13px">Loading article data…</p>';
     return;
   }
   const countryArticles = articles
@@ -1810,8 +1863,6 @@ function openCountryDetail(country) {
   }).join('');
   document.getElementById('countryArticleList').innerHTML =
     `<div style="font-size:12px;color:#888;margin-bottom:6px">${countryArticles.length.toLocaleString()} articles${countryArticles.length > 300 ? ' · showing 300 most recent' : ''}</div>` + listHtml;
-
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // --- STATES ---
@@ -1947,6 +1998,7 @@ function renderStateTrend(years) {
 }
 
 function openStateDetail(state) {
+  lastOpenedState = state;
   const sc = dashboard.us_state_coverage;
   const currentYear = String(new Date().getFullYear());
   const years = sc.years.filter(y => y !== currentYear);
@@ -2001,8 +2053,6 @@ function openStateDetail(state) {
   }).join('');
   document.getElementById('stateArticleList').innerHTML =
     `<div style="font-size:12px;color:#888;margin-bottom:6px">${stateArticles.length.toLocaleString()} articles${stateArticles.length > 300 ? ' · showing 300 most recent' : ''}</div>` + listHtml;
-
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function debounce(fn, ms) {

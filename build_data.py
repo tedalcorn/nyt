@@ -1462,8 +1462,8 @@ def build_dashboard_data(articles, authors):
         if sub:
             region_year[sub][y] += 1
 
-    # Top 40 locations
-    top_locations = [loc for loc, _ in glocation_total.most_common(40)]
+    # All locations with >= 5 total articles (exclude trivial noise)
+    top_locations = [loc for loc, cnt in glocation_total.most_common() if cnt >= 5]
     world_coverage = {
         "locations": top_locations,
         "location_trends": {loc: dict(glocation_year[loc]) for loc in top_locations},
@@ -1589,9 +1589,11 @@ def main():
             json.dump(by_year[year], f, separators=(',', ':'))
     print(f"Saved article files for {len(years)} years ({sum(len(v) for v in by_year.values()):,} articles)")
 
+    # Only export authors with >= 2 articles to keep file size manageable
+    authors_export = [a for a in authors if a["article_count"] >= 2]
     with open(os.path.join(DATA_DIR, "authors.json"), "w") as f:
-        json.dump(authors, f)
-    print(f"Saved authors.json ({len(authors):,} authors)")
+        json.dump(authors_export, f)
+    print(f"Saved authors.json ({len(authors_export):,} authors, >= 2 articles)")
 
     with open(os.path.join(DATA_DIR, "dashboard.json"), "w") as f:
         json.dump(dashboard, f)
