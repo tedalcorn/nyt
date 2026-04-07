@@ -243,6 +243,11 @@ def process_articles(raw_articles):
             "Guides": "Guide",
             "en Español": "En español",
             "Week in Review": "Sunday Review",
+            # Defunct/absorbed sections merged into closest surviving equivalent
+            "Great Homes & Destinations": "Real Estate",  # luxury RE supplement 2002-2014
+            "Booming": "Well",                            # baby-boomer blog 2012-2014
+            "At Home": "Style",                           # COVID-era home-life section 2020-2022
+            "UrbanEye": "Arts",                           # NYC events newsletter/video 2000s
         }
         section = SECTION_MERGES.get(section, section)
         news_desk = doc.get("news_desk", "") or ""
