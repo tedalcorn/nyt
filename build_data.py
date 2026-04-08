@@ -98,6 +98,8 @@ def extract_authors(byline):
             continue
         if name.lower().startswith('compiled by') or name.lower().startswith('special to'):
             continue
+        if name.lower().startswith('interviews ') or name.lower().startswith('interviews:'):
+            continue
         parts = name.split()
         if len(parts) >= 2:
             first = parts[0]
@@ -164,10 +166,12 @@ ABBREV_TO_STATE = {
     "NJ": "New Jersey",
     "NM": "New Mexico", "New Mexico": "New Mexico",
     "NY": "New York", "NYC": "New York", "NYS Area": "New York",
+    "N.Y": "New York", "N.Y.": "New York",
     "Manhattan, NY": "New York", "Brooklyn, NY": "New York",
     "Queens, NY": "New York", "Bronx, NY": "New York",
     "Brooklyn-Queens, NY": "New York", "Newburgh, NY": "New York",
     "Niagara Falls, NY": "New York",
+    "N.J": "New Jersey", "N.J.": "New Jersey",
     "NC": "North Carolina", "North Carolina": "North Carolina",
     "ND": "North Dakota",
     "Ohio": "Ohio", "OHIO": "Ohio",
@@ -189,8 +193,15 @@ ABBREV_TO_STATE = {
 }
 
 
+_NYC_LOCS = {
+    "New York City", "Manhattan", "Brooklyn", "Queens", "The Bronx", "Bronx",
+    "Staten Island", "Harlem", "Manhattan (NYC)", "New York City (NYC)",
+}
+
 def glocation_to_state(loc):
     """Return canonical state name for a glocation string, or None."""
+    if loc in _NYC_LOCS:
+        return "New York"
     if loc in US_STATES:
         return STATE_ALIASES.get(loc, loc)
     m = re.search(r'\(([^)]+)\)', loc)
@@ -280,9 +291,9 @@ def process_articles(raw_articles):
             elif kw_name in ("subject", "Subject"):
                 subjects.append(kw["value"])
 
-        # Canonical state names (for U.S. section articles — used by state detail panel)
+        # Canonical state names — computed for both "U.S." and "New York" sections
         canonical_states = []
-        if section == "U.S.":
+        if section in ("U.S.", "New York"):
             seen_states = set()
             for loc in glocations:
                 st = glocation_to_state(loc)
@@ -1236,6 +1247,7 @@ def build_author_stats(articles):
             "first_date": first_date,
             "last_date": last_date,
             "annual_words_norm": annual_words_norm,
+            "annual_words": dict(d["annual_words"]),
             "monthly_counts": dict(d["monthly_counts"]),
             "beats": [],  # filled in later by build_beats()
         })
@@ -2169,19 +2181,28 @@ def build_dashboard_data(articles, authors):
     # --- US State coverage: use canonical_states pre-computed per article ---
     state_year = defaultdict(lambda: defaultdict(int))
     state_total = Counter()
+    ny_state_year = defaultdict(lambda: defaultdict(int))
+    ny_state_total = Counter()
 
     for art in articles:
-        if art["section"] != "U.S.":
-            continue
         y = str(art["year"])
-        for state in art.get("canonical_states", []):
-            state_year[state][y] += 1
-            state_total[state] += 1
+        if art["section"] == "U.S.":
+            for state in art.get("canonical_states", []):
+                state_year[state][y] += 1
+                state_total[state] += 1
+        elif art["section"] == "New York":
+            for state in art.get("canonical_states", []):
+                ny_state_year[state][y] += 1
+                ny_state_total[state] += 1
 
     top_states = [s for s, _ in state_total.most_common()]
+    # All states that appear in either section
+    all_states_combined = sorted(set(list(state_total.keys()) + list(ny_state_total.keys())))
     us_state_coverage = {
         "states": top_states,
         "state_trends": {s: dict(state_year[s]) for s in top_states},
+        "ny_state_trends": {s: dict(ny_state_year[s]) for s in ny_state_total.keys()},
+        "ny_state_totals": dict(ny_state_total),
         "years": all_years,
     }
 
