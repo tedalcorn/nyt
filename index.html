@@ -1997,6 +1997,38 @@ function renderStateTrend(years) {
   });
 }
 
+// Notable events explaining state coverage spikes
+const STATE_ANNOTATIONS = {
+  'D.C.':         { '2001':'9/11 attacks; anthrax letters', '2002':'DC Sniper; post-9/11 security coverage', '2003':'Iraq War; DC Sniper trials', '2004':'Presidential election', '2025':'Trump second inauguration; early second term' },
+  'Florida':      { '2000':'Presidential election recount' },
+  'Texas':        { '2014':'Unaccompanied migrant children border crisis' },
+  'Illinois':     { '2010':'Rod Blagojevich corruption trial', '2011':'Blagojevich second trial & sentencing' },
+  'Pennsylvania': { '2024':'Trump assassination attempt (Butler); swing state' },
+  'Georgia':      { '2020':'Presidential election; Senate runoff races', '2021':'Senate runoffs; election certification battles', '2022':'Trump Georgia prosecution investigation', '2024':'Trump Georgia criminal case; swing state' },
+  'Louisiana':    { '2005':'Hurricane Katrina', '2006':'Katrina recovery' },
+  'Missouri':     { '2014':'Ferguson protests; Michael Brown killing', '2015':'Ferguson aftermath; DOJ report' },
+  'Iowa':         { '2011':'Republican caucus run-up', '2015':'Presidential caucus run-up', '2016':'Presidential caucuses', '2020':'Democratic caucuses (delayed results)' },
+  'South Carolina':{ '2012':'Presidential primary', '2015':'Emanuel AME church shooting; Confederate flag', '2016':'Presidential primary' },
+  'Maryland':     { '2002':'DC Sniper attacks', '2003':'DC Sniper trials', '2015':'Freddie Gray death; Baltimore protests', '2024':'Francis Scott Key Bridge collapse' },
+  'Virginia':     { '2002':'DC Sniper attacks' },
+  'Michigan':     { '2020':'Swing state; Flint water crisis follow-up', '2024':'Swing state; Arab-American community coverage' },
+  'Minnesota':    { '2020':'George Floyd killing; protests', '2021':'Derek Chauvin trial and conviction' },
+  'New Hampshire':{ '2004':'Presidential primary', '2011':'Presidential primary run-up', '2012':'Presidential primary', '2015':'Presidential primary run-up', '2016':'Presidential primary' },
+  'Arizona':      { '2022':'Election certification battles; gubernatorial race', '2024':'Swing state; Senate race; abortion ballot measure' },
+  'Wisconsin':    { '2012':'Scott Walker recall election', '2020':'Swing state', '2024':'Swing state' },
+  'North Carolina':{ '2016':'HB2 "bathroom bill"; swing state', '2024':'Swing state; Hurricane Helene' },
+  'Oregon':       { '2020':'Portland protests; federal response to BLM demonstrations' },
+  'Tennessee':    { '2023':'Covenant School shooting; "Tennessee Three" expulsion' },
+  'Nevada':       { '2024':'Swing state; Senate race' },
+  'Ohio':         { '2012':'Swing state; Presidential election' },
+  'Colorado':     { '2012':'Aurora theater shooting' },
+  'Connecticut':  { '2013':'Sandy Hook follow-up; gun legislation debate' },
+  'Hawaii':       { '2023':'Maui wildfires' },
+  'West Virginia':{ '2010':'Upper Big Branch mine explosion' },
+  'Mississippi':  { '2020':'Confederate flag removed from state flag' },
+  'New Mexico':   { '2021':'Alec Baldwin Rust shooting' },
+};
+
 function openStateDetail(state) {
   lastOpenedState = state;
   const sc = dashboard.us_state_coverage;
@@ -2004,6 +2036,16 @@ function openStateDetail(state) {
   const years = sc.years.filter(y => y !== currentYear);
   const trend = sc.state_trends[state] || {};
   const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
+  const annotations = STATE_ANNOTATIONS[state] || {};
+
+  // Build notable events HTML
+  const eventEntries = Object.entries(annotations).sort((a, b) => a[0].localeCompare(b[0]));
+  const eventsHtml = eventEntries.length
+    ? `<div style="margin-top:10px;font-size:12px;color:#666">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Notable events</div>
+        ${eventEntries.map(([y, ev]) => `<div style="padding:2px 0"><span style="font-weight:600;color:#326891;min-width:36px;display:inline-block">${y}</span> ${escapeHtml(ev)}</div>`).join('')}
+       </div>`
+    : '';
 
   const panel = document.getElementById('stateDetailPanel');
   panel.style.display = 'block';
@@ -2016,20 +2058,33 @@ function openStateDetail(state) {
         <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
         <canvas id="chartStateDetail" style="max-height:180px"></canvas>
       </div>
+      ${eventsHtml}
       <div id="stateArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
     </div>
   `;
+
+  // Highlight spike years in chart
+  const vals = years.map(y => trend[y] || 0);
+  const med = vals.slice().sort((a,b)=>a-b)[Math.floor(vals.length/2)] || 1;
+  const barColors = years.map(y => annotations[y] ? 'rgba(180,80,40,0.8)' : 'rgba(50,104,145,0.7)');
 
   destroyChart('chartStateDetail');
   chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
     type: 'bar',
     data: {
       labels: years,
-      datasets: [{ label: 'Articles', data: years.map(y => trend[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+      datasets: [{ label: 'Articles', data: vals, backgroundColor: barColors }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            afterLabel: ctx => annotations[years[ctx.dataIndex]] ? `Event: ${annotations[years[ctx.dataIndex]]}` : ''
+          }
+        }
+      },
       scales: { y: { beginAtZero: true } }
     }
   });
