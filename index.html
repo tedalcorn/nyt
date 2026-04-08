@@ -438,24 +438,28 @@ async function loadData() {
     renderWordsDist();
     showView('about');
 
-    // Phase 1b: authors + beats in background (non-blocking)
-    Promise.all([
-      fetch('data/authors.json').then(r => r.json()),
-      fetch('data/beats.json').then(r => r.json()),
-    ]).then(([authData, beatsData]) => {
+    // Phase 1b: load authors and beats independently (non-blocking)
+    fetch('data/authors.json').then(r => r.json()).then(authData => {
       authors = authData;
+      initAuthorFilters();
+      renderWordsDist();
+      // If reporters tab is already visible, render immediately
+      if (document.getElementById('view-authors').classList.contains('active')) {
+        renderAuthors();
+      }
+    }).catch(e => {
+      console.error('Failed to load authors:', e);
+      document.getElementById('authorTableContainer').innerHTML = '<p style="color:#c00;padding:16px">Failed to load reporter data.</p>';
+    });
+
+    fetch('data/beats.json').then(r => r.json()).then(beatsData => {
       subjectIndex = beatsData.subjectIndex;
       subjectList = beatsData.subjectList;
       corpusSubjectFreq = beatsData.corpusSubjectFreq;
       corpusSubjectDocs = beatsData.corpusSubjectDocs;
       window._beatsCooccur = beatsData.cooccur;
-      initAuthorFilters();
       initBeats();
-      // Re-render authors tab if it is currently visible
-      if (document.getElementById('view-authors').classList.contains('active')) {
-        renderAuthors();
-      }
-    }).catch(e => console.error('Failed to load authors/beats:', e));
+    }).catch(e => console.error('Failed to load beats:', e));
 
     // Phase 2: article files in background (non-blocking)
     (async () => {
