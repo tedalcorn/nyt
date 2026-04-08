@@ -89,7 +89,14 @@ def extract_authors(byline):
     for name in names:
         name = name.strip()
         name = CREDIT_PREFIX.sub('', name).strip()
-        if not name or len(name) < 3:
+        if not name or len(name) < 3 or len(name) > 80:
+            continue
+        # Skip junk entries from malformed "original" byline strings
+        if name[0] in '!-(\'&<':
+            continue
+        if '<' in name or '&#' in name or '|' in name:
+            continue
+        if name.lower().startswith('compiled by') or name.lower().startswith('special to'):
             continue
         parts = name.split()
         if len(parts) >= 2:
@@ -248,6 +255,8 @@ def process_articles(raw_articles):
             "Booming": "Well",                            # baby-boomer blog 2012-2014
             "At Home": "Style",                           # COVID-era home-life section 2020-2022
             "UrbanEye": "Arts",                           # NYC events newsletter/video 2000s
+            "Critic's Choice": "Arts",                    # arts picks feature folded into Arts
+            "Guide": "Arts",                              # NYC going-out guide folded into Arts
         }
         section = SECTION_MERGES.get(section, section)
         news_desk = doc.get("news_desk", "") or ""
@@ -1903,6 +1912,77 @@ def build_dashboard_data(articles, authors):
         "Grindavik (Iceland)": "Iceland",
         "Eyjafjallajokull Volcano (Iceland)": "Iceland",
         "Kerch Strait Bridge": "Russia",
+        "Negev Desert": "Israel",
+        "Sinai Peninsula": "Egypt",
+        "Suez Canal": "Egypt",
+        "Tiran Island": "Egypt",
+        "Sanafir Island": "Egypt",
+        "Inner Mongolia": "China",
+        "Panama Canal and Canal Zone": "Panama",
+        "Panama City (Panama)": "Panama",
+        # ── Territories/dependencies → parent country ──────────────────────
+        "French Guiana": "France",
+        "Guadeloupe": "France",
+        "New Caledonia": "France",
+        "Reunion Island": "France",
+        "Tahiti": "France",
+        "Corsica": "France",
+        "Mayotte (Comoro Islands)": "France",  # Mayotte is French, not Comorian
+        "French Alps": "France",
+        "Guam": "United States",
+        "Virgin Islands (US)": "United States",
+        "Virgin Islands (Great Britain)": "Great Britain",
+        "Anguilla": "Great Britain",
+        "Bermuda": "Great Britain",
+        "Cayman Islands": "Great Britain",
+        "Channel Islands": "Great Britain",
+        "Falkland Islands": "Great Britain",
+        "Gibraltar": "Great Britain",
+        "Isle of Man": "Great Britain",
+        "Northern Ireland (United Kingdom)": "Great Britain",
+        "LONDONDERRY (NORTHERN IRELAND)": "Great Britain",
+        "PORTADOWN (NORTHERN IRELAND)": "Great Britain",
+        "Aruba": "Netherlands",
+        "Curacao": "Netherlands",
+        "Greenland": "Denmark",
+        "Faroe Islands": "Denmark",
+        "Canary Islands": "Spain",
+        "Azores Islands": "Portugal",
+        "Andaman Islands": "India",
+        "Galapagos Islands": "Ecuador",
+        "Easter Island": "Chile",
+        "Grand Bahama Island": "Bahamas",
+        "Bahama Islands": "Bahamas",
+        "ABACO ISLANDS (BAHAMAS)": "Bahamas",
+        # ── Cities needing explicit entries ────────────────────────────────
+        "Halifax (Nova Scotia)": "Canada",
+        "MONTREAL (CANADA)": "Canada",
+        "ONTARIO PROVINCE (CANADA)": "Canada",
+        "Humboldt (Saskatchewan)": "Canada",
+        "Hobart (Tasmania)": "Australia",
+        "Kowloon (Hong Kong)": "Hong Kong",
+        "Yuen Long (Hong Kong)": "Hong Kong",
+        "HONG KONG (CHINA)": "Hong Kong",
+        "Jamaica (West Indies)": "Jamaica",
+        "Kinshasa (Democratic Republic of Congo)": "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "Stepanakert (Nagorno-Karabakh Republic)": "Nagorno-Karabakh",
+        "SARAJEVO (BOSNIA)": "Bosnia and Herzegovina",
+        "BOSNIA": "Bosnia and Herzegovina",
+        "Chechnya": "Russia",
+        "CONGO REPUBLIC": "Congo, Republic of (Congo-Brazzaville)",
+        "Democratic Federation of Rojava-North Syria": "Syria",
+        "Republic of North Macedonia": "North Macedonia",
+        "TETOVO (MACEDONIA)": "North Macedonia",
+        "Kurile Islands": "Russia",
+        "SAKHALIN ISLAND": "Russia",
+        # Remaining city→country entries whose parents need explicit mapping
+        "Dili (East Timor)": "East Timor",
+        "Bangui (Central African Republic)": "Central African Republic",
+        "Nuuk (Greenland)": "Denmark",
+        "St Martin (Caribbean)": "Caribbean Area",
+        "Brixton (London, England)": "Great Britain",
+        "Sevnica (Slovenia)": "Slovenia",
+        "Yellowknife (Northwest Territories)": "Canada",
     }
 
     # Programmatic rule: any "Name (Parent)" where Parent maps to a known country.
@@ -1983,6 +2063,41 @@ def build_dashboard_data(articles, authors):
         "Texas": "United States",
         "Ontario": "Canada", "Quebec": "Canada", "British Columbia": "Canada",
         "Alberta": "Canada", "Manitoba": "Canada", "Newfoundland": "Canada",
+        "Nova Scotia": "Canada", "Saskatchewan": "Canada", "Yukon": "Canada",
+        "Northwest Territories": "Canada",
+        # UK abbreviations used in old all-caps tags
+        "Eng": "Great Britain", "England": "Great Britain",
+        "Ger": "Germany", "Germany": "Germany",
+        "Mex": "Mexico",
+        "Gaza": "Gaza Strip",
+        "Indian State": "India",
+        "West Indies": "Caribbean Area",
+        "Congo": "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "Bahamas": "Bahamas",
+        "Tasmania": "Australia",
+        "United Kingdom": "Great Britain",
+        "Greenland": "Denmark",
+        "Caribbean": "Caribbean Area",
+        # Countries missing from original PARENT_MAP
+        "Portugal": "Portugal", "Paraguay": "Paraguay", "Bolivia": "Bolivia",
+        "Croatia": "Croatia", "Slovenia": "Slovenia", "Slovakia": "Slovakia",
+        "Latvia": "Latvia", "Estonia": "Estonia", "Lithuania": "Lithuania",
+        "Albania": "Albania", "Bulgaria": "Bulgaria", "Finland": "Finland",
+        "Iceland": "Iceland", "Uruguay": "Uruguay", "Chile": "Chile",
+        "Ecuador": "Ecuador", "Guatemala": "Guatemala", "Honduras": "Honduras",
+        "Nicaragua": "Nicaragua", "Dominican Republic": "Dominican Republic",
+        "Burundi": "Burundi", "Sierra Leone": "Sierra Leone", "Guyana": "Guyana",
+        "Solomon Islands": "Solomon Islands", "Jamaica": "Jamaica",
+        "South Sudan": "South Sudan", "Chad": "Chad",
+        "East Timor": "East Timor", "Timor-Leste": "East Timor",
+        "Central African Republic": "Central African Republic",
+        # Kashmir/Tibet — contested territories, map cities to territory name
+        "Kashmir": "Kashmir", "Jammu and Kashmir": "Kashmir",
+        "Kashmir and Jammu": "Kashmir",
+        "Tibet": "Tibet",
+        # Misc
+        "London, England": "Great Britain",
+        "South China Sea": "South China Sea",  # keep Scarborough Shoal → South China Sea
     }
 
     # Entries that cannot be meaningfully mapped to a country/territory and
@@ -1999,18 +2114,30 @@ def build_dashboard_data(articles, authors):
     }
 
     import re as _re
-    _paren_re = _re.compile(r'^.+?\((.+?)\)$')
+    # Greedy prefix + [^)]+ capture so "City (Sub) (Country)" extracts "Country" not "Sub) (Country"
+    _paren_re = _re.compile(r'^.+\(([^)]+)\)$')
 
     def _normalize_loc(loc):
         if loc in DROP_LOCS:
             return None
+        # Direct lookup
         if loc in LOCATION_NORMALIZE:
             return LOCATION_NORMALIZE[loc]
+        # Title-cased lookup (handles ALL-CAPS legacy tags like "NORTH KOREA")
+        loc_title = loc.title()
+        if loc != loc_title and loc_title in LOCATION_NORMALIZE:
+            return LOCATION_NORMALIZE[loc_title]
+        # Parenthetical pattern: "City (Parent)" or "City (Sub) (Country)"
         m = _paren_re.match(loc)
         if m:
             parent = m.group(1).strip()
-            if parent in PARENT_MAP:
-                return PARENT_MAP[parent]
+            # Try both original case and title case (ALL-CAPS parent tags)
+            for pk in (parent, parent.title()):
+                if pk in PARENT_MAP:
+                    return PARENT_MAP[pk]
+        # Title-case if still entirely ALL-CAPS (handles remaining unknown all-caps tags)
+        if loc == loc.upper() and len(loc) > 2 and any(c.isalpha() for c in loc):
+            return loc_title
         return loc
 
     world_articles = [a for a in articles if a["section"] == "World"]
@@ -2078,7 +2205,8 @@ def build_dashboard_data(articles, authors):
     # Summary stats
     total_words = sum(a["word_count"] for a in articles)
     total_articles = len(articles)
-    total_authors = len(authors)
+    # Authors with >= 2 articles (matches authors.json export; excludes one-off contributors)
+    total_authors = len([a for a in authors if a["article_count"] >= 2])
     authors_25plus = len([a for a in authors if a["article_count"] >= 25])
     unique_sections = len(set(a["section"] for a in articles if a["section"]))
     date_range = f"{months_sorted[0]} to {months_sorted[-1]}" if months_sorted else ""

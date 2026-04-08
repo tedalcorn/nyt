@@ -236,10 +236,28 @@
       <p style="margin-top:8px">New York and New Jersey are excluded from the States tab because the NYT publishes local coverage of these states in a dedicated "New York" section rather than the national "U.S." section. Since the state analysis draws only from the U.S. section, NY and NJ counts would be artificially low (capturing ~3% of actual coverage).</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Section names</h4>
-      <p>Several sections were renamed by the NYT over the years and have been merged here under their current names: "Week in Review" (discontinued 2014) → "Sunday Review"; "Fashion &amp; Style" / "Fashion" → "Style"; "Business Day" → "Business." Four defunct standalone sections have also been folded into their closest surviving equivalents: "Great Homes &amp; Destinations" (a luxury real estate advertising supplement, 2002–2014) → "Real Estate"; "Booming" (a baby-boomer-focused blog led by Michael Winerip, 2012–2014) → "Well"; "At Home" (a COVID-era home-life section that replaced Travel during the pandemic, 2020–2022) → "Style"; "UrbanEye" (Melena Ryzik's NYC events newsletter and video series, 2000s) → "Arts." Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is not included in the Archive API.</p>
+      <p>The NYT has renamed, merged, and discontinued sections over the years. To preserve thematic continuity, this dashboard applies the following merges:</p>
+      <ul style="margin-left:20px;margin-top:6px">
+        <li>"Week in Review" (discontinued 2014) → <strong>Sunday Review</strong></li>
+        <li>"Fashion &amp; Style" / "Fashion" → <strong>Style</strong></li>
+        <li>"Business Day" → <strong>Business</strong></li>
+        <li>"Guides" → <strong>Guide</strong> (name standardization)</li>
+        <li>"Book Review" → <strong>Books</strong></li>
+        <li>"Gameplay" → <strong>Crosswords &amp; Games</strong></li>
+        <li>"en Español" → <strong>En español</strong></li>
+        <li>"Great Homes &amp; Destinations" (luxury real estate advertising supplement, 2002–2014) → <strong>Real Estate</strong></li>
+        <li>"Booming" (baby-boomer-focused blog led by Michael Winerip, 2012–2014) → <strong>Well</strong></li>
+        <li>"At Home" (COVID-era home-life section that replaced Travel during the pandemic, 2020–2022) → <strong>Style</strong></li>
+        <li>"UrbanEye" (Melena Ryzik's NYC events newsletter and video series, 2000s) → <strong>Arts</strong></li>
+        <li>"Critic's Choice" (arts picks feature) → <strong>Arts</strong></li>
+        <li>"Guide" (NYC going-out listings) → <strong>Arts</strong></li>
+      </ul>
+      <p style="margin-top:8px">Technical categories, product sections, branded-content labels, and small stubs (newsletter aggregators, discontinued apps, TV tie-ins) are excluded entirely from the Sections tab.</p>
+      <p style="margin-top:8px">Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is not included in the Archive API.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Excluded content</h4>
-      <p>Articles in the "Archives" section — predominantly paid death notices published as classified-style announcements, not reported obituaries — are excluded from all counts. These appear mainly from 2000 to 2006 and total roughly 90,000 items. Blog articles (published at <em>*.blogs.nytimes.com</em> subdomains) are included in the data; the NYT launched and wound down dozens of staff blogs between 2006 and 2017, which accounts for the elevated article counts and lower average word counts during that period. Paul Krugman's unusually high article counts (peaking at 100–179 per month in 2009–2013) reflect his "The Conscience of a Liberal" blog, which ran at <em>krugman.blogs.nytimes.com</em> from 2007 to 2017 and published multiple posts per day.</p>
+      <p>Articles in the "Archives" section — predominantly paid death notices published as classified-style announcements, not reported obituaries — are excluded from all counts. These appear mainly from 2000 to 2006 and total roughly 90,000 items.</p>
+      <p style="margin-top:8px">Blog articles (published at <em>*.blogs.nytimes.com</em> subdomains) are included in the data. The NYT launched and wound down dozens of staff blogs between 2006 and 2017, which accounts for the elevated article counts and lower average word counts during that period.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
       <ul style="margin-left:20px">
@@ -247,6 +265,7 @@
         <li>Word counts reflect what the API returns; some article types (interactives, briefings, live updates) may return 0 words.</li>
         <li>Article counts include all document types returned by the API (news, opinion, reviews, obituaries, etc.).</li>
         <li>The spike in Obituaries in 2005–2006 likely reflects when the desk became a consistently-tagged section in the API, rather than a real increase. The 2018–2019 spike reflects the launch of the "Overlooked" project — a series of retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018, that became a weekly ongoing feature.</li>
+        <li>Paul Krugman's unusually high article counts (peaking at 100–179 per month in 2009–2013) reflect his "The Conscience of a Liberal" blog, which ran at <em>krugman.blogs.nytimes.com</em> from 2007 to 2017 and published multiple posts per day.</li>
       </ul>
     </div>
   </div>
@@ -289,6 +308,9 @@
 
   <!-- SECTIONS -->
   <div class="view" id="view-sections">
+    <div class="chart-box" style="font-size:13px;color:#555;line-height:1.6">
+      <p>The table below covers the NYT's major editorial sections. A small number of technical, product, and branded-content categories (newsletter aggregators, discontinued apps, TV tie-ins) are excluded. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names has been merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for the full list of merges.</p>
+    </div>
     <div class="chart-box">
       <h3>Articles by Section Over Time</h3>
       <div style="margin-bottom:8px">
@@ -594,6 +616,15 @@ const INSTITUTIONAL_BYLINES = new Set([
   'None None',
 ]);
 
+// Filter out junk author entries (HTML fragments, wire service artifacts from old byline parsing)
+function isValidAuthorName(name) {
+  if (!name || name.length < 3 || name.length > 80) return false;
+  if (name[0] === '!' || name[0] === '-' || name[0] === '(' || name[0] === "'") return false;
+  if (name.includes('<') || name.includes('&#') || name.includes('|')) return false;
+  if (/^compiled by/i.test(name) || /^special to/i.test(name)) return false;
+  return true;
+}
+
 
 // --- MULTI-BYLINE ---
 function renderMultiBylineTrend() {
@@ -639,13 +670,13 @@ function renderMultiBylineTable() {
   const authorStats = {};
   for (const a of articles) {
     for (const name of a.authors) {
-      if (INSTITUTIONAL_BYLINES.has(name)) continue;
+      if (INSTITUTIONAL_BYLINES.has(name) || !isValidAuthorName(name)) continue;
       if (!authorStats[name]) authorStats[name] = { total: 0, multi: 0, coauthors: {} };
       authorStats[name].total++;
       if (a.authors.length > 1) {
         authorStats[name].multi++;
         for (const co of a.authors) {
-          if (co !== name && !INSTITUTIONAL_BYLINES.has(co)) {
+          if (co !== name && !INSTITUTIONAL_BYLINES.has(co) && isValidAuthorName(co)) {
             authorStats[name].coauthors[co] = (authorStats[name].coauthors[co] || 0) + 1;
           }
         }
@@ -710,6 +741,28 @@ const SECTION_BLOCKLIST = new Set([
   'Washington',         // 26 articles in one year, not a real section
   'Burst',              // short-lived 2013-2014 youth-focused digital section
   'T Brand',            // brand content/advertising, not editorial
+  // Branded show/product sections — TV/documentary tie-ins, not journalism sections
+  'The New York Times Presents', // FX docuseries tie-in
+  'The Weekly',         // TV documentary series on FX/Hulu
+  // Tiny/technical stubs
+  'Polls',              // 41 articles, internal polling data tag
+  'Headway',            // initiative tag, not a section
+  'Special Series',     // generic tag
+  'Neediest Cases',     // annual charity feature, not a section
+  'Lens',               // photo blog, absorbed into Photography
+  'Public Editor',      // office discontinued 2017
+  'Smarter Living',     // service journalism vertical, merged into other desks
+  'Reader Center',      // reader relations, not journalism
+  'Weather',            // weather data, not editorial
+  'Watching',           // streaming recs, too small
+  'Giving',             // charity/philanthropy vertical
+  'Job Market',         // classifieds-era section
+  'NYT Now',            // discontinued app/product
+  'Times Topics',       // reference aggregator, not editorial
+  'Times Insider',      // behind-the-scenes blog, discontinued
+  'Briefing',           // Morning Briefing newsletter aggregate
+  'Podcasts',           // podcast feed, not a section
+  'Today\'s Paper',     // print-duplicate aggregator
 ]);
 
 function initSections() {
@@ -892,7 +945,7 @@ function getFilteredAuthors() {
   const allYears = dashboard.all_years.map(Number);
   const fullRange = !yr || (yr.start <= allYears[0] && yr.end >= allYears[allYears.length - 1]);
 
-  let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name));
+  let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name) && isValidAuthorName(a.name));
   if (query) f = f.filter(a => a.name.toLowerCase().includes(query));
   if (sectionFilter) f = f.filter(a => (a.all_sections || [a.primary_section]).includes(sectionFilter));
 
@@ -1739,6 +1792,19 @@ const POPULATION_M = {
   'Mauritius':1,'Brunei':0.5,'Maldives':0.5,'Barbados':0.3,
   'Belize':0.4,'Bahamas':0.4,'Suriname':0.6,'East Timor':1.4,
   'Great Britain':69,'England':57,'Scotland':5,'Wales':3,
+  // Additional entries
+  'Belarus':9,'Bolivia':12,'Hong Kong':7.4,'Slovakia':5.4,'Slovenia':2.1,
+  'Macau':0.7,'Bahamas':0.4,'West Bank':3,'Gaza Strip':2,'Nagorno-Karabakh':0.15,
+  'North Macedonia':2,'Somaliland':4,'Kosovo':2,
+  // Small sovereign states — per-capita may be extreme, that's informative
+  'Monaco':0.038,'Liechtenstein':0.038,'San Marino':0.034,'Andorra':0.077,
+  'Nauru':0.011,'Tuvalu':0.011,'Palau':0.018,'Kiribati':0.12,
+  'Marshall Islands':0.042,'Micronesia':0.115,'Vanuatu':0.34,
+  'Tonga':0.10,'Samoa':0.22,'Cook Islands':0.017,
+  'Dominica':0.072,'Grenada':0.113,'St Lucia':0.183,
+  'St Vincent and the Grenadines':0.11,'Antigua and Barbuda':0.093,
+  'Comoros':0.9,'East Timor':1.4,
+  // Vatican excluded (institution as much as state)
 };
 
 function initWorld() {
@@ -2408,6 +2474,9 @@ loadData();
 </script>
 <script data-goatcounter="https://alcorn.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
-<div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;pointer-events:none;z-index:9999">Last revised: 4/7/26 11:19pm</div>
+<div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
+  <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
+  <span style="pointer-events:none">Last revised: 4/8/26 9:22am</span>
+</div>
 </body>
 </html>
