@@ -589,6 +589,7 @@ const INSTITUTIONAL_BYLINES = new Set([
   'Insider Staff', 'the staff of The Morning', 'New York Times Cooking',
   // Compiled/aggregated bylines
   'Compiled by The New York Times',
+  'None None',
 ]);
 
 
@@ -742,23 +743,23 @@ function renderSectionsTable() {
       const activeYears = trend.filter(d => d.count > 0 && d.year !== currentYear).map(d => d.year).sort();
       const prevYear = String(new Date().getFullYear() - 1);
       const lastActiveYear = activeYears[activeYears.length - 1] || '';
-      const periodEnd = lastActiveYear === prevYear ? 'present' : lastActiveYear;
+      const periodEnd = lastActiveYear === prevYear ? String(new Date().getFullYear()) : lastActiveYear;
       const period = activeYears.length >= 2
         ? `${activeYears[0]}–${periodEnd}`
         : periodEnd || '—';
-      // Build sparkline from yearly counts
-      const yearCounts = activeYears.map(y => {
-        const d = trend.find(t => t.year === y);
-        return d ? d.count : 0;
-      });
-      const sparkMax = Math.max(...yearCounts, 1);
+      // Build sparkline proportional to the full dataset span
+      const fullSpan = dashboard.all_years.filter(y => y !== currentYear);
+      const fullMin = Number(fullSpan[0]), fullMax = Number(fullSpan[fullSpan.length - 1]);
+      const spanYears = fullMax - fullMin || 1;
       const W = 80, H = 18;
-      const pts = yearCounts.map((v, i) => {
-        const x = yearCounts.length > 1 ? (i / (yearCounts.length - 1)) * W : W / 2;
-        const y = H - (v / sparkMax) * (H - 2) - 1;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      const yearCounts = activeYears.map(y => { const d = trend.find(t => t.year === y); return d ? d.count : 0; });
+      const sparkMax = Math.max(...yearCounts, 1);
+      const pts = activeYears.map((y, i) => {
+        const x = ((Number(y) - fullMin) / spanYears) * W;
+        const yv = H - (yearCounts[i] / sparkMax) * (H - 2) - 1;
+        return `${x.toFixed(1)},${yv.toFixed(1)}`;
       }).join(' ');
-      const spark = yearCounts.length >= 2
+      const spark = activeYears.length >= 2
         ? `<svg width="${W}" height="${H}" style="display:block;overflow:visible"><polyline points="${pts}" fill="none" stroke="#326891" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/></svg>`
         : '';
       return { name: s.name, count: s.count, avg_words: s.avg_words, total_words: s.total_words, period, _spark: spark };
@@ -926,15 +927,35 @@ function renderWordsDist() {
 
 function makeSparkline(author) {
   const ywn = author.annual_words_norm || {};
-  const years = Object.keys(ywn).sort();
-  if (years.length < 2) return '';
-  const vals = years.map(y => ywn[y] || 0);
+  const currentYear = String(new Date().getFullYear());
+  const fullSpan = dashboard.all_years.filter(y => y !== currentYear);
+  const fullMin = Number(fullSpan[0]), fullMax = Number(fullSpan[fullSpan.length - 1]);
+  const spanYears = fullMax - fullMin || 1;
+
+  // Get active years for this author, trimming partial terminal years (same rule as detail chart)
+  const MIN_DAYS = 90;
+  let activeYears = Object.keys(ywn).sort().filter(y => y !== currentYear);
+  if (activeYears.length < 2) return '';
+
+  if (activeYears.length > 1 && author.first_date) {
+    const fd = new Date(author.first_date);
+    const daysInFirst = (new Date(activeYears[0] + '-12-31') - fd) / 86400000 + 1;
+    if (daysInFirst < MIN_DAYS) activeYears = activeYears.slice(1);
+  }
+  if (activeYears.length > 1 && author.last_date) {
+    const ld = new Date(author.last_date);
+    const daysInLast = (ld - new Date(activeYears[activeYears.length - 1] + '-01-01')) / 86400000 + 1;
+    if (daysInLast < MIN_DAYS) activeYears = activeYears.slice(0, -1);
+  }
+  if (activeYears.length < 2) return '';
+
+  const vals = activeYears.map(y => ywn[y] || 0);
   const max = Math.max(...vals) || 1;
   const W = 60, H = 20;
-  const pts = vals.map((v, i) => {
-    const x = (i / (vals.length - 1)) * W;
-    const y = H - (v / max) * (H - 2) - 1;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  const pts = activeYears.map((y, i) => {
+    const x = ((Number(y) - fullMin) / spanYears) * W;
+    const yv = H - (vals[i] / max) * (H - 2) - 1;
+    return `${x.toFixed(1)},${yv.toFixed(1)}`;
   }).join(' ');
   return `<svg width="${W}" height="${H}" style="display:block;overflow:visible"><polyline points="${pts}" fill="none" stroke="#326891" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
 }
@@ -975,7 +996,7 @@ function renderAuthors() {
   const cols = [
     { key: 'name', label: 'Author' },
     { key: 'year_range', label: 'Period Active' },
-    { key: '_sparkline', label: 'Output' },
+    { key: '_sparkline', label: 'Activity' },
     { key: 'primary_section', label: SHOW_MULTI_SECTIONS ? 'Primary Section(s)' : 'Primary Section' },
     { key: 'article_count', label: 'Articles' + rangeLabel, cls: 'num' },
     { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num' },
@@ -1646,7 +1667,10 @@ function trackTerms() {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        x: { ticks: { callback: function(val, idx) { const l = months[idx]; return l && l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 11 } } },
+        x: {
+          ticks: { callback: function(val, idx) { const l = months[idx]; return l && l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 11 } },
+          grid: { color: function(ctx) { const l = months[ctx.index]; return l && l.endsWith('-01') ? 'rgba(0,0,0,0.1)' : 'transparent'; } }
+        },
         y: { beginAtZero: true, title: { display: true, text: 'Headlines/month' } }
       },
       plugins: { legend: { position: 'bottom' } }
@@ -1944,12 +1968,16 @@ function renderStatesTable(states, years) {
   cols.forEach(c => { html += `<th class="${c.cls||''}" data-sort="${c.key}">${c.label}${ind(c.key)}</th>`; });
   html += `</tr></thead><tbody>`;
   rows.forEach(r => {
-    html += `<tr style="cursor:pointer" data-state="${escapeHtml(r.name)}">`;
+    html += `<tr data-state="${escapeHtml(r.name)}">`;
     cols.forEach(c => {
       let v = r[c.key];
-      if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
-      else if (v == null) v = '—';
-      html += `<td class="${c.cls||''}">${escapeHtml(String(v))}</td>`;
+      if (c.key === 'name') {
+        html += `<td class="author-name">${escapeHtml(String(v))}</td>`;
+      } else {
+        if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
+        else if (v == null) v = '—';
+        html += `<td class="${c.cls||''}">${escapeHtml(String(v))}</td>`;
+      }
     });
     html += `</tr>`;
   });
@@ -2067,17 +2095,14 @@ function openStateDetail(state) {
     </div>
   `;
 
-  // Highlight spike years in chart
   const vals = years.map(y => trend[y] || 0);
-  const med = vals.slice().sort((a,b)=>a-b)[Math.floor(vals.length/2)] || 1;
-  const barColors = years.map(y => annotations[y] ? 'rgba(180,80,40,0.8)' : 'rgba(50,104,145,0.7)');
 
   destroyChart('chartStateDetail');
   chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
     type: 'bar',
     data: {
       labels: years,
-      datasets: [{ label: 'Articles', data: vals, backgroundColor: barColors }]
+      datasets: [{ label: 'Articles', data: vals, backgroundColor: 'rgba(50,104,145,0.7)' }]
     },
     options: {
       responsive: true,
@@ -2085,13 +2110,15 @@ function openStateDetail(state) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            afterLabel: ctx => annotations[years[ctx.dataIndex]] ? `Event: ${annotations[years[ctx.dataIndex]]}` : ''
+            afterLabel: ctx => annotations[years[ctx.dataIndex]] ? `Notable event: ${annotations[years[ctx.dataIndex]]}` : ''
           }
         }
       },
       scales: { y: { beginAtZero: true } }
     }
   });
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   // List articles for this state
   if (!articlesReady) {
@@ -2145,6 +2172,14 @@ const statesObserver = new MutationObserver(() => {
   }
 });
 statesObserver.observe(document.getElementById('view-states'), { attributes: true });
+
+// Trigger Headlines tracker when tab shown (needs articlesReady)
+const trackerObserver = new MutationObserver(() => {
+  if (document.getElementById('view-tracker').classList.contains('active') && articlesReady) {
+    if (!chartInstances['chartTracker']) trackTerms();
+  }
+});
+trackerObserver.observe(document.getElementById('view-tracker'), { attributes: true });
 
 // Trigger sections render when tab shown (lazy init)
 let sectionsInitialized = false;
@@ -2341,6 +2376,6 @@ loadData();
 </script>
 <script data-goatcounter="https://alcorn.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
-<div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;pointer-events:none;z-index:9999">Last revised: 4/7/26 9:35pm</div>
+<div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;pointer-events:none;z-index:9999">Last revised: 4/7/26 9:55pm</div>
 </body>
 </html>
