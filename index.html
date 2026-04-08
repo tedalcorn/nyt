@@ -309,16 +309,19 @@
     <div id="countryDetailPanel" style="display:none"></div>
     <div class="chart-box">
       <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws only from articles in the NYT's "World" section (international desk). Geographic tags are drawn from the NYT's own metadata; note that tagging coverage was inconsistent in 2000–2003.</p>
+      <h3>Coverage by Country</h3>
+      <div id="worldTableContainer"></div>
+      <div style="margin-top:14px">
+        <button id="toggleWorldTrendBtn" onclick="toggleWorldTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare country coverage over time</button>
+      </div>
+    </div>
+    <div class="chart-box" id="worldTrendBox" style="display:none">
       <h3>Country Coverage Over Time</h3>
       <div style="margin-bottom:8px">
         <select id="worldLocationSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
-        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries. Click a country to see articles and year-by-year trends. US cities, regional tags, and locations without population data show '—' for per-capita figures.</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries.</div>
       </div>
       <div style="position:relative;height:220px"><canvas id="chartLocationTrend"></canvas></div>
-    </div>
-    <div class="chart-box">
-      <h3>Coverage by Country</h3>
-      <div id="worldTableContainer"></div>
     </div>
   </div>
 
@@ -527,7 +530,6 @@ function initOverview() {
     { v: s.total_articles.toLocaleString(), l: 'Articles' },
     { v: Math.round(s.total_words / 1e6).toLocaleString() + 'M', l: 'Words' },
     { v: s.total_authors.toLocaleString(), l: 'Authors' },
-    { v: s.unique_sections, l: 'Sections' },
   ].map(d => `<div class="stat-card"><div class="value">${d.v}</div><div class="label">${d.l}</div></div>`).join('');
 
   // Monthly chart — exclude current year from line to avoid plummeting partial data
@@ -952,12 +954,32 @@ function makeSparkline(author) {
   const vals = activeYears.map(y => ywn[y] || 0);
   const max = Math.max(...vals) || 1;
   const W = 60, H = 20;
-  const pts = activeYears.map((y, i) => {
-    const x = ((Number(y) - fullMin) / spanYears) * W;
+
+  // Split into consecutive runs so hiatuses appear as gaps, not connecting lines
+  const runs = [];
+  let run = [0];
+  for (let i = 1; i < activeYears.length; i++) {
+    if (Number(activeYears[i]) - Number(activeYears[i - 1]) <= 1) {
+      run.push(i);
+    } else {
+      runs.push(run);
+      run = [i];
+    }
+  }
+  runs.push(run);
+
+  const toPoint = (i) => {
+    const x = ((Number(activeYears[i]) - fullMin) / spanYears) * W;
     const yv = H - (vals[i] / max) * (H - 2) - 1;
     return `${x.toFixed(1)},${yv.toFixed(1)}`;
-  }).join(' ');
-  return `<svg width="${W}" height="${H}" style="display:block;overflow:visible"><polyline points="${pts}" fill="none" stroke="#326891" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  };
+
+  const polylines = runs.map(r => {
+    const pts = r.map(toPoint).join(' ');
+    return `<polyline points="${pts}" fill="none" stroke="#326891" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }).join('');
+
+  return `<svg width="${W}" height="${H}" style="display:block;overflow:visible">${polylines}</svg>`;
 }
 
 function renderAuthors() {
@@ -1735,8 +1757,9 @@ function initWorld() {
     if (defaultLocations.includes(loc)) opt.selected = true;
     select.appendChild(opt);
   });
-  select.addEventListener('change', renderLocationTrend);
-  renderLocationTrend();
+  select.addEventListener('change', () => {
+    if (document.getElementById('worldTrendBox').style.display !== 'none') renderLocationTrend();
+  });
 
   renderWorldTable(years);
 }
@@ -1803,6 +1826,15 @@ function renderWorldTable(years) {
   container.querySelectorAll('tr[data-country]').forEach(row => {
     row.addEventListener('click', () => openCountryDetail(row.dataset.country));
   });
+}
+
+function toggleWorldTrend() {
+  const box = document.getElementById('worldTrendBox');
+  const btn = document.getElementById('toggleWorldTrendBtn');
+  const visible = box.style.display !== 'none';
+  box.style.display = visible ? 'none' : '';
+  btn.textContent = visible ? 'Compare country coverage over time' : 'Hide chart';
+  if (!visible) renderLocationTrend();
 }
 
 function renderLocationTrend() {
@@ -2376,6 +2408,6 @@ loadData();
 </script>
 <script data-goatcounter="https://alcorn.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
-<div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;pointer-events:none;z-index:9999">Last revised: 4/7/26 11:01pm</div>
+<div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;pointer-events:none;z-index:9999">Last revised: 4/7/26 11:19pm</div>
 </body>
 </html>

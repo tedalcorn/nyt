@@ -1814,6 +1814,95 @@ def build_dashboard_data(articles, authors):
         "Kosovo (Serbia)":            "Kosovo",
         "DUBAI":                      "United Arab Emirates",
         "Soviet Union":               "Russia",
+        # ── Standalone US states → United States ──────────────────────────
+        "Alabama": "United States", "Alaska": "United States",
+        "Arizona": "United States", "Arkansas": "United States",
+        "Colorado": "United States", "Connecticut": "United States",
+        "Delaware": "United States", "Hawaii": "United States",
+        "Idaho": "United States", "Illinois": "United States",
+        "Indiana": "United States", "Iowa": "United States",
+        "Kansas": "United States", "Kentucky": "United States",
+        "Louisiana": "United States", "Maryland": "United States",
+        "Massachusetts": "United States", "Michigan": "United States",
+        "Minnesota": "United States", "Mississippi": "United States",
+        "Missouri": "United States", "Montana": "United States",
+        "Nebraska": "United States", "New Hampshire": "United States",
+        "New Mexico": "United States", "North Carolina": "United States",
+        "Ohio": "United States", "Oklahoma": "United States",
+        "Oregon": "United States", "Pennsylvania": "United States",
+        "South Carolina": "United States", "Tennessee": "United States",
+        "Utah": "United States", "Vermont": "United States",
+        "Virginia": "United States", "West Virginia": "United States",
+        "Wisconsin": "United States", "Wyoming": "United States",
+        "Washington (State)": "United States",
+        # ── US cities with state abbreviations not caught by PARENT_MAP ───
+        "Atlanta (Ga)": "United States", "Ellabell (Ga)": "United States",
+        "Austin (Tex)": "United States", "Dallas (Tex)": "United States",
+        "Houston (Tex)": "United States", "Fort Hood (Tex)": "United States",
+        "El Paso (Tex)": "United States",
+        "Cleveland (Ohio)": "United States",
+        "Detroit (Mich)": "United States", "Dearborn (Mich)": "United States",
+        "Minneapolis (Minn)": "United States",
+        "Ferguson (Mo)": "United States",
+        "Las Vegas (Nev)": "United States",
+        "New Orleans (La)": "United States",
+        "Philadelphia (Pa)": "United States", "Pittsburgh (Pa)": "United States",
+        "Charlottesville (Va)": "United States",
+        "Seattle (Wash)": "United States",
+        "Joint Base Lewis-McChord (Wash)": "United States",
+        "Salt Lake City (Utah)": "United States",
+        "Newark (NJ)": "United States", "Long Island (NY)": "United States",
+        "Baltimore (Md)": "United States", "Annapolis (MD)": "United States",
+        "ANNAPOLIS (MD)": "United States", "CAMP DAVID (MD)": "United States",
+        "Shanksville (PA)": "United States",
+        "Marine Corps Base Camp Lejeune (SC)": "United States",
+        "Pearl Harbor (Hawaii)": "United States",
+        "Honolulu (Hawaii)": "United States",
+        "Northeastern States (US)": "United States",
+        "Southern States (US)": "United States",
+        "Ambassador Bridge": "United States",
+        "Central Park (Manhattan, NY)": "United States",
+        "ALCATRAZ (SAN FRANCISCO)": "United States",
+        # ── Standalone world cities → country ─────────────────────────────
+        "Beijing": "China", "BEIJING": "China",
+        "Moscow": "Russia", "MOSCOW": "Russia",
+        "Berlin": "Germany", "BERLIN": "Germany",
+        "Paris": "France",
+        "Rome": "Italy", "ROME": "Italy",
+        "London": "Great Britain", "LONDON": "Great Britain",
+        "TEL AVIV": "Israel",
+        "BAGHDAD": "Iraq",
+        "Geneva": "Switzerland",
+        "Belgrade": "Serbia", "BELGRADE": "Serbia",
+        "OKINAWA": "Japan", "OKINAWA AND OTHER RYUKYU ISLANDS": "Japan",
+        "SICILY": "Italy",
+        "HONG KONG (CHINA)": "Hong Kong",
+        "AMERICAN SAMOA": "United States",
+        # ── Country name variants / outdated names ─────────────────────────
+        "Burma": "Myanmar", "BURMA": "Myanmar",
+        "Britain": "Great Britain",
+        "The United States": "United States",
+        "America": "United States",
+        "Rhodesia": "Zimbabwe",
+        "Republic of Biafra": "Nigeria",
+        "Yugoslavia": "Serbia",
+        "EUROPEAN UNION": "Europe",
+        "Macao": "Macau",
+        "Swaziland": "Eswatini",
+        "Czechoslovakia": "Czech Republic",
+        "CZECHOSLOVAKIA (PRE-1993)": "Czech Republic",
+        # ── Too-granular places → parent country ──────────────────────────
+        "Red Square (Moscow)": "Russia",
+        "Western Wall (Jerusalem)": "Israel",
+        "Champs-Elysees (Paris)": "France",
+        "11th Arrondissement (Paris, France)": "France",
+        "Pont des Arts Bridge (Paris, France)": "France",
+        "Morandi Bridge (Genoa, Italy)": "Italy",
+        "Taksim Square (Istanbul, Turkey)": "Turkey",
+        "Great Wall of China": "China",
+        "Grindavik (Iceland)": "Iceland",
+        "Eyjafjallajokull Volcano (Iceland)": "Iceland",
+        "Kerch Strait Bridge": "Russia",
     }
 
     # Programmatic rule: any "Name (Parent)" where Parent maps to a known country.
@@ -1865,16 +1954,56 @@ def build_dashboard_data(articles, authors):
         "Congo, Democratic Republic of": "Congo, Democratic Republic of (Congo-Kinshasa)",
         "Beijing": "China",   # e.g. "Tiananmen Square (Beijing)"
         "NYC": "United States",
-        "Calif": "United States", "Ill": "United States", "Fla": "United States",
-        "Mass": "United States", "Texas": "United States",
+        # All US state abbreviations (catch any remaining "City (Abbr)" patterns)
+        "Ala": "United States", "Alaska": "United States",
+        "Ariz": "United States", "Ark": "United States",
+        "Calif": "United States", "Colo": "United States",
+        "Conn": "United States", "Del": "United States",
+        "Fla": "United States", "Ga": "United States",
+        "Hawaii": "United States", "Idaho": "United States",
+        "Ill": "United States", "Ind": "United States",
+        "Iowa": "United States", "Kan": "United States",
+        "Ky": "United States", "La": "United States",
+        "Me": "United States", "Md": "United States",
+        "Mass": "United States", "Mich": "United States",
+        "Minn": "United States", "Miss": "United States",
+        "Mo": "United States", "Mont": "United States",
+        "Neb": "United States", "Nev": "United States",
+        "NH": "United States", "NJ": "United States",
+        "NM": "United States", "NY": "United States",
+        "NC": "United States", "ND": "United States",
+        "Ohio": "United States", "Okla": "United States",
+        "Ore": "United States", "Pa": "United States",
+        "RI": "United States", "SC": "United States",
+        "SD": "United States", "Tenn": "United States",
+        "Tex": "United States", "Utah": "United States",
+        "Vt": "United States", "Va": "United States",
+        "Wash": "United States", "WVa": "United States",
+        "Wis": "United States", "Wyo": "United States",
+        "Texas": "United States",
         "Ontario": "Canada", "Quebec": "Canada", "British Columbia": "Canada",
         "Alberta": "Canada", "Manitoba": "Canada", "Newfoundland": "Canada",
+    }
+
+    # Entries that cannot be meaningfully mapped to a country/territory and
+    # should be dropped entirely from the world locations list.
+    DROP_LOCS = {
+        "VIETNAM WAR",          # not a place
+        "Korean",               # malformed tag (not the country)
+        "Silk Road (Ancient Trade Route)",  # historical concept
+        "Channel Tunnel",       # infrastructure
+        "Mont Blanc",           # mountain
+        "Mount Everest",        # mountain
+        "K2 (Himalayas)",       # mountain
+        "ELBE (RIVER)",         # river, too granular
     }
 
     import re as _re
     _paren_re = _re.compile(r'^.+?\((.+?)\)$')
 
     def _normalize_loc(loc):
+        if loc in DROP_LOCS:
+            return None
         if loc in LOCATION_NORMALIZE:
             return LOCATION_NORMALIZE[loc]
         m = _paren_re.match(loc)
@@ -1893,6 +2022,8 @@ def build_dashboard_data(articles, authors):
         y = str(art["year"])
         for loc in art.get("glocations", []):
             loc = _normalize_loc(loc)
+            if loc is None:
+                continue
             glocation_year[loc][y] += 1
             glocation_total[loc] += 1
         sub = art.get("subsection", "")
