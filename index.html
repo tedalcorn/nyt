@@ -233,7 +233,7 @@
 
       <h4 style="margin-top:16px;margin-bottom:4px">Geographic data</h4>
       <p>The States tab draws only from articles in the "U.S." section (the national desk). The World tab draws only from articles in the "World" section (the international desk). Coverage of these geographies that appears in other sections (Opinion, Business, etc.) is not included. Both tabs use the API's geographic keyword field; city-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. Per-capita figures use 2025 population estimates.</p>
-      <p style="margin-top:8px">New York and New Jersey are excluded from the States tab because the NYT publishes local coverage of these states in a dedicated "New York" section rather than the national "U.S." section. Since the state analysis draws only from the U.S. section, NY and NJ counts would be artificially low (capturing ~3% of actual coverage).</p>
+      <p style="margin-top:8px">New York and New Jersey coverage primarily appears in the dedicated "New York" section rather than the national "U.S." section. The States tab defaults to U.S.-section data only; a checkbox at the top of the tab allows adding New York section coverage for NY and NJ (counting only articles with explicit geographic tags — untagged "New York" section articles are excluded).</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Section names</h4>
       <p>The NYT has renamed, merged, and discontinued sections over the years. To preserve thematic continuity, this dashboard applies the following merges:</p>
@@ -246,18 +246,12 @@
         <li>"Gameplay" → <strong>Crosswords &amp; Games</strong></li>
         <li>"en Español" → <strong>En español</strong></li>
         <li>"Great Homes &amp; Destinations" (luxury real estate advertising supplement, 2002–2014) → <strong>Real Estate</strong></li>
-        <li>"Booming" (baby-boomer-focused blog led by Michael Winerip, 2012–2014) → <strong>Well</strong></li>
         <li>"At Home" (COVID-era home-life section that replaced Travel during the pandemic, 2020–2022) → <strong>Style</strong></li>
-        <li>"UrbanEye" (Melena Ryzik's NYC events newsletter and video series, 2000s) → <strong>Arts</strong></li>
         <li>"Critic's Choice" (arts picks feature) → <strong>Arts</strong></li>
-        <li>"Guide" (NYC going-out listings) → <strong>Arts</strong></li>
       </ul>
-      <p style="margin-top:8px">Technical categories, product sections, branded-content labels, and small stubs (newsletter aggregators, discontinued apps, TV tie-ins) are excluded entirely from the Sections tab.</p>
-      <p style="margin-top:8px">Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is not included in the Archive API.</p>
-
-      <h4 style="margin-top:16px;margin-bottom:4px">Excluded content</h4>
-      <p>Articles in the "Archives" section — predominantly paid death notices published as classified-style announcements, not reported obituaries — are excluded from all counts. These appear mainly from 2000 to 2006 and total roughly 90,000 items.</p>
+      <p style="margin-top:8px">Technical categories, product sections, branded-content labels, and small stubs (newsletter aggregators, discontinued apps, TV tie-ins, blogs without a clear section home) are excluded entirely from the Sections tab. This includes the "Archives" section (predominantly paid death notices, not reported content), "Booming" (a baby-boomer lifestyle blog, 2012–2014), "UrbanEye" (a NYC events newsletter), "Guide" (a going-out listings service), and newsletter and podcast aggregators.</p>
       <p style="margin-top:8px">Blog articles (published at <em>*.blogs.nytimes.com</em> subdomains) are included in the data. The NYT launched and wound down dozens of staff blogs between 2006 and 2017, which accounts for the elevated article counts and lower average word counts during that period.</p>
+      <p style="margin-top:8px">Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is not included in the Archive API.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
       <ul style="margin-left:20px">
@@ -275,7 +269,7 @@
   <div class="view" id="view-authors">
     <div class="search-box">
       <input type="text" id="authorSearch" placeholder="Filter authors by name...">
-      <label>Section: <select id="authorSectionFilter"><option value="">All</option></select></label>
+      <label>Primary Section: <select id="authorSectionFilter"><option value="">All</option></select></label>
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
       <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
@@ -308,11 +302,9 @@
 
   <!-- SECTIONS -->
   <div class="view" id="view-sections">
-    <div class="chart-box" style="font-size:13px;color:#555;line-height:1.6">
-      <p>The table below covers the NYT's major editorial sections. A small number of technical, product, and branded-content categories (newsletter aggregators, discontinued apps, TV tie-ins) are excluded. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names has been merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for the full list of merges.</p>
-    </div>
     <div class="chart-box">
       <h3>Articles by Section Over Time</h3>
+      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">The table below covers the NYT's major editorial sections. A small number of technical, product, and branded-content categories (newsletter aggregators, discontinued apps, TV tie-ins) are excluded. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names has been merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for the full list of merges.</p>
       <div style="margin-bottom:8px">
         <select id="sectionCountSelect" multiple style="width:100%;min-height:160px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
@@ -320,7 +312,7 @@
       <div style="position:relative;height:220px"><canvas id="chartSectionCount"></canvas></div>
     </div>
     <div class="chart-box">
-      <h3>Sections</h3>
+      <h3>Major Sections</h3>
       <div id="sectionTableContainer"></div>
     </div>
   </div>
@@ -330,14 +322,15 @@
   <div class="view" id="view-world">
     <div id="countryDetailPanel" style="display:none"></div>
     <div class="chart-box">
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws only from articles in the NYT's "World" section (international desk). Geographic tags are drawn from the NYT's own metadata; note that tagging coverage was inconsistent in 2000–2003.</p>
       <h3>Coverage by Country</h3>
-      <div id="worldTableContainer"></div>
-      <div style="margin-top:14px">
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws only from articles in the NYT's "World" section (international desk). Geographic tags are drawn from the NYT's own metadata; note that tagging coverage was inconsistent in 2000–2003.</p>
+      <div style="margin-bottom:12px">
         <button id="toggleWorldTrendBtn" onclick="toggleWorldTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare country coverage over time</button>
       </div>
+      <div id="worldTableContainer"></div>
     </div>
     <div class="chart-box" id="worldTrendBox" style="display:none">
+      <button class="close-btn" onclick="toggleWorldTrend()" style="float:right;margin-top:-4px">Close</button>
       <h3>Country Coverage Over Time</h3>
       <div style="margin-bottom:8px">
         <select id="worldLocationSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
@@ -351,11 +344,11 @@
   <div class="view" id="view-states">
     <div id="stateDetailPanel" style="display:none"></div>
     <div class="chart-box">
+      <h3>Coverage by State</h3>
       <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws from articles in the NYT's national "U.S." section. New York and New Jersey primarily appear in the dedicated "New York" section, not the national desk. Geographic tags are drawn from the NYT's own metadata.</p>
       <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
         <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY &amp; NJ
       </label>
-      <h3>Coverage by State</h3>
       <div id="stateTableContainer"></div>
     </div>
     <div class="chart-box">
@@ -529,10 +522,11 @@ function showView(view) {
 
 // --- Unique sections list ---
 function getUniqueSections() {
-  // Only include sections with 10+ authors to keep dropdowns clean
+  // Only include sections with 10+ authors, excluding blocklisted sections
   const counts = {};
   if (authors) authors.forEach(a => {
-    if (a.primary_section) counts[a.primary_section] = (counts[a.primary_section] || 0) + 1;
+    if (a.primary_section && !SECTION_BLOCKLIST.has(a.primary_section))
+      counts[a.primary_section] = (counts[a.primary_section] || 0) + 1;
   });
   return Object.entries(counts).filter(([, c]) => c >= 10).map(([s]) => s).sort();
 }
@@ -766,6 +760,10 @@ const SECTION_BLOCKLIST = new Set([
   'Briefing',           // Morning Briefing newsletter aggregate
   'Podcasts',           // podcast feed, not a section
   'Today\'s Paper',     // print-duplicate aggregator
+  // Small blogs/newsletters absorbed or discontinued, no clear section identity
+  'Booming',            // baby-boomer lifestyle blog 2012-2014
+  'UrbanEye',           // NYC events newsletter/video 2000s
+  'Guide',              // NYC going-out listings, not a news section
 ]);
 
 function initSections() {
@@ -1036,6 +1034,40 @@ function makeSparkline(author) {
   }).join('');
 
   return `<svg width="${W}" height="${H}" style="display:block;overflow:visible">${polylines}</svg>`;
+}
+
+// Render a sortable article list into a container element
+// arts: array of article objects; formatFn: (article) => html string
+function renderArticleList(containerId, arts, formatFn, opts = {}) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const SORT_BTN = (label, key, asc, cur) => {
+    const active = cur === key;
+    return `<button onclick="renderArticleList('${containerId}',window._artListCache_${containerId},window._artListFmt_${containerId},{sortKey:'${key}',asc:${asc}})" `
+      + `style="font-size:11px;padding:2px 7px;border:1px solid ${active?'#326891':'#ccc'};border-radius:3px;background:${active?'#e8f0f7':'#f5f5f5'};cursor:pointer;font-family:inherit;color:${active?'#326891':'#666'}">`
+      + `${label}</button>`;
+  };
+  const sortKey = opts.sortKey || 'date_desc';
+  const sorted = [...arts];
+  if (sortKey === 'date_desc') sorted.sort((a, b) => b.pub_date.localeCompare(a.pub_date));
+  else if (sortKey === 'date_asc') sorted.sort((a, b) => a.pub_date.localeCompare(b.pub_date));
+  else if (sortKey === 'words_desc') sorted.sort((a, b) => b.word_count - a.word_count);
+  else if (sortKey === 'words_asc') sorted.sort((a, b) => a.word_count - b.word_count);
+
+  // Cache for re-sort without re-filtering
+  window[`_artListCache_${containerId}`] = arts;
+  window[`_artListFmt_${containerId}`] = formatFn;
+
+  const shown = sorted.slice(0, 300);
+  const meta = `${arts.length.toLocaleString()} articles${arts.length > 300 ? ' · showing 300' : ''}`;
+  el.innerHTML =
+    `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+       <span style="font-size:12px;color:#888">${meta}</span>
+       ${SORT_BTN('Newest','date_desc',true,sortKey)}
+       ${SORT_BTN('Oldest','date_asc',true,sortKey)}
+       ${SORT_BTN('Longest','words_desc',true,sortKey)}
+       ${SORT_BTN('Shortest','words_asc',true,sortKey)}
+     </div>` + shown.map(formatFn).join('');
 }
 
 function makeCountrySparkline(trend, years) {
@@ -1380,7 +1412,13 @@ function showAuthorTimeline(name, opts = {}) {
           <canvas id="${chartId}" style="max-height:160px"></canvas>
         </div>
         <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Words/year (annualized)</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Words/year (annualized)</div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#888">
+              <svg width="12" height="12" style="flex-shrink:0"><defs><pattern id="stripeHint" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="rgba(50,104,145,0.2)"/><line x1="0" y1="0" x2="0" y2="5" stroke="rgba(50,104,145,0.75)" stroke-width="2"/></pattern></defs><rect width="12" height="12" fill="url(#stripeHint)"/></svg>
+              Partial year (extrapolated)
+            </div>
+          </div>
           <canvas id="${chartId}_prod" style="max-height:160px"></canvas>
         </div>
       </div>
@@ -1573,9 +1611,8 @@ function showAuthorTimeline(name, opts = {}) {
       }
     }
 
-    // Article list (reverse chronological)
-    const reversedArticles = [...authorArticles].reverse();
-    const listHtml = reversedArticles.map(a => {
+    // Article list with sort controls
+    renderArticleList(listId, authorArticles, a => {
       const coauthors = a.authors.filter(n => n !== name);
       const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
       return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
@@ -1583,9 +1620,7 @@ function showAuthorTimeline(name, opts = {}) {
         <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
         <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
       </div>`;
-    }).join('');
-    document.getElementById(listId).innerHTML =
-      `<div style="font-size:12px;color:#888;margin-bottom:6px">${authorArticles.length} articles (newest first)</div>` + listHtml;
+    });
 
     // Scroll to timeline
     const container2 = document.getElementById(containerId);
@@ -1776,7 +1811,7 @@ function trackTerms() {
 const POPULATION_M = {
   'China':1425,'India':1450,'United States':340,'Indonesia':280,'Pakistan':240,
   'Nigeria':230,'Brazil':217,'Bangladesh':175,'Russia':144,'Mexico':130,
-  'Ethiopia':130,'Japan':123,'Philippines':118,'Egypt':112,'Congo':105,
+  'Ethiopia':130,'Japan':123,'Philippines':118,'Egypt':112,'Congo':105,'Democratic Republic of Congo':105,
   'Vietnam':100,'Iran':90,'Turkey':87,'Germany':84,'Thailand':72,
   'United Kingdom':69,'France':68,'Tanzania':67,'Italy':59,'South Africa':62,
   'Myanmar':55,'Kenya':56,'South Korea':52,'Colombia':52,'Spain':48,
@@ -1809,6 +1844,7 @@ const POPULATION_M = {
   'Cape Verde':0.6,'Sao Tome and Principe':0.2,'Seychelles':0.1,
   'Mauritius':1,'Brunei':0.5,'Maldives':0.5,'Barbados':0.3,
   'Belize':0.4,'Bahamas':0.4,'Suriname':0.6,'East Timor':1.4,
+  'Bulgaria':6.5,'Montenegro':0.62,'Burundi':13,'Benin':14,
   'Great Britain':69,'England':57,'Scotland':5,'Wales':3,
   // Additional entries
   'Belarus':9,'Bolivia':12,'Hong Kong':7.4,'Slovakia':5.4,'Slovenia':2.1,
@@ -2000,19 +2036,16 @@ function openCountryDetail(country) {
     return;
   }
   const countryArticles = articles
-    .filter(a => a.section === 'World' && a.glocations && a.glocations.includes(country))
-    .sort((a, b) => b.pub_date.localeCompare(a.pub_date));
+    .filter(a => a.section === 'World' && a.glocations && a.glocations.includes(country));
 
-  const listHtml = countryArticles.slice(0, 300).map(a => {
+  renderArticleList('countryArticleList', countryArticles, a => {
     const byline = a.authors.join(', ') || 'No byline';
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
       <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
       <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
       <span style="color:#aaa;font-size:11px"> · ${byline} · ${a.word_count.toLocaleString()} words</span>
     </div>`;
-  }).join('');
-  document.getElementById('countryArticleList').innerHTML =
-    `<div style="font-size:12px;color:#888;margin-bottom:6px">${countryArticles.length.toLocaleString()} articles${countryArticles.length > 300 ? ' · showing 300 most recent' : ''}</div>` + listHtml;
+  });
 }
 
 // --- STATES ---
@@ -2286,19 +2319,16 @@ function openStateDetail(state) {
     return;
   }
   const stateArticles = articles
-    .filter(a => a.canonical_states && a.canonical_states.includes(state))
-    .sort((a, b) => b.pub_date.localeCompare(a.pub_date));
+    .filter(a => a.canonical_states && a.canonical_states.includes(state));
 
-  const listHtml = stateArticles.slice(0, 300).map(a => {
+  renderArticleList('stateArticleList', stateArticles, a => {
     const byline = a.authors.join(', ') || 'No byline';
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
       <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
       <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
       <span style="color:#aaa;font-size:11px"> · ${byline} · ${a.word_count.toLocaleString()} words</span>
     </div>`;
-  }).join('');
-  document.getElementById('stateArticleList').innerHTML =
-    `<div style="font-size:12px;color:#888;margin-bottom:6px">${stateArticles.length.toLocaleString()} articles${stateArticles.length > 300 ? ' · showing 300 most recent' : ''}</div>` + listHtml;
+  });
 }
 
 function debounce(fn, ms) {
@@ -2539,7 +2569,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/8/26 10:45am</span>
+  <span style="pointer-events:none">Last revised: 4/8/26 11:30am</span>
 </div>
 </body>
 </html>

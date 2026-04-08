@@ -263,11 +263,8 @@ def process_articles(raw_articles):
             "Week in Review": "Sunday Review",
             # Defunct/absorbed sections merged into closest surviving equivalent
             "Great Homes & Destinations": "Real Estate",  # luxury RE supplement 2002-2014
-            "Booming": "Well",                            # baby-boomer blog 2012-2014
             "At Home": "Style",                           # COVID-era home-life section 2020-2022
-            "UrbanEye": "Arts",                           # NYC events newsletter/video 2000s
             "Critic's Choice": "Arts",                    # arts picks feature folded into Arts
-            "Guide": "Arts",                              # NYC going-out guide folded into Arts
         }
         section = SECTION_MERGES.get(section, section)
         news_desk = doc.get("news_desk", "") or ""
@@ -1630,6 +1627,7 @@ def build_dashboard_data(articles, authors):
         # ── Lebanon ───────────────────────────────────────────────────────
         "Beirut (Lebanon)":           "Lebanon",
         # ── Egypt ─────────────────────────────────────────────────────────
+        "Cairo":                      "Egypt",
         "Cairo (Egypt)":              "Egypt",
         "Sinai Peninsula (Egypt)":    "Egypt",
         "Tahrir Square (Cairo)":      "Egypt",
@@ -1666,7 +1664,7 @@ def build_dashboard_data(articles, authors):
         "Cape Town (South Africa)":   "South Africa",
         "Pretoria (South Africa)":    "South Africa",
         # ── Congo ─────────────────────────────────────────────────────────
-        "CONGO":                      "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "CONGO":                      "Democratic Republic of Congo",
         # ── Kenya ─────────────────────────────────────────────────────────
         "Mombasa (Kenya)":            "Kenya",
         "Nairobi (Kenya)":            "Kenya",
@@ -1827,7 +1825,7 @@ def build_dashboard_data(articles, authors):
         "Washington (DC)":            "United States",
         # ── Extra fixes not caught by programmatic rule ────────────────────
         "ALEPPO (SYRIA)":             "Syria",
-        "Congo (Formerly Zaire)":     "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "Congo (Formerly Zaire)":     "Democratic Republic of Congo",
         "KASHMIR AND JAMMU":          "Kashmir",
         "SERBIA AND MONTENEGRO":      "Serbia",
         "Tiananmen Square (Beijing)": "China",
@@ -1976,12 +1974,12 @@ def build_dashboard_data(articles, authors):
         "Yuen Long (Hong Kong)": "Hong Kong",
         "HONG KONG (CHINA)": "Hong Kong",
         "Jamaica (West Indies)": "Jamaica",
-        "Kinshasa (Democratic Republic of Congo)": "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "Kinshasa (Democratic Republic of Congo)": "Democratic Republic of Congo",
         "Stepanakert (Nagorno-Karabakh Republic)": "Nagorno-Karabakh",
         "SARAJEVO (BOSNIA)": "Bosnia and Herzegovina",
         "BOSNIA": "Bosnia and Herzegovina",
         "Chechnya": "Russia",
-        "CONGO REPUBLIC": "Congo, Republic of (Congo-Brazzaville)",
+        "CONGO REPUBLIC": "Republic of Congo",
         "Democratic Federation of Rojava-North Syria": "Syria",
         "Republic of North Macedonia": "North Macedonia",
         "TETOVO (MACEDONIA)": "North Macedonia",
@@ -2043,7 +2041,8 @@ def build_dashboard_data(articles, authors):
         "United Arab Emirates": "United Arab Emirates",
         "Oman": "Oman", "Kuwait": "Kuwait", "Bahrain": "Bahrain",
         "Singapore": "Singapore", "Cambodia": "Cambodia", "Laos": "Laos",
-        "Congo, Democratic Republic of": "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "Congo, Democratic Republic of": "Democratic Republic of Congo",
+        "Democratic Republic of the Congo": "Democratic Republic of Congo",
         "Beijing": "China",   # e.g. "Tiananmen Square (Beijing)"
         "NYC": "United States",
         # All US state abbreviations (catch any remaining "City (Abbr)" patterns)
@@ -2084,7 +2083,7 @@ def build_dashboard_data(articles, authors):
         "Gaza": "Gaza Strip",
         "Indian State": "India",
         "West Indies": "Caribbean Area",
-        "Congo": "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "Congo": "Democratic Republic of Congo",
         "Bahamas": "Bahamas",
         "Tasmania": "Australia",
         "United Kingdom": "Great Britain",
