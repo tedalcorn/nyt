@@ -1804,7 +1804,85 @@ def build_dashboard_data(articles, authors):
         "Manhattan (NYC)":            "United States",
         "New York City":              "United States",
         "Washington (DC)":            "United States",
+        # ── Extra fixes not caught by programmatic rule ────────────────────
+        "ALEPPO (SYRIA)":             "Syria",
+        "Congo (Formerly Zaire)":     "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "KASHMIR AND JAMMU":          "Kashmir",
+        "SERBIA AND MONTENEGRO":      "Serbia",
+        "Tiananmen Square (Beijing)": "China",
+        "Guantanamo Bay Naval Base (Cuba)": "Cuba",
+        "Kosovo (Serbia)":            "Kosovo",
+        "DUBAI":                      "United Arab Emirates",
+        "Soviet Union":               "Russia",
     }
+
+    # Programmatic rule: any "Name (Parent)" where Parent maps to a known country.
+    # Applied AFTER the explicit dict, as a fallback for the thousands of remaining
+    # sub-national tags (cities, provinces, regions) following this pattern.
+    PARENT_MAP = {
+        "India": "India", "China": "China", "Ukraine": "Ukraine", "Russia": "Russia",
+        "Iraq": "Iraq", "Syria": "Syria", "Afghanistan": "Afghanistan",
+        "Pakistan": "Pakistan", "Israel": "Israel", "West Bank": "West Bank",
+        "Gaza Strip": "Gaza Strip", "Turkey": "Turkey", "Iran": "Iran",
+        "Saudi Arabia": "Saudi Arabia", "Egypt": "Egypt", "Lebanon": "Lebanon",
+        "Jordan": "Jordan", "Nigeria": "Nigeria", "South Africa": "South Africa",
+        "Kenya": "Kenya", "Somalia": "Somalia", "Libya": "Libya", "Sudan": "Sudan",
+        "Ethiopia": "Ethiopia", "Venezuela": "Venezuela", "Colombia": "Colombia",
+        "Mexico": "Mexico", "Brazil": "Brazil", "Argentina": "Argentina",
+        "Peru": "Peru", "Cuba": "Cuba", "Haiti": "Haiti", "Indonesia": "Indonesia",
+        "Philippines": "Philippines", "Myanmar": "Myanmar", "Malaysia": "Malaysia",
+        "Vietnam": "Vietnam", "Bangladesh": "Bangladesh", "Nepal": "Nepal",
+        "Sri Lanka": "Sri Lanka", "Australia": "Australia",
+        "New Zealand": "New Zealand", "Canada": "Canada", "Thailand": "Thailand",
+        "Netherlands": "Netherlands", "Belgium": "Belgium", "Spain": "Spain",
+        "Italy": "Italy", "France": "France", "Germany": "Germany",
+        "England": "Great Britain", "Scotland": "Great Britain",
+        "Wales": "Great Britain", "Northern Ireland": "Great Britain",
+        "Greece": "Greece", "Serbia": "Serbia", "Hungary": "Hungary",
+        "Czech Republic": "Czech Republic", "Poland": "Poland",
+        "Romania": "Romania", "Austria": "Austria", "Switzerland": "Switzerland",
+        "Sweden": "Sweden", "Norway": "Norway", "Denmark": "Denmark",
+        "Ireland": "Ireland", "Georgian Republic": "Georgia", "Georgia": "Georgia",
+        "Qatar": "Qatar", "Belarus": "Belarus", "Taiwan": "Taiwan",
+        "North Korea": "North Korea", "South Korea": "South Korea", "Japan": "Japan",
+        "Yemen": "Yemen", "Morocco": "Morocco", "Algeria": "Algeria",
+        "Tunisia": "Tunisia", "Zimbabwe": "Zimbabwe", "Uganda": "Uganda",
+        "Rwanda": "Rwanda", "Liberia": "Liberia", "Papua New Guinea": "Papua New Guinea",
+        "Angola": "Angola", "Mozambique": "Mozambique", "Tanzania": "Tanzania",
+        "Ghana": "Ghana", "Senegal": "Senegal", "Cameroon": "Cameroon",
+        "Ivory Coast": "Ivory Coast", "Mali": "Mali", "Niger": "Niger",
+        "Burkina Faso": "Burkina Faso", "Malawi": "Malawi", "Zambia": "Zambia",
+        "Madagascar": "Madagascar", "Eritrea": "Eritrea", "Djibouti": "Djibouti",
+        "Bosnia and Herzegovina": "Bosnia and Herzegovina",
+        "Kosovo": "Kosovo", "Macedonia": "Macedonia", "Montenegro": "Montenegro",
+        "Kazakhstan": "Kazakhstan", "Uzbekistan": "Uzbekistan",
+        "Kyrgyzstan": "Kyrgyzstan", "Tajikistan": "Tajikistan",
+        "Turkmenistan": "Turkmenistan", "Azerbaijan": "Azerbaijan",
+        "Armenia": "Armenia", "Moldova": "Moldova",
+        "United Arab Emirates": "United Arab Emirates",
+        "Oman": "Oman", "Kuwait": "Kuwait", "Bahrain": "Bahrain",
+        "Singapore": "Singapore", "Cambodia": "Cambodia", "Laos": "Laos",
+        "Congo, Democratic Republic of": "Congo, Democratic Republic of (Congo-Kinshasa)",
+        "Beijing": "China",   # e.g. "Tiananmen Square (Beijing)"
+        "NYC": "United States",
+        "Calif": "United States", "Ill": "United States", "Fla": "United States",
+        "Mass": "United States", "Texas": "United States",
+        "Ontario": "Canada", "Quebec": "Canada", "British Columbia": "Canada",
+        "Alberta": "Canada", "Manitoba": "Canada", "Newfoundland": "Canada",
+    }
+
+    import re as _re
+    _paren_re = _re.compile(r'^.+?\((.+?)\)$')
+
+    def _normalize_loc(loc):
+        if loc in LOCATION_NORMALIZE:
+            return LOCATION_NORMALIZE[loc]
+        m = _paren_re.match(loc)
+        if m:
+            parent = m.group(1).strip()
+            if parent in PARENT_MAP:
+                return PARENT_MAP[parent]
+        return loc
 
     world_articles = [a for a in articles if a["section"] == "World"]
     glocation_year = defaultdict(lambda: defaultdict(int))
@@ -1814,7 +1892,7 @@ def build_dashboard_data(articles, authors):
     for art in world_articles:
         y = str(art["year"])
         for loc in art.get("glocations", []):
-            loc = LOCATION_NORMALIZE.get(loc, loc)
+            loc = _normalize_loc(loc)
             glocation_year[loc][y] += 1
             glocation_total[loc] += 1
         sub = art.get("subsection", "")
