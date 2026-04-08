@@ -364,7 +364,7 @@
 <script>
 Chart.defaults.plugins.datalabels = { display: false };
 let dashboard = null;
-let articles = null;
+let articles = [];
 let authors = null;
 let articlesReady = false;
 
@@ -471,6 +471,7 @@ async function loadData() {
       }
       articlesReady = true;
       populateHeadlineSection();
+      trackTerms(); // auto-populate Headlines tracker with default terms
       // Refresh any open detail panels that were waiting for article data
       if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
         openStateDetail(lastOpenedState);
@@ -1591,11 +1592,10 @@ function initTrackerYears() {
   });
   startSel.value = years[0];
   endSel.value = years[years.length - 1];
-  // Auto-track on first load
-  trackTerms();
 }
 
 function trackTerms() {
+  if (!articlesReady) return;
   const terms = [
     document.getElementById('term1').value.trim(),
     document.getElementById('term2').value.trim(),
