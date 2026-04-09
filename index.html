@@ -318,14 +318,14 @@
 
   <!-- SECTIONS -->
   <div class="view" id="view-sections">
-    <div class="chart-box">
-      <h3>Articles by Section Over Time</h3>
+    <div class="chart-box" data-dl-canvas-only="true">
+      <h3>Compare Sections</h3>
       <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">Includes major editorial sections. A few minor or discontinued categories are excluded from display. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names are merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for further details.</p>
       <div style="margin-bottom:8px">
         <select id="sectionCountSelect" multiple style="width:100%;min-height:160px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
       </div>
-      <div style="position:relative;height:220px"><canvas id="chartSectionCount"></canvas></div>
+      <div id="sectionCountCanvasWrap" style="position:relative;height:220px"><canvas id="chartSectionCount"></canvas></div>
     </div>
     <div class="chart-box">
       <h3>Major Sections</h3>
@@ -342,6 +342,15 @@
   <!-- WORLD -->
   <div class="view" id="view-world">
     <div id="countryDetailPanel" style="display:none"></div>
+    <div class="chart-box" id="worldTrendBox" style="display:none" data-dl-canvas-only="true">
+      <button class="close-btn" onclick="toggleWorldTrend()" style="float:right;margin-top:-4px">Close</button>
+      <h3>Compare Country Coverage</h3>
+      <div style="margin-bottom:8px">
+        <select id="worldLocationSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries.</div>
+      </div>
+      <div id="worldTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartLocationTrend"></canvas></div>
+    </div>
     <div class="chart-box">
       <h3>Coverage by Country</h3>
       <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata exclusively in articles from the "World" section. Tagging coverage appears to have been less consistent in 2000–2003.</p>
@@ -349,15 +358,6 @@
         <button id="toggleWorldTrendBtn" onclick="toggleWorldTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare country coverage over time</button>
       </div>
       <div class="table-scroll-wrap"><div id="worldTableContainer"></div></div>
-    </div>
-    <div class="chart-box" id="worldTrendBox" style="display:none">
-      <button class="close-btn" onclick="toggleWorldTrend()" style="float:right;margin-top:-4px">Close</button>
-      <h3>Country Coverage Over Time</h3>
-      <div style="margin-bottom:8px">
-        <select id="worldLocationSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
-        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries.</div>
-      </div>
-      <div style="position:relative;height:220px"><canvas id="chartLocationTrend"></canvas></div>
     </div>
   </div>
 
@@ -368,17 +368,17 @@
       <h3>Coverage by State</h3>
       <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata in the "U.S." section and "New York" section, where New York and New Jersey coverage primarily resides.</p>
       <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
-        <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY &amp; NJ
+        <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY, NJ &amp; CT
       </label>
       <div class="table-scroll-wrap"><div id="stateTableContainer"></div></div>
     </div>
-    <div class="chart-box">
+    <div class="chart-box" data-dl-canvas-only="true">
       <h3>U.S. State Coverage Over Time</h3>
       <div style="margin-bottom:8px">
         <select id="stateSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
       </div>
-      <div style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
+      <div id="stateTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
     </div>
   </div>
 
@@ -440,7 +440,10 @@ function addDownloadBtns() {
       const title = (box.querySelector('h3')?.textContent || 'chart')
         .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
       btn.textContent = '…';
-      html2canvas(box, { backgroundColor: '#fff', scale: 2, useCORS: true, logging: false })
+      // For trend charts: capture only the canvas wrapper (skips title/selector controls)
+      const canvasOnly = box.dataset.dlCanvasOnly;
+      const target = canvasOnly ? box.querySelector('[id$="CanvasWrap"]') || box.querySelector('canvas').parentElement : box;
+      html2canvas(target, { backgroundColor: '#fff', scale: 2, useCORS: true, logging: false })
         .then(canvas => {
           const a = document.createElement('a');
           a.download = title + '.jpg';
@@ -2060,7 +2063,7 @@ function renderWorldTable(years) {
   html += `</tr></thead><tbody>`;
   rows.forEach(r => {
     const trend = wc.location_trends[r.name] || {};
-    html += `<tr style="cursor:pointer" data-country="${escapeHtml(r.name)}">`;
+    html += `<tr data-country="${escapeHtml(r.name)}">`;
     cols.forEach(c => {
       if (c.key === '_sparkline') {
         html += `<td style="padding:2px 8px">${makeCountrySparkline(trend, years)}</td>`;
@@ -2069,7 +2072,11 @@ function renderWorldTable(years) {
       let v = r[c.key];
       if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
       else if (v == null) v = '—';
-      html += `<td class="${c.cls||''}">${escapeHtml(String(v))}</td>`;
+      if (c.key === 'name') {
+        html += `<td class="author-name">${escapeHtml(String(v))}</td>`;
+      } else {
+        html += `<td class="${c.cls||''}">${escapeHtml(String(v))}</td>`;
+      }
     });
     html += `</tr>`;
   });
@@ -2098,7 +2105,7 @@ function toggleWorldTrend() {
   const visible = box.style.display !== 'none';
   box.style.display = visible ? 'none' : '';
   btn.textContent = visible ? 'Compare country coverage over time' : 'Hide chart';
-  if (!visible) renderLocationTrend();
+  if (!visible) { renderLocationTrend(); addDownloadBtns(); }
 }
 
 function renderLocationTrend() {
