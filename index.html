@@ -6,9 +6,10 @@
 <title>Below the Fold — A New York Times X-Ray Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; }
+  body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; overflow-x: hidden; }
 
   header {
     background: #fff; color: #121212; padding: 14px 24px 12px;
@@ -53,8 +54,17 @@
 
   .chart-box {
     background: #fff; border: 1px solid #ddd; border-radius: 6px;
-    padding: 20px; margin-bottom: 20px;
+    padding: 20px; margin-bottom: 20px; position: relative;
   }
+  .chart-dl-btn {
+    position: absolute; bottom: 9px; right: 10px;
+    background: none; border: 1px solid #ddd; border-radius: 3px;
+    color: #bbb; font-size: 10px; padding: 2px 7px; cursor: pointer;
+    font-family: 'nyt-franklin', Arial, sans-serif; letter-spacing: 0.3px;
+    line-height: 1.6; transition: color 0.12s, border-color 0.12s;
+    z-index: 5;
+  }
+  .chart-dl-btn:hover { color: #555; border-color: #aaa; }
   .chart-box h3 { font-size: 16px; margin-bottom: 4px; }
   .chart-box .chart-controls { margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .chart-box .chart-controls select {
@@ -170,9 +180,10 @@
   .related-tag:hover { background: #d4c9b8; }
 
   @media (max-width: 640px) {
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .stat-card .value { font-size: 20px; }
-    .stat-card .label { font-size: 10px; }
+    .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .stat-card { padding: 10px 6px; }
+    .stat-card .value { font-size: 17px; }
+    .stat-card .label { font-size: 9px; }
     .container { padding: 10px; }
     .chart-box { padding: 14px; }
     header .nyt-wordmark { font-size: 24px; }
@@ -194,21 +205,7 @@
   }
 </style>
 </head>
-<body style="visibility:hidden">
-<script>
-(function() {
-  const k = 'btf_auth';
-  if (sessionStorage.getItem(k) === '1') { document.body.style.visibility = 'visible'; return; }
-  const pw = prompt('Enter password:');
-  if (pw && pw.toLowerCase().replace(/[^a-z]/g,'') === 'fughedaboutit') {
-    sessionStorage.setItem(k, '1');
-    document.body.style.visibility = 'visible';
-  } else {
-    document.body.innerHTML = '<p style="text-align:center;margin-top:40vh;font-size:18px;visibility:visible">Nope.</p>';
-    document.body.style.visibility = 'visible';
-  }
-})();
-</script>
+<body>
 
 <header>
   <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px">
@@ -384,9 +381,9 @@
     <div class="chart-box">
       <h3>Headline Frequency Over Time</h3>
       <div class="term-inputs">
-        <input type="text" id="term1" placeholder="Term 1" value="Trump">
-        <input type="text" id="term2" placeholder="Term 2" value="Biden">
-        <input type="text" id="term3" placeholder="Term 3 (optional)" value="Obama">
+        <input type="text" id="term1" placeholder="Term 1">
+        <input type="text" id="term2" placeholder="Term 2">
+        <input type="text" id="term3" placeholder="Term 3 (optional)">
         <input type="text" id="term4" placeholder="Term 4 (optional)" value="Bush">
         <button id="trackBtn">Track</button>
         <label style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" id="trackerFrontPage"><span>Front page only</span></label>
@@ -417,6 +414,34 @@ const MAX_SECTIONS_DISPLAY = 3; // cap display; authors with more get "… +N"
 // ─────────────────────────────────────────────────────────────────────────────
 let chartInstances = {};
 let pendingTimelineRefresh = null; // legacy; no longer used
+
+// --- Chart download buttons ---
+function addDownloadBtns() {
+  document.querySelectorAll('.chart-box').forEach(box => {
+    if (box.querySelector('.chart-dl-btn') || !box.querySelector('canvas')) return;
+    const btn = document.createElement('button');
+    btn.className = 'chart-dl-btn';
+    btn.textContent = '↓ JPG';
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const title = (box.querySelector('h3')?.textContent || 'chart')
+        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
+      btn.textContent = '…';
+      html2canvas(box, { backgroundColor: '#fff', scale: 2, useCORS: true, logging: false })
+        .then(canvas => {
+          const a = document.createElement('a');
+          a.download = title + '.jpg';
+          a.href = canvas.toDataURL('image/jpeg', 0.92);
+          a.click();
+          btn.textContent = '↓ JPG';
+        }).catch(() => { btn.textContent = '↓ JPG'; });
+    });
+    box.appendChild(btn);
+  });
+}
+
+// Wire up to dynamically-created chart-boxes (author profiles, beat detail, etc.)
+new MutationObserver(addDownloadBtns).observe(document.body, { childList: true, subtree: true });
 
 function destroyChart(id) {
   if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
@@ -479,6 +504,7 @@ async function loadData() {
     initHeadlineSearch();
     renderWordsDist();
     showView('about');
+    setTimeout(addDownloadBtns, 200);
 
     // Phase 1b: load authors and beats independently (non-blocking)
     fetch('data/authors.json').then(r => r.json()).then(authData => {
@@ -1794,12 +1820,15 @@ function trackTerms() {
 
   const months = [...new Set(pool.map(a => a.year_month))].sort();
   const series = {};
+  // Build word-boundary regexes so "men" doesn't match "women", "cat" doesn't match "category", etc.
+  const termRegs = terms.map(t => new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'));
   terms.forEach(t => { series[t] = {}; months.forEach(m => series[t][m] = 0); });
 
   pool.forEach(a => {
-    const hl = a.headline.toLowerCase();
-    terms.forEach(t => {
-      if (hl.includes(t.toLowerCase())) {
+    const hl = a.headline;
+    termRegs.forEach((re, i) => {
+      if (re.test(hl)) {
+        const t = terms[i];
         series[t][a.year_month] = (series[t][a.year_month] || 0) + 1;
       }
     });
