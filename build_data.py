@@ -204,6 +204,8 @@ def glocation_to_state(loc):
         return "New York"
     if loc in US_STATES:
         return STATE_ALIASES.get(loc, loc)
+    if loc == "Washington (State)":
+        return "Washington"
     m = re.search(r'\(([^)]+)\)', loc)
     if m:
         return ABBREV_TO_STATE.get(m.group(1))
@@ -1144,6 +1146,10 @@ def build_author_stats(articles):
         "annual_words": defaultdict(int),    # year -> words
         "annual_sections": defaultdict(Counter),  # year -> section counts
         "monthly_counts": defaultdict(int),  # YYYY-MM -> article count
+        "shared_byline_count": 0,
+        "monthly_shared_counts": defaultdict(int),  # YYYY-MM -> shared article count
+        "coauthors": Counter(),
+        "zero_word_articles": 0,
     })
 
     for art in articles:
@@ -1151,6 +1157,7 @@ def build_author_stats(articles):
         author_words = art["word_count"] // n if n > 0 else 0
         pub_date = art["pub_date"][:10]  # "YYYY-MM-DD"
         year = art["year"]
+        is_shared = n > 1
         for name in art["authors"]:
             d = author_data[name]
             d["article_count"] += 1
@@ -1160,6 +1167,14 @@ def build_author_stats(articles):
             d["annual_words"][year] += author_words
             d["annual_sections"][year][art["section"]] += 1
             d["monthly_counts"][art["year_month"]] += 1
+            if art["word_count"] == 0:
+                d["zero_word_articles"] += 1
+            if is_shared:
+                d["shared_byline_count"] += 1
+                d["monthly_shared_counts"][art["year_month"]] += 1
+                for coname in art["authors"]:
+                    if coname != name:
+                        d["coauthors"][coname] += 1
             if d["first_date"] is None or pub_date < d["first_date"]:
                 d["first_date"] = pub_date
             if d["last_date"] is None or pub_date > d["last_date"]:
@@ -1229,11 +1244,24 @@ def build_author_stats(articles):
         if primary_section and primary_section not in all_sections:
             all_sections.insert(0, primary_section)
 
+        article_count = d["article_count"]
+        shared_count = d["shared_byline_count"]
+        zero_word_rate = d["zero_word_articles"] / article_count if article_count else 0
+        shared_rate = shared_count / article_count if article_count else 0
+        # Likely multimedia/photographer: almost always co-authored AND
+        # a large fraction of their articles have zero word count (photo credits, slide shows)
+        likely_multimedia = (
+            article_count >= 5 and
+            shared_rate >= 0.75 and
+            zero_word_rate >= 0.35
+        )
+        top_coauthors = dict(d["coauthors"].most_common(10))
+
         authors.append({
             "name": name,
-            "article_count": d["article_count"],
+            "article_count": article_count,
             "total_words": d["total_words"],
-            "avg_words": round(d["total_words"] / d["article_count"]) if d["article_count"] else 0,
+            "avg_words": round(d["total_words"] / article_count) if article_count else 0,
             "avg_words_per_year": avg_words_per_year,
             "primary_section": primary_section,
             "secondary_section": secondary_section,
@@ -1246,6 +1274,10 @@ def build_author_stats(articles):
             "annual_words_norm": annual_words_norm,
             "annual_words": dict(d["annual_words"]),
             "monthly_counts": dict(d["monthly_counts"]),
+            "shared_byline_count": shared_count,
+            "monthly_shared_counts": dict(d["monthly_shared_counts"]),
+            "coauthors": top_coauthors,
+            "likely_multimedia": likely_multimedia,
             "beats": [],  # filled in later by build_beats()
         })
 

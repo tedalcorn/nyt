@@ -329,6 +329,11 @@
     </div>
     <div class="chart-box">
       <h3>Major Sections</h3>
+      <div style="margin-bottom:8px">
+        <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
+          <input type="checkbox" id="sectionExcludePhoto" onchange="renderSectionsTable()"> Exclude likely photo/multimedia bylines from shared % calculation
+        </label>
+      </div>
       <div id="sectionTableContainer"></div>
     </div>
   </div>
@@ -380,18 +385,25 @@
   <!-- HEADLINE TRACKER -->
   <div class="view" id="view-tracker">
     <div class="chart-box">
-      <h3>Headline Frequency Over Time</h3>
+      <h3>Headline Frequency</h3>
       <div class="term-inputs">
-        <input type="text" id="term1" placeholder="Term 1">
+        <input type="text" id="term1" placeholder="Term 1 (use | for OR, * for prefix)">
         <input type="text" id="term2" placeholder="Term 2">
         <input type="text" id="term3" placeholder="Term 3 (optional)">
         <input type="text" id="term4" placeholder="Term 4 (optional)">
         <button id="trackBtn">Track</button>
         <label style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" id="trackerFrontPage"><span>Front page only</span></label>
-        <span style="font-size:13px;color:#888">Years:</span>
-        <select id="trackerYearStart" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
-        <span style="font-size:13px;color:#888">–</span>
-        <select id="trackerYearEnd" style="padding:4px 6px;border:1px solid #ccc;border-radius:4px;font-size:13px;font-family:inherit"></select>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#888;white-space:nowrap">Years</span>
+        <span id="trackerYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
+        <div class="yr-slider-wrap" id="trackerSliderWrap" style="min-width:160px">
+          <div class="yr-slider-track"></div>
+          <div class="yr-slider-fill" id="trackerSliderFill"></div>
+          <input type="range" id="trackerYrStart">
+          <input type="range" id="trackerYrEnd">
+        </div>
+        <span id="trackerYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
       </div>
       <div style="position:relative;height:calc(100vh - 210px)"><canvas id="chartTracker"></canvas></div>
     </div>
@@ -515,6 +527,10 @@ async function loadData() {
       // If reporters tab is already visible, render immediately
       if (document.getElementById('view-authors').classList.contains('active')) {
         renderAuthors();
+      }
+      // Re-render sections table to populate % Shared column (requires authors data)
+      if (sectionsInitialized) {
+        renderSectionsTable();
       }
     }).catch(e => {
       console.error('Failed to load authors:', e);
@@ -842,6 +858,25 @@ let sectionTableSort = { col: 'count', asc: false };
 
 function renderSectionsTable() {
   const currentYear = String(new Date().getFullYear());
+  const excludePhoto = document.getElementById('sectionExcludePhoto')?.checked;
+
+  // Pre-compute per-section shared byline % from authors.json (if available)
+  const sectionShared = {};
+  if (authors && authors.some(a => typeof a.shared_byline_count === 'number')) {
+    const sectionTotals = {}; // { sectionName: { articles, shared } }
+    for (const a of authors) {
+      if (INSTITUTIONAL_BYLINES.has(a.name) || !isValidAuthorName(a.name)) continue;
+      if (excludePhoto && a.likely_multimedia) continue;
+      const sec = a.primary_section;
+      if (!sec) continue;
+      if (!sectionTotals[sec]) sectionTotals[sec] = { articles: 0, shared: 0 };
+      sectionTotals[sec].articles += a.article_count || 0;
+      sectionTotals[sec].shared += a.shared_byline_count || 0;
+    }
+    for (const [sec, t] of Object.entries(sectionTotals)) {
+      sectionShared[sec] = t.articles > 0 ? Math.round(t.shared / t.articles * 100) : null;
+    }
+  }
 
   // Build section data with period active and totals
   const rows = dashboard.sections
@@ -870,7 +905,8 @@ function renderSectionsTable() {
       const spark = activeYears.length >= 2
         ? `<svg width="${W}" height="${H}" style="display:block;overflow:visible"><polyline points="${pts}" fill="none" stroke="#326891" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/></svg>`
         : '';
-      return { name: s.name, count: s.count, avg_words: s.avg_words, total_words: s.total_words, period, _spark: spark };
+      const sharedPct = sectionShared[s.name] !== undefined ? sectionShared[s.name] : null;
+      return { name: s.name, count: s.count, avg_words: s.avg_words, total_words: s.total_words, period, _spark: spark, _sharedPct: sharedPct };
     });
 
   rows.sort((a, b) => {
@@ -882,12 +918,14 @@ function renderSectionsTable() {
   });
 
   const ind = col => sectionTableSort.col === col ? (sectionTableSort.asc ? ' ▲' : ' ▼') : '';
+  const hasSharedData = Object.keys(sectionShared).length > 0;
   const cols = [
     { key: 'name', label: 'Section' },
     { key: 'period', label: 'Period Active' },
     { key: '_spark', label: '' },
     { key: 'count', label: 'Articles', cls: 'num' },
     { key: 'avg_words', label: 'Avg Words/Article', cls: 'num' },
+    ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared Bylines', cls: 'num' }] : []),
   ];
 
   let html = `<table class="author-table"><thead><tr>`;
@@ -905,6 +943,8 @@ function renderSectionsTable() {
       let v = r[c.key];
       if (c.key === '_spark') {
         html += `<td style="padding:2px 8px">${v || ''}</td>`;
+      } else if (c.key === '_sharedPct') {
+        html += `<td class="${c.cls||''}">${v !== null && v !== undefined ? v + '%' : '—'}</td>`;
       } else {
         if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
         html += `<td class="${c.cls||''}">${escapeHtml(String(v ?? ''))}</td>`;
@@ -1005,10 +1045,10 @@ function getFilteredAuthors() {
   // Attach range-specific stats
   f = f.map(a => {
     if (fullRange) {
-      return { ...a, _rangeArticles: a.article_count, _rangeWords: a.total_words };
+      return { ...a, _rangeArticles: a.article_count, _rangeWords: a.total_words, _rangeShared: a.shared_byline_count || 0 };
     }
     const rs = computeRangeStats(a, yr.start, yr.end);
-    return { ...a, _rangeArticles: rs.articles, _rangeWords: rs.words };
+    return { ...a, _rangeArticles: rs.articles, _rangeWords: rs.words, _rangeShared: rs.shared };
   }).filter(a => a._rangeArticles >= minArticles);
 
   return f;
@@ -1164,6 +1204,7 @@ function renderAuthors() {
   });
 
   const rangeLabel = fullRange ? '' : ` (${yr.start}–${yr.end})`;
+  const hasSharedData = authors.some(a => typeof a.shared_byline_count === 'number');
   const cols = [
     { key: 'name', label: 'Author' },
     { key: 'year_range', label: 'Period Active', mob: true },
@@ -1173,6 +1214,7 @@ function renderAuthors() {
     { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num', mob: true },
     { key: 'avg_words', label: 'Avg Words/Article', cls: 'num', mob: true },
     { key: '_avg_words_per_year', label: 'Avg Words/Year', cls: 'num' },
+    ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared', cls: 'num', mob: true }] : []),
   ];
 
   const indicator = (col) => authorSort.col === col ? (authorSort.asc ? ' ▲' : ' ▼') : '';
@@ -1185,11 +1227,13 @@ function renderAuthors() {
   html += `</tr></thead><tbody>`;
 
   filtered.slice(0, 500).forEach(a => {
+    const sharedPct = a._rangeArticles > 0 ? Math.round((a._rangeShared || 0) / a._rangeArticles * 100) : 0;
     html += `<tr data-author="${escapeHtml(a.name)}">`;
     cols.forEach(c => {
       const cls = [c.cls || '', c.mob ? 'mob-hide' : ''].filter(Boolean).join(' ');
       let v = c.key === 'article_count' ? a._displayArticles
             : c.key === 'total_words'   ? a._displayWords
+            : c.key === '_sharedPct'    ? sharedPct
             : a[c.key];
       if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
       if (c.key === '_sparkline') {
@@ -1201,6 +1245,8 @@ function renderAuthors() {
         const shown = secs.slice(0, MAX_SECTIONS_DISPLAY).join(', ');
         const overflow = secs.length > MAX_SECTIONS_DISPLAY ? ` <span style="color:#aaa">+${secs.length - MAX_SECTIONS_DISPLAY}</span>` : '';
         html += `<td class="${cls}">${escapeHtml(shown)}${overflow}</td>`;
+      } else if (c.key === '_sharedPct') {
+        html += `<td class="${cls}">${sharedPct}%</td>`;
       } else {
         html += `<td class="${cls}">${v || ''}</td>`;
       }
@@ -1437,6 +1483,7 @@ function showAuthorTimeline(name, opts = {}) {
   // Phase 1: render productivity chart, monthly chart, beats immediately from authors.json
   // Phase 2: fill article list (needs year files; loaded on-demand)
 
+  const sections = (authorInfo.all_sections && authorInfo.all_sections.length ? authorInfo.all_sections : [authorInfo.primary_section]).filter(Boolean);
   const beatsHtml = (!subjectFilter && authorInfo.beats && authorInfo.beats.length)
     ? `<strong>Beats:</strong> ${authorInfo.beats.map(toTitleCase).join(', ')}`
     : '';
@@ -1444,16 +1491,31 @@ function showAuthorTimeline(name, opts = {}) {
     ? `<div style="font-size:12px;color:#326891;margin-top:4px">Filtered to articles tagged "${toTitleCase(subjectFilter)}"</div>`
     : '';
 
+  // Shared bylines (present after rebuild)
+  let sharedHtml = '';
+  if (typeof authorInfo.shared_byline_count === 'number' && authorInfo.article_count > 0) {
+    const pct = Math.round(authorInfo.shared_byline_count / authorInfo.article_count * 100);
+    sharedHtml = `<strong>Shared bylines:</strong> ${pct}%`;
+    if (authorInfo.coauthors && Object.keys(authorInfo.coauthors).length) {
+      const topCo = Object.entries(authorInfo.coauthors)
+        .sort((a, b) => b[1] - a[1]).slice(0, 3)
+        .map(([n]) => `<span style="cursor:pointer;color:#326891;text-decoration:underline" onclick="showAuthorTimeline(${JSON.stringify(n)})">${escapeHtml(n)}</span>`);
+      sharedHtml += `&ensp;·&ensp;<strong>Frequent collaborators:</strong> ${topCo.join(', ')}`;
+    }
+  }
+
   const container = document.getElementById(containerId);
   container.innerHTML = `
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_prod');pendingTimelineRefresh=null">Close</button>
       <h3>${escapeHtml(name)}</h3>
       <div class="timeline-meta">
-        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}Primary Section(s): ${(authorInfo.all_sections && authorInfo.all_sections.length ? authorInfo.all_sections : [authorInfo.primary_section]).join(', ')} · ${authorInfo.year_range}
+        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}${authorInfo.year_range}
       </div>
       ${subjectNote}
-      <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:6px">${beatsHtml}</div>
+      <div style="font-size:13px;color:#555;margin-top:6px">${sections.length ? `<strong>Primary Section${sections.length > 1 ? 's' : ''}:</strong> ${sections.join(', ')}` : ''}</div>
+      <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:4px">${beatsHtml}</div>
+      ${sharedHtml ? `<div style="font-size:13px;color:#555;margin-top:4px">${sharedHtml}</div>` : ''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
         <div>
           <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per month</div>
@@ -1774,23 +1836,36 @@ function toTitleCase(s) {
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
 document.getElementById('trackerFrontPage').addEventListener('change', trackTerms);
-document.getElementById('trackerYearStart').addEventListener('change', trackTerms);
-document.getElementById('trackerYearEnd').addEventListener('change', trackTerms);
+document.getElementById('trackerYrStart').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
+document.getElementById('trackerYrEnd').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
 ['term1','term2','term3','term4'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
 });
 
 // Populate tracker year selects once dashboard loads — called from initOverview
+function updateTrackerSlider() {
+  const sInput = document.getElementById('trackerYrStart');
+  const eInput = document.getElementById('trackerYrEnd');
+  let s = parseInt(sInput.value), e = parseInt(eInput.value);
+  if (s > e) { s = e; sInput.value = s; }
+  const minY = parseInt(sInput.min), maxY = parseInt(sInput.max);
+  const range = maxY - minY || 1;
+  document.getElementById('trackerSliderFill').style.left  = ((s - minY) / range * 100) + '%';
+  document.getElementById('trackerSliderFill').style.right = ((maxY - e) / range * 100) + '%';
+  document.getElementById('trackerYrStartLbl').textContent = s;
+  document.getElementById('trackerYrEndLbl').textContent = e;
+}
+
 function initTrackerYears() {
   const years = dashboard.all_years.map(Number).filter(y => y < new Date().getFullYear());
-  const startSel = document.getElementById('trackerYearStart');
-  const endSel = document.getElementById('trackerYearEnd');
-  years.forEach(y => {
-    startSel.appendChild(Object.assign(document.createElement('option'), {value: y, textContent: y}));
-    endSel.appendChild(Object.assign(document.createElement('option'), {value: y, textContent: y}));
-  });
-  startSel.value = years[0];
-  endSel.value = years[years.length - 1];
+  const minY = years[0], maxY = years[years.length - 1];
+  const sInput = document.getElementById('trackerYrStart');
+  const eInput = document.getElementById('trackerYrEnd');
+  sInput.min = eInput.min = minY;
+  sInput.max = eInput.max = maxY;
+  sInput.value = minY;
+  eInput.value = maxY;
+  updateTrackerSlider();
 }
 
 function trackTerms() {
@@ -1805,8 +1880,8 @@ function trackTerms() {
 
   const frontOnly = document.getElementById('trackerFrontPage').checked;
   const cutoffYear = String(new Date().getFullYear());
-  const startYear = document.getElementById('trackerYearStart').value;
-  const endYear = document.getElementById('trackerYearEnd').value;
+  const startYear = document.getElementById('trackerYrStart').value;
+  const endYear = document.getElementById('trackerYrEnd').value;
   let pool = articles.filter(a => {
     const y = a.year_month.slice(0, 4);
     return y !== cutoffYear && y >= startYear && y <= endYear;
@@ -1815,8 +1890,18 @@ function trackTerms() {
 
   const months = [...new Set(pool.map(a => a.year_month))].sort();
   const series = {};
-  // Build word-boundary regexes so "men" doesn't match "women", "cat" doesn't match "category", etc.
-  const termRegs = terms.map(t => new RegExp('\\b' + t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i'));
+  // Build per-term regexes supporting | for OR and * for prefix wildcard
+  // e.g. "Democrat|Democratic" → \b(Democrat|Democratic)\b
+  //      "Democrat*"           → \bDemocrat\w*
+  function buildTermReg(term) {
+    const parts = term.split('|').map(p => p.trim()).filter(Boolean);
+    const escaped = parts.map(p => {
+      const safe = p.replace(/[.+?^${}()[\]\\]/g, '\\$&'); // escape except *
+      return safe.endsWith('*') ? safe.slice(0, -1) + '\\w*' : safe;
+    });
+    return new RegExp('\\b(' + escaped.join('|') + ')', 'i');
+  }
+  const termRegs = terms.map(buildTermReg);
   terms.forEach(t => { series[t] = {}; months.forEach(m => series[t][m] = 0); });
 
   pool.forEach(a => {
@@ -2484,7 +2569,12 @@ function computeRangeStats(a, start, end) {
   for (const [y, w] of Object.entries(a.annual_words || a.annual_words_norm || {})) {
     if (parseInt(y) >= start && parseInt(y) <= end) words += Math.round(w);
   }
-  return { articles, words };
+  let shared = 0;
+  for (const [ym, n] of Object.entries(a.monthly_shared_counts || {})) {
+    const y = parseInt(ym.slice(0, 4));
+    if (y >= start && y <= end) shared += n;
+  }
+  return { articles, words, shared };
 }
 
 function initCareers() { // dead code kept for reference, no longer called
@@ -2626,7 +2716,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/9/26 10:30am</span>
+  <span style="pointer-events:none">Last revised: 4/9/26 3:15pm</span>
 </div>
 </body>
 </html>
