@@ -100,10 +100,12 @@ def extract_authors(byline):
             continue
         if name.lower().startswith('interviews ') or name.lower().startswith('interviews:'):
             continue
-        # Skip fragment names like "and Y NEWMAN" / "and REW BORYGA" (API split "ANDY"/"ANDREW"
-        # on " and " and kept only the trailing fragment)
-        if re.match(r'^and\s+[A-Z]', name):
-            continue
+        # Fragment names like "and Y NEWMAN" are truncated "ANDY NEWMAN" — the API split
+        # on " and " inside the name (e.g. "ANDY" → "A" + "NY"). Reconstruct by prepending
+        # "And" to recover the original: "AndY NEWMAN".title() → "Andy Newman".
+        m = re.match(r'^and\s+([A-Z].*)', name)
+        if m:
+            name = ('And' + m.group(1)).title()
         parts = name.split()
         if len(parts) >= 2:
             first = parts[0]
