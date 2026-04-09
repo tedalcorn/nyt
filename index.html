@@ -24,10 +24,10 @@
 
   nav {
     display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e2e2e2;
-    overflow-x: auto;
+    overflow-x: auto; padding-left: 20px;
   }
   nav button {
-    background: none; border: none; color: #666; padding: 10px 20px;
+    background: none; border: none; color: #666; padding: 10px 16px;
     font-family: 'nyt-franklin', Arial, Helvetica, sans-serif; font-size: 13px;
     font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;
     cursor: pointer; white-space: nowrap;
@@ -185,6 +185,7 @@
     .stat-card .value { font-size: 17px; }
     .stat-card .label { font-size: 9px; }
     .container { padding: 10px; }
+    nav { padding-left: 10px; }
     .chart-box { padding: 14px; }
     header .nyt-wordmark { font-size: 24px; }
     header h1 { font-size: 13px; }
@@ -234,7 +235,7 @@
       <div style="position:relative;height:192px"><canvas id="chartMonthly"></canvas></div>
     </div>
     <div class="chart-box" style="font-size:14px;line-height:1.7">
-      <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings they intend to share.</p>
+      <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated nightly.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Primary section</h4>
@@ -319,7 +320,7 @@
   <div class="view" id="view-sections">
     <div class="chart-box">
       <h3>Articles by Section Over Time</h3>
-      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">The table below covers the NYT's major editorial sections. A small number of technical, product, and branded-content categories (newsletter aggregators, discontinued apps, TV tie-ins) are excluded. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names has been merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for the full list of merges.</p>
+      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">Includes major editorial sections. A few minor or discontinued categories are excluded from display. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names are merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for further details.</p>
       <div style="margin-bottom:8px">
         <select id="sectionCountSelect" multiple style="width:100%;min-height:160px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
@@ -338,7 +339,7 @@
     <div id="countryDetailPanel" style="display:none"></div>
     <div class="chart-box">
       <h3>Coverage by Country</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws only from articles in the NYT's "World" section (international desk). Geographic tags are drawn from the NYT's own metadata; note that tagging coverage was inconsistent in 2000–2003.</p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata exclusively in articles from the "World" section. Tagging coverage appears to have been less consistent in 2000–2003.</p>
       <div style="margin-bottom:12px">
         <button id="toggleWorldTrendBtn" onclick="toggleWorldTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare country coverage over time</button>
       </div>
@@ -360,7 +361,7 @@
     <div id="stateDetailPanel" style="display:none"></div>
     <div class="chart-box">
       <h3>Coverage by State</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Coverage draws from articles in the NYT's national "U.S." section. New York and New Jersey primarily appear in the dedicated "New York" section, not the national desk. Geographic tags are drawn from the NYT's own metadata.</p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata in the "U.S." section and "New York" section, where New York and New Jersey coverage primarily resides.</p>
       <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
         <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY &amp; NJ
       </label>
@@ -384,7 +385,7 @@
         <input type="text" id="term1" placeholder="Term 1">
         <input type="text" id="term2" placeholder="Term 2">
         <input type="text" id="term3" placeholder="Term 3 (optional)">
-        <input type="text" id="term4" placeholder="Term 4 (optional)" value="Bush">
+        <input type="text" id="term4" placeholder="Term 4 (optional)">
         <button id="trackBtn">Track</button>
         <label style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" id="trackerFrontPage"><span>Front page only</span></label>
         <span style="font-size:13px;color:#888">Years:</span>
@@ -1092,18 +1093,10 @@ function makeSparkline(author) {
 function renderArticleList(containerId, arts, formatFn, opts = {}) {
   const el = document.getElementById(containerId);
   if (!el) return;
-  const SORT_BTN = (label, key, asc, cur) => {
-    const active = cur === key;
-    return `<button onclick="renderArticleList('${containerId}',window._artListCache_${containerId},window._artListFmt_${containerId},{sortKey:'${key}',asc:${asc}})" `
-      + `style="font-size:11px;padding:2px 7px;border:1px solid ${active?'#326891':'#ccc'};border-radius:3px;background:${active?'#e8f0f7':'#f5f5f5'};cursor:pointer;font-family:inherit;color:${active?'#326891':'#666'}">`
-      + `${label}</button>`;
-  };
   const sortKey = opts.sortKey || 'date_desc';
   const sorted = [...arts];
   if (sortKey === 'date_desc') sorted.sort((a, b) => b.pub_date.localeCompare(a.pub_date));
   else if (sortKey === 'date_asc') sorted.sort((a, b) => a.pub_date.localeCompare(b.pub_date));
-  else if (sortKey === 'words_desc') sorted.sort((a, b) => b.word_count - a.word_count);
-  else if (sortKey === 'words_asc') sorted.sort((a, b) => a.word_count - b.word_count);
 
   // Cache for re-sort without re-filtering
   window[`_artListCache_${containerId}`] = arts;
@@ -1111,13 +1104,15 @@ function renderArticleList(containerId, arts, formatFn, opts = {}) {
 
   const shown = sorted.slice(0, 300);
   const meta = `${arts.length.toLocaleString()} articles${arts.length > 300 ? ' · showing 300' : ''}`;
+  const nextKey = sortKey === 'date_desc' ? 'date_asc' : 'date_desc';
+  const toggleLabel = sortKey === 'date_desc' ? 'Newest to Oldest' : 'Oldest to Newest';
+  const toggleBtn = `<button onclick="renderArticleList('${containerId}',window._artListCache_${containerId},window._artListFmt_${containerId},{sortKey:'${nextKey}'})" `
+    + `style="font-size:11px;padding:2px 7px;border:1px solid #ccc;border-radius:3px;background:#f5f5f5;cursor:pointer;font-family:inherit;color:#555">`
+    + `${toggleLabel} ↕</button>`;
   el.innerHTML =
     `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
        <span style="font-size:12px;color:#888">${meta}</span>
-       ${SORT_BTN('Newest','date_desc',true,sortKey)}
-       ${SORT_BTN('Oldest','date_asc',true,sortKey)}
-       ${SORT_BTN('Longest','words_desc',true,sortKey)}
-       ${SORT_BTN('Shortest','words_asc',true,sortKey)}
+       ${toggleBtn}
      </div>` + shown.map(formatFn).join('');
 }
 
@@ -2631,7 +2626,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/8/26 12:15pm</span>
+  <span style="pointer-events:none">Last revised: 4/9/26 10:30am</span>
 </div>
 </body>
 </html>
