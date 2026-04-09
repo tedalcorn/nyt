@@ -24,7 +24,8 @@
 
   nav {
     display: flex; gap: 0; background: #fff; border-bottom: 1px solid #e2e2e2;
-    overflow-x: auto; padding-left: 20px;
+    overflow-x: auto;
+    padding-left: max(20px, calc((100vw - 1200px) / 2 + 20px));
   }
   nav button {
     background: none; border: none; color: #666; padding: 10px 16px;
@@ -185,7 +186,7 @@
     .stat-card .value { font-size: 17px; }
     .stat-card .label { font-size: 9px; }
     .container { padding: 10px; }
-    nav { padding-left: 10px; }
+    nav { padding-left: 10px !important; }
     .chart-box { padding: 14px; }
     header .nyt-wordmark { font-size: 24px; }
     header h1 { font-size: 13px; }
@@ -274,7 +275,7 @@
         <li>The current calendar year is excluded from trend charts to avoid incomplete data skewing results.</li>
         <li>Word counts reflect what the API returns; some article types (interactives, briefings, live updates) may return 0 words.</li>
         <li>Article counts include all document types returned by the API (news, opinion, reviews, obituaries, etc.).</li>
-        <li>The spike in Obituaries in 2005–2006 likely reflects when the desk became a consistently-tagged section in the API, rather than a real increase. The 2018–2019 spike reflects the launch of the "Overlooked" project — a series of retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018, that became a weekly ongoing feature.</li>
+        <li>In 2011–2015, the NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section — but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides that section tag and counts those articles under Obituaries, which is why the section trend shows a consistent series rather than a gap. The apparent 2005–2006 spike likely reflects when the desk became a consistently-tagged section in the API. The 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
         <li>Paul Krugman's unusually high article counts (peaking at 100–179 per month in 2009–2013) reflect his "The Conscience of a Liberal" blog, which ran at <em>krugman.blogs.nytimes.com</em> from 2007 to 2017 and published multiple posts per day.</li>
       </ul>
     </div>
@@ -1191,6 +1192,7 @@ function renderAuthors() {
     a._avg_words_per_year = fullRange
       ? (a.avg_words_per_year || 0)
       : (rangeSpan > 0 ? Math.round(a._rangeWords / rangeSpan) : 0);
+    a._sharedPct = a._rangeArticles > 0 ? Math.round((a._rangeShared || 0) / a._rangeArticles * 100) : 0;
   });
 
   // Remap sort keys that changed meaning in range mode
@@ -1230,13 +1232,11 @@ function renderAuthors() {
   html += `</tr></thead><tbody>`;
 
   filtered.slice(0, 500).forEach(a => {
-    const sharedPct = a._rangeArticles > 0 ? Math.round((a._rangeShared || 0) / a._rangeArticles * 100) : 0;
     html += `<tr data-author="${escapeHtml(a.name)}">`;
     cols.forEach(c => {
       const cls = [c.cls || '', c.mob ? 'mob-hide' : ''].filter(Boolean).join(' ');
       let v = c.key === 'article_count' ? a._displayArticles
             : c.key === 'total_words'   ? a._displayWords
-            : c.key === '_sharedPct'    ? sharedPct
             : a[c.key];
       if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
       if (c.key === '_sparkline') {

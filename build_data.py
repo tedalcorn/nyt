@@ -100,6 +100,10 @@ def extract_authors(byline):
             continue
         if name.lower().startswith('interviews ') or name.lower().startswith('interviews:'):
             continue
+        # Skip fragment names like "and Y NEWMAN" / "and REW BORYGA" (API split "ANDY"/"ANDREW"
+        # on " and " and kept only the trailing fragment)
+        if re.match(r'^and\s+[A-Z]', name):
+            continue
         parts = name.split()
         if len(parts) >= 2:
             first = parts[0]
@@ -269,6 +273,12 @@ def process_articles(raw_articles):
             "Critic's Choice": "Arts",                    # arts picks feature folded into Arts
         }
         section = SECTION_MERGES.get(section, section)
+
+        # Override section for obituaries that were filed under subject sections
+        # (2011-2015: NYT tagged type_of_material='Obituary (Obit)' but put
+        #  articles in Arts/Sports/Business/etc. rather than 'Obituaries')
+        if mat == "Obituary (Obit)" and section != "Obituaries":
+            section = "Obituaries"
         news_desk = doc.get("news_desk", "") or ""
         doc_type = doc.get("document_type", "") or ""
         web_url = doc.get("web_url", "") or ""
@@ -1248,13 +1258,30 @@ def build_author_stats(articles):
         shared_count = d["shared_byline_count"]
         zero_word_rate = d["zero_word_articles"] / article_count if article_count else 0
         shared_rate = shared_count / article_count if article_count else 0
-        # Likely multimedia/photographer: almost always co-authored AND
-        # a large fraction of their articles have zero word count (photo credits, slide shows)
-        likely_multimedia = (
+        # Likely non-editorial / collaborative byline: photographers, video producers,
+        # podcast staff, crossword constructors, briefing editors, etc.
+        # These people always or almost always appear in shared bylines and do not
+        # write traditional text articles, so they skew section shared-byline averages.
+        # Three routes to flagging:
+        #   1. Photo/video: high shared rate + many zero-word articles
+        #   2. Podcast / audio: primary section is Podcasts (nearly all are producers/editors)
+        #   3. Other structural bylines: section is Crosswords & Games or Briefing
+        #      AND very high shared rate
+        is_photo_video = (
             article_count >= 5 and
             shared_rate >= 0.75 and
             zero_word_rate >= 0.35
         )
+        is_podcast = (
+            article_count >= 5 and
+            primary_section == "Podcasts"
+        )
+        is_structural = (
+            article_count >= 5 and
+            shared_rate >= 0.90 and
+            primary_section in ("Crosswords & Games", "Briefing", "Education")
+        )
+        likely_multimedia = is_photo_video or is_podcast or is_structural
         top_coauthors = dict(d["coauthors"].most_common(10))
 
         authors.append({
