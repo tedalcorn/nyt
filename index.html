@@ -169,10 +169,28 @@
   .related-tag { display: inline-block; background: #e8e0d4; color: #555; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 3px 4px 3px 0; cursor: pointer; }
   .related-tag:hover { background: #d4c9b8; }
 
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .container { padding: 12px; }
-    header h1 { font-size: 18px; }
+    .stat-card .value { font-size: 20px; }
+    .stat-card .label { font-size: 10px; }
+    .container { padding: 10px; }
+    .chart-box { padding: 14px; }
+    header .nyt-wordmark { font-size: 24px; }
+    header h1 { font-size: 13px; }
+    /* Year slider: allow narrower on small screens */
+    .yr-slider-wrap { min-width: 100px; }
+    /* Reporters table: hide less essential columns on mobile */
+    .author-table th.mob-hide,
+    .author-table td.mob-hide { display: none; }
+    /* World/States tables: horizontal scroll if needed */
+    .table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* Compact per-capita header */
+    th.percap-hdr { font-size: 9px; letter-spacing: 0; }
+    /* Reduce search box for mobile */
+    .search-box { padding: 10px; gap: 8px; }
+    .search-box input:not([type=checkbox]) { min-width: 0; }
+    /* Coauthor network: hide on mobile to save memory */
+    #coauthorSection { display: none; }
   }
 </style>
 </head>
@@ -327,7 +345,7 @@
       <div style="margin-bottom:12px">
         <button id="toggleWorldTrendBtn" onclick="toggleWorldTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare country coverage over time</button>
       </div>
-      <div id="worldTableContainer"></div>
+      <div class="table-scroll-wrap"><div id="worldTableContainer"></div></div>
     </div>
     <div class="chart-box" id="worldTrendBox" style="display:none">
       <button class="close-btn" onclick="toggleWorldTrend()" style="float:right;margin-top:-4px">Close</button>
@@ -349,7 +367,7 @@
       <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
         <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY &amp; NJ
       </label>
-      <div id="stateTableContainer"></div>
+      <div class="table-scroll-wrap"><div id="stateTableContainer"></div></div>
     </div>
     <div class="chart-box">
       <h3>U.S. State Coverage Over Time</h3>
@@ -388,6 +406,9 @@ let dashboard = null;
 let articles = [];
 let authors = null;
 let articlesReady = false;
+
+// Detect mobile to skip heavy article pre-loading (prevents iOS Safari memory crash)
+const IS_MOBILE = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // ── Multi-section display toggle ─────────────────────────────────────────────
 // Set SHOW_MULTI_SECTIONS = false to revert to single primary section in table.
@@ -483,24 +504,28 @@ async function loadData() {
     }).catch(e => console.error('Failed to load beats:', e));
 
     // Phase 2: article files in background (non-blocking)
-    (async () => {
-      const years = dashboard.all_years.map(Number);
-      articles = [];
-      for (const y of years) {
-        const yearArticles = await ensureYearLoaded(y);
-        for (const a of yearArticles) articles.push(a);
-      }
-      articlesReady = true;
-      populateHeadlineSection();
-      trackTerms(); // auto-populate Headlines tracker with default terms
-      // Refresh any open detail panels that were waiting for article data
-      if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
-        openStateDetail(lastOpenedState);
-      }
-      if (lastOpenedCountry && document.getElementById('countryDetailPanel')?.style.display !== 'none') {
-        openCountryDetail(lastOpenedCountry);
-      }
-    })().catch(e => console.error('Failed to load articles:', e));
+    // Skipped on mobile — loading 2.2M articles exceeds iOS Safari memory limits.
+    // Article lists in detail panels will show a desktop prompt instead.
+    if (!IS_MOBILE) {
+      (async () => {
+        const years = dashboard.all_years.map(Number);
+        articles = [];
+        for (const y of years) {
+          const yearArticles = await ensureYearLoaded(y);
+          for (const a of yearArticles) articles.push(a);
+        }
+        articlesReady = true;
+        populateHeadlineSection();
+        trackTerms(); // auto-populate Headlines tracker with default terms
+        // Refresh any open detail panels that were waiting for article data
+        if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
+          openStateDetail(lastOpenedState);
+        }
+        if (lastOpenedCountry && document.getElementById('countryDetailPanel')?.style.display !== 'none') {
+          openCountryDetail(lastOpenedCountry);
+        }
+      })().catch(e => console.error('Failed to load articles:', e));
+    }
 
   } catch (e) {
     document.getElementById('loading').textContent = 'Error loading data. Run build_data.py first, then serve with: python3 -m http.server 8080';
@@ -1120,12 +1145,12 @@ function renderAuthors() {
   const rangeLabel = fullRange ? '' : ` (${yr.start}–${yr.end})`;
   const cols = [
     { key: 'name', label: 'Author' },
-    { key: 'year_range', label: 'Period Active' },
+    { key: 'year_range', label: 'Period Active', mob: true },
     { key: '_sparkline', label: 'Activity' },
-    { key: 'primary_section', label: SHOW_MULTI_SECTIONS ? 'Primary Section(s)' : 'Primary Section' },
+    { key: 'primary_section', label: SHOW_MULTI_SECTIONS ? 'Primary Section(s)' : 'Primary Section', mob: true },
     { key: 'article_count', label: 'Articles' + rangeLabel, cls: 'num' },
-    { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num' },
-    { key: 'avg_words', label: 'Avg Words/Article', cls: 'num' },
+    { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num', mob: true },
+    { key: 'avg_words', label: 'Avg Words/Article', cls: 'num', mob: true },
     { key: '_avg_words_per_year', label: 'Avg Words/Year', cls: 'num' },
   ];
 
@@ -1133,28 +1158,30 @@ function renderAuthors() {
 
   let html = `<table class="author-table"><thead><tr>`;
   cols.forEach(c => {
-    html += `<th class="${c.cls || ''}" data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
+    const cls = [c.cls || '', c.mob ? 'mob-hide' : ''].filter(Boolean).join(' ');
+    html += `<th class="${cls}" data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
   });
   html += `</tr></thead><tbody>`;
 
   filtered.slice(0, 500).forEach(a => {
     html += `<tr data-author="${escapeHtml(a.name)}">`;
     cols.forEach(c => {
+      const cls = [c.cls || '', c.mob ? 'mob-hide' : ''].filter(Boolean).join(' ');
       let v = c.key === 'article_count' ? a._displayArticles
             : c.key === 'total_words'   ? a._displayWords
             : a[c.key];
       if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
       if (c.key === '_sparkline') {
-        html += `<td style="padding:2px 8px">${makeSparkline(a)}</td>`;
+        html += `<td class="${c.mob ? 'mob-hide' : ''}" style="padding:2px 8px">${makeSparkline(a)}</td>`;
       } else if (c.key === 'name') {
         html += `<td class="author-name">${escapeHtml(v || '')}</td>`;
       } else if (c.key === 'primary_section' && SHOW_MULTI_SECTIONS) {
         const secs = a.all_sections && a.all_sections.length ? a.all_sections : (a.primary_section ? [a.primary_section] : []);
         const shown = secs.slice(0, MAX_SECTIONS_DISPLAY).join(', ');
         const overflow = secs.length > MAX_SECTIONS_DISPLAY ? ` <span style="color:#aaa">+${secs.length - MAX_SECTIONS_DISPLAY}</span>` : '';
-        html += `<td>${escapeHtml(shown)}${overflow}</td>`;
+        html += `<td class="${cls}">${escapeHtml(shown)}${overflow}</td>`;
       } else {
-        html += `<td class="${c.cls || ''}">${v || ''}</td>`;
+        html += `<td class="${cls}">${v || ''}</td>`;
       }
     });
     html += '</tr>';
@@ -1423,7 +1450,7 @@ function showAuthorTimeline(name, opts = {}) {
         </div>
       </div>
       <div id="${listId}" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px">
-        ${articlesReady ? '' : '<div style="color:#888;padding:8px 0">Article list loading…</div>'}
+        ${articlesReady ? '' : IS_MOBILE ? '<div style="color:#888;padding:8px 0">Article lists are available on desktop.</div>' : '<div style="color:#888;padding:8px 0">Article list loading…</div>'}
       </div>
     </div>
   `;
@@ -1672,7 +1699,9 @@ function searchHeadlines() {
   }
 
   if (!articlesReady) {
-    document.getElementById('headlineResults').innerHTML = '<p style="color:#888;font-size:13px">Loading article data — search will be available shortly…</p>';
+    document.getElementById('headlineResults').innerHTML = IS_MOBILE
+      ? '<p style="color:#888;font-size:13px">Headline search requires the full article dataset and is available on desktop.</p>'
+      : '<p style="color:#888;font-size:13px">Loading article data — search will be available shortly…</p>';
     document.getElementById('headlineCount').textContent = '';
     return;
   }
@@ -1914,7 +1943,7 @@ function renderWorldTable(years) {
     { key: 'name', label: 'Country/Location' },
     { key: 'count', label: 'Articles (2000–2026)', cls: 'num' },
     { key: '_sparkline', label: 'Trend' },
-    { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num' },
+    { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num percap-hdr' },
   ];
 
   let html = `<table class="author-table"><thead><tr>`;
@@ -2032,7 +2061,9 @@ function openCountryDetail(country) {
   });
 
   if (!articlesReady) {
-    document.getElementById('countryArticleList').innerHTML = '<p style="color:#888;font-size:13px">Loading article data…</p>';
+    document.getElementById('countryArticleList').innerHTML = IS_MOBILE
+      ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>'
+      : '<p style="color:#888;font-size:13px">Loading article data…</p>';
     return;
   }
   const countryArticles = articles
@@ -2143,7 +2174,7 @@ function renderStatesTable(states, years, combined) {
     { key: 'name', label: 'State' },
     { key: 'count', label: 'Articles (2000–2026)', cls: 'num' },
     { key: '_sparkline', label: 'Trend' },
-    { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num' },
+    { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num percap-hdr' },
   ];
 
   let html = `<table class="author-table"><thead><tr>`;
@@ -2315,7 +2346,9 @@ function openStateDetail(state) {
 
   // List articles for this state
   if (!articlesReady) {
-    document.getElementById('stateArticleList').innerHTML = '<p style="color:#888;font-size:13px">Loading article data…</p>';
+    document.getElementById('stateArticleList').innerHTML = IS_MOBILE
+      ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>'
+      : '<p style="color:#888;font-size:13px">Loading article data…</p>';
     return;
   }
   const stateArticles = articles
@@ -2569,7 +2602,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/8/26 11:30am</span>
+  <span style="pointer-events:none">Last revised: 4/8/26 12:15pm</span>
 </div>
 </body>
 </html>
