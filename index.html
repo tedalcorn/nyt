@@ -301,6 +301,11 @@
       <label style="font-size:12px;color:#888;white-space:nowrap">Min articles: <input type="number" id="authorMin" value="5" min="1" style="width:46px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;font-size:12px;font-family:inherit"></label>
       <div id="distInfo" style="font-size:12px;color:#888;margin-left:auto;white-space:nowrap;font-family:sans-serif"></div>
     </div>
+    <div style="text-align:right;margin-top:4px;margin-bottom:8px">
+      <label style="font-size:12px;color:#888;cursor:pointer;user-select:none">
+        Limit to inferred reporters <input type="checkbox" id="inferredReportersOnly" style="vertical-align:middle;margin-left:4px">
+      </label>
+    </div>
     <div id="authorTimeline"></div>
     <div id="authorTableContainer"></div>
   </div>
@@ -1037,6 +1042,7 @@ document.getElementById('authorSearch').addEventListener('input', () => {
   renderWordsDist();
 });
 document.getElementById('authorMin').addEventListener('input', () => { renderAuthors(); renderWordsDist(); });
+document.getElementById('inferredReportersOnly').addEventListener('change', () => { renderAuthors(); renderWordsDist(); });
 
 let authorSort = { col: 'article_count', asc: false };
 
@@ -1051,7 +1057,10 @@ function getFilteredAuthors() {
   const allYears = dashboard.all_years.map(Number);
   const fullRange = !yr || (yr.start <= allYears[0] && yr.end >= allYears[allYears.length - 1]);
 
+  const inferredOnly = document.getElementById('inferredReportersOnly')?.checked;
+
   let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name) && isValidAuthorName(a.name));
+  if (inferredOnly) f = f.filter(a => !a.likely_multimedia);
   if (query) f = f.filter(a => a.name.toLowerCase().includes(query));
   if (sectionFilter) f = f.filter(a => (a.all_sections || [a.primary_section]).includes(sectionFilter));
 
@@ -2732,7 +2741,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/9/26 4:30pm</span>
+  <span style="pointer-events:none">Last revised: 4/9/26 5:15pm</span>
 </div>
 </body>
 </html>
