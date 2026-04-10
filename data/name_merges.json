@@ -144,16 +144,6 @@
     ]
   },
   {
-    "canonical": "Adam W. Kepler",
-    "canonical_count": 541,
-    "merged": [
-      {
-        "name": "Adam Kepler",
-        "count": 117
-      }
-    ]
-  },
-  {
     "canonical": "Adam LeBor",
     "canonical_count": 14,
     "merged": [
@@ -767,11 +757,11 @@
   },
   {
     "canonical": "Andrew E. Kramer",
-    "canonical_count": 2368,
+    "canonical_count": 2415,
     "merged": [
       {
         "name": "Andrew Kramer",
-        "count": 69
+        "count": 22
       }
     ]
   },
@@ -1309,11 +1299,11 @@
   },
   {
     "canonical": "Barnaby J. Feder",
-    "canonical_count": 917,
+    "canonical_count": 955,
     "merged": [
       {
         "name": "Barnaby Feder",
-        "count": 55
+        "count": 17
       }
     ]
   },
@@ -2298,16 +2288,6 @@
     ]
   },
   {
-    "canonical": "Chris V. Nicholson",
-    "canonical_count": 801,
-    "merged": [
-      {
-        "name": "Chris Nicholson",
-        "count": 75
-      }
-    ]
-  },
-  {
     "canonical": "Christine Thomas",
     "canonical_count": 1,
     "merged": [
@@ -2491,12 +2471,8 @@
   },
   {
     "canonical": "Claudia H. Deutsch",
-    "canonical_count": 586,
+    "canonical_count": 614,
     "merged": [
-      {
-        "name": "Claudia Deutsch",
-        "count": 28
-      },
       {
         "name": "Claudia H <missing Dot> Deutsch",
         "count": 4
@@ -4618,16 +4594,6 @@
     ]
   },
   {
-    "canonical": "Elizabeth A. Harris",
-    "canonical_count": 1220,
-    "merged": [
-      {
-        "name": "Elizabeth Harris",
-        "count": 40
-      }
-    ]
-  },
-  {
     "canonical": "Elizabeth LaBan",
     "canonical_count": 1,
     "merged": [
@@ -5049,12 +5015,8 @@
   },
   {
     "canonical": "Eric A. Taub",
-    "canonical_count": 913,
+    "canonical_count": 946,
     "merged": [
-      {
-        "name": "Eric Taub",
-        "count": 33
-      },
       {
         "name": "Eric A <missing Dot> Taub",
         "count": 1
@@ -5380,16 +5342,6 @@
       {
         "name": "Frank Litsky With",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Fred A. Bernstein",
-    "canonical_count": 472,
-    "merged": [
-      {
-        "name": "Fred Bernstein",
-        "count": 47
       }
     ]
   },
@@ -7249,11 +7201,11 @@
   },
   {
     "canonical": "Jeremy W. Peters",
-    "canonical_count": 2818,
+    "canonical_count": 2843,
     "merged": [
       {
         "name": "Jeremy Peters",
-        "count": 26
+        "count": 1
       }
     ]
   },
@@ -8279,15 +8231,11 @@
   },
   {
     "canonical": "Jonah Engel Bromwich",
-    "canonical_count": 759,
+    "canonical_count": 782,
     "merged": [
       {
         "name": "Jonah E. Bromwich",
         "count": 711
-      },
-      {
-        "name": "Jonah Bromwich",
-        "count": 23
       }
     ]
   },
@@ -8667,12 +8615,8 @@
   },
   {
     "canonical": "Joyce Hor-chung Lau",
-    "canonical_count": 102,
+    "canonical_count": 172,
     "merged": [
-      {
-        "name": "Joyce Lau",
-        "count": 70
-      },
       {
         "name": "Joyce Hor-Chung Lau",
         "count": 1
@@ -10276,16 +10220,6 @@
       {
         "name": "Malina Gilchrist",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Mallery Roberts Lane",
-    "canonical_count": 79,
-    "merged": [
-      {
-        "name": "Mallery Lane",
-        "count": 70
       }
     ]
   },
@@ -11998,16 +11932,6 @@
     ]
   },
   {
-    "canonical": "Natalia V. Osipova",
-    "canonical_count": 259,
-    "merged": [
-      {
-        "name": "Natalia Osipova",
-        "count": 26
-      }
-    ]
-  },
-  {
     "canonical": "Natalie Moore",
     "canonical_count": 3,
     "merged": [
@@ -12832,16 +12756,6 @@
     ]
   },
   {
-    "canonical": "Pedro Rafael Rosado",
-    "canonical_count": 355,
-    "merged": [
-      {
-        "name": "Pedro Rosado",
-        "count": 315
-      }
-    ]
-  },
-  {
     "canonical": "Pete Mcquaid",
     "canonical_count": 1,
     "merged": [
@@ -13225,15 +13139,11 @@
   },
   {
     "canonical": "Rachel Lee Harris",
-    "canonical_count": 704,
+    "canonical_count": 748,
     "merged": [
       {
         "name": "Rachel L. Harris",
         "count": 60
-      },
-      {
-        "name": "Rachel Harris",
-        "count": 44
       }
     ]
   },
@@ -14491,11 +14401,11 @@
   },
   {
     "canonical": "Robert F. Worth",
-    "canonical_count": 1298,
+    "canonical_count": 1465,
     "merged": [
       {
         "name": "Robert Worth",
-        "count": 183
+        "count": 16
       }
     ]
   },
@@ -14718,16 +14628,6 @@
       {
         "name": "Ronald H. Spector",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Roni Caryn Rabin",
-    "canonical_count": 1344,
-    "merged": [
-      {
-        "name": "Roni Rabin",
-        "count": 39
       }
     ]
   },
