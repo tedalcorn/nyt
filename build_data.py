@@ -1041,8 +1041,28 @@ def process_articles(raw_articles):
         'Yilu Zhao Nyt': 'Yilu Zhao',
         'Zulfiqar Shah Nyt': 'Zulfiqar Shah',
 
-        # Manual corrections: garbled/transposed names not caught by first+last dedup
-        'Roni Rabyn': 'Roni Caryn Rabin',
+        # Manual corrections: dropped middle names/initials not caught by auto-dedup
+        # (both short and full forms had >10 articles, so the conservative threshold didn't fire)
+        # Verified via beats, section, year range, and where available Wikipedia/LinkedIn.
+        'Roni Rabin': 'Roni Caryn Rabin',
+        'Jeremy Peters': 'Jeremy W. Peters',
+        'Barnaby Feder': 'Barnaby J. Feder',
+        'Claudia Deutsch': 'Claudia H. Deutsch',
+        'Eric Taub': 'Eric A. Taub',
+        'Mallery Lane': 'Mallery Roberts Lane',
+        'Fred Bernstein': 'Fred A. Bernstein',
+        'Chris Nicholson': 'Chris V. Nicholson',
+        'Joyce Lau': 'Joyce Hor-chung Lau',
+        'Jonah Bromwich': 'Jonah Engel Bromwich',
+        'Adam Kepler': 'Adam W. Kepler',
+        'Rachel Harris': 'Rachel Lee Harris',
+        'Andrew Kramer': 'Andrew E. Kramer',       # Business/oil early career → Russia/World
+        'Robert Worth': 'Robert F. Worth',         # Metro desk start → Middle East correspondent (Wikipedia)
+        'Elizabeth Harris': 'Elizabeth A. Harris', # Metro → Business → Culture → Books (Wikipedia)
+        'Pedro Rosado': 'Pedro Rafael Rosado',     # Same audio/video producer (MuckRack)
+        'Natalia Osipova': 'Natalia V. Osipova',   # Same NYT video journalist (LinkedIn)
+        # NOT merging: 'Robert Frank' / 'Robert H. Frank' — different people
+        # (Robert H. Frank = Cornell economist/columnist; Robert Frank = wealth/lifestyle reporter)
     }
 
     # Apply overrides to all articles so counts accumulate on the correct name
