@@ -1279,7 +1279,7 @@ def build_author_stats(articles):
         is_low_word_shared = (
             article_count >= 5 and
             shared_rate >= 0.90 and
-            avg_words < 250
+            avg_words < 100
         )
         is_podcast = (
             article_count >= 5 and
@@ -1288,7 +1288,7 @@ def build_author_stats(articles):
         is_structural = (
             article_count >= 5 and
             shared_rate >= 0.90 and
-            primary_section in ("Crosswords & Games", "Briefing", "Education")
+            primary_section in ("Crosswords & Games", "Briefing")
         )
         likely_multimedia = is_photo_video or is_low_word_shared or is_podcast or is_structural
         top_coauthors = dict(d["coauthors"].most_common(10))

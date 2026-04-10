@@ -337,7 +337,7 @@
       <h3>Major Sections</h3>
       <div style="margin-bottom:8px">
         <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
-          <input type="checkbox" id="sectionExcludePhoto" onchange="renderSectionsTable()"> Exclude likely photo/multimedia bylines from shared % calculation
+          <input type="checkbox" id="sectionExcludePhoto" onchange="renderSectionsTable()"> Limit to inferred reporters
         </label>
       </div>
       <div id="sectionTableContainer"></div>
@@ -435,6 +435,42 @@ let chartInstances = {};
 let pendingTimelineRefresh = null; // legacy; no longer used
 
 // --- Chart download buttons ---
+function getChartFilename(box) {
+  // Base: chart h3 title text (strip footnote spans)
+  const h3 = box.querySelector('h3');
+  let base = '';
+  if (h3) {
+    // Clone and remove child spans (footnote/hint text) to get just the title
+    const clone = h3.cloneNode(true);
+    clone.querySelectorAll('span').forEach(s => s.remove());
+    base = clone.textContent.trim();
+  }
+  base = base || 'chart';
+
+  // Append contextual suffix: search terms (tracker), selected state, selected country
+  let suffix = '';
+  const viewTracker = box.closest('#view-tracker');
+  if (viewTracker) {
+    const terms = ['term1','term2','term3','term4']
+      .map(id => document.getElementById(id)?.value?.trim())
+      .filter(Boolean);
+    if (terms.length) suffix = terms.join(' - ');
+  }
+  const stateSelect = box.querySelector('select[id*="tate"]') || document.getElementById('stateSelect');
+  if (!suffix && stateSelect) {
+    const selected = Array.from(stateSelect.selectedOptions).map(o => o.value).filter(Boolean);
+    if (selected.length) suffix = selected.join(' - ');
+  }
+  const countrySelect = document.getElementById('locationSelect');
+  if (!suffix && countrySelect && box.id === 'worldTrendBox') {
+    const selected = Array.from(countrySelect.selectedOptions).map(o => o.value).filter(Boolean);
+    if (selected.length) suffix = selected.join(' - ');
+  }
+
+  const full = suffix ? `${base} - ${suffix}` : base;
+  return full.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
 function addDownloadBtns() {
   document.querySelectorAll('.chart-box').forEach(box => {
     if (box.querySelector('.chart-dl-btn') || !box.querySelector('canvas')) return;
@@ -443,20 +479,39 @@ function addDownloadBtns() {
     btn.textContent = '↓ JPG';
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const title = (box.querySelector('h3')?.textContent || 'chart')
-        .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-$/, '');
       btn.textContent = '…';
-      // For trend charts: capture only the canvas wrapper (skips title/selector controls)
-      const canvasOnly = box.dataset.dlCanvasOnly;
-      const target = canvasOnly ? box.querySelector('[id$="CanvasWrap"]') || box.querySelector('canvas').parentElement : box;
-      html2canvas(target, { backgroundColor: '#fff', scale: 2, useCORS: true, logging: false })
-        .then(canvas => {
-          const a = document.createElement('a');
-          a.download = title + '.jpg';
-          a.href = canvas.toDataURL('image/jpeg', 0.92);
-          a.click();
-          btn.textContent = '↓ JPG';
-        }).catch(() => { btn.textContent = '↓ JPG'; });
+      // Canvas-only: capture just the canvas element (skips title/controls)
+      // Applied to tracker, state trend, world trend, section compare charts
+      const canvasOnly = box.dataset.dlCanvasOnly || box.closest('#view-tracker');
+      const canvas = box.querySelector('canvas');
+      const target = canvasOnly ? canvas : box;
+      const filename = getChartFilename(box);
+
+      if (canvasOnly && canvas) {
+        // Direct canvas export — no html2canvas needed, much faster
+        const a = document.createElement('a');
+        a.download = filename + '.jpg';
+        // Create a white-background copy
+        const offscreen = document.createElement('canvas');
+        offscreen.width = canvas.width;
+        offscreen.height = canvas.height;
+        const ctx = offscreen.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+        ctx.drawImage(canvas, 0, 0);
+        a.href = offscreen.toDataURL('image/jpeg', 0.92);
+        a.click();
+        btn.textContent = '↓ JPG';
+      } else {
+        html2canvas(target, { backgroundColor: '#fff', scale: 2, useCORS: true, logging: false })
+          .then(c => {
+            const a = document.createElement('a');
+            a.download = filename + '.jpg';
+            a.href = c.toDataURL('image/jpeg', 0.92);
+            a.click();
+            btn.textContent = '↓ JPG';
+          }).catch(() => { btn.textContent = '↓ JPG'; });
+      }
     });
     box.appendChild(btn);
   });
@@ -1238,7 +1293,7 @@ function renderAuthors() {
     { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num', mob: true },
     { key: 'avg_words', label: 'Avg Words/Article', cls: 'num', mob: true },
     { key: '_avg_words_per_year', label: 'Avg Words/Year', cls: 'num' },
-    ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared', cls: 'num', mob: true }] : []),
+    ...(hasSharedData ? [{ key: '_sharedPct', label: 'Shared ↕', cls: 'num', mob: true, sortOnly: true }] : []),
   ];
 
   const indicator = (col) => authorSort.col === col ? (authorSort.asc ? ' ▲' : ' ▼') : '';
@@ -1246,7 +1301,8 @@ function renderAuthors() {
   let html = `<table class="author-table"><thead><tr>`;
   cols.forEach(c => {
     const cls = [c.cls || '', c.mob ? 'mob-hide' : ''].filter(Boolean).join(' ');
-    html += `<th class="${cls}" data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
+    const style = c.sortOnly ? ' style="width:1px;white-space:nowrap;font-size:11px;color:#aaa"' : '';
+    html += `<th class="${cls}"${style} data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
   });
   html += `</tr></thead><tbody>`;
 
@@ -1261,14 +1317,16 @@ function renderAuthors() {
       if (c.key === '_sparkline') {
         html += `<td class="${c.mob ? 'mob-hide' : ''}" style="padding:2px 8px">${makeSparkline(a)}</td>`;
       } else if (c.key === 'name') {
-        html += `<td class="author-name">${escapeHtml(v || '')}</td>`;
+        const sharedLine = hasSharedData
+          ? `<div style="font-size:10px;color:#aaa;margin-top:1px">${a._sharedPct}% shared byline</div>` : '';
+        html += `<td class="author-name">${escapeHtml(v || '')}${sharedLine}</td>`;
       } else if (c.key === 'primary_section' && SHOW_MULTI_SECTIONS) {
         const secs = a.all_sections && a.all_sections.length ? a.all_sections : (a.primary_section ? [a.primary_section] : []);
         const shown = secs.slice(0, MAX_SECTIONS_DISPLAY).join(', ');
         const overflow = secs.length > MAX_SECTIONS_DISPLAY ? ` <span style="color:#aaa">+${secs.length - MAX_SECTIONS_DISPLAY}</span>` : '';
         html += `<td class="${cls}">${escapeHtml(shown)}${overflow}</td>`;
       } else if (c.key === '_sharedPct') {
-        html += `<td class="${cls}">${a._sharedPct}%</td>`;
+        html += `<td class="${cls}" style="width:1px"></td>`; // value shown inline in name cell
       } else if (c.key === 'year_range') {
         html += `<td class="${cls}" style="white-space:nowrap">${v || ''}</td>`;
       } else {
@@ -2744,7 +2802,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/9/26 6:00pm</span>
+  <span style="pointer-events:none">Last revised: 4/9/26 7:00pm</span>
 </div>
 </body>
 </html>
