@@ -307,7 +307,7 @@
     </div>
     <div class="chart-box">
       <h3>People &amp; Organizations</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Persons and organizations drawn from NYT keyword metadata. Check names to compare coverage over time; click a name to see details.</p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Persons and organizations drawn from NYT keyword metadata. Check names to compare coverage over time; click a name to see details. <span id="subjectDataNote" style="color:#999"></span></p>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
         <span id="subjectYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
@@ -2992,9 +2992,11 @@ function renderSubjectsTable() {
 
 function initSubjectYearSlider() {
   const years = dashboard.all_years;
-  const numericYears = years.map(Number);
   const currentYear = new Date().getFullYear();
-  subjectsAllYears = years.filter(y => Number(y) !== currentYear);
+  // Cap at last_year from subjects data (NYT stopped tagging persons/orgs keywords in 2025)
+  const lastYear = subjectsData.last_year ? Number(subjectsData.last_year) : currentYear - 1;
+  subjectsAllYears = years.filter(y => Number(y) !== currentYear && Number(y) <= lastYear);
+  const numericYears = subjectsAllYears.map(Number);
   const minY = numericYears[0], maxY = numericYears[numericYears.length - 1];
   const sInput = document.getElementById('subjectYrStart');
   const eInput = document.getElementById('subjectYrEnd');
@@ -3002,6 +3004,10 @@ function initSubjectYearSlider() {
   sInput.max = eInput.max = maxY;
   sInput.value = minY;
   eInput.value = maxY;
+  const noteEl = document.getElementById('subjectDataNote');
+  if (noteEl && lastYear < currentYear - 1) {
+    noteEl.textContent = `Data through ${lastYear} only — the NYT API stopped including persons and organizations keyword tags after that year.`;
+  }
 
   function update() {
     let s = parseInt(sInput.value), e = parseInt(eInput.value);
@@ -3351,7 +3357,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/10/26 2:12pm</span>
+  <span style="pointer-events:none">Last revised: 4/10/26 2:34pm</span>
 </div>
 </body>
 </html>

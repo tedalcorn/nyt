@@ -2384,6 +2384,15 @@ def build_subjects_data(articles):
 
     MIN_COUNT = 15  # filter rare entries
 
+    # Find last year with meaningful persons/orgs keyword coverage
+    # (NYT stopped tagging persons/orgs keywords in 2025)
+    year_totals = defaultdict(int)
+    for by_year in list(persons_annual.values()) + list(orgs_annual.values()):
+        for y, c in by_year.items():
+            year_totals[y] += c
+    all_data_years = sorted(year_totals.keys())
+    last_year = all_data_years[-1] if all_data_years else str(currentYear - 1)
+
     def make_entries(annual_dict):
         result = []
         for name, by_year in annual_dict.items():
@@ -2397,6 +2406,7 @@ def build_subjects_data(articles):
     return {
         "persons": make_entries(persons_annual),
         "organizations": make_entries(orgs_annual),
+        "last_year": last_year,
     }
 
 
