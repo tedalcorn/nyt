@@ -1041,6 +1041,8 @@ def process_articles(raw_articles):
         'Yilu Zhao Nyt': 'Yilu Zhao',
         'Zulfiqar Shah Nyt': 'Zulfiqar Shah',
 
+        # Manual corrections: garbled/transposed names not caught by first+last dedup
+        'Roni Rabyn': 'Roni Caryn Rabin',
     }
 
     # Apply overrides to all articles so counts accumulate on the correct name

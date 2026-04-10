@@ -210,7 +210,7 @@
 <body>
 
 <header>
-  <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px">
+  <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px;cursor:pointer" onclick="showView('about');window.scrollTo({top:0,behavior:'smooth'})">
   <h1>A New York Times X-Ray Dashboard</h1>
   <div class="subtitle" id="dateRange"></div>
 </header>
@@ -674,6 +674,8 @@ function openAuthor(name) {
   renderAuthors();
   renderWordsDist();
   showAuthorTimeline(name);
+  const tl = document.getElementById('authorTimeline');
+  if (tl) tl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // --- Unique sections list ---
@@ -2275,6 +2277,7 @@ function openCountryDetail(country) {
 
   const panel = document.getElementById('countryDetailPanel');
   panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   panel.innerHTML = `
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('countryDetailPanel').style.display='none';destroyChart('chartCountryDetail')">Close</button>
@@ -2547,6 +2550,7 @@ function openStateDetail(state) {
 
   const panel = document.getElementById('stateDetailPanel');
   panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
   panel.innerHTML = `
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('stateDetailPanel').style.display='none';destroyChart('chartStateDetail')">Close</button>
@@ -2886,7 +2890,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/9/26 9:52pm</span>
+  <span style="pointer-events:none">Last revised: 4/10/26 8:49am</span>
 </div>
 </body>
 </html>
