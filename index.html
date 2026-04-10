@@ -237,7 +237,7 @@
     </div>
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
-      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated nightly.</p>
+      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Primary section</h4>
       <p>Each author is assigned a "primary section" based on the section in which they have the most published articles. This is a rough proxy for their beat and may not reflect their actual desk assignment, especially for authors who write across sections.</p>
@@ -276,6 +276,7 @@
         <li>Word counts reflect what the API returns; some article types (interactives, briefings, live updates) may return 0 words.</li>
         <li>Article counts include all document types returned by the API (news, opinion, reviews, obituaries, etc.).</li>
         <li>In 2011–2015, the NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section — but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides that section tag and counts those articles under Obituaries, which is why the section trend shows a consistent series rather than a gap. The apparent 2005–2006 spike likely reflects when the desk became a consistently-tagged section in the API. The 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
+        <li>The "Movies" section shows an anomalous dip in 2005 — only ~60 articles, compared to 1,400–2,200 in other years. Film coverage that year appears to have been filed under "Arts" rather than "Movies" in the API's metadata. This is a quirk of NYT tagging practice and cannot be corrected without re-tagging the underlying data.</li>
         <li>Paul Krugman's unusually high article counts (peaking at 100–179 per month in 2009–2013) reflect his "The Conscience of a Liberal" blog, which ran at <em>krugman.blogs.nytimes.com</em> from 2007 to 2017 and published multiple posts per day.</li>
       </ul>
     </div>
@@ -315,6 +316,17 @@
     <div class="chart-box" style="max-width:900px;margin:0 auto">
       <h3>Find Reporters by Beat</h3>
       <p style="font-size:13px;color:#666;margin-bottom:12px">Search NYT subject tags to find which journalists cover a topic. Tags are drawn from the NYT's own metadata.</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <span id="beatYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
+        <div class="yr-slider-wrap" id="beatYrSliderWrap">
+          <div class="yr-slider-track"></div>
+          <div class="yr-slider-fill" id="beatYrSliderFill"></div>
+          <input type="range" id="beatYrStart">
+          <input type="range" id="beatYrEnd">
+        </div>
+        <span id="beatYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
+      </div>
       <input type="text" id="beatSearch" placeholder="Start typing a subject (e.g. climate, immigration, housing)..." style="width:100%;padding:10px 14px;font-size:15px;border:1px solid #ccc;border-radius:4px;font-family:inherit;margin-bottom:4px">
       <div id="beatSuggestions" style="max-height:240px;overflow-y:auto;border:1px solid #ddd;border-radius:4px;display:none"></div>
       <div id="beatResults" style="margin-top:16px"></div>
@@ -456,15 +468,18 @@ function getChartFilename(box) {
       .filter(Boolean);
     if (terms.length) suffix = terms.join(' - ');
   }
-  const stateSelect = box.querySelector('select[id*="tate"]') || document.getElementById('stateSelect');
-  if (!suffix && stateSelect) {
-    const selected = Array.from(stateSelect.selectedOptions).map(o => o.value).filter(Boolean);
-    if (selected.length) suffix = selected.join(' - ');
-  }
-  const countrySelect = document.getElementById('locationSelect');
-  if (!suffix && countrySelect && box.id === 'worldTrendBox') {
-    const selected = Array.from(countrySelect.selectedOptions).map(o => o.value).filter(Boolean);
-    if (selected.length) suffix = selected.join(' - ');
+  if (box.id === 'worldTrendBox') {
+    const countrySelect = document.getElementById('worldLocationSelect');
+    if (countrySelect) {
+      const selected = Array.from(countrySelect.selectedOptions).map(o => o.value).filter(Boolean);
+      if (selected.length) suffix = selected.join(' - ');
+    }
+  } else {
+    const stateSelect = box.querySelector('#stateSelect') || document.getElementById('stateSelect');
+    if (!suffix && stateSelect && box.closest('#view-states')) {
+      const selected = Array.from(stateSelect.selectedOptions).map(o => o.value).filter(Boolean);
+      if (selected.length) suffix = selected.join(' - ');
+    }
   }
 
   const full = suffix ? `${base} - ${suffix}` : base;
@@ -1089,6 +1104,7 @@ function initAuthorFilters() {
   });
   sectionSelect.addEventListener('change', () => { renderAuthors(); renderWordsDist(); });
   initYearSlider();
+  initBeatYearSlider();
 }
 
 document.getElementById('authorSearch').addEventListener('input', () => {
@@ -1293,7 +1309,7 @@ function renderAuthors() {
     { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num', mob: true },
     { key: 'avg_words', label: 'Avg Words/Article', cls: 'num', mob: true },
     { key: '_avg_words_per_year', label: 'Avg Words/Year', cls: 'num' },
-    ...(hasSharedData ? [{ key: '_sharedPct', label: 'Shared ↕', cls: 'num', mob: true, sortOnly: true }] : []),
+    ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared Byline', cls: 'num', mob: true }] : []),
   ];
 
   const indicator = (col) => authorSort.col === col ? (authorSort.asc ? ' ▲' : ' ▼') : '';
@@ -1301,8 +1317,7 @@ function renderAuthors() {
   let html = `<table class="author-table"><thead><tr>`;
   cols.forEach(c => {
     const cls = [c.cls || '', c.mob ? 'mob-hide' : ''].filter(Boolean).join(' ');
-    const style = c.sortOnly ? ' style="width:1px;white-space:nowrap;font-size:11px;color:#aaa"' : '';
-    html += `<th class="${cls}"${style} data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
+    html += `<th class="${cls}" data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
   });
   html += `</tr></thead><tbody>`;
 
@@ -1317,16 +1332,14 @@ function renderAuthors() {
       if (c.key === '_sparkline') {
         html += `<td class="${c.mob ? 'mob-hide' : ''}" style="padding:2px 8px">${makeSparkline(a)}</td>`;
       } else if (c.key === 'name') {
-        const sharedLine = hasSharedData
-          ? `<div style="font-size:10px;color:#aaa;margin-top:1px">${a._sharedPct}% shared byline</div>` : '';
-        html += `<td class="author-name">${escapeHtml(v || '')}${sharedLine}</td>`;
+        html += `<td class="author-name">${escapeHtml(v || '')}</td>`;
       } else if (c.key === 'primary_section' && SHOW_MULTI_SECTIONS) {
         const secs = a.all_sections && a.all_sections.length ? a.all_sections : (a.primary_section ? [a.primary_section] : []);
         const shown = secs.slice(0, MAX_SECTIONS_DISPLAY).join(', ');
         const overflow = secs.length > MAX_SECTIONS_DISPLAY ? ` <span style="color:#aaa">+${secs.length - MAX_SECTIONS_DISPLAY}</span>` : '';
         html += `<td class="${cls}">${escapeHtml(shown)}${overflow}</td>`;
       } else if (c.key === '_sharedPct') {
-        html += `<td class="${cls}" style="width:1px"></td>`; // value shown inline in name cell
+        html += `<td class="${cls}">${a._sharedPct}%</td>`;
       } else if (c.key === 'year_range') {
         html += `<td class="${cls}" style="white-space:nowrap">${v || ''}</td>`;
       } else {
@@ -1424,6 +1437,7 @@ function initBeats() {
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
     resultsBox.innerHTML = '';
+    delete input.dataset.currentSubject;
     if (q.length < 2) { sugBox.style.display = 'none'; return; }
 
     if (!subjectList) {
@@ -1463,13 +1477,42 @@ function initBeats() {
 
 function selectBeat(subject) {
   const resultsBox = document.getElementById('beatResults');
-  const reporters = subjectIndex[subject] || [];
+
+  // Store current subject on input for slider re-runs
+  const searchInput = document.getElementById('beatSearch');
+  if (searchInput) searchInput.dataset.currentSubject = subject;
+
+  // Compute reporter counts — year-filtered if articlesReady and range set
+  const beatYr = getBeatYearRange();
+  const isFiltered = beatYr && articlesReady && (beatYr.start !== dashboard.all_years[0] || beatYr.end !== dashboard.all_years[dashboard.all_years.length - 1]);
+  let reporters;
+  if (isFiltered) {
+    const countMap = {};
+    const sectionMap = {};
+    articles.forEach(a => {
+      const y = parseInt((a.pub_date || '').slice(0, 4));
+      if (y < beatYr.start || y > beatYr.end) return;
+      if (!(a.subjects || []).includes(subject)) return;
+      (a.authors || []).forEach(name => {
+        countMap[name] = (countMap[name] || 0) + 1;
+        if (!sectionMap[name]) sectionMap[name] = a.section || '';
+      });
+    });
+    reporters = Object.entries(countMap)
+      .filter(([, n]) => n >= 3)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 30)
+      .map(([name, count]) => ({ name, count, section: sectionMap[name] || '' }));
+  } else {
+    reporters = (subjectIndex[subject] || []).slice(0, 30);
+  }
 
   // Use precomputed co-occurrences from beats.json
   const related = (window._beatsCooccur && window._beatsCooccur[subject]) || [];
 
+  const yearLabel = isFiltered ? ` (${beatYr.start}–${beatYr.end})` : '';
   let html = `<h4 style="margin-bottom:8px">${toTitleCase(subject)}</h4>`;
-  html += `<p style="font-size:12px;color:#888;margin-bottom:8px">${(corpusSubjectFreq[subject] || 0).toLocaleString()} articles tagged with this subject</p>`;
+  html += `<p style="font-size:12px;color:#888;margin-bottom:8px">${(corpusSubjectFreq[subject] || 0).toLocaleString()} articles tagged with this subject (all years)</p>`;
   html += `<div id="beatVolumeWrap" style="margin-bottom:12px"><canvas id="chartBeatVolume" style="max-height:100px"></canvas></div>`;
 
   if (related.length) {
@@ -1478,9 +1521,11 @@ function selectBeat(subject) {
     html += `</div>`;
   }
 
-  html += `<div style="margin-bottom:6px;font-size:12px;color:#888;font-weight:600">Top reporters</div>`;
-  const top = reporters.slice(0, 30);
-  html += top.map((r, i) =>
+  html += `<div style="margin-bottom:6px;font-size:12px;color:#888;font-weight:600">Top reporters${yearLabel}</div>`;
+  if (!reporters.length) {
+    html += `<div style="font-size:13px;color:#aaa;padding:8px 0">No reporters with ≥3 articles on this subject in the selected years.</div>`;
+  }
+  html += reporters.map((r, i) =>
     `<div class="beat-reporter"><span class="rank">${i + 1}.</span><span class="name"><a href="#" class="beat-author-link" data-author="${escapeHtml(r.name)}" style="color:#326891;text-decoration:none">${escapeHtml(r.name)}</a></span><span class="section">${r.section}</span><span class="articles">${r.count} articles</span></div>`
   ).join('');
 
@@ -1979,7 +2024,9 @@ function trackTerms() {
     const parts = term.split('|').map(p => p.trim()).filter(Boolean);
     const escaped = parts.map(p => {
       const safe = p.replace(/[.+?^${}()[\]\\]/g, '\\$&'); // escape except *
-      return safe.endsWith('*') ? safe.slice(0, -1) + '\\w*' : safe;
+      // Prefix wildcard (cat*): no trailing \b so it matches catfish, category, etc.
+      // Exact word (cat): trailing \b ensures we don't match inside "catalog", "Catholic", etc.
+      return safe.endsWith('*') ? safe.slice(0, -1) + '\\w*' : safe + '\\b';
     });
     return new RegExp('\\b(' + escaped.join('|') + ')', 'i');
   }
@@ -2609,6 +2656,43 @@ const sectionsObserver = new MutationObserver(() => {
 });
 sectionsObserver.observe(document.getElementById('view-sections'), { attributes: true });
 
+// ── Beats year-range dual slider ─────────────────────────────────────────────
+function initBeatYearSlider() {
+  const years = dashboard.all_years.map(Number);
+  const minY = years[0], maxY = years[years.length - 1];
+  const sInput = document.getElementById('beatYrStart');
+  const eInput = document.getElementById('beatYrEnd');
+  sInput.min = eInput.min = minY;
+  sInput.max = eInput.max = maxY;
+  sInput.value = minY;
+  eInput.value = maxY;
+
+  function update() {
+    let s = parseInt(sInput.value), e = parseInt(eInput.value);
+    if (s > e) { s = e; sInput.value = s; }
+    const range = maxY - minY;
+    document.getElementById('beatYrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
+    document.getElementById('beatYrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
+    document.getElementById('beatYrStartLbl').textContent = s;
+    document.getElementById('beatYrEndLbl').textContent = e;
+    // Re-run current beat if one is selected
+    const input = document.getElementById('beatSearch');
+    if (input && input.dataset.currentSubject) {
+      selectBeat(input.dataset.currentSubject);
+    }
+  }
+  sInput.addEventListener('input', update);
+  eInput.addEventListener('input', update);
+  update();
+}
+
+function getBeatYearRange() {
+  const s = document.getElementById('beatYrStart');
+  const e = document.getElementById('beatYrEnd');
+  if (!s) return null;
+  return { start: parseInt(s.value), end: parseInt(e.value) };
+}
+
 // ── Authors year-range dual slider ───────────────────────────────────────────
 function initYearSlider() {
   const years = dashboard.all_years.map(Number);
@@ -2802,7 +2886,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/9/26 7:00pm</span>
+  <span style="pointer-events:none">Last revised: 4/9/26 9:52pm</span>
 </div>
 </body>
 </html>
