@@ -1165,11 +1165,13 @@ def build_author_stats(articles):
     })
 
     for art in articles:
-        n = art["n_authors"] or 1
+        # Only count human (non-institutional) authors for shared-byline purposes
+        human_authors = [a for a in art["authors"] if a not in _INSTITUTIONAL_BYLINES]
+        n = len(human_authors) or 1
         author_words = art["word_count"] // n if n > 0 else 0
         pub_date = art["pub_date"][:10]  # "YYYY-MM-DD"
         year = art["year"]
-        is_shared = n > 1
+        is_shared = len(human_authors) > 1
         for name in art["authors"]:
             d = author_data[name]
             d["article_count"] += 1
@@ -1184,7 +1186,7 @@ def build_author_stats(articles):
             if is_shared:
                 d["shared_byline_count"] += 1
                 d["monthly_shared_counts"][art["year_month"]] += 1
-                for coname in art["authors"]:
+                for coname in human_authors:
                     if coname != name:
                         d["coauthors"][coname] += 1
             if d["first_date"] is None or pub_date < d["first_date"]:
@@ -1260,19 +1262,24 @@ def build_author_stats(articles):
         shared_count = d["shared_byline_count"]
         zero_word_rate = d["zero_word_articles"] / article_count if article_count else 0
         shared_rate = shared_count / article_count if article_count else 0
+        avg_words = round(d["total_words"] / article_count) if article_count else 0
         # Likely non-editorial / collaborative byline: photographers, video producers,
-        # podcast staff, crossword constructors, briefing editors, etc.
-        # These people always or almost always appear in shared bylines and do not
-        # write traditional text articles, so they skew section shared-byline averages.
-        # Three routes to flagging:
+        # podcast staff, crossword constructors, illustrators, etc.
+        # Four routes to flagging:
         #   1. Photo/video: high shared rate + many zero-word articles
-        #   2. Podcast / audio: primary section is Podcasts (nearly all are producers/editors)
-        #   3. Other structural bylines: section is Crosswords & Games or Briefing
-        #      AND very high shared rate
+        #   2. Low-word shared: nearly always shared + very low avg words (illustrators,
+        #      photographers whose articles have captions but no bylined text)
+        #   3. Podcast / audio: primary section is Podcasts
+        #   4. Other structural: section is Crosswords & Games or Briefing + very high shared
         is_photo_video = (
             article_count >= 5 and
             shared_rate >= 0.75 and
             zero_word_rate >= 0.35
+        )
+        is_low_word_shared = (
+            article_count >= 5 and
+            shared_rate >= 0.90 and
+            avg_words < 250
         )
         is_podcast = (
             article_count >= 5 and
@@ -1283,7 +1290,7 @@ def build_author_stats(articles):
             shared_rate >= 0.90 and
             primary_section in ("Crosswords & Games", "Briefing", "Education")
         )
-        likely_multimedia = is_photo_video or is_podcast or is_structural
+        likely_multimedia = is_photo_video or is_low_word_shared or is_podcast or is_structural
         top_coauthors = dict(d["coauthors"].most_common(10))
 
         authors.append({
@@ -1330,11 +1337,14 @@ _INSTITUTIONAL_BYLINES = {
     'The New York Times Staff',
     'Bloomberg News', 'Associated Press', 'Bridge News', 'Field Level Media',
     'Der Spiegel', 'der Spiegel', 'The International Herald Tribune',
+    'Br International Herald',
     'New York Times', 'New York Times Audio', 'New York Times Opinion',
     'The New York Times Opinion', 'The New York Times Magazine',
     'The Styles Desk', 'Retro Report', 'New York Times Cooking',
     'Insider Staff', 'the staff of The Morning',
     'Compiled by The New York Times',
+    'IFC Films',
+    'Written Mr', 'Was Written Mr',
 }
 
 

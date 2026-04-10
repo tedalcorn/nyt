@@ -689,6 +689,7 @@ const INSTITUTIONAL_BYLINES = new Set([
   // Wire services and syndicated sources
   'Bloomberg News', 'Associated Press', 'Bridge News', 'Field Level Media',
   'Der Spiegel', 'der Spiegel', 'The International Herald Tribune',
+  'Br International Herald', 'IFC Films', 'Written Mr', 'Was Written Mr',
   // Internal product/desk aggregations
   'New York Times', 'New York Times Audio', 'New York Times Opinion',
   'The New York Times Opinion', 'The New York Times Magazine',
@@ -1268,6 +1269,8 @@ function renderAuthors() {
         html += `<td class="${cls}">${escapeHtml(shown)}${overflow}</td>`;
       } else if (c.key === '_sharedPct') {
         html += `<td class="${cls}">${a._sharedPct}%</td>`;
+      } else if (c.key === 'year_range') {
+        html += `<td class="${cls}" style="white-space:nowrap">${v || ''}</td>`;
       } else {
         html += `<td class="${cls}">${v || ''}</td>`;
       }
@@ -2741,7 +2744,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/9/26 5:15pm</span>
+  <span style="pointer-events:none">Last revised: 4/9/26 6:00pm</span>
 </div>
 </body>
 </html>
