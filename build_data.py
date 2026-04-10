@@ -243,6 +243,7 @@ def process_articles(raw_articles):
 
         headline = doc.get("headline", {})
         main_headline = headline.get("main", "") if isinstance(headline, dict) else ""
+        print_headline = (headline.get("print_headline", "") or "") if isinstance(headline, dict) else ""
 
         authors = extract_authors(doc.get("byline"))
         word_count = doc.get("word_count") or 0
@@ -295,12 +296,18 @@ def process_articles(raw_articles):
         subsection = doc.get("subsection_name", "") or ""
         glocations = []
         subjects = []
+        persons_kw = []
+        organizations_kw = []
         for kw in (doc.get("keywords") or []):
             kw_name = kw.get("name", "")
             if kw_name in ("glocations", "Location"):
                 glocations.append(kw["value"])
             elif kw_name in ("subject", "Subject"):
                 subjects.append(kw["value"])
+            elif kw_name in ("persons", "Persons"):
+                persons_kw.append(kw["value"])
+            elif kw_name in ("organizations", "Organizations"):
+                organizations_kw.append(kw["value"])
 
         # Canonical state names — computed for both "U.S." and "New York" sections
         canonical_states = []
@@ -318,6 +325,7 @@ def process_articles(raw_articles):
             "month": pub_date.month,
             "year_month": pub_date.strftime("%Y-%m"),
             "headline": main_headline,
+            "print_headline": print_headline,
             "authors": [a["fullname"] for a in authors],
             "author_details": authors,
             "word_count": word_count,
@@ -331,6 +339,8 @@ def process_articles(raw_articles):
             "n_authors": len(authors),
             "glocations": glocations,
             "subjects": subjects,
+            "persons": persons_kw,
+            "organizations": organizations_kw,
             "canonical_states": canonical_states,
         })
 
@@ -2347,6 +2357,41 @@ def build_dashboard_data(articles, authors):
     }
 
 
+def build_subjects_data(articles):
+    """Build persons and organizations keyword frequency data."""
+    currentYear = datetime.now().year
+
+    # Count per subject per year
+    persons_annual = defaultdict(lambda: defaultdict(int))
+    orgs_annual = defaultdict(lambda: defaultdict(int))
+
+    for art in articles:
+        year = str(art["year"])
+        if art["year"] == currentYear:
+            continue
+        for p in art.get("persons", []):
+            persons_annual[p][year] += 1
+        for o in art.get("organizations", []):
+            orgs_annual[o][year] += 1
+
+    MIN_COUNT = 15  # filter rare entries
+
+    def make_entries(annual_dict):
+        result = []
+        for name, by_year in annual_dict.items():
+            total = sum(by_year.values())
+            if total < MIN_COUNT:
+                continue
+            result.append({"name": name, "total": total, "annual": dict(by_year)})
+        result.sort(key=lambda x: x["total"], reverse=True)
+        return result
+
+    return {
+        "persons": make_entries(persons_annual),
+        "organizations": make_entries(orgs_annual),
+    }
+
+
 def main():
     raw = load_all_articles()
     articles = process_articles(raw)
@@ -2389,6 +2434,12 @@ def main():
             rec["ss"] = a["subsection"]  # subsection
         if a.get("subjects"):
             rec["sb"] = a["subjects"]  # subject keywords
+        if a.get("persons"):
+            rec["pe"] = a["persons"]   # persons keywords
+        if a.get("organizations"):
+            rec["og"] = a["organizations"]  # organizations keywords
+        if a.get("print_headline"):
+            rec["ph"] = a["print_headline"]  # print headline (omit if empty to save space)
         by_year[a["year"]].append(rec)
 
     years = sorted(by_year.keys())
@@ -2411,6 +2462,12 @@ def main():
     with open(os.path.join(DATA_DIR, "beats.json"), "w") as f:
         json.dump(beats_json, f, separators=(',', ':'))
     print(f"Saved beats.json ({len(beats_json['subjectList'])} subjects)")
+
+    print("Building subjects data...")
+    subjects_data = build_subjects_data(articles)
+    with open(os.path.join(DATA_DIR, "subjects.json"), "w") as f:
+        json.dump(subjects_data, f, separators=(',', ':'))
+    print(f"Saved subjects.json ({len(subjects_data['persons'])} persons, {len(subjects_data['organizations'])} organizations)")
 
 
 if __name__ == "__main__":

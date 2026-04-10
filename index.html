@@ -180,6 +180,15 @@
   .related-tag { display: inline-block; background: #e8e0d4; color: #555; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 3px 4px 3px 0; cursor: pointer; }
   .related-tag:hover { background: #d4c9b8; }
 
+  /* Subjects tab type filter buttons */
+  .subject-type-btn {
+    padding: 4px 12px; border: 1px solid #ccc; border-radius: 4px; background: #f5f5f5;
+    cursor: pointer; font-family: 'nyt-franklin', Arial, sans-serif; font-size: 12px;
+    font-weight: 600; letter-spacing: 0.3px; color: #666; transition: all 0.12s;
+  }
+  .subject-type-btn:hover { border-color: #999; color: #333; }
+  .subject-type-btn.active { background: #326891; border-color: #326891; color: #fff; }
+
   @media (max-width: 640px) {
     .stats-row { grid-template-columns: repeat(3, 1fr); gap: 8px; }
     .stat-card { padding: 10px 6px; }
@@ -211,18 +220,18 @@
 
 <header>
   <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px;cursor:pointer" onclick="showView('about');window.scrollTo({top:0,behavior:'smooth'})">
-  <h1>A New York Times X-Ray Dashboard</h1>
-  <div class="subtitle" id="dateRange"></div>
+  <h1 id="siteSubtitle">Explore Coverage by The New York Times</h1>
 </header>
 
 <nav id="nav">
   <button data-view="about" class="active">About</button>
+  <button data-view="beats">Beats</button>
+  <button data-view="tracker">Headlines</button>
+  <button data-view="sections">Sections</button>
+  <button data-view="subjects">Subjects</button>
   <button data-view="authors">Reporters</button>
   <button data-view="states">U.S. States</button>
   <button data-view="world">World</button>
-  <button data-view="sections">Sections</button>
-  <button data-view="beats">Beats</button>
-  <button data-view="tracker">Headlines</button>
 </nav>
 
 <div class="container">
@@ -239,14 +248,17 @@
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
 
-      <h4 style="margin-top:16px;margin-bottom:4px">Primary section</h4>
-      <p>Each author is assigned a "primary section" based on the section in which they have the most published articles. This is a rough proxy for their beat and may not reflect their actual desk assignment, especially for authors who write across sections.</p>
+      <h4 style="margin-top:16px;margin-bottom:4px">Sections</h4>
+      <p>Each author is assigned a primary section based on where they have the most published articles, used to filter and sort the Reporters table. Author profiles also list all sections in which the author has published, reflecting the full range of their work. Primary section is a rough proxy for desk assignment and may not be accurate for authors who write regularly across multiple sections.</p>
+
+      <h4 style="margin-top:16px;margin-bottom:4px">Inferred reporters</h4>
+      <p>The Reporters and Sections tables include a toggle to "limit to inferred reporters," which filters out bylines that appear to belong to photographers, videographers, podcast producers, illustrators, and similar contributors rather than traditional text reporters. The inference is based on combinations of shared-byline rate, average word count, and primary section (e.g., someone with 90%+ shared bylines, near-zero word counts, and a primary section of "Multimedia/Photos" is unlikely to be a text reporter). The heuristic is imperfect — some edge cases will be miscategorized in either direction — and is intended only as an exploratory filter, not a definitive classification.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Beat topics</h4>
       <p>The topics shown on author profiles are derived from the NYT's own subject tags on each article. Topics are scored by how disproportionately an author covers them relative to the full corpus — a topic must appear at least twice as often in an author's work as the corpus-wide average to qualify. Authors with few articles or articles lacking subject tags may have no beats listed. Subject tags are assigned by the NYT, not by this dashboard.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Author names</h4>
-      <p>Author name variants (e.g., "Jonah E. Bromwich" and "Jonah Bromwich") are merged when they share first and last names with compatible middle names. Only minor variants are merged; if two forms each have substantial article counts, they are kept separate to avoid false merges. Institutional bylines (The Associated Press, The Editorial Board, Reuters, etc.) are excluded from author rankings.</p>
+      <p>Author name variants (e.g., "Jonah E. Bromwich" and "Jonah Bromwich") are merged when they share first and last names with compatible middle names. Cases where the same reporter appears under both a shorter and fuller byline form — each with many articles — are resolved manually after cross-checking beats, section, and year range. Institutional bylines (The Associated Press, The Editorial Board, Reuters, etc.) are excluded from author rankings.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Geographic data</h4>
       <p>The States tab draws only from articles in the "U.S." section (the national desk). The World tab draws only from articles in the "World" section (the international desk). Coverage of these geographies that appears in other sections (Opinion, Business, etc.) is not included. Both tabs use the API's geographic keyword field; city-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. Per-capita figures use 2025 population estimates.</p>
@@ -282,6 +294,33 @@
     </div>
   </div>
 
+
+  <!-- SUBJECTS -->
+  <div class="view" id="view-subjects">
+    <div class="chart-box">
+      <h3>People &amp; Organizations</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Persons and organizations drawn from NYT keyword metadata. Excludes the current year.</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <span id="subjectYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
+        <div class="yr-slider-wrap" id="subjectYrSliderWrap">
+          <div class="yr-slider-track"></div>
+          <div class="yr-slider-fill" id="subjectYrSliderFill"></div>
+          <input type="range" id="subjectYrStart">
+          <input type="range" id="subjectYrEnd">
+        </div>
+        <span id="subjectYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <span style="font-size:12px;color:#888">Type:</span>
+        <button id="subjectTypeAll" class="subject-type-btn active" onclick="setSubjectType('all')">All</button>
+        <button id="subjectTypePeople" class="subject-type-btn" onclick="setSubjectType('persons')">People</button>
+        <button id="subjectTypeOrgs" class="subject-type-btn" onclick="setSubjectType('organizations')">Organizations</button>
+        <input type="text" id="subjectSearch" placeholder="Filter by name..." style="margin-left:12px;padding:4px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px;min-width:180px">
+      </div>
+      <div class="table-scroll-wrap"><div id="subjectsTableContainer"><p style="color:#888;padding:16px">Loading subjects data…</p></div></div>
+    </div>
+  </div>
 
   <!-- AUTHORS -->
   <div class="view" id="view-authors">
@@ -375,6 +414,17 @@
       <div style="margin-bottom:12px">
         <button id="toggleWorldTrendBtn" onclick="toggleWorldTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare country coverage over time</button>
       </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <span id="worldYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
+        <div class="yr-slider-wrap" id="worldYrSliderWrap">
+          <div class="yr-slider-track"></div>
+          <div class="yr-slider-fill" id="worldYrSliderFill"></div>
+          <input type="range" id="worldYrStart">
+          <input type="range" id="worldYrEnd">
+        </div>
+        <span id="worldYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
+      </div>
       <div class="table-scroll-wrap"><div id="worldTableContainer"></div></div>
     </div>
   </div>
@@ -411,6 +461,7 @@
         <input type="text" id="term4" placeholder="">
         <button id="trackBtn">Visualize</button>
         <label style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" id="trackerFrontPage"><span>Page A1 only</span></label>
+        <label style="display:inline-flex;align-items:center;gap:5px;margin-left:8px"><input type="checkbox" id="trackerUsePrint" checked><span>Print headlines</span></label>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Years</span>
@@ -558,6 +609,9 @@ function _parseYearRecords(yearArticles) {
     glocations: a.g || [],
     canonical_states: a.st || [],
     subjects: a.sb || [],
+    persons: a.pe || [],
+    organizations: a.og || [],
+    print_headline: a.ph || '',
   }));
 }
 
@@ -591,7 +645,8 @@ async function loadData() {
 
     document.getElementById('loading').style.display = 'none';
     const allYears = dashboard.all_years;
-    document.getElementById('dateRange').textContent = `${allYears[0]} \u2013 ${allYears[allYears.length - 1]}`;
+    const endYrShort = String(allYears[allYears.length - 1]).slice(-2);
+    document.getElementById('siteSubtitle').textContent = `Explore Coverage by The New York Times (${allYears[0]}\u2013${endYrShort})`;
     initOverview();
     initHeadlineSearch();
     renderWordsDist();
@@ -1965,6 +2020,7 @@ function toTitleCase(s) {
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
 document.getElementById('trackerFrontPage').addEventListener('change', trackTerms);
+document.getElementById('trackerUsePrint').addEventListener('change', () => { if (articlesReady) trackTerms(); });
 document.getElementById('trackerYrStart').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
 document.getElementById('trackerYrEnd').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
 ['term1','term2','term3','term4'].forEach(id => {
@@ -1986,7 +2042,7 @@ function updateTrackerSlider() {
 }
 
 function initTrackerYears() {
-  const years = dashboard.all_years.map(Number).filter(y => y < new Date().getFullYear());
+  const years = dashboard.all_years.map(Number);
   const minY = years[0], maxY = years[years.length - 1];
   const sInput = document.getElementById('trackerYrStart');
   const eInput = document.getElementById('trackerYrEnd');
@@ -2008,6 +2064,7 @@ function trackTerms() {
   if (!terms.length) return;
 
   const frontOnly = document.getElementById('trackerFrontPage').checked;
+  const usePrint = document.getElementById('trackerUsePrint').checked;
   const cutoffYear = String(new Date().getFullYear());
   const startYear = document.getElementById('trackerYrStart').value;
   const endYear = document.getElementById('trackerYrEnd').value;
@@ -2036,7 +2093,8 @@ function trackTerms() {
   terms.forEach(t => { series[t] = {}; months.forEach(m => series[t][m] = 0); });
 
   pool.forEach(a => {
-    const hl = a.headline;
+    // Use print headline when checked; fall back to web headline if no print version stored
+    const hl = usePrint ? (a.print_headline || a.headline) : a.headline;
     termRegs.forEach((re, i) => {
       if (re.test(hl)) {
         const t = terms[i];
@@ -2130,11 +2188,14 @@ const POPULATION_M = {
   // Vatican excluded (institution as much as state)
 };
 
+let worldYears = [];
+
 function initWorld() {
   if (!dashboard.world_coverage) return;
   const wc = dashboard.world_coverage;
   const currentYear = String(new Date().getFullYear());
   const years = wc.years.filter(y => y !== currentYear);
+  worldYears = years;
 
   // Location selector
   const select = document.getElementById('worldLocationSelect');
@@ -2150,7 +2211,8 @@ function initWorld() {
     if (document.getElementById('worldTrendBox').style.display !== 'none') renderLocationTrend();
   });
 
-  renderWorldTable(years);
+  renderWorldTable(worldYears);
+  initWorldYearSlider();
 }
 
 let worldTableSort = { col: 'count', asc: false };
@@ -2158,6 +2220,10 @@ let worldTableSort = { col: 'count', asc: false };
 function renderWorldTable(years) {
   const wc = dashboard.world_coverage;
   const numYears = years.length;
+
+  const yearStart = years.length ? years[0] : '';
+  const yearEnd = years.length ? years[years.length - 1] : '';
+  const articleColLabel = `Articles (${yearStart}–${yearEnd})`;
 
   const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa']);
   const rows = wc.locations.filter(loc => !WORLD_TABLE_EXCLUDE.has(loc)).map(loc => {
@@ -2181,7 +2247,7 @@ function renderWorldTable(years) {
   const ind = col => worldTableSort.col === col ? (worldTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
     { key: 'name', label: 'Country/Location' },
-    { key: 'count', label: 'Articles (2000–2026)', cls: 'num' },
+    { key: 'count', label: articleColLabel, cls: 'num' },
     { key: '_sparkline', label: 'Trend' },
     { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num percap-hdr' },
   ];
@@ -2218,13 +2284,41 @@ function renderWorldTable(years) {
       const col = th.dataset.sort;
       if (worldTableSort.col === col) worldTableSort.asc = !worldTableSort.asc;
       else { worldTableSort.col = col; worldTableSort.asc = col === 'name'; }
-      renderWorldTable(years);
+      renderWorldTable(worldYears);
     });
   });
 
   container.querySelectorAll('tr[data-country]').forEach(row => {
     row.addEventListener('click', () => openCountryDetail(row.dataset.country));
   });
+}
+
+function initWorldYearSlider() {
+  const wc = dashboard.world_coverage;
+  const currentYear = String(new Date().getFullYear());
+  const allYears = wc.years.filter(y => y !== currentYear);
+  const minY = Number(allYears[0]), maxY = Number(allYears[allYears.length - 1]);
+  const sInput = document.getElementById('worldYrStart');
+  const eInput = document.getElementById('worldYrEnd');
+  sInput.min = eInput.min = minY;
+  sInput.max = eInput.max = maxY;
+  sInput.value = minY;
+  eInput.value = maxY;
+
+  function update() {
+    let s = parseInt(sInput.value), e = parseInt(eInput.value);
+    if (s > e) { s = e; sInput.value = s; }
+    const range = maxY - minY;
+    document.getElementById('worldYrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
+    document.getElementById('worldYrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
+    document.getElementById('worldYrStartLbl').textContent = s;
+    document.getElementById('worldYrEndLbl').textContent = e;
+    worldYears = allYears.filter(y => Number(y) >= s && Number(y) <= e);
+    renderWorldTable(worldYears);
+  }
+  sInput.addEventListener('input', update);
+  eInput.addEventListener('input', update);
+  update();
 }
 
 function toggleWorldTrend() {
@@ -2287,6 +2381,7 @@ function openCountryDetail(country) {
         <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
         <canvas id="chartCountryDetail" style="max-height:180px"></canvas>
       </div>
+      <div id="countryTopReporters" style="margin-top:12px"></div>
       <div id="countryArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
     </div>
   `;
@@ -2313,6 +2408,26 @@ function openCountryDetail(country) {
   }
   const countryArticles = articles
     .filter(a => a.section === 'World' && a.glocations && a.glocations.includes(country));
+
+  // Top reporters
+  const reporterCounts = {};
+  countryArticles.forEach(a => {
+    (a.authors || []).forEach(name => {
+      if (!INSTITUTIONAL_BYLINES.has(name)) reporterCounts[name] = (reporterCounts[name] || 0) + 1;
+    });
+  });
+  const topReporters = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (topReporters.length) {
+    const rhtml = topReporters.map(([name, count]) =>
+      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="country-reporter-link" data-author="${escapeHtml(name)}" style="color:#326891;text-decoration:none">${escapeHtml(name)}</a> <span style="color:#aaa;font-size:11px">${count}</span></span>`
+    ).join('');
+    document.getElementById('countryTopReporters').innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
+      `<div style="font-size:13px;line-height:1.9">${rhtml}</div>`;
+    document.getElementById('countryTopReporters').querySelectorAll('.country-reporter-link').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+    });
+  }
 
   renderArticleList('countryArticleList', countryArticles, a => {
     const byline = a.authors.join(', ') || 'No byline';
@@ -2561,6 +2676,7 @@ function openStateDetail(state) {
         <canvas id="chartStateDetail" style="max-height:180px"></canvas>
       </div>
       ${eventsHtml}
+      <div id="stateTopReporters" style="margin-top:12px"></div>
       <div id="stateArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
     </div>
   `;
@@ -2599,6 +2715,26 @@ function openStateDetail(state) {
   }
   const stateArticles = articles
     .filter(a => a.canonical_states && a.canonical_states.includes(state));
+
+  // Top reporters
+  const stateReporterCounts = {};
+  stateArticles.forEach(a => {
+    (a.authors || []).forEach(name => {
+      if (!INSTITUTIONAL_BYLINES.has(name)) stateReporterCounts[name] = (stateReporterCounts[name] || 0) + 1;
+    });
+  });
+  const topStateReporters = Object.entries(stateReporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (topStateReporters.length) {
+    const rhtml = topStateReporters.map(([name, count]) =>
+      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="state-reporter-link" data-author="${escapeHtml(name)}" style="color:#326891;text-decoration:none">${escapeHtml(name)}</a> <span style="color:#aaa;font-size:11px">${count}</span></span>`
+    ).join('');
+    document.getElementById('stateTopReporters').innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
+      `<div style="font-size:13px;line-height:1.9">${rhtml}</div>`;
+    document.getElementById('stateTopReporters').querySelectorAll('.state-reporter-link').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+    });
+  }
 
   renderArticleList('stateArticleList', stateArticles, a => {
     const byline = a.authors.join(', ') || 'No byline';
@@ -2660,6 +2796,15 @@ const sectionsObserver = new MutationObserver(() => {
 });
 sectionsObserver.observe(document.getElementById('view-sections'), { attributes: true });
 
+// Trigger subjects render when tab shown (lazy init)
+const subjectsObserver = new MutationObserver(() => {
+  if (document.getElementById('view-subjects').classList.contains('active') && !subjectsInitialized) {
+    subjectsInitialized = true;
+    initSubjects();
+  }
+});
+subjectsObserver.observe(document.getElementById('view-subjects'), { attributes: true });
+
 // ── Beats year-range dual slider ─────────────────────────────────────────────
 function initBeatYearSlider() {
   const years = dashboard.all_years.map(Number);
@@ -2695,6 +2840,172 @@ function getBeatYearRange() {
   const e = document.getElementById('beatYrEnd');
   if (!s) return null;
   return { start: parseInt(s.value), end: parseInt(e.value) };
+}
+
+// ── Subjects tab ─────────────────────────────────────────────────────────────
+let subjectsData = null;
+let subjectsInitialized = false;
+let subjectCurrentType = 'all';
+let subjectsTableSort = { col: 'total', asc: false };
+let subjectsAllYears = [];
+let subjectsFilteredYears = [];
+
+function formatPersonName(raw) {
+  // Convert "Last, First Middle" → "First Middle Last"
+  const parts = raw.split(', ');
+  if (parts.length >= 2) {
+    return parts.slice(1).join(', ') + ' ' + parts[0];
+  }
+  return raw;
+}
+
+function makeSubjectSparkline(annual, years) {
+  const vals = years.map(y => annual[y] || 0);
+  const max = Math.max(...vals) || 1;
+  if (vals.every(v => v === 0)) return '';
+  const W = 60, H = 20;
+  const minY = Number(years[0]), spanYears = Number(years[years.length - 1]) - minY || 1;
+  const toPoint = (i) => {
+    const x = ((Number(years[i]) - minY) / spanYears) * W;
+    const yv = H - (vals[i] / max) * (H - 2) - 1;
+    return `${x.toFixed(1)},${yv.toFixed(1)}`;
+  };
+  const pts = years.map((_, i) => toPoint(i)).join(' ');
+  return `<svg width="${W}" height="${H}" style="display:block;overflow:visible"><polyline points="${pts}" fill="none" stroke="#326891" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+function setSubjectType(type) {
+  subjectCurrentType = type;
+  document.querySelectorAll('.subject-type-btn').forEach(b => b.classList.remove('active'));
+  const idMap = { all: 'subjectTypeAll', persons: 'subjectTypePeople', organizations: 'subjectTypeOrgs' };
+  document.getElementById(idMap[type]).classList.add('active');
+  renderSubjectsTable();
+}
+
+function renderSubjectsTable() {
+  if (!subjectsData) return;
+  const container = document.getElementById('subjectsTableContainer');
+  const query = (document.getElementById('subjectSearch').value || '').toLowerCase().trim();
+  const start = parseInt(document.getElementById('subjectYrStart').value);
+  const end = parseInt(document.getElementById('subjectYrEnd').value);
+  const years = subjectsAllYears.filter(y => Number(y) >= start && Number(y) <= end);
+
+  // Build combined list based on type filter
+  let entries = [];
+  if (subjectCurrentType !== 'organizations') {
+    subjectsData.persons.forEach(e => entries.push({ ...e, type: 'person' }));
+  }
+  if (subjectCurrentType !== 'persons') {
+    subjectsData.organizations.forEach(e => entries.push({ ...e, type: 'organization' }));
+  }
+
+  // Compute count for selected year range
+  entries = entries.map(e => {
+    const rangeCount = years.reduce((s, y) => s + (e.annual[y] || 0), 0);
+    return { ...e, rangeCount };
+  });
+
+  // Filter out zero-count entries for the selected range
+  entries = entries.filter(e => e.rangeCount > 0);
+
+  // Name search filter
+  if (query) {
+    entries = entries.filter(e => {
+      const display = e.type === 'person' ? formatPersonName(e.name) : e.name;
+      return display.toLowerCase().includes(query) || e.name.toLowerCase().includes(query);
+    });
+  }
+
+  // Sort
+  entries.sort((a, b) => {
+    let va = subjectsTableSort.col === 'total' ? a.rangeCount : (subjectsTableSort.col === 'name' ? (a.type === 'person' ? formatPersonName(a.name) : a.name).toLowerCase() : a.type);
+    let vb = subjectsTableSort.col === 'total' ? b.rangeCount : (subjectsTableSort.col === 'name' ? (b.type === 'person' ? formatPersonName(b.name) : b.name).toLowerCase() : b.type);
+    if (va < vb) return subjectsTableSort.asc ? -1 : 1;
+    if (va > vb) return subjectsTableSort.asc ? 1 : -1;
+    return 0;
+  });
+
+  const shown = entries.slice(0, 500);
+  const ind = col => subjectsTableSort.col === col ? (subjectsTableSort.asc ? ' ▲' : ' ▼') : '';
+  const yearStart = years.length ? years[0] : start;
+  const yearEnd = years.length ? years[years.length - 1] : end;
+
+  let html = `<p style="font-size:12px;color:#888;margin-bottom:8px">Showing ${shown.length.toLocaleString()} of ${entries.length.toLocaleString()} entries</p>`;
+  html += `<table class="author-table"><thead><tr>`;
+  html += `<th data-sort="name">Name${ind('name')}</th>`;
+  html += `<th data-sort="type">Type${ind('type')}</th>`;
+  html += `<th class="num" data-sort="total">Articles (${yearStart}–${yearEnd})${ind('total')}</th>`;
+  html += `<th>Trend</th>`;
+  html += `</tr></thead><tbody>`;
+
+  shown.forEach(e => {
+    const displayName = e.type === 'person' ? formatPersonName(e.name) : e.name;
+    const typeLbl = e.type === 'person' ? 'Person' : 'Organization';
+    html += `<tr>`;
+    html += `<td>${escapeHtml(displayName)}</td>`;
+    html += `<td style="font-size:12px;color:#888">${typeLbl}</td>`;
+    html += `<td class="num">${e.rangeCount.toLocaleString()}</td>`;
+    html += `<td style="padding:2px 8px">${makeSubjectSparkline(e.annual, years)}</td>`;
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+
+  container.querySelectorAll('.author-table th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (subjectsTableSort.col === col) subjectsTableSort.asc = !subjectsTableSort.asc;
+      else { subjectsTableSort.col = col; subjectsTableSort.asc = col === 'name' || col === 'type'; }
+      renderSubjectsTable();
+    });
+  });
+}
+
+function initSubjectYearSlider() {
+  const years = dashboard.all_years;
+  const numericYears = years.map(Number);
+  const currentYear = new Date().getFullYear();
+  subjectsAllYears = years.filter(y => Number(y) !== currentYear);
+  const minY = numericYears[0], maxY = numericYears[numericYears.length - 1];
+  const sInput = document.getElementById('subjectYrStart');
+  const eInput = document.getElementById('subjectYrEnd');
+  sInput.min = eInput.min = minY;
+  sInput.max = eInput.max = maxY;
+  sInput.value = minY;
+  eInput.value = maxY;
+
+  function update() {
+    let s = parseInt(sInput.value), e = parseInt(eInput.value);
+    if (s > e) { s = e; sInput.value = s; }
+    const range = maxY - minY;
+    document.getElementById('subjectYrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
+    document.getElementById('subjectYrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
+    document.getElementById('subjectYrStartLbl').textContent = s;
+    document.getElementById('subjectYrEndLbl').textContent = e;
+    renderSubjectsTable();
+  }
+  sInput.addEventListener('input', update);
+  eInput.addEventListener('input', update);
+  update();
+}
+
+function initSubjects() {
+  if (subjectsData) {
+    initSubjectYearSlider();
+    renderSubjectsTable();
+    return;
+  }
+  const container = document.getElementById('subjectsTableContainer');
+  container.innerHTML = '<p style="color:#888;padding:16px">Loading subjects data…</p>';
+  fetch('data/subjects.json').then(r => r.json()).then(data => {
+    subjectsData = data;
+    initSubjectYearSlider();
+    document.getElementById('subjectSearch').addEventListener('input', renderSubjectsTable);
+    renderSubjectsTable();
+  }).catch(e => {
+    console.error('Failed to load subjects:', e);
+    container.innerHTML = '<p style="color:#c00;padding:16px">Failed to load subjects data. Run build_data.py first.</p>';
+  });
 }
 
 // ── Authors year-range dual slider ───────────────────────────────────────────
@@ -2890,7 +3201,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/10/26 8:49am</span>
+  <span style="pointer-events:none">Last revised: 4/10/26 1:03pm</span>
 </div>
 </body>
 </html>
