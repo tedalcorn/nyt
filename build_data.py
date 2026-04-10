@@ -2357,6 +2357,14 @@ def build_dashboard_data(articles, authors):
     }
 
 
+def _normalize_subject_name(name):
+    """Title-case ALL CAPS names; leave acronyms (no spaces/commas) alone."""
+    alpha = [c for c in name if c.isalpha()]
+    if alpha and all(c.isupper() for c in alpha) and (' ' in name or ',' in name):
+        return name.title()
+    return name
+
+
 def build_subjects_data(articles):
     """Build persons and organizations keyword frequency data."""
     currentYear = datetime.now().year
@@ -2370,9 +2378,9 @@ def build_subjects_data(articles):
         if art["year"] == currentYear:
             continue
         for p in art.get("persons", []):
-            persons_annual[p][year] += 1
+            persons_annual[_normalize_subject_name(p)][year] += 1
         for o in art.get("organizations", []):
-            orgs_annual[o][year] += 1
+            orgs_annual[_normalize_subject_name(o)][year] += 1
 
     MIN_COUNT = 15  # filter rare entries
 

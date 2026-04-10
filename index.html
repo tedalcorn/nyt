@@ -297,9 +297,17 @@
 
   <!-- SUBJECTS -->
   <div class="view" id="view-subjects">
+    <div id="subjectDetailPanel" style="display:none"></div>
+    <div class="chart-box" id="subjectCompareBox" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+        <h3 style="margin:0">Coverage Over Time</h3>
+        <button onclick="clearSubjectSelections()" style="font-size:12px;padding:3px 10px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit;color:#555">Clear selection</button>
+      </div>
+      <div style="position:relative;height:220px"><canvas id="chartSubjectCompare"></canvas></div>
+    </div>
     <div class="chart-box">
       <h3>People &amp; Organizations</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Persons and organizations drawn from NYT keyword metadata. Excludes the current year.</p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Persons and organizations drawn from NYT keyword metadata. Check names to compare coverage over time; click a name to see details.</p>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
         <span id="subjectYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
@@ -2193,8 +2201,7 @@ let worldYears = [];
 function initWorld() {
   if (!dashboard.world_coverage) return;
   const wc = dashboard.world_coverage;
-  const currentYear = String(new Date().getFullYear());
-  const years = wc.years.filter(y => y !== currentYear);
+  const years = wc.years;
   worldYears = years;
 
   // Location selector
@@ -2332,8 +2339,7 @@ function toggleWorldTrend() {
 
 function renderLocationTrend() {
   const wc = dashboard.world_coverage;
-  const currentYear = String(new Date().getFullYear());
-  const years = wc.years.filter(y => y !== currentYear);
+  const years = wc.years;
   const selected = Array.from(document.getElementById('worldLocationSelect').selectedOptions).map(o => o.value);
 
   destroyChart('chartLocationTrend');
@@ -2364,8 +2370,7 @@ function renderLocationTrend() {
 function openCountryDetail(country) {
   lastOpenedCountry = country;
   const wc = dashboard.world_coverage;
-  const currentYear = String(new Date().getFullYear());
-  const years = wc.years.filter(y => y !== currentYear);
+  const years = wc.years;
   const trend = wc.location_trends[country] || {};
   const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
 
@@ -2931,6 +2936,7 @@ function renderSubjectsTable() {
 
   let html = `<p style="font-size:12px;color:#888;margin-bottom:8px">Showing ${shown.length.toLocaleString()} of ${entries.length.toLocaleString()} entries</p>`;
   html += `<table class="author-table"><thead><tr>`;
+  html += `<th style="width:28px;padding:8px 4px"></th>`;
   html += `<th data-sort="name">Name${ind('name')}</th>`;
   html += `<th data-sort="type">Type${ind('type')}</th>`;
   html += `<th class="num" data-sort="total">Articles (${yearStart}–${yearEnd})${ind('total')}</th>`;
@@ -2940,8 +2946,10 @@ function renderSubjectsTable() {
   shown.forEach(e => {
     const displayName = e.type === 'person' ? formatPersonName(e.name) : e.name;
     const typeLbl = e.type === 'person' ? 'Person' : 'Organization';
+    const isChecked = selectedSubjects.has(e.name) ? 'checked' : '';
     html += `<tr>`;
-    html += `<td>${escapeHtml(displayName)}</td>`;
+    html += `<td style="padding:4px 4px;text-align:center"><input type="checkbox" class="subj-check" data-name="${escapeHtml(e.name)}" data-type="${e.type}" ${isChecked} style="cursor:pointer"></td>`;
+    html += `<td><a href="#" class="subj-name-link" data-name="${escapeHtml(e.name)}" data-type="${e.type}" style="color:#326891;text-decoration:none">${escapeHtml(displayName)}</a></td>`;
     html += `<td style="font-size:12px;color:#888">${typeLbl}</td>`;
     html += `<td class="num">${e.rangeCount.toLocaleString()}</td>`;
     html += `<td style="padding:2px 8px">${makeSubjectSparkline(e.annual, years)}</td>`;
@@ -2956,6 +2964,28 @@ function renderSubjectsTable() {
       if (subjectsTableSort.col === col) subjectsTableSort.asc = !subjectsTableSort.asc;
       else { subjectsTableSort.col = col; subjectsTableSort.asc = col === 'name' || col === 'type'; }
       renderSubjectsTable();
+    });
+  });
+
+  container.querySelectorAll('.subj-check').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const rawName = cb.dataset.name;
+      const type = cb.dataset.type;
+      if (cb.checked) {
+        const entry = (type === 'person' ? subjectsData.persons : subjectsData.organizations)
+          .find(e => e.name === rawName);
+        if (entry) selectedSubjects.set(rawName, { displayName: type === 'person' ? formatPersonName(rawName) : rawName, type, annual: entry.annual });
+      } else {
+        selectedSubjects.delete(rawName);
+      }
+      renderSubjectCompareChart();
+    });
+  });
+
+  container.querySelectorAll('.subj-name-link').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      openSubjectDetail(a.dataset.name, a.dataset.type);
     });
   });
 }
@@ -2982,6 +3012,7 @@ function initSubjectYearSlider() {
     document.getElementById('subjectYrStartLbl').textContent = s;
     document.getElementById('subjectYrEndLbl').textContent = e;
     renderSubjectsTable();
+    if (selectedSubjects.size > 0) renderSubjectCompareChart();
   }
   sInput.addEventListener('input', update);
   eInput.addEventListener('input', update);
@@ -3005,6 +3036,125 @@ function initSubjects() {
   }).catch(e => {
     console.error('Failed to load subjects:', e);
     container.innerHTML = '<p style="color:#c00;padding:16px">Failed to load subjects data. Try refreshing the page.</p>';
+  });
+}
+
+let selectedSubjects = new Map(); // rawName → {displayName, type, annual}
+let subjectCompareChartInst = null;
+
+function clearSubjectSelections() {
+  selectedSubjects.clear();
+  renderSubjectCompareChart();
+  renderSubjectsTable();
+}
+
+function renderSubjectCompareChart() {
+  const box = document.getElementById('subjectCompareBox');
+  if (!box) return;
+  if (selectedSubjects.size === 0) {
+    box.style.display = 'none';
+    if (subjectCompareChartInst) { subjectCompareChartInst.destroy(); subjectCompareChartInst = null; }
+    return;
+  }
+  box.style.display = 'block';
+  const start = parseInt(document.getElementById('subjectYrStart').value);
+  const end = parseInt(document.getElementById('subjectYrEnd').value);
+  const years = subjectsAllYears.filter(y => Number(y) >= start && Number(y) <= end);
+  if (subjectCompareChartInst) { subjectCompareChartInst.destroy(); subjectCompareChartInst = null; }
+  subjectCompareChartInst = new Chart(document.getElementById('chartSubjectCompare'), {
+    type: 'line',
+    data: {
+      labels: years,
+      datasets: Array.from(selectedSubjects.entries()).map(([, item], i) => ({
+        label: item.displayName,
+        data: years.map(y => item.annual[y] || 0),
+        borderColor: trendColors[i % trendColors.length],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 3,
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+    }
+  });
+}
+
+function openSubjectDetail(rawName, type) {
+  const displayName = type === 'person' ? formatPersonName(rawName) : rawName;
+  const entry = (type === 'person' ? subjectsData.persons : subjectsData.organizations)
+    .find(e => e.name === rawName);
+  if (!entry) return;
+
+  const allYearsForChart = subjectsAllYears;
+  const total = Object.values(entry.annual).reduce((s, v) => s + v, 0);
+
+  const panel = document.getElementById('subjectDetailPanel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  panel.innerHTML = `
+    <div class="author-timeline">
+      <button class="close-btn" onclick="document.getElementById('subjectDetailPanel').style.display='none';if(window._subjectDetailChart){window._subjectDetailChart.destroy();window._subjectDetailChart=null;}">Close</button>
+      <h3>${escapeHtml(displayName)}</h3>
+      <div class="timeline-meta">${total.toLocaleString()} articles · ${allYearsForChart[0]}–${allYearsForChart[allYearsForChart.length-1]}</div>
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
+        <canvas id="chartSubjectDetail" style="max-height:180px"></canvas>
+      </div>
+      <div id="subjectDetailReporters" style="margin-top:12px"></div>
+      <div id="subjectDetailArticles" style="margin-top:16px;max-height:360px;overflow-y:auto;font-size:13px"></div>
+    </div>
+  `;
+
+  if (window._subjectDetailChart) { window._subjectDetailChart.destroy(); window._subjectDetailChart = null; }
+  window._subjectDetailChart = new Chart(document.getElementById('chartSubjectDetail'), {
+    type: 'bar',
+    data: {
+      labels: allYearsForChart,
+      datasets: [{ label: 'Articles', data: allYearsForChart.map(y => entry.annual[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  if (!articlesReady) {
+    document.getElementById('subjectDetailArticles').innerHTML = IS_MOBILE
+      ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>'
+      : '<p style="color:#888;font-size:13px">Loading article data…</p>';
+    return;
+  }
+
+  const field = type === 'person' ? 'persons' : 'organizations';
+  const subjectArticles = articles.filter(a => (a[field] || []).includes(rawName));
+
+  // Top reporters
+  const reporterCounts = {};
+  subjectArticles.forEach(a => {
+    (a.authors || []).forEach(name => {
+      if (!INSTITUTIONAL_BYLINES.has(name)) reporterCounts[name] = (reporterCounts[name] || 0) + 1;
+    });
+  });
+  const topReporters = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  if (topReporters.length) {
+    const rhtml = topReporters.map(([name, count]) =>
+      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="subj-reporter-link" data-author="${escapeHtml(name)}" style="color:#326891;text-decoration:none">${escapeHtml(name)}</a> <span style="color:#aaa;font-size:11px">${count}</span></span>`
+    ).join('');
+    document.getElementById('subjectDetailReporters').innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
+      `<div style="font-size:13px;line-height:1.9">${rhtml}</div>`;
+    document.getElementById('subjectDetailReporters').querySelectorAll('.subj-reporter-link').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+    });
+  }
+
+  renderArticleList('subjectDetailArticles', subjectArticles, a => {
+    const byline = (a.authors || []).join(', ') || 'No byline';
+    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+      <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+      <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
+      <span style="color:#aaa;font-size:11px"> · ${byline}</span>
+    </div>`;
   });
 }
 
@@ -3201,7 +3351,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/10/26 1:17pm</span>
+  <span style="pointer-events:none">Last revised: 4/10/26 2:12pm</span>
 </div>
 </body>
 </html>
