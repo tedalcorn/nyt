@@ -227,8 +227,8 @@
   <button data-view="about" class="active">About</button>
   <button data-view="beats">Beats</button>
   <button data-view="tracker">Headlines</button>
-  <button data-view="sections">Sections</button>
   <button data-view="subjects">Subjects</button>
+  <button data-view="sections">Sections</button>
   <button data-view="authors">Reporters</button>
   <button data-view="states">U.S. States</button>
   <button data-view="world">World</button>
@@ -2799,7 +2799,6 @@ sectionsObserver.observe(document.getElementById('view-sections'), { attributes:
 // Trigger subjects render when tab shown (lazy init)
 const subjectsObserver = new MutationObserver(() => {
   if (document.getElementById('view-subjects').classList.contains('active') && !subjectsInitialized) {
-    subjectsInitialized = true;
     initSubjects();
   }
 });
@@ -2999,12 +2998,13 @@ function initSubjects() {
   container.innerHTML = '<p style="color:#888;padding:16px">Loading subjects data…</p>';
   fetch('data/subjects.json').then(r => r.json()).then(data => {
     subjectsData = data;
+    subjectsInitialized = true;
     initSubjectYearSlider();
     document.getElementById('subjectSearch').addEventListener('input', renderSubjectsTable);
     renderSubjectsTable();
   }).catch(e => {
     console.error('Failed to load subjects:', e);
-    container.innerHTML = '<p style="color:#c00;padding:16px">Failed to load subjects data. Run build_data.py first.</p>';
+    container.innerHTML = '<p style="color:#c00;padding:16px">Failed to load subjects data. Try refreshing the page.</p>';
   });
 }
 
@@ -3201,7 +3201,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/10/26 1:03pm</span>
+  <span style="pointer-events:none">Last revised: 4/10/26 1:17pm</span>
 </div>
 </body>
 </html>
