@@ -8,3 +8,14 @@ __pycache__/
 # Old static charts (replaced by interactive dashboard)
 chart*.png
 chart*.jpg
+
+# Shapefiles (large GIS files, not needed in repo)
+data/*.shp
+data/*.dbf
+data/*.prj
+data/*.shx
+
+# Misc
+.DS_Store
+nightly_update.log
+choropleth*.png
