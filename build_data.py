@@ -41,7 +41,8 @@ def extract_authors(byline):
     # Strip multimedia credit prefixes from any name component
     # (e.g. firstname="Photographs", making fullname "Photographs George Etheredge")
     CREDIT_PREFIX = re.compile(
-        r'^(Photographs?|Illustration|Illustrations|Drawing|Drawings|Map|Video|Graphic|Graphics|Photo)\s*',
+        r'^(Photographs?|Illustration|Illustrations|Drawing|Drawings|Map|Video|Graphic|Graphics|Photo'
+        r'|Interviews?|Review)\s*',
         re.IGNORECASE
     )
 
@@ -86,9 +87,10 @@ def extract_authors(byline):
     text = re.sub(r'^by\s+', '', original, flags=re.IGNORECASE)
     # Split on " and ", ", and ", ", "
     names = re.split(r',\s+and\s+|\s+and\s+|,\s+', text)
-    # Multimedia credit prefixes to strip (e.g. "Photographs Leonard Greco")
+    # Multimedia/format credit prefixes to strip (e.g. "Photographs Leonard Greco", "Interview Jim Rutenberg")
     CREDIT_PREFIX = re.compile(
-        r'^(Photographs?|Illustration|Illustrations|Drawing|Drawings|Map|Video|Graphic|Graphics|Photo)\s+',
+        r'^(Photographs?|Illustration|Illustrations|Drawing|Drawings|Map|Video|Graphic|Graphics|Photo'
+        r'|Interviews?|Review)\s+',
         re.IGNORECASE
     )
     authors = []
