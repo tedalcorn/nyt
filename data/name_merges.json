@@ -50,16 +50,6 @@
     ]
   },
   {
-    "canonical": "Abby Goodnough With",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "Abby Ellin With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Abigail Lepeilbet",
     "canonical_count": 2,
     "merged": [
@@ -164,16 +154,6 @@
     ]
   },
   {
-    "canonical": "Adam Nagourney With",
-    "canonical_count": 12,
-    "merged": [
-      {
-        "name": "Adam Clymer With",
-        "count": 8
-      }
-    ]
-  },
-  {
     "canonical": "Adrian Nicole Leblanc",
     "canonical_count": 8,
     "merged": [
@@ -274,18 +254,8 @@
     ]
   },
   {
-    "canonical": "Alan Krauss Compiled",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Alan Cowell Compiled",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Alan Cowell",
-    "canonical_count": 3303,
+    "canonical_count": 3314,
     "merged": [
       {
         "name": "Alan S. Cowell",
@@ -310,20 +280,6 @@
       {
         "name": "Alan N. Stillman",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Alan Cowell With",
-    "canonical_count": 9,
-    "merged": [
-      {
-        "name": "Alan Truscott With",
-        "count": 6
-      },
-      {
-        "name": "Alan Feuer With",
-        "count": 3
       }
     ]
   },
@@ -403,16 +359,6 @@
     "merged": [
       {
         "name": "Alex T. Williams",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Alex Berenson With",
-    "canonical_count": 10,
-    "merged": [
-      {
-        "name": "Alex Kuczynski With",
         "count": 1
       }
     ]
@@ -556,16 +502,6 @@
     ]
   },
   {
-    "canonical": "Alison Mitchell With",
-    "canonical_count": 11,
-    "merged": [
-      {
-        "name": "Alison Langley With",
-        "count": 4
-      }
-    ]
-  },
-  {
     "canonical": "Alissa Quart",
     "canonical_count": 28,
     "merged": [
@@ -662,16 +598,6 @@
       {
         "name": "Amy L. Webb",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Amy Waldman With",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Amy Harmon With",
-        "count": 2
       }
     ]
   },
@@ -850,16 +776,6 @@
     ]
   },
   {
-    "canonical": "Andrew Pollack With",
-    "canonical_count": 9,
-    "merged": [
-      {
-        "name": "Andrew Jacobs With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Andrew Zimbalist",
     "canonical_count": 11,
     "merged": [
@@ -1031,7 +947,7 @@
   },
   {
     "canonical": "Anthony Depalma",
-    "canonical_count": 485,
+    "canonical_count": 490,
     "merged": [
       {
         "name": "Anthony DePalma",
@@ -1288,16 +1204,6 @@
     ]
   },
   {
-    "canonical": "Barbara Crossette With",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "Barbara Whitaker With",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Barnaby J. Feder",
     "canonical_count": 955,
     "merged": [
@@ -1314,16 +1220,6 @@
       {
         "name": "Barry L. Schwartz",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Barry Bearak With",
-    "canonical_count": 9,
-    "merged": [
-      {
-        "name": "Barry Meier With",
-        "count": 3
       }
     ]
   },
@@ -1468,16 +1364,6 @@
     ]
   },
   {
-    "canonical": "Bernard Weinraub With",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Bernard Simon With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Bernard J. Wolfson",
     "canonical_count": 1,
     "merged": [
@@ -1524,20 +1410,6 @@
       {
         "name": "Bill McCLINTICK",
         "count": 5
-      }
-    ]
-  },
-  {
-    "canonical": "Bill Carter With",
-    "canonical_count": 9,
-    "merged": [
-      {
-        "name": "Bill Pennington With",
-        "count": 2
-      },
-      {
-        "name": "Bill Finley With",
-        "count": 1
       }
     ]
   },
@@ -1671,7 +1543,7 @@
   },
   {
     "canonical": "Brian Knowlton",
-    "canonical_count": 969,
+    "canonical_count": 970,
     "merged": [
       {
         "name": "Brian K. Knowlton",
@@ -1776,16 +1648,6 @@
       {
         "name": "Brian Rosenthal",
         "count": 3
-      }
-    ]
-  },
-  {
-    "canonical": "Brian Lavery With",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Brian Knowlton With",
-        "count": 1
       }
     ]
   },
@@ -1901,7 +1763,7 @@
   },
   {
     "canonical": "Carl Hulse",
-    "canonical_count": 3807,
+    "canonical_count": 3809,
     "merged": [
       {
         "name": "Carl E. Hulse",
@@ -2215,7 +2077,7 @@
   },
   {
     "canonical": "Charlie Leduff",
-    "canonical_count": 459,
+    "canonical_count": 465,
     "merged": [
       {
         "name": "Charlie LeDuff",
@@ -2404,24 +2266,6 @@
       {
         "name": "Christopher K. Walker",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Christopher Marquis With",
-    "canonical_count": 8,
-    "merged": [
-      {
-        "name": "Christopher Drew With",
-        "count": 7
-      },
-      {
-        "name": "Christopher Pala With",
-        "count": 2
-      },
-      {
-        "name": "Christopher Hawthorne With",
-        "count": 1
       }
     ]
   },
@@ -3134,20 +2978,6 @@
     ]
   },
   {
-    "canonical": "David Leonhardt Compiled",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "David Barboza Compiled",
-        "count": 1
-      },
-      {
-        "name": "David Carr Compiled",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "David Davis",
     "canonical_count": 5,
     "merged": [
@@ -3377,7 +3207,7 @@
   },
   {
     "canonical": "David Johnston",
-    "canonical_count": 908,
+    "canonical_count": 920,
     "merged": [
       {
         "name": "David Cay Johnston",
@@ -3637,7 +3467,7 @@
   },
   {
     "canonical": "David Rohde",
-    "canonical_count": 751,
+    "canonical_count": 772,
     "merged": [
       {
         "name": "David W. Rohde",
@@ -3860,48 +3690,6 @@
     ]
   },
   {
-    "canonical": "David Rohde With",
-    "canonical_count": 21,
-    "merged": [
-      {
-        "name": "David Johnston With",
-        "count": 12
-      },
-      {
-        "name": "David Stout With",
-        "count": 11
-      },
-      {
-        "name": "David Leonhardt With",
-        "count": 9
-      },
-      {
-        "name": "David Firestone With",
-        "count": 8
-      },
-      {
-        "name": "David Barboza With",
-        "count": 7
-      },
-      {
-        "name": "David Carr With",
-        "count": 7
-      },
-      {
-        "name": "David Barstow With",
-        "count": 6
-      },
-      {
-        "name": "David Kocieniewski With",
-        "count": 3
-      },
-      {
-        "name": "David Gonzalez With",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Davin O'dwyer",
     "canonical_count": 1,
     "merged": [
@@ -3997,7 +3785,7 @@
   },
   {
     "canonical": "Desmond Butler",
-    "canonical_count": 103,
+    "canonical_count": 105,
     "merged": [
       {
         "name": "Desmond Oates Butler",
@@ -4292,16 +4080,6 @@
     ]
   },
   {
-    "canonical": "Douglas Jehl With",
-    "canonical_count": 11,
-    "merged": [
-      {
-        "name": "Douglas Frantz With",
-        "count": 7
-      }
-    ]
-  },
-  {
     "canonical": "Drake Bennett",
     "canonical_count": 5,
     "merged": [
@@ -4466,16 +4244,6 @@
     ]
   },
   {
-    "canonical": "Edward Wong With",
-    "canonical_count": 9,
-    "merged": [
-      {
-        "name": "Edward Wyatt With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Edwin Meese",
     "canonical_count": 3,
     "merged": [
@@ -4516,16 +4284,6 @@
       {
         "name": "Elena Santos",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Elisabeth Bumiller With",
-    "canonical_count": 16,
-    "merged": [
-      {
-        "name": "Elisabeth Rosenthal With",
-        "count": 6
       }
     ]
   },
@@ -4650,16 +4408,6 @@
       {
         "name": "Elizabeth R. Smith",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Elizabeth Olson With",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Elizabeth Becker With",
-        "count": 4
       }
     ]
   },
@@ -4925,7 +4673,7 @@
   },
   {
     "canonical": "Eric Lipton",
-    "canonical_count": 1769,
+    "canonical_count": 1772,
     "merged": [
       {
         "name": "Eric S. Lipton",
@@ -5050,20 +4798,6 @@
       {
         "name": "Eric G. Wilson",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Eric Schmitt With",
-    "canonical_count": 29,
-    "merged": [
-      {
-        "name": "Eric Lichtblau With",
-        "count": 8
-      },
-      {
-        "name": "Eric Lipton With",
-        "count": 3
       }
     ]
   },
@@ -5331,16 +5065,6 @@
     "merged": [
       {
         "name": "Frank Runyeon",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Frank Bruni With",
-    "canonical_count": 23,
-    "merged": [
-      {
-        "name": "Frank Litsky With",
         "count": 1
       }
     ]
@@ -5716,16 +5440,6 @@
       {
         "name": "Greg Bruno",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Greg Myre With",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Greg Winter With",
-        "count": 3
       }
     ]
   },
@@ -6266,20 +5980,6 @@
     ]
   },
   {
-    "canonical": "Jack Curry With",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Jack Lynch With",
-        "count": 1
-      },
-      {
-        "name": "Jack Welch With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Jacob H. Fries",
     "canonical_count": 228,
     "merged": [
@@ -6361,7 +6061,7 @@
   },
   {
     "canonical": "James Dao",
-    "canonical_count": 1135,
+    "canonical_count": 1153,
     "merged": [
       {
         "name": "James C. Dao",
@@ -6588,36 +6288,6 @@
     ]
   },
   {
-    "canonical": "James Barron With",
-    "canonical_count": 200,
-    "merged": [
-      {
-        "name": "James Dao With",
-        "count": 18
-      },
-      {
-        "name": "James Bennet With",
-        "count": 18
-      },
-      {
-        "name": "James Risen With",
-        "count": 10
-      },
-      {
-        "name": "James Sterngold With",
-        "count": 4
-      },
-      {
-        "name": "James Glanz With",
-        "count": 4
-      },
-      {
-        "name": "James Brooke With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "James E. Young",
     "canonical_count": 6,
     "merged": [
@@ -6747,16 +6417,6 @@
     "merged": [
       {
         "name": "Jane Wooster Scott",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Jane Perlez With",
-    "canonical_count": 7,
-    "merged": [
-      {
-        "name": "Jane Fritsch With",
         "count": 1
       }
     ]
@@ -7056,16 +6716,6 @@
     ]
   },
   {
-    "canonical": "Jennifer Bayot Compiled",
-    "canonical_count": 17,
-    "merged": [
-      {
-        "name": "Jennifer Dunning Compiled",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Jennifer Davis",
     "canonical_count": 1,
     "merged": [
@@ -7141,7 +6791,7 @@
   },
   {
     "canonical": "Jennifer Steinhauer",
-    "canonical_count": 2686,
+    "canonical_count": 2691,
     "merged": [
       {
         "name": "Jennifer E. Steinhauer",
@@ -7386,20 +7036,6 @@
     ]
   },
   {
-    "canonical": "Jim Rutenberg With",
-    "canonical_count": 10,
-    "merged": [
-      {
-        "name": "Jim Yardley With",
-        "count": 4
-      },
-      {
-        "name": "Jim Dwyer With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Jo Craven McGinty",
     "canonical_count": 88,
     "merged": [
@@ -7524,16 +7160,6 @@
     ]
   },
   {
-    "canonical": "Joel Brinkley With",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Joel Greenberg With",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "John Adams",
     "canonical_count": 10,
     "merged": [
@@ -7643,16 +7269,6 @@
     "merged": [
       {
         "name": "John C. Coates",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "John Tagliabue Compiled",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "John Schwartz Compiled",
         "count": 1
       }
     ]
@@ -7937,7 +7553,7 @@
     "merged": [
       {
         "name": "John Mccain",
-        "count": 2
+        "count": 3
       },
       {
         "name": "John McCAIN",
@@ -8075,7 +7691,7 @@
   },
   {
     "canonical": "John Schwartz",
-    "canonical_count": 2096,
+    "canonical_count": 2110,
     "merged": [
       {
         "name": "John Burnham Schwartz",
@@ -8085,7 +7701,7 @@
   },
   {
     "canonical": "John Sullivan",
-    "canonical_count": 424,
+    "canonical_count": 426,
     "merged": [
       {
         "name": "John Jeremiah Sullivan",
@@ -8109,7 +7725,7 @@
   },
   {
     "canonical": "John Tierney",
-    "canonical_count": 1292,
+    "canonical_count": 1293,
     "merged": [
       {
         "name": "John F. Tierney",
@@ -8144,48 +7760,6 @@
       {
         "name": "John Wilson",
         "count": 6
-      }
-    ]
-  },
-  {
-    "canonical": "John Schwartz With",
-    "canonical_count": 13,
-    "merged": [
-      {
-        "name": "John Kifner With",
-        "count": 10
-      },
-      {
-        "name": "John Markoff With",
-        "count": 6
-      },
-      {
-        "name": "John Tagliabue With",
-        "count": 5
-      },
-      {
-        "name": "John Sullivan With",
-        "count": 2
-      },
-      {
-        "name": "John Mcenroe With",
-        "count": 1
-      },
-      {
-        "name": "John Leland With",
-        "count": 1
-      },
-      {
-        "name": "John Mccain With",
-        "count": 1
-      },
-      {
-        "name": "John Temple With",
-        "count": 1
-      },
-      {
-        "name": "John Tierney With",
-        "count": 1
       }
     ]
   },
@@ -8554,16 +8128,6 @@
     ]
   },
   {
-    "canonical": "Joseph Kahn With",
-    "canonical_count": 14,
-    "merged": [
-      {
-        "name": "Joseph Berger With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Josh Katz",
     "canonical_count": 505,
     "merged": [
@@ -8619,16 +8183,6 @@
     "merged": [
       {
         "name": "Joyce Hor-Chung Lau",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Joyce Wadler With",
-    "canonical_count": 14,
-    "merged": [
-      {
-        "name": "Joyce Walder With",
         "count": 1
       }
     ]
@@ -8734,16 +8288,6 @@
     ]
   },
   {
-    "canonical": "Julia Preston With",
-    "canonical_count": 11,
-    "merged": [
-      {
-        "name": "Julia Child With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Julian E. Bailes",
     "canonical_count": 1,
     "merged": [
@@ -8779,16 +8323,6 @@
     "merged": [
       {
         "name": "JULIE BOSMAN",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Julie Dunn Compiled",
-    "canonical_count": 29,
-    "merged": [
-      {
-        "name": "Julie Flaherty Compiled",
         "count": 1
       }
     ]
@@ -9479,7 +9013,7 @@
   },
   {
     "canonical": "Kirk Johnson",
-    "canonical_count": 1264,
+    "canonical_count": 1266,
     "merged": [
       {
         "name": "Kirk W. Johnson",
@@ -9652,16 +9186,6 @@
     ]
   },
   {
-    "canonical": "Laura Mansnerus With",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Laura Vikmanis With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Lauren Field",
     "canonical_count": 1,
     "merged": [
@@ -9787,20 +9311,6 @@
     "merged": [
       {
         "name": "LEONARD MLODINOW",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Leslie Kaufman With",
-    "canonical_count": 10,
-    "merged": [
-      {
-        "name": "Leslie Wayne With",
-        "count": 2
-      },
-      {
-        "name": "Leslie Eaton With",
         "count": 1
       }
     ]
@@ -10067,7 +9577,7 @@
   },
   {
     "canonical": "Lynnley Browning",
-    "canonical_count": 544,
+    "canonical_count": 546,
     "merged": [
       {
         "name": "Lynnley F. Browning",
@@ -10235,7 +9745,7 @@
   },
   {
     "canonical": "Marc Santora",
-    "canonical_count": 2355,
+    "canonical_count": 2360,
     "merged": [
       {
         "name": "Marc A. Santora",
@@ -10250,16 +9760,6 @@
       {
         "name": "Marc K. Siegel",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Marc Lacey With",
-    "canonical_count": 7,
-    "merged": [
-      {
-        "name": "Marc Santora With",
-        "count": 5
       }
     ]
   },
@@ -10512,20 +10012,6 @@
     ]
   },
   {
-    "canonical": "Mark Landler With",
-    "canonical_count": 16,
-    "merged": [
-      {
-        "name": "Mark Bittman With",
-        "count": 1
-      },
-      {
-        "name": "Mark Zwonitzer With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Martha Baker",
     "canonical_count": 11,
     "merged": [
@@ -10666,16 +10152,6 @@
     ]
   },
   {
-    "canonical": "Mary Duenwald With",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Mary Reinholz With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Maryn Mckenna",
     "canonical_count": 2,
     "merged": [
@@ -10803,16 +10279,6 @@
       },
       {
         "name": "Matthew W. Wald",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Matthew Purdy With",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Matthew Symonds With",
         "count": 1
       }
     ]
@@ -11195,7 +10661,7 @@
   },
   {
     "canonical": "Michael Janofsky",
-    "canonical_count": 840,
+    "canonical_count": 847,
     "merged": [
       {
         "name": "Michael K. Janofsky",
@@ -11598,40 +11064,6 @@
     ]
   },
   {
-    "canonical": "Michael Janofsky With",
-    "canonical_count": 7,
-    "merged": [
-      {
-        "name": "Michael Cooper With",
-        "count": 4
-      },
-      {
-        "name": "Michael Moss With",
-        "count": 3
-      },
-      {
-        "name": "Michael Brick With",
-        "count": 2
-      },
-      {
-        "name": "Michael Wilson With",
-        "count": 2
-      },
-      {
-        "name": "Michael Wines With",
-        "count": 1
-      },
-      {
-        "name": "Michael Kimmelman With",
-        "count": 1
-      },
-      {
-        "name": "Michael Oreskes With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Michael Wright",
     "canonical_count": 1,
     "merged": [
@@ -11718,16 +11150,6 @@
       {
         "name": "mike Powell",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Mike Wise With",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Mike Freeman With",
-        "count": 2
       }
     ]
   },
@@ -12020,11 +11442,11 @@
     "canonical_count": 1914,
     "merged": [
       {
-        "name": "Neil MacFARQUHAR",
-        "count": 8
+        "name": "Neil Macfarquhar",
+        "count": 21
       },
       {
-        "name": "Neil Macfarquhar",
+        "name": "Neil MacFARQUHAR",
         "count": 8
       }
     ]
@@ -12527,7 +11949,7 @@
       },
       {
         "name": "Patrick Mcgeehan",
-        "count": 1
+        "count": 22
       }
     ]
   },
@@ -12552,11 +11974,11 @@
     ]
   },
   {
-    "canonical": "Patrick Mcgeehan With",
-    "canonical_count": 4,
+    "canonical": "Patrick E. Tyler",
+    "canonical_count": 653,
     "merged": [
       {
-        "name": "Patrick Tyler With",
+        "name": "Patrick Tyler",
         "count": 1
       }
     ]
@@ -12722,22 +12144,8 @@
     ]
   },
   {
-    "canonical": "Paul Meller With",
-    "canonical_count": 8,
-    "merged": [
-      {
-        "name": "Paul Zielbauer With",
-        "count": 3
-      },
-      {
-        "name": "Paul Lewis With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Paul Zielbauer",
-    "canonical_count": 374,
+    "canonical_count": 377,
     "merged": [
       {
         "name": "Paul Von Zielbauer",
@@ -12911,7 +12319,7 @@
   },
   {
     "canonical": "Peter Marks",
-    "canonical_count": 237,
+    "canonical_count": 238,
     "merged": [
       {
         "name": "Peter David Marks",
@@ -13288,16 +12696,6 @@
     ]
   },
   {
-    "canonical": "Raymond Bonner With",
-    "canonical_count": 11,
-    "merged": [
-      {
-        "name": "Raymond Hernandez With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Rebecca Richman Cohen",
     "canonical_count": 2,
     "merged": [
@@ -13547,7 +12945,7 @@
   },
   {
     "canonical": "Richard Bernstein",
-    "canonical_count": 700,
+    "canonical_count": 703,
     "merged": [
       {
         "name": "Richard J. Bernstein",
@@ -13754,6 +13152,16 @@
     ]
   },
   {
+    "canonical": "Richard Perez-Pena",
+    "canonical_count": 233,
+    "merged": [
+      {
+        "name": "Richard Perez-pena",
+        "count": 3
+      }
+    ]
+  },
+  {
     "canonical": "Richard Powers",
     "canonical_count": 15,
     "merged": [
@@ -13860,34 +13268,6 @@
       {
         "name": "Richard Williams",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Richard Flaste With",
-    "canonical_count": 6,
-    "merged": [
-      {
-        "name": "Richard Sandomir With",
-        "count": 4
-      },
-      {
-        "name": "Richard Bernstein With",
-        "count": 3
-      },
-      {
-        "name": "Richard Perez-pena With",
-        "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Rick Bragg With",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "Rick Lyman With",
-        "count": 2
       }
     ]
   },
@@ -14382,24 +13762,6 @@
     ]
   },
   {
-    "canonical": "Robert Pear With",
-    "canonical_count": 7,
-    "merged": [
-      {
-        "name": "Robert Hanley With",
-        "count": 3
-      },
-      {
-        "name": "Robert Nickelsberg With",
-        "count": 2
-      },
-      {
-        "name": "Robert Dewitt With",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Robert F. Worth",
     "canonical_count": 1465,
     "merged": [
@@ -14681,7 +14043,7 @@
     "merged": [
       {
         "name": "Ross Milloy",
-        "count": 4
+        "count": 5
       }
     ]
   },
@@ -15190,32 +14552,12 @@
     ]
   },
   {
-    "canonical": "Seth Kugel Compiled",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Seth Schiesel Compiled",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Seth W. Feaster",
     "canonical_count": 6,
     "merged": [
       {
         "name": "Seth Feaster",
         "count": 3
-      }
-    ]
-  },
-  {
-    "canonical": "Seth Schiesel With",
-    "canonical_count": 15,
-    "merged": [
-      {
-        "name": "Seth Mydans With",
-        "count": 2
       }
     ]
   },
@@ -15536,16 +14878,6 @@
     ]
   },
   {
-    "canonical": "Steve Barnes Compiled",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Steve Lohr Compiled",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Steve Levine",
     "canonical_count": 6,
     "merged": [
@@ -15616,16 +14948,6 @@
     ]
   },
   {
-    "canonical": "Steven Greenhouse With",
-    "canonical_count": 4,
-    "merged": [
-      {
-        "name": "Steven Erlanger With",
-        "count": 3
-      }
-    ]
-  },
-  {
     "canonical": "Stuart F. Brown",
     "canonical_count": 27,
     "merged": [
@@ -15641,7 +14963,7 @@
   },
   {
     "canonical": "Stuart Elliott",
-    "canonical_count": 5483,
+    "canonical_count": 5491,
     "merged": [
       {
         "name": "Stuart J. Elliott",
@@ -15770,16 +15092,6 @@
     ]
   },
   {
-    "canonical": "Susan Sachs With",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "Susan Saulny With",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Susanna G. Kim",
     "canonical_count": 16,
     "merged": [
@@ -15816,16 +15128,6 @@
       {
         "name": "Suzanne MacNEILLE",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Suzanne Kapner With",
-    "canonical_count": 17,
-    "merged": [
-      {
-        "name": "Suzanne Daley With",
-        "count": 1
       }
     ]
   },
@@ -16716,16 +16018,6 @@
     ]
   },
   {
-    "canonical": "Tim Weiner With",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Tim Golden With",
-        "count": 4
-      }
-    ]
-  },
-  {
     "canonical": "Timothy F. Geithner",
     "canonical_count": 4,
     "merged": [
@@ -16877,7 +16169,7 @@
   },
   {
     "canonical": "Tyler Hicks",
-    "canonical_count": 94,
+    "canonical_count": 95,
     "merged": [
       {
         "name": "Tyler E. Hicks",

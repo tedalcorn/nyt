@@ -45,6 +45,11 @@ def extract_authors(byline):
         re.IGNORECASE
     )
 
+    # Trailing collaboration words that sometimes bleed into byline name fields
+    TRAILING_WORDS = re.compile(
+        r'\s+(With|Compiled|Reporting|Contributing)$', re.IGNORECASE
+    )
+
     persons = byline.get("person", [])
     if persons:
         authors = []
@@ -64,6 +69,7 @@ def extract_authors(byline):
                 last = last.title()
             parts = [first, middle, last]
             fullname = " ".join(x for x in parts if x)
+            fullname = TRAILING_WORDS.sub('', fullname).strip()
             authors.append({
                 "firstname": first,
                 "middlename": middle,
@@ -106,6 +112,7 @@ def extract_authors(byline):
         m = re.match(r'^and\s+([A-Z].*)', name)
         if m:
             name = ('And' + m.group(1)).title()
+        name = TRAILING_WORDS.sub('', name).strip()
         parts = name.split()
         if len(parts) >= 2:
             first = parts[0]
@@ -1348,6 +1355,12 @@ def build_author_stats(articles):
             "likely_multimedia": likely_multimedia,
             "beats": [],  # filled in later by build_beats()
         })
+
+    # Filter coauthors to only include authors exported to authors.json (>= 2 articles)
+    # so that collaborator links in the UI always resolve to a valid profile
+    valid_coauthor_names = {name for name, d in author_data.items() if d["article_count"] >= 2}
+    for a in authors:
+        a["coauthors"] = {k: v for k, v in a["coauthors"].items() if k in valid_coauthor_names}
 
     authors.sort(key=lambda a: a["article_count"], reverse=True)
     print(f"  {len(authors):,} unique authors")

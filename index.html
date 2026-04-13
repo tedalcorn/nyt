@@ -442,7 +442,18 @@
     <div id="stateDetailPanel" style="display:none"></div>
     <div class="chart-box">
       <h3>Coverage by State</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata in the "U.S." section and "New York" section, where New York and New Jersey coverage primarily resides.</p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata in the "U.S." section and, optionally, "New York" section to encompass local coverage.</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <span id="stateYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
+        <div class="yr-slider-wrap" id="stateYrSliderWrap">
+          <div class="yr-slider-track"></div>
+          <div class="yr-slider-fill" id="stateYrSliderFill"></div>
+          <input type="range" id="stateYrStart">
+          <input type="range" id="stateYrEnd">
+        </div>
+        <span id="stateYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
+      </div>
       <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
         <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY, NJ &amp; CT
       </label>
@@ -1689,8 +1700,11 @@ function showAuthorTimeline(name, opts = {}) {
     const pct = Math.round(authorInfo.shared_byline_count / authorInfo.article_count * 100);
     sharedHtml = `<strong>Shared bylines:</strong> ${pct}%`;
     if (authorInfo.coauthors && Object.keys(authorInfo.coauthors).length) {
+      const authorNames = new Set(authors.map(a => a.name));
       const topCo = Object.entries(authorInfo.coauthors)
-        .sort((a, b) => b[1] - a[1]).slice(0, 3)
+        .sort((a, b) => b[1] - a[1])
+        .filter(([n]) => authorNames.has(n))
+        .slice(0, 3)
         .map(([n]) => `<span style="cursor:pointer;color:#326891;text-decoration:underline" onclick="openAuthor(${JSON.stringify(n)})">${escapeHtml(n)}</span>`);
       sharedHtml += `&ensp;·&ensp;<strong>Frequent collaborators:</strong> ${topCo.join(', ')}`;
     }
@@ -2197,6 +2211,7 @@ const POPULATION_M = {
 };
 
 let worldYears = [];
+let stateYears = [];
 
 function initWorld() {
   if (!dashboard.world_coverage) return;
@@ -2482,15 +2497,15 @@ function initStates() {
   if (!dashboard.us_state_coverage) return;
   const sc = dashboard.us_state_coverage;
   const currentYear = String(new Date().getFullYear());
-  const years = sc.years.filter(y => y !== currentYear);
+  const allYears = sc.years.filter(y => y !== currentYear);
   const includeNY = document.getElementById('includeNYSection')?.checked;
   const combined = getStateCounts(sc, includeNY);
 
   // States list: always include NY and NJ (they're meaningful when NY section included)
   const states = Object.keys(combined).filter(s => Object.values(combined[s]).some(n => n > 0));
   states.sort((a, b) => {
-    const ta = years.reduce((s, y) => s + (combined[a]?.[y] || 0), 0);
-    const tb = years.reduce((s, y) => s + (combined[b]?.[y] || 0), 0);
+    const ta = allYears.reduce((s, y) => s + (combined[a]?.[y] || 0), 0);
+    const tb = allYears.reduce((s, y) => s + (combined[b]?.[y] || 0), 0);
     return tb - ta;
   });
 
@@ -2505,10 +2520,35 @@ function initStates() {
     if (prevSelected.size ? prevSelected.has(s) : defaultStates.has(s)) opt.selected = true;
     select.appendChild(opt);
   });
-  select.onchange = () => renderStateTrend(years, combined);
-  renderStateTrend(years, combined);
+  select.onchange = () => renderStateTrend(stateYears, combined);
+  renderStateTrend(allYears, combined);
 
-  renderStatesTable(states, years, combined);
+  initStateYearSlider(allYears, states, combined);
+}
+
+function initStateYearSlider(allYears, states, combined) {
+  const minY = Number(allYears[0]), maxY = Number(allYears[allYears.length - 1]);
+  const sInput = document.getElementById('stateYrStart');
+  const eInput = document.getElementById('stateYrEnd');
+  sInput.min = eInput.min = minY;
+  sInput.max = eInput.max = maxY;
+  sInput.value = minY;
+  eInput.value = maxY;
+
+  function update() {
+    let s = parseInt(sInput.value), e = parseInt(eInput.value);
+    if (s > e) { s = e; sInput.value = s; }
+    const range = maxY - minY;
+    document.getElementById('stateYrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
+    document.getElementById('stateYrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
+    document.getElementById('stateYrStartLbl').textContent = s;
+    document.getElementById('stateYrEndLbl').textContent = e;
+    stateYears = allYears.filter(y => Number(y) >= s && Number(y) <= e);
+    renderStatesTable(states, stateYears, combined);
+  }
+  sInput.addEventListener('input', update);
+  eInput.addEventListener('input', update);
+  update();
 }
 
 let stateTableSort = { col: 'count', asc: false };
@@ -2537,7 +2577,7 @@ function renderStatesTable(states, years, combined) {
   const ind = col => stateTableSort.col === col ? (stateTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
     { key: 'name', label: 'State' },
-    { key: 'count', label: 'Articles (2000–2026)', cls: 'num' },
+    { key: 'count', label: `Articles (${years[0]}–${years[years.length-1]})`, cls: 'num' },
     { key: '_sparkline', label: 'Trend' },
     { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num percap-hdr' },
   ];
@@ -3357,7 +3397,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/10/26 2:34pm</span>
+  <span style="pointer-events:none">Last revised: 4/13/26 2:11pm</span>
 </div>
 </body>
 </html>
