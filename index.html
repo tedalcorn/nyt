@@ -415,8 +415,14 @@
       <button class="close-btn" onclick="toggleWorldTrend()" style="float:right;margin-top:-4px">Close</button>
       <h3>Compare Country Coverage</h3>
       <div style="margin-bottom:8px">
+        <input type="text" id="worldLocationSearch" placeholder="Type to filter countries…" oninput="filterWorldLocationSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
         <select id="worldLocationSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple countries.</div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
+          <input type="checkbox" id="worldPerCapita" onchange="renderLocationTrend()"> Show per million residents/year
+        </label>
       </div>
       <div id="worldTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartLocationTrend"></canvas></div>
     </div>
@@ -466,8 +472,14 @@
     <div class="chart-box" data-dl-canvas-only="true">
       <h3>U.S. State Coverage Over Time</h3>
       <div style="margin-bottom:8px">
+        <input type="text" id="stateSearch" placeholder="Type to filter states…" oninput="filterStateSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
         <select id="stateSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
+          <input type="checkbox" id="statePerCapita" onchange="renderStateTrend(stateYears)"> Show per million residents/year
+        </label>
       </div>
       <div id="stateTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
     </div>
@@ -793,51 +805,9 @@ function initOverview() {
   const monthly = dashboard.articles_per_month.filter(m => !m.month.startsWith(cutoffYear));
   const monthLabels = monthly.map(m => m.month);
 
-  // Annotation plugin: draws vertical dashed lines with labels
-  const monthlyAnnotationPlugin = {
-    id: 'monthlyAnnotations',
-    afterDraw(chart) {
-      const ctx = chart.ctx;
-      const xAxis = chart.scales.x;
-      const yAxis = chart.scales.y;
-      const annotations = [
-        { month: '2006-05', label: 'URL duplication begins\n(mid-2006)', align: 'right' },
-        { month: '2009-09', label: 'Blog posts peak\n(55% of total)', align: 'right', labelOffset: 6 },
-        { month: '2017-06', label: 'Blog wind-down\nbegins', align: 'right' },
-      ];
-      ctx.save();
-      ctx.setLineDash([4, 3]);
-      ctx.strokeStyle = 'rgba(80,80,80,0.55)';
-      ctx.lineWidth = 1.2;
-      ctx.font = '10px sans-serif';
-      ctx.fillStyle = '#444';
-      annotations.forEach(ann => {
-        const idx = monthLabels.indexOf(ann.month);
-        if (idx < 0) return;
-        const x = xAxis.getPixelForValue(idx);
-        ctx.beginPath();
-        ctx.moveTo(x, yAxis.top);
-        ctx.lineTo(x, yAxis.bottom);
-        ctx.stroke();
-        const lines = ann.label.split('\n');
-        const lineH = 13;
-        const padding = 5;
-        const textW = Math.max(...lines.map(l => ctx.measureText(l).width));
-        const offset = ann.labelOffset || 0;
-        const textX = ann.align === 'right' ? x - padding - textW + offset : x + padding + offset;
-        const textY = yAxis.top + 8;
-        lines.forEach((line, i) => {
-          ctx.fillText(line, textX, textY + i * lineH);
-        });
-      });
-      ctx.restore();
-    }
-  };
-
   destroyChart('chartMonthly');
   chartInstances['chartMonthly'] = new Chart(document.getElementById('chartMonthly'), {
     type: 'bar',
-    plugins: [monthlyAnnotationPlugin],
     data: {
       labels: monthLabels,
       datasets: [{
@@ -2138,7 +2108,13 @@ function initTrackerYears() {
 }
 
 function trackTerms() {
-  if (!articlesReady) return;
+  if (!articlesReady) {
+    if (IS_MOBILE) {
+      document.getElementById('chartTracker').parentElement.innerHTML =
+        '<p style="color:#888;font-size:13px;padding:20px 0">The headline tracker requires the full article dataset, which is not loaded on mobile devices due to memory constraints. Use a desktop browser to access this feature.</p>';
+    }
+    return;
+  }
   const terms = [
     document.getElementById('term1').value.trim(),
     document.getElementById('term2').value.trim(),
@@ -2414,30 +2390,46 @@ function toggleWorldTrend() {
   if (!visible) { renderLocationTrend(); addDownloadBtns(); }
 }
 
+function filterWorldLocationSelect() {
+  const q = (document.getElementById('worldLocationSearch').value || '').toLowerCase();
+  const select = document.getElementById('worldLocationSelect');
+  Array.from(select.options).forEach(opt => {
+    opt.hidden = q && !opt.value.toLowerCase().includes(q);
+  });
+}
+
 function renderLocationTrend() {
   const wc = dashboard.world_coverage;
   const years = wc.years;
   const selected = Array.from(document.getElementById('worldLocationSelect').selectedOptions).map(o => o.value);
+  const perCapita = document.getElementById('worldPerCapita')?.checked;
 
   destroyChart('chartLocationTrend');
   chartInstances['chartLocationTrend'] = new Chart(document.getElementById('chartLocationTrend'), {
     type: 'line',
     data: {
       labels: years,
-      datasets: selected.map((loc, i) => ({
-        label: loc,
-        data: years.map(y => (wc.location_trends[loc] || {})[y] || 0),
-        borderColor: trendColors[i % trendColors.length],
-        backgroundColor: 'transparent',
-        tension: 0.3,
-        pointRadius: 3,
-      }))
+      datasets: selected.map((loc, i) => {
+        const pop = POPULATION_M[loc];
+        const data = years.map(y => {
+          const n = (wc.location_trends[loc] || {})[y] || 0;
+          return (perCapita && pop) ? Math.round(n / pop * 100) / 100 : n;
+        });
+        return {
+          label: loc,
+          data,
+          borderColor: trendColors[i % trendColors.length],
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 3,
+        };
+      })
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
+        y: { beginAtZero: true, title: { display: true, text: perCapita ? 'Articles per million residents/year' : 'Articles per year' } }
       },
       plugins: { legend: { position: 'bottom' } }
     }
@@ -2685,6 +2677,14 @@ function renderStatesTable(states, years, combined) {
   });
 }
 
+function filterStateSelect() {
+  const q = (document.getElementById('stateSearch').value || '').toLowerCase();
+  const select = document.getElementById('stateSelect');
+  Array.from(select.options).forEach(opt => {
+    opt.hidden = q && !opt.value.toLowerCase().includes(q);
+  });
+}
+
 function renderStateTrend(years, combined) {
   if (!combined) {
     const sc = dashboard.us_state_coverage;
@@ -2692,26 +2692,34 @@ function renderStateTrend(years, combined) {
     combined = getStateCounts(sc, includeNY);
   }
   const selected = Array.from(document.getElementById('stateSelect').selectedOptions).map(o => o.value);
+  const perCapita = document.getElementById('statePerCapita')?.checked;
 
   destroyChart('chartStateTrend');
   chartInstances['chartStateTrend'] = new Chart(document.getElementById('chartStateTrend'), {
     type: 'line',
     data: {
       labels: years,
-      datasets: selected.map((s, i) => ({
-        label: s,
-        data: years.map(y => (combined[s] || {})[y] || 0),
-        borderColor: trendColors[i % trendColors.length],
-        backgroundColor: 'transparent',
-        tension: 0.3,
-        pointRadius: 3,
-      }))
+      datasets: selected.map((s, i) => {
+        const pop = STATE_POP_M[s];
+        const data = years.map(y => {
+          const n = (combined[s] || {})[y] || 0;
+          return (perCapita && pop) ? Math.round(n / pop * 10) / 10 : n;
+        });
+        return {
+          label: s,
+          data,
+          borderColor: trendColors[i % trendColors.length],
+          backgroundColor: 'transparent',
+          tension: 0.3,
+          pointRadius: 3,
+        };
+      })
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
+        y: { beginAtZero: true, title: { display: true, text: perCapita ? 'Articles per million residents/year' : 'Articles per year' } }
       },
       plugins: { legend: { position: 'bottom' } }
     }
@@ -3459,7 +3467,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 1:08am</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 9:42am</span>
 </div>
 </body>
 </html>
