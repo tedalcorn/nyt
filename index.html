@@ -247,6 +247,7 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
+      <p><strong>Latest update:</strong> With the help of users who identified duplicate data in the API, a process has been added to remove duplicate articles and subdivide blog and non-blog content, which resulted in some slight changes in the total material displayed.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains.</p>
@@ -3458,7 +3459,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 1:02am</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 1:08am</span>
 </div>
 </body>
 </html>
