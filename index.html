@@ -245,17 +245,14 @@
       <h3>Articles and Words per Month</h3>
       <div style="position:relative;height:280px"><canvas id="chartMonthly"></canvas></div>
     </div>
-    <div class="chart-box" style="margin-bottom:20px">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-        <h3 style="margin:0">Articles, Words, and Average Length — 2016–2025</h3>
-        <button onclick="downloadDecadeChart(this)" style="font-size:11px;padding:3px 8px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0">↓ JPG</button>
-      </div>
+    <div class="chart-box" style="margin-bottom:20px" data-dl-canvas-only="true">
+      <h3>Articles, Words, and Average Length — 2016–2025</h3>
       <div style="position:relative;height:280px"><canvas id="chartDecade"></canvas></div>
     </div>
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update (April 2026):</strong> Fixed name consolidation for authors with API parenthetical suffixes (e.g. Jennifer 8. Lee); removed institutional bylines from the reporter list; fixed co-author links in reporter profiles; added world choropleth map and wedding article sort order.</p>
+      <p style="margin-top:16px"><strong>Latest update (April 14, 2026):</strong> Fixed name consolidation for authors with API parenthetical suffixes (e.g. Jennifer 8. Lee); removed institutional bylines from the reporter list; fixed co-author links in reporter profiles; added world choropleth map and wedding article sort order.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
@@ -956,23 +953,23 @@ function renderDecadeChart() {
         label: 'Avg words per article',
         data: avgWords,
         type: 'line',
+        showLine: false,          // no connecting line — markers only
+        pointStyle: 'dash',
+        pointRadius: 10,
+        pointBorderWidth: 2.5,
         borderColor: 'rgba(100,60,160,0.85)',
+        pointBorderColor: 'rgba(100,60,160,0.85)',
         backgroundColor: 'transparent',
-        borderDash: [5, 4],
-        borderWidth: 2,
-        pointRadius: 3,
-        pointBackgroundColor: 'rgba(100,60,160,0.85)',
-        tension: 0,
         yAxisID: 'y2',
         order: 0,
         datalabels: {
           display: true,
           align: 'top',
           anchor: 'end',
-          offset: 2,
+          offset: 4,
           color: 'rgba(100,60,160,0.9)',
           font: { size: 10, weight: '600' },
-          formatter: v => v.toLocaleString(),
+          formatter: v => `${v} words/article`,
         },
       }, {
         label: 'Total words (millions)',
@@ -1000,7 +997,7 @@ function renderDecadeChart() {
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
-      layout: { padding: { top: 22 } },  // room for datalabels above bars
+      layout: { padding: { top: 28 } },  // room for datalabels above markers
       plugins: {
         legend: { position: 'bottom', labels: { font: { size: 11 } } },
         datalabels: { display: false },  // default off; overridden per-dataset above
@@ -1019,7 +1016,7 @@ function renderDecadeChart() {
         },
         y2: {
           display: false,   // hidden axis — values read via datalabels instead
-          min: 600,
+          min: 0,
           max: 1400,
         },
       },
@@ -1027,24 +1024,6 @@ function renderDecadeChart() {
   });
 }
 
-function downloadDecadeChart(btnEl) {
-  const canvas = document.getElementById('chartDecade');
-  if (!canvas) return;
-  btnEl.textContent = '…';
-  const offscreen = document.createElement('canvas');
-  offscreen.width  = canvas.width  * 2;
-  offscreen.height = canvas.height * 2;
-  const ctx = offscreen.getContext('2d');
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
-  ctx.scale(2, 2);
-  ctx.drawImage(canvas, 0, 0);
-  const a = document.createElement('a');
-  a.download = 'nyt_articles_words_2016-2025.jpg';
-  a.href = offscreen.toDataURL('image/jpeg', 0.92);
-  a.click();
-  btnEl.textContent = '↓ JPG';
-}
 
 const INSTITUTIONAL_BYLINES = new Set([
   // Already excluded
@@ -2842,7 +2821,7 @@ function renderWorldTable(years) {
   const yearEnd = years.length ? years[years.length - 1] : '';
   const articleColLabel = `Articles (${yearStart}–${yearEnd})`;
 
-  const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa']);
+  const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa', 'Abu Ghraib']);
   const rows = wc.locations.filter(loc => !WORLD_TABLE_EXCLUDE.has(loc)).map(loc => {
     const trend = wc.location_trends[loc] || {};
     const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
@@ -2977,6 +2956,7 @@ const NYT_TO_GEO = {
   'South Korea': 'South Korea',
   'Vatican City': 'Vatican',
   'Cape Verde': 'Cabo Verde',
+  'Abu Ghraib': 'Iraq',  // city in Iraq; roll up to country
   'Hong Kong': 'Hong Kong',
   'Taiwan': 'Taiwan',
   'Palestine': 'Palestine',
@@ -3014,8 +2994,9 @@ function renderWorldMap(years) {
   if (!worldGeoJson) return;
   const wc = dashboard.world_coverage;
   const numYears = years.length || 1;
+  const perCapita = true;  // always normalize by population, like the states map
 
-  // Build count lookup keyed by GeoJSON NAME
+  // Build raw count lookup keyed by GeoJSON NAME
   const countByGeo = {};
   for (const loc of wc.locations) {
     const geoName = NYT_TO_GEO[loc] || loc;
@@ -3024,17 +3005,36 @@ function renderWorldMap(years) {
     if (total > 0) countByGeo[geoName] = (countByGeo[geoName] || 0) + total;
   }
 
-  // Fixed bins scaled by year range (articles/year thresholds × number of years selected)
-  const numY = numYears;
-  const binThresholds = [2, 8, 40, 200].map(t => t * numY);
+  // Build display value lookup (per-capita or raw)
+  const valByGeo = {};
+  for (const [geoName, total] of Object.entries(countByGeo)) {
+    if (perCapita) {
+      // Find population by matching GeoJSON name back to a POPULATION_M key
+      const nytName = Object.entries(NYT_TO_GEO).find(([, g]) => g === geoName)?.[0] || geoName;
+      const pop = POPULATION_M[nytName] || POPULATION_M[geoName];
+      if (pop) valByGeo[geoName] = total / pop / numYears;  // articles/million/year
+    } else {
+      valByGeo[geoName] = total;
+    }
+  }
+
   // Q1 and Q2 both pale (only a few shades apart); Q3–Q5 progressively darker
   const colors = ['#e8f2fa', '#c0d9ed', '#6baac8', '#2265a3', '#082d52'];
   const noDataColor = '#e8d5b7';
-  const binLabels = ['< 2/yr', '2–8/yr', '8–40/yr', '40–200/yr', '200+/yr'];
+  let binThresholds, binLabels;
+  if (perCapita) {
+    // Fixed per-capita bins (articles/million/year) — consistent regardless of year range
+    binThresholds = [0.2, 1, 5, 20];
+    binLabels = ['<0.2/M/yr', '0.2–1/M/yr', '1–5/M/yr', '5–20/M/yr', '20+/M/yr'];
+  } else {
+    // Raw bins scaled by selected year range
+    binThresholds = [2, 8, 40, 200].map(t => t * numYears);
+    binLabels = ['< 2/yr', '2–8/yr', '8–40/yr', '40–200/yr', '200+/yr'];
+  }
 
   function fillColor(geoName) {
-    const v = countByGeo[geoName] || 0;
-    if (v === 0) return noDataColor;
+    const v = valByGeo[geoName];
+    if (v == null || v === 0) return noDataColor;
     for (let i = 0; i < binThresholds.length; i++) {
       if (v < binThresholds[i]) return colors[i];
     }
@@ -3075,10 +3075,20 @@ function renderWorldMap(years) {
     .attr('stroke', '#fff').attr('stroke-width', 0.4)
     .on('mouseover', function(event, d) {
       const name = d.properties.NAME;
-      const v = countByGeo[name] || 0;
+      const raw = countByGeo[name] || 0;
+      const pc = valByGeo[name];
       const yrsStr = years.length ? ` · ${years[0]}–${years[years.length-1]}` : '';
-      const perYr = v > 0 ? ` (~${Math.round(v / numY)}/yr)` : '';
-      tip.style('display', 'block').html(v ? `<strong>${name}</strong>: ${v.toLocaleString()} articles${perYr}${yrsStr}` : `<strong>${name}</strong>: No data`);
+      let label;
+      if (!raw) {
+        label = 'No data';
+      } else if (perCapita && pc != null) {
+        label = `${pc.toFixed(1)} articles/million/yr (${raw.toLocaleString()} total${yrsStr})`;
+      } else if (perCapita) {
+        label = `${raw.toLocaleString()} articles (no population data)${yrsStr}`;
+      } else {
+        label = `${raw.toLocaleString()} articles (~${Math.round(raw / numYears)}/yr)${yrsStr}`;
+      }
+      tip.style('display', 'block').html(`<strong>${name}</strong>: ${label}`);
       d3.select(this).attr('stroke', '#333').attr('stroke-width', 1);
     })
     .on('mousemove', function(event) {
@@ -3092,8 +3102,11 @@ function renderWorldMap(years) {
     });
 
   const yrsLabel = years.length ? ` · ${years[0]}–${years[years.length - 1]}` : '';
+  const legendIntro = perCapita
+    ? `Articles/million residents/year${yrsLabel}: `
+    : `Coverage (articles/year)${yrsLabel}: `;
   document.getElementById('worldMapLegend').innerHTML =
-    `Coverage scale (articles/year)${yrsLabel}: ` +
+    legendIntro +
     colors.map((c, i) =>
       `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px">` +
       `<span style="width:12px;height:12px;background:${c};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
@@ -3103,7 +3116,7 @@ function renderWorldMap(years) {
     `<span style="width:12px;height:12px;background:${noDataColor};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
     `<span>No data</span></span>`;
 
-  _worldMapMeta = { colors, binLabels, noDataColor, years: years.slice() };
+  _worldMapMeta = { colors, binLabels, noDataColor, years: years.slice(), perCapita };
 }
 
 // Shared helper: render SVG map to a canvas with title + legend annotations.
@@ -3180,7 +3193,9 @@ function downloadWorldMap(btnEl) {
   const m = _worldMapMeta;
   const yr = m.years.length ? `${m.years[0]}–${m.years[m.years.length - 1]}` : '';
   const title1 = `New York Times world coverage (World section)${yr ? ', ' + yr : ''}`;
-  const title2 = `Coverage scale: articles per year tagged to each country · Data from NYT Archive API`;
+  const title2 = m.perCapita
+    ? `Articles per million residents per year · Data from NYT Archive API`
+    : `Total articles per year · Data from NYT Archive API`;
   const legendItems = m.colors.map((c, i) => ({ color: c, label: m.binLabels[i] }));
   _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, m.noDataColor).then(canvas => {
     const a = document.createElement('a');
@@ -3782,14 +3797,16 @@ function renderStateMap(years) {
       d3.select(this).attr('stroke', '#fff').attr('stroke-width', 0.5);
     });
 
-  const unit = perCapita ? 'articles/year/million residents' : 'articles total';
   const labelMax = i => {
     const v = breaks[i + 1];
     return v === Infinity ? `${(breaks[i] + 1).toLocaleString()}+` : `≤${v.toLocaleString()}`;
   };
-  const yrsLabel = years.length ? ` · ${years[0]}–${years[years.length - 1]}` : '';
+  const yrsLabel = years.length ? `${years[0]}–${years[years.length - 1]}` : '';
+  const legendIntro = perCapita
+    ? `articles/year/million residents · ${yrsLabel} · `
+    : `${yrsLabel} · `;
   document.getElementById('stateMapLegend').innerHTML =
-    `${unit}${yrsLabel} · Quintile scale: ` +
+    `${legendIntro}Quintile scale: ` +
     colors.map((c, i) =>
       `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px">` +
       `<span style="width:12px;height:12px;background:${c};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
