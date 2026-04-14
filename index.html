@@ -3123,7 +3123,7 @@ function renderWorldMap(years) {
 
 // Shared helper: render SVG map to a canvas with title + legend annotations.
 // Returns a Promise<HTMLCanvasElement>.
-function _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, noDataColor) {
+function _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, noDataColor, legendPrefix) {
   return new Promise((resolve, reject) => {
     const W = svgEl.width?.baseVal?.value || parseInt(svgEl.getAttribute('width')) || 800;
     const H = svgEl.height?.baseVal?.value || parseInt(svgEl.getAttribute('height')) || 500;
@@ -3157,16 +3157,22 @@ function _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, noDataColo
       ctx.fillStyle = '#666';
       ctx.fillText(title2, 10, 35);
 
-      // Source note (very small, right-aligned)
+      // URL credit (lower right)
       ctx.font = '9px Arial,sans-serif';
       ctx.fillStyle = '#aaa';
       ctx.textAlign = 'right';
-      ctx.fillText('Source: NYT Archive API · nytimes-archive-dashboard.github.io', W - 4, TOP + H + BOT - 5);
+      ctx.fillText('https://tedalcorn.github.io/nyt/', W - 4, TOP + H + BOT - 5);
       ctx.textAlign = 'left';
 
-      // Legend swatches
+      // Legend — optional prefix label then swatches
       const LY = TOP + H + 20;
       let lx = 10;
+      if (legendPrefix) {
+        ctx.font = '10px Arial,sans-serif';
+        ctx.fillStyle = '#555';
+        ctx.fillText(legendPrefix, lx, LY + 1);
+        lx += ctx.measureText(legendPrefix).width + 6;
+      }
       const drawSwatch = (color, label) => {
         ctx.fillStyle = color;
         ctx.fillRect(lx, LY - 9, 11, 11);
@@ -3194,12 +3200,11 @@ function downloadWorldMap(btnEl) {
   btnEl.textContent = '…';
   const m = _worldMapMeta;
   const yr = m.years.length ? `${m.years[0]}–${m.years[m.years.length - 1]}` : '';
-  const title1 = `New York Times world coverage (World section)${yr ? ', ' + yr : ''}`;
-  const title2 = m.perCapita
-    ? `Articles per million residents per year · Data from NYT Archive API`
-    : `Total articles per year · Data from NYT Archive API`;
+  const title1 = `New York Times world coverage${yr ? ', ' + yr : ''}`;
+  const title2 = `Articles/million residents/year · Articles from World section only · Data from NYT Archive API`;
   const legendItems = m.colors.map((c, i) => ({ color: c, label: m.binLabels[i] }));
-  _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, m.noDataColor).then(canvas => {
+  const legendPrefix = 'Articles/million residents/year:';
+  _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, m.noDataColor, legendPrefix).then(canvas => {
     const a = document.createElement('a');
     a.download = `nyt_world_coverage_${yr || 'all_years'}.jpg`;
     a.href = canvas.toDataURL('image/jpeg', 0.92);
@@ -3674,11 +3679,11 @@ function downloadStateMap(btnEl) {
   const m = _stateMapMeta;
   const yr = m.years.length ? `${m.years[0]}–${m.years[m.years.length - 1]}` : '';
   const sectionNote = m.includeNY ? 'U.S. + New York sections' : 'U.S. section only';
-  const metricNote = m.perCapita ? 'articles per million residents per year' : 'total articles';
   const title1 = `New York Times articles by state${yr ? ', ' + yr : ''}`;
-  const title2 = `${metricNote} · Quintile scale · ${sectionNote} · Data from NYT Archive API`;
+  const title2 = `Articles from ${sectionNote} · Data from NYT Archive API`;
   const legendItems = m.colors.map((c, i) => ({ color: c, label: m.labelMax(i) }));
-  _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, m.noDataColor).then(canvas => {
+  const legendPrefix = 'Articles/million residents/year:';
+  _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, m.noDataColor, legendPrefix).then(canvas => {
     const a = document.createElement('a');
     a.download = `nyt_state_coverage_${yr || 'all_years'}.jpg`;
     a.href = canvas.toDataURL('image/jpeg', 0.92);
