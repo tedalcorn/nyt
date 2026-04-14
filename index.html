@@ -438,8 +438,16 @@
     <div class="chart-box">
       <h3>Coverage by Country</h3>
       <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata exclusively in articles from the "World" section. Tagging coverage appears to have been less consistent in 2000–2003.</p>
-      <div style="margin-bottom:12px">
+      <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button id="toggleWorldTrendBtn" onclick="toggleWorldTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare country coverage over time</button>
+        <button id="toggleWorldMapBtn" onclick="toggleWorldMap()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Map world coverage</button>
+      </div>
+      <div id="worldMapBox" style="display:none;margin-bottom:16px">
+        <div id="worldMapSvg" style="width:100%;max-width:900px;position:relative"></div>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-top:6px">
+          <div id="worldMapLegend" style="font-size:11px;color:#888;flex:1"></div>
+          <button onclick="downloadWorldMap(this)" style="font-size:11px;padding:3px 8px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0">↓ JPG</button>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
@@ -451,6 +459,9 @@
           <input type="range" id="worldYrEnd">
         </div>
         <span id="worldYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
+      </div>
+      <div style="margin-bottom:8px">
+        <input type="text" id="worldCountrySearch" placeholder="Filter countries…" oninput="filterWorldTable()" style="padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;width:200px;font-family:inherit">
       </div>
       <div class="table-scroll-wrap"><div id="worldTableContainer"></div></div>
     </div>
@@ -1386,12 +1397,14 @@ function openSectionDetail(sectionName) {
       <button class="close-btn" onclick="document.getElementById('sectionDetailPanel').style.display='none';destroyChart('chartSectionDetail')">Close</button>
       <h3>${escapeHtml(sectionName)}</h3>
       <div class="timeline-meta">${total.toLocaleString()} articles</div>
-      ${topAuthHtml ? `<div style="margin:10px 0 12px 0;font-size:12px;line-height:1.8">${topAuthHtml}</div>` : ''}
+      ${topAuthHtml ? `<div style="margin:10px 0 0 0"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px">Most-published reporters in this section</div><div style="font-size:12px;line-height:2;margin-bottom:12px">${topAuthHtml}</div></div>` : ''}
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
       <div style="position:relative">
         <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
         <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
       </div>
-      <div id="sectionDetailArticleList" style="margin-top:14px;max-height:300px;overflow-y:auto;font-size:13px">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:14px;margin-bottom:4px">Recent articles</div>
+      <div id="sectionDetailArticleList" style="max-height:300px;overflow-y:auto;font-size:13px">
         ${articlesReady ? '' : IS_MOBILE ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>' : '<p style="color:#888;font-size:13px">Loading article data…</p>'}
       </div>
     </div>`;
@@ -2766,6 +2779,7 @@ function initWorldYearSlider() {
     document.getElementById('worldYrEndLbl').textContent = e;
     worldYears = allYears.filter(y => Number(y) >= s && Number(y) <= e);
     renderWorldTable(worldYears);
+    if (document.getElementById('worldMapBox')?.style.display !== 'none') renderWorldMap(worldYears);
   }
   sInput.addEventListener('input', update);
   eInput.addEventListener('input', update);
@@ -2779,6 +2793,194 @@ function toggleWorldTrend() {
   box.style.display = visible ? 'none' : '';
   btn.textContent = visible ? 'Compare country coverage over time' : 'Hide chart';
   if (!visible) { renderLocationTrend(); addDownloadBtns(); }
+}
+
+// --- World choropleth map ---
+let worldGeoJson = null;
+
+// Map NYT location names → Natural Earth GeoJSON NAME values
+const NYT_TO_GEO = {
+  'Great Britain': 'United Kingdom',
+  'Bosnia and Herzegovina': 'Bosnia and Herz.',
+  'Czech Republic': 'Czechia',
+  'Democratic Republic of Congo': 'Dem. Rep. Congo',
+  'Congo, Democratic Republic of (Congo-Kinshasa)': 'Dem. Rep. Congo',
+  'Republic of Congo': 'Congo',
+  'Congo, Republic of (Congo-Brazzaville)': 'Congo',
+  'Dominican Republic': 'Dominican Rep.',
+  'East Timor': 'Timor-Leste',
+  'Central African Republic': 'Central African Rep.',
+  'Equatorial Guinea': 'Eq. Guinea',
+  'Macedonia': 'North Macedonia',
+  'South Sudan': 'S. Sudan',
+  'Ivory Coast': "Côte d'Ivoire",
+  'Swaziland': 'Eswatini',
+  'Eswatini': 'Eswatini',
+  'Burma': 'Myanmar',
+  'Trinidad and Tobago': 'Trinidad and Tobago',
+  'North Korea': 'North Korea',
+  'South Korea': 'South Korea',
+  'Vatican City': 'Vatican',
+  'Cape Verde': 'Cabo Verde',
+  'Hong Kong': 'Hong Kong',
+  'Taiwan': 'Taiwan',
+  'Palestine': 'Palestine',
+  'Kosovo': 'Kosovo',
+};
+
+function toggleWorldMap() {
+  const box = document.getElementById('worldMapBox');
+  const btn = document.getElementById('toggleWorldMapBtn');
+  const visible = box.style.display !== 'none';
+  if (visible) {
+    box.style.display = 'none';
+    btn.textContent = 'Map world coverage';
+  } else {
+    box.style.display = 'block';
+    btn.textContent = 'Hide map';
+    initWorldMap();
+  }
+}
+
+async function initWorldMap() {
+  if (!worldGeoJson) {
+    try {
+      const resp = await fetch('data/world_countries.geojson');
+      worldGeoJson = await resp.json();
+    } catch (e) {
+      document.getElementById('worldMapSvg').innerHTML = '<p style="color:#888;font-size:13px">Map data unavailable.</p>';
+      return;
+    }
+  }
+  renderWorldMap(worldYears);
+}
+
+function renderWorldMap(years) {
+  if (!worldGeoJson) return;
+  const wc = dashboard.world_coverage;
+  const numYears = years.length || 1;
+
+  // Build count lookup keyed by GeoJSON NAME
+  const countByGeo = {};
+  for (const loc of wc.locations) {
+    const geoName = NYT_TO_GEO[loc] || loc;
+    const trend = wc.location_trends[loc] || {};
+    const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
+    if (total > 0) countByGeo[geoName] = (countByGeo[geoName] || 0) + total;
+  }
+
+  // Fixed log-scale bins (articles total over selected years, very skewed distribution)
+  const numY = numYears;
+  // Bins expressed as articles/year thresholds scaled to the selected year range
+  const binThresholds = [2, 8, 40, 200].map(t => t * numY); // <2/yr, 2-8/yr, 8-40/yr, 40-200/yr, 200+/yr
+  const colors = ['#dce9f5', '#9dbdda', '#5e96c0', '#2c6fa3', '#0d3d6b'];
+  const noDataColor = '#e8d5b7';
+  const binLabels = [`<${binThresholds[0]}`, `${binThresholds[0]}–${binThresholds[1]}`, `${binThresholds[1]}–${binThresholds[2]}`, `${binThresholds[2]}–${binThresholds[3]}`, `${binThresholds[3]}+`];
+
+  function fillColor(geoName) {
+    const v = countByGeo[geoName] || 0;
+    if (v === 0) return noDataColor;
+    for (let i = 0; i < binThresholds.length; i++) {
+      if (v < binThresholds[i]) return colors[i];
+    }
+    return colors[4];
+  }
+
+  const svgWrap = document.getElementById('worldMapSvg');
+  const W = svgWrap.clientWidth || 800;
+  const H = Math.round(W * 0.5);
+
+  const projection = d3.geoNaturalEarth1().fitSize([W, H], worldGeoJson);
+  const path = d3.geoPath().projection(projection);
+
+  let svg = d3.select('#worldMapSvg svg');
+  if (svg.empty()) {
+    svg = d3.select('#worldMapSvg').append('svg')
+      .attr('width', W).attr('height', H)
+      .style('display', 'block');
+  } else {
+    svg.attr('width', W).attr('height', H);
+  }
+
+  const tooltip = d3.select('#worldMapSvg').select('.map-tooltip');
+  const tip = tooltip.empty()
+    ? d3.select('#worldMapSvg').append('div')
+        .attr('class', 'map-tooltip')
+        .style('position', 'absolute').style('pointer-events', 'none')
+        .style('background', 'rgba(0,0,0,0.75)').style('color', '#fff')
+        .style('padding', '4px 8px').style('border-radius', '4px')
+        .style('font-size', '12px').style('display', 'none')
+    : tooltip;
+
+  svg.selectAll('path')
+    .data(worldGeoJson.features)
+    .join('path')
+    .attr('d', path)
+    .attr('fill', d => fillColor(d.properties.NAME))
+    .attr('stroke', '#fff').attr('stroke-width', 0.4)
+    .on('mouseover', function(event, d) {
+      const name = d.properties.NAME;
+      const v = countByGeo[name] || 0;
+      const yrsStr = years.length ? ` · ${years[0]}–${years[years.length-1]}` : '';
+      const perYr = v > 0 ? ` (~${Math.round(v / numY)}/yr)` : '';
+      tip.style('display', 'block').html(v ? `<strong>${name}</strong>: ${v.toLocaleString()} articles${perYr}${yrsStr}` : `<strong>${name}</strong>: No data`);
+      d3.select(this).attr('stroke', '#333').attr('stroke-width', 1);
+    })
+    .on('mousemove', function(event) {
+      const rect = svgWrap.getBoundingClientRect();
+      tip.style('left', (event.clientX - rect.left + 10) + 'px')
+         .style('top', (event.clientY - rect.top - 28) + 'px');
+    })
+    .on('mouseout', function() {
+      tip.style('display', 'none');
+      d3.select(this).attr('stroke', '#fff').attr('stroke-width', 0.4);
+    });
+
+  const yrsLabel = years.length ? ` · ${years[0]}–${years[years.length - 1]}` : '';
+  document.getElementById('worldMapLegend').innerHTML =
+    `articles total${yrsLabel} · Fixed log-scale bins (articles/year): ` +
+    colors.map((c, i) =>
+      `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px">` +
+      `<span style="width:12px;height:12px;background:${c};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
+      `<span>${binLabels[i]}</span></span>`
+    ).join('') +
+    `<span style="display:inline-flex;align-items:center;gap:3px">` +
+    `<span style="width:12px;height:12px;background:${noDataColor};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
+    `<span>No data</span></span>`;
+}
+
+function downloadWorldMap(btnEl) {
+  const svgEl = document.querySelector('#worldMapSvg svg');
+  if (!svgEl) return;
+  btnEl.textContent = '…';
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const W = svgEl.getAttribute('width'), H = svgEl.getAttribute('height');
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = W * 2; canvas.height = H * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.scale(2, 2);
+    ctx.drawImage(img, 0, 0);
+    const a = document.createElement('a');
+    a.download = 'world_coverage_map.jpg';
+    a.href = canvas.toDataURL('image/jpeg', 0.92);
+    a.click();
+    btnEl.textContent = '↓ JPG';
+  };
+  img.onerror = () => { btnEl.textContent = '↓ JPG'; };
+  img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+}
+
+// Country search filter for world table
+function filterWorldTable() {
+  const q = (document.getElementById('worldCountrySearch')?.value || '').toLowerCase().trim();
+  document.querySelectorAll('#worldTableContainer tr[data-country]').forEach(row => {
+    const name = (row.dataset.country || '').toLowerCase();
+    row.style.display = (!q || name.includes(q)) ? '' : 'none';
+  });
 }
 
 function toggleStateTrend() {
@@ -4271,7 +4473,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 1:51pm</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 2:05pm</span>
 </div>
 </body>
 </html>
