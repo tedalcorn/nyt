@@ -2557,19 +2557,35 @@ def build_dashboard_data(articles, authors):
                 if auth:
                     vows_col_authors[auth] += 1
 
-    # Collect Vows column articles for the popup article list
-    vows_col_articles = []
+    # Collect all wedding/Vows articles for the popup article list
+    URL_PREFIX_FULL = "https://www.nytimes.com"
+    recent_wedding_articles = []
     for art in articles:
+        url = art.get("web_url", "") or ""
+        ss = (art.get("subsection", "") or "").lower()
         sb = [s.lower() for s in (art.get("subjects", []) or [])]
-        if "vows (times column)" in sb:
-            vows_col_articles.append({
-                "d": art["pub_date"],
+        section = (art.get("section", "") or "").lower()
+        is_vows_col = "vows (times column)" in sb
+        is_wed = (
+            ss == "weddings"
+            or "/fashion/weddings/" in url
+            or "/style/weddings/" in url
+            or is_vows_col
+            or ("weddings and engagements" in sb and section in ("styles", "style", "fashion", "u.s."))
+        )
+        if is_wed:
+            u = url
+            if u.startswith(URL_PREFIX_FULL):
+                u = u[len(URL_PREFIX_FULL):]
+            recent_wedding_articles.append({
+                "d": art["pub_date"][:10],
                 "h": art.get("headline", ""),
                 "a": art.get("authors", []),
                 "w": art.get("word_count", 0),
-                "u": art.get("web_url", ""),
+                "u": u,
             })
-    vows_col_articles.sort(key=lambda x: x["d"], reverse=True)
+    recent_wedding_articles.sort(key=lambda x: x["d"], reverse=True)
+    recent_wedding_articles = recent_wedding_articles[:400]
 
     # Merge author lists (announcements + Vows column together)
     all_wed_authors = Counter()
@@ -2583,7 +2599,7 @@ def build_dashboard_data(articles, authors):
             "by_year": dict(weddings_by_year),
             "vows_col_by_year": dict(vows_col_by_year),
             "top_authors": [{"name": n, "count": c} for n, c in all_wed_authors.most_common(15)],
-            "vows_col_articles": vows_col_articles,
+            "recent_articles": recent_wedding_articles,
             "total": sum(weddings_by_year.values()),
         },
     }

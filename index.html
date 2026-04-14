@@ -642,6 +642,25 @@ function addDownloadBtns() {
 // Wire up to dynamically-created chart-boxes (author profiles, beat detail, etc.)
 new MutationObserver(addDownloadBtns).observe(document.body, { childList: true, subtree: true });
 
+function downloadSectionChart(btn) {
+  const canvas = document.getElementById('chartSectionDetail');
+  if (!canvas) return;
+  btn.textContent = '…';
+  const offscreen = document.createElement('canvas');
+  offscreen.width = canvas.width;
+  offscreen.height = canvas.height;
+  const ctx = offscreen.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+  ctx.drawImage(canvas, 0, 0);
+  const a = document.createElement('a');
+  const h3 = document.querySelector('#sectionDetailPanel h3');
+  a.download = (h3 ? h3.textContent.trim().replace(/[^a-z0-9]+/gi, '_').toLowerCase() : 'section') + '_trend.jpg';
+  a.href = offscreen.toDataURL('image/jpeg', 0.92);
+  a.click();
+  btn.textContent = '↓ JPG';
+}
+
 function destroyChart(id) {
   if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; }
 }
@@ -1152,10 +1171,8 @@ function openFeatureDetail(featureKey) {
   const allYears = dashboard.all_years.filter(y => y !== String(new Date().getFullYear()));
   const byYear = wed.by_year || {};
 
-  const topAuthorsHtml = wed.top_authors.slice(0,12).map(a =>
-    `<div style="font-size:12px;padding:3px 0;min-width:200px;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #f5f5f5">` +
-    `<a href="#" class="feature-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a>` +
-    `<span style="color:#888">${a.count.toLocaleString()}</span></div>`
+  const topAuthorsHtml = wed.top_authors.slice(0,10).map(a =>
+    `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="feature-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">${a.count.toLocaleString()}</span></span>`
   ).join('');
 
   panel.innerHTML = `
@@ -1166,19 +1183,13 @@ function openFeatureDetail(featureKey) {
       <p style="font-size:12px;color:#666;margin:8px 0 0 0">Includes weekly wedding announcements (Styles section) and the Vows narrative column — one couple profiled in depth.</p>
       <div style="margin-top:12px">
         <div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Top authors</div>
-        <div style="display:flex;flex-wrap:wrap;gap:0 20px;margin-bottom:14px">${topAuthorsHtml}</div>
+        <div style="font-size:12px;line-height:2;margin-bottom:14px">${topAuthorsHtml}</div>
       </div>
       <div>
         <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Items per year</div>
         <canvas id="chartFeatureDetail" style="max-height:200px"></canvas>
       </div>
-      <div id="featureArticleListWrap" style="margin-top:16px;max-height:340px;overflow-y:auto;font-size:12px">
-        ${articlesReady
-          ? ''
-          : IS_MOBILE
-            ? '<p style="color:#888">Article list available on desktop.</p>'
-            : '<p style="color:#888;font-size:13px">Loading article data…</p>'}
-      </div>
+      <div id="featureArticleListWrap" style="margin-top:16px;max-height:340px;overflow-y:auto;font-size:12px"></div>
     </div>`;
 
   // Wire author links
@@ -1204,26 +1215,22 @@ function openFeatureDetail(featureKey) {
     }
   });
 
-  // Article list — filled from loaded articles array if available
-  if (articlesReady) fillWeddingArticleList();
+  // Article list — uses pre-built list from dashboard.json (no runtime filter needed)
+  fillWeddingArticleList();
 }
 
 function fillWeddingArticleList() {
   const wrap = document.getElementById('featureArticleListWrap');
   if (!wrap) return;
-  const weddingArts = articles.filter(isWeddingArticle)
-    .sort((a, b) => (b.d || '').localeCompare(a.d || ''))
-    .slice(0, 300);
-
-  if (!weddingArts.length) {
+  const prebuilt = dashboard.features?.weddings?.recent_articles || [];
+  if (!prebuilt.length) {
     wrap.innerHTML = '<p style="color:#aaa;font-size:12px">No wedding articles found.</p>';
     return;
   }
 
-  const csvBtn = `<button onclick="downloadArticlesCSV(window._weddingArts.map(a=>({pub_date:a.d,headline:a.h,authors:(a.a||[]).join(', '),word_count:a.w,web_url:a.u&&a.u.startsWith('/')?'https://www.nytimes.com'+a.u:a.u})),'weddings_and_vows.csv')" style="font-size:11px;padding:2px 8px;margin-bottom:6px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer">Download CSV</button>`;
-  window._weddingArts = weddingArts;
+  const csvBtn = `<button onclick="downloadArticlesCSV(dashboard.features.weddings.recent_articles.map(a=>({pub_date:a.d,headline:a.h,authors:(a.a||[]).join(', '),word_count:a.w,web_url:a.u&&a.u.startsWith('/')?'https://www.nytimes.com'+a.u:a.u})),'weddings_and_vows.csv')" style="font-size:11px;padding:2px 8px;margin-bottom:6px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer">Download CSV</button>`;
 
-  const rows = weddingArts.map(a => {
+  const rows = prebuilt.map(a => {
     const url = a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || '');
     const byline = (a.a || []).join(', ');
     const words = a.w ? ` · ${a.w.toLocaleString()} words` : '';
@@ -1234,7 +1241,7 @@ function fillWeddingArticleList() {
       `</div>`;
   }).join('');
 
-  wrap.innerHTML = csvBtn + `<div style="font-size:11px;color:#888;margin-bottom:4px">${weddingArts.length.toLocaleString()} most recent articles shown</div>` + rows;
+  wrap.innerHTML = csvBtn + `<div style="font-size:11px;color:#888;margin-bottom:4px">${prebuilt.length.toLocaleString()} most recent articles shown</div>` + rows;
 }
 
 let sectionTableSort = { col: 'count', asc: false };
@@ -1380,7 +1387,10 @@ function openSectionDetail(sectionName) {
       <h3>${escapeHtml(sectionName)}</h3>
       <div class="timeline-meta">${total.toLocaleString()} articles</div>
       ${topAuthHtml ? `<div style="margin:10px 0 12px 0;font-size:12px;line-height:1.8">${topAuthHtml}</div>` : ''}
-      <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
+      <div style="position:relative">
+        <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
+        <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+      </div>
       <div id="sectionDetailArticleList" style="margin-top:14px;max-height:300px;overflow-y:auto;font-size:13px">
         ${articlesReady ? '' : IS_MOBILE ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>' : '<p style="color:#888;font-size:13px">Loading article data…</p>'}
       </div>
@@ -4261,7 +4271,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 12:39pm</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 1:51pm</span>
 </div>
 </body>
 </html>
