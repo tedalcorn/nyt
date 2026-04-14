@@ -10,6 +10,7 @@ Reads data/raw/*.json, processes into:
 import os
 import json
 import re
+import html as html_mod
 from collections import defaultdict, Counter
 from datetime import datetime
 
@@ -60,13 +61,20 @@ def extract_authors(byline):
     if persons and any(FIRSTNAME_CREDIT.match((p.get("firstname") or "").strip()) for p in persons):
         persons = []  # malformed — force original string fallback
 
+    def _clean(s):
+        """Decode HTML entities and normalize non-breaking spaces in a name component."""
+        return html_mod.unescape((s or "")).replace('\xa0', ' ').replace('\u00a0', ' ').strip()
+
     if persons:
         authors = []
         for p in persons:
-            first = CREDIT_PREFIX.sub('', (p.get("firstname") or "").strip()).strip()
-            middle = (p.get("middlename") or "").strip()
-            last = (p.get("lastname") or "").strip()
-            if not last:
+            first = CREDIT_PREFIX.sub('', _clean(p.get("firstname"))).strip()
+            middle = _clean(p.get("middlename"))
+            last = _clean(p.get("lastname"))
+            # API sometimes stores literal "None" string for null values (2008-2014 era)
+            if first.lower() == 'none':
+                first = ''
+            if last.lower() in ('', 'none'):
                 continue
             # Skip entries where the entire firstname was a media credit word
             # (e.g. firstname="Photographs", lastname="Smith") — these are photo
@@ -79,6 +87,13 @@ def extract_authors(byline):
             parts = [first, middle, last]
             fullname = " ".join(x for x in parts if x)
             fullname = TRAILING_WORDS.sub('', fullname).strip()
+            # Normalize compact double-initials: "A.o. Scott" → "A. O. Scott"
+            fullname = re.sub(
+                r'([A-Za-z])\.([A-Za-z])\.',
+                lambda m: m.group(1).upper() + '. ' + m.group(2).upper() + '.',
+                fullname
+            )
+            fullname = ' '.join(fullname.split())  # normalize any extra whitespace
             authors.append({
                 "firstname": first,
                 "middlename": middle,
@@ -90,7 +105,7 @@ def extract_authors(byline):
         # All persons had empty lastnames — fall through to original string fallback
 
     # Fallback: parse from "original" string (e.g. "By Sarah Mervosh and Mark Bonamo")
-    original = (byline.get("original") or "").strip()
+    original = _clean(byline.get("original"))
     if not original:
         return []
     # Strip leading "By " (case-insensitive)
@@ -150,6 +165,16 @@ def extract_authors(byline):
         if m:
             name = ('And' + m.group(1)).title()
         name = TRAILING_WORDS.sub('', name).strip()
+        # Normalize compact double-initials: "A.o. Scott" → "A. O. Scott"
+        name = re.sub(
+            r'([A-Za-z])\.([A-Za-z])\.',
+            lambda m2: m2.group(1).upper() + '. ' + m2.group(2).upper() + '.',
+            name
+        )
+        name = ' '.join(name.split())  # normalize whitespace
+        # Skip API null artifacts stored as string "None"
+        if all(p.lower() == 'none' for p in name.split()):
+            continue
         parts = name.split()
         if len(parts) >= 2:
             first = parts[0]
@@ -1238,6 +1263,7 @@ def build_author_stats(articles):
         "annual_sections": defaultdict(Counter),  # year -> section counts
         "monthly_counts": defaultdict(int),  # YYYY-MM -> article count
         "annual_blog_counts": defaultdict(int),  # year -> blog article count
+        "annual_blog_words": defaultdict(int),   # year -> words from blog articles
         "shared_byline_count": 0,
         "monthly_shared_counts": defaultdict(int),  # YYYY-MM -> shared article count
         "coauthors": Counter(),
@@ -1263,6 +1289,7 @@ def build_author_stats(articles):
             d["monthly_counts"][art["year_month"]] += 1
             if is_blog_url(art.get("web_url", "")):
                 d["annual_blog_counts"][year] += 1
+                d["annual_blog_words"][year] += author_words
             if art["word_count"] == 0:
                 d["zero_word_articles"] += 1
             if is_shared:
@@ -1316,6 +1343,14 @@ def build_author_stats(articles):
                 else:
                     # Interior full year: no normalization needed
                     annual_words_norm[y] = raw
+
+        # Normalize blog words using same scaling factors as annual_words_norm
+        annual_blog_words_norm = {}
+        for y in years:
+            raw_total = d["annual_words"].get(y, 0)
+            raw_blog = d["annual_blog_words"].get(y, 0)
+            if raw_total > 0 and raw_blog > 0 and y in annual_words_norm:
+                annual_blog_words_norm[y] = round(annual_words_norm[y] * raw_blog / raw_total)
 
         # avg_words_per_year: total words / actual date span in fractional years.
         # This avoids the distortion of averaging annualized edge years (which can
@@ -1393,6 +1428,7 @@ def build_author_stats(articles):
             "annual_words": dict(d["annual_words"]),
             "monthly_counts": dict(d["monthly_counts"]),
             "annual_blog_counts": dict(d["annual_blog_counts"]) if any(d["annual_blog_counts"].values()) else {},
+            "annual_blog_words_norm": annual_blog_words_norm if annual_blog_words_norm else {},
             "shared_byline_count": shared_count,
             "monthly_shared_counts": dict(d["monthly_shared_counts"]),
             "coauthors": top_coauthors,
@@ -1471,6 +1507,8 @@ _INSTITUTIONAL_BYLINES = {
     'IFC Films',
     'Written Mr', 'Was Written Mr',
     'Wire Reports', 'From Wire Reports',
+    'T Magazine',
+    'Courtesy of NBC', 'Courtesy of CBS', 'Courtesy of ABC',
 }
 
 
@@ -2488,15 +2526,24 @@ def build_dashboard_data(articles, authors):
     vows_col_authors = Counter()
 
     for art in articles:
-        url = art.get("url", "") or ""
+        url = art.get("web_url", "") or ""
         ss = (art.get("subsection", "") or "").lower()
         sb = [s.lower() for s in (art.get("subjects", []) or [])]
-        is_weddings = (
-            "weddings" in ss
-            or "weddings and engagements" in sb
-            or "weddings" in sb
-        )
+        section = (art.get("section", "") or "").lower()
         is_vows_col = "vows (times column)" in sb
+        # Strict wedding filter: subsection must be "Weddings", or URL in /fashion/weddings/
+        # or /style/weddings/ path, or the explicit engagements subject in a style/fashion context.
+        # Avoids false positives from generic "weddings" subject tag on trend/culture articles.
+        is_weddings = (
+            ss == "weddings"
+            or "/fashion/weddings/" in url
+            or "/style/weddings/" in url
+            or is_vows_col
+            or (
+                "weddings and engagements" in sb
+                and section in ("styles", "style", "fashion", "u.s.")
+            )
+        )
         y = str(art["year"])
         if is_weddings:
             weddings_by_year[y] += 1
