@@ -2403,7 +2403,7 @@
   },
   {
     "canonical": "C.j. Chivers",
-    "canonical_count": 149,
+    "canonical_count": 150,
     "merged": [
       {
         "name": "C.J. Chivers",
@@ -4077,7 +4077,7 @@
   },
   {
     "canonical": "David M. Halbfinger",
-    "canonical_count": 1401,
+    "canonical_count": 1402,
     "merged": [
       {
         "name": "David Halbfinger",
@@ -4605,7 +4605,7 @@
   },
   {
     "canonical": "David E. Sanger",
-    "canonical_count": 3854,
+    "canonical_count": 3856,
     "merged": [
       {
         "name": "David Sanger",
@@ -4813,7 +4813,7 @@
   },
   {
     "canonical": "Dean E. Murphy",
-    "canonical_count": 594,
+    "canonical_count": 597,
     "merged": [
       {
         "name": "Dean Murphy",
@@ -5449,7 +5449,7 @@
   },
   {
     "canonical": "Edmund L. Andrews",
-    "canonical_count": 1588,
+    "canonical_count": 1589,
     "merged": [
       {
         "name": "Edmund Andrews",
@@ -6576,20 +6576,6 @@
     ]
   },
   {
-    "canonical": "From Wire Reports",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "From news reports",
-        "count": 2
-      },
-      {
-        "name": "From staff reports",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "From Staff",
     "canonical_count": 5,
     "merged": [
@@ -6905,7 +6891,7 @@
   },
   {
     "canonical": "Geraldine Fabrikant",
-    "canonical_count": 878,
+    "canonical_count": 879,
     "merged": [
       {
         "name": "GERALDINE FABRIKANT",
@@ -7499,16 +7485,6 @@
       },
       {
         "name": "Iain R <missing Dot> Webb",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "IAN FISHER - 12:43 PM ET",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "IAN FISHER - 3:31 PM ET",
         "count": 1
       }
     ]
@@ -8672,10 +8648,6 @@
         "count": 3
       },
       {
-        "name": "Jennifer 8. Lee: Compiled By Emily Vasquez (NYT)",
-        "count": 1
-      },
-      {
         "name": "Jennifer 8.lee (NYT)",
         "count": 1
       }
@@ -8743,7 +8715,7 @@
   },
   {
     "canonical": "Jennifer 8. Lee",
-    "canonical_count": 1763,
+    "canonical_count": 1764,
     "merged": [
       {
         "name": "JENNIFER 8. LEE",
@@ -9009,7 +8981,7 @@
   },
   {
     "canonical": "Jill P. Capuzzo",
-    "canonical_count": 585,
+    "canonical_count": 619,
     "merged": [
       {
         "name": "Jill C. Capuzzo",
@@ -9329,7 +9301,7 @@
   },
   {
     "canonical": "John M. Broder",
-    "canonical_count": 1348,
+    "canonical_count": 1350,
     "merged": [
       {
         "name": "JOHN M. BRODER",
@@ -10491,7 +10463,7 @@
   },
   {
     "canonical": "Joseph B. Treaster",
-    "canonical_count": 576,
+    "canonical_count": 577,
     "merged": [
       {
         "name": "JOSEPH B. TREASTER",
@@ -11067,7 +11039,7 @@
   },
   {
     "canonical": "Katharine Q. Seelye",
-    "canonical_count": 3464,
+    "canonical_count": 3465,
     "merged": [
       {
         "name": "Katharine Seelye",
@@ -11719,16 +11691,6 @@
     "merged": [
       {
         "name": "Lance Izumi",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "LARRY ROHTER - 2:42 PM ET",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "LARRY ROHTER - 4:16 PM ET",
         "count": 1
       }
     ]
@@ -12583,7 +12545,7 @@
     "merged": [
       {
         "name": "Marcelle Sussman Fischler",
-        "count": 195
+        "count": 211
       }
     ]
   },
@@ -13159,7 +13121,7 @@
   },
   {
     "canonical": "Matthew L. Wald",
-    "canonical_count": 2896,
+    "canonical_count": 2897,
     "merged": [
       {
         "name": "Matthew Wald",
@@ -13513,7 +13475,7 @@
   },
   {
     "canonical": "Michael R. Gordon",
-    "canonical_count": 1476,
+    "canonical_count": 1477,
     "merged": [
       {
         "name": "Michael Gordon",
@@ -14963,7 +14925,7 @@
   },
   {
     "canonical": "Patricia R. Olsen",
-    "canonical_count": 110,
+    "canonical_count": 111,
     "merged": [
       {
         "name": "Patricia Olsen",
@@ -14978,16 +14940,6 @@
       {
         "name": "Patricia Kelly Yeo",
         "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "Patrick D. Healy (NYT)",
-    "canonical_count": 18,
-    "merged": [
-      {
-        "name": "Patrick McGeehan: Compiled By John Sullivan (NYT)",
-        "count": 1
       }
     ]
   },
@@ -15125,7 +15077,7 @@
   },
   {
     "canonical": "Patrick E. Tyler",
-    "canonical_count": 653,
+    "canonical_count": 654,
     "merged": [
       {
         "name": "Patrick Tyler",
@@ -16625,7 +16577,7 @@
   },
   {
     "canonical": "Riva D. Atlas",
-    "canonical_count": 383,
+    "canonical_count": 384,
     "merged": [
       {
         "name": "Riva Atlas",
@@ -17213,7 +17165,7 @@
   },
   {
     "canonical": "Robert F. Worth",
-    "canonical_count": 1471,
+    "canonical_count": 1472,
     "merged": [
       {
         "name": "Robert Worth",
@@ -17781,7 +17733,7 @@
   },
   {
     "canonical": "Sandra Blakeslee",
-    "canonical_count": 200,
+    "canonical_count": 201,
     "merged": [
       {
         "name": "Sandra J. Blakeslee",
@@ -19232,16 +19184,6 @@
     ]
   },
   {
-    "canonical": "The following article is based on reporting by Lowell Bergman",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "The following article was reported by Lowell Bergman",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "The Editorial Board",
     "canonical_count": 7235,
     "merged": [
@@ -19621,7 +19563,7 @@
   },
   {
     "canonical": "The New York Times",
-    "canonical_count": 37232,
+    "canonical_count": 37243,
     "merged": [
       {
         "name": "THE NEW YORK TIMES",
@@ -19707,36 +19649,6 @@
     "merged": [
       {
         "name": "These profiles were written by David W. Chen",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "This article is by Edmund L. Andrews",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "This article was reported by Edmund L. Andrews",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "This article was reported by William J. Broad",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "This article is by William J. Broad",
-        "count": 3
-      }
-    ]
-  },
-  {
-    "canonical": "This article was reported by Joseph B. Treaster",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "This article is by Joseph B. Treaster",
         "count": 1
       }
     ]
@@ -20101,7 +20013,7 @@
   },
   {
     "canonical": "Todd S. Purdum",
-    "canonical_count": 607,
+    "canonical_count": 609,
     "merged": [
       {
         "name": "Todd Purdum",
@@ -20536,16 +20448,6 @@
     ]
   },
   {
-    "canonical": "William Norwich: Additional Reporting By Jacob Bernstein",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "William Bernstein",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "William J. Bratton",
     "canonical_count": 5,
     "merged": [
@@ -20557,7 +20459,7 @@
   },
   {
     "canonical": "William J. Broad",
-    "canonical_count": 946,
+    "canonical_count": 954,
     "merged": [
       {
         "name": "William Broad",
@@ -20800,56 +20702,6 @@
       {
         "name": "WM. FERGUSON",
         "count": 3
-      }
-    ]
-  },
-  {
-    "canonical": "written by William J. Broad",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "Written By Mr. Broad",
-        "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "written by Marcelle S. Fischler",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Written by Marcelle S. Fischler",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Written By Mr. Murphy",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "written by Dean E. Murphy",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "written by Todd S. Purdum",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Written By Mr. Purdum",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "written by David E. Sanger",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Written By Mr. Sanger",
-        "count": 1
       }
     ]
   },

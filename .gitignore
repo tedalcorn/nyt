@@ -1,21 +1,34 @@
-# Raw API data (large, regenerable)
+# Raw API data (large, regenerable from NYT API)
 data/raw/
 
 # Python
 __pycache__/
 *.pyc
+*.ipynb
 
-# Old static charts (replaced by interactive dashboard)
+# Static charts (replaced by interactive dashboard)
 chart*.png
 chart*.jpg
+below-the-fold.png
+choropleth*.png
 
-# Shapefiles (large GIS files, not needed in repo)
+# Shapefiles in data/ root (large GIS files; data/ne_world/ is tracked separately)
 data/*.shp
 data/*.dbf
 data/*.prj
 data/*.shx
+data/*.cpg
 
-# Misc
+# macOS metadata
 .DS_Store
+data/.DS_Store
+
+# Local automation log
 nightly_update.log
-choropleth*.png
+
+# Working prototypes / scratch files
+*_prototype*.html
+analyze_headlines.py
+
+# Local release assets (social media exports, etc.)
+2026*/

@@ -51,7 +51,15 @@ def extract_authors(byline):
         r'\s+(With|Compiled|Reporting|Contributing)$', re.IGNORECASE
     )
 
+    # Detect API mis-parse of "Reported by X" → {firstname:"Reported", middlename:"X", lastname:...}
+    # These articles have the credit word as firstname, losing the actual last name.
+    # Skip the person array entirely and fall through to the original string.
+    FIRSTNAME_CREDIT = re.compile(r'^(Reported|Reporting)$', re.IGNORECASE)
+
     persons = byline.get("person", [])
+    if persons and any(FIRSTNAME_CREDIT.match((p.get("firstname") or "").strip()) for p in persons):
+        persons = []  # malformed — force original string fallback
+
     if persons:
         authors = []
         for p in persons:
@@ -87,12 +95,26 @@ def extract_authors(byline):
         return []
     # Strip leading "By " (case-insensitive)
     text = re.sub(r'^by\s+', '', original, flags=re.IGNORECASE)
+    # Strip sentence-style attributions before trying to parse names
+    text = re.sub(
+        r'^(This (?:article|story) was (?:reported(?: and written)?|written and reported|compiled) by'
+        r'|The following article (?:is based on reporting|was reported) by'
+        r'|Reporting by|Reported by)\s+',
+        '', text, flags=re.IGNORECASE
+    )
     # Split on " and ", ", and ", ", "
     names = re.split(r',\s+and\s+|\s+and\s+|,\s+', text)
     # Multimedia/format credit prefixes to strip (e.g. "Photographs Leonard Greco", "Interview Jim Rutenberg")
     CREDIT_PREFIX = re.compile(
         r'^(Photographs?|Illustration|Illustrations|Drawing|Drawings|Map|Video|Graphic|Graphics|Photo'
-        r'|Interviews?|Review)\s+',
+        r'|Interviews?|Review|Reported\s+by|Reported|Reporting\s+by|Reporting)\s+',
+        re.IGNORECASE
+    )
+    # Institutional / wire-service strings that are not person names
+    NON_PERSON = re.compile(
+        r'^(wire reports?|from wire reports?|from news reports?|from staff reports?'
+        r'|news reports?|staff reports?|reporting by the new york times'
+        r'|reported by the new york times)\s*$',
         re.IGNORECASE
     )
     authors = []
@@ -104,11 +126,18 @@ def extract_authors(byline):
         # Skip junk entries from malformed "original" byline strings
         if name[0] in '!-(\'&<':
             continue
-        if '<' in name or '&#' in name or '|' in name:
+        if '<' in name or '&#' in name or '|' in name or ':' in name:
             continue
         if name.lower().startswith('compiled by') or name.lower().startswith('special to'):
             continue
+        if name.lower().startswith('written by') or name.lower().startswith('written and reported by'):
+            continue
         if name.lower().startswith('interviews ') or name.lower().startswith('interviews:'):
+            continue
+        # Skip wire/institutional noise and contribution-credit fragments
+        if NON_PERSON.match(name):
+            continue
+        if re.search(r'\bcontributed\b', name, re.IGNORECASE):
             continue
         # Fragment names like "and Y NEWMAN" are truncated "ANDY NEWMAN" — the API split
         # on " and " inside the name (e.g. "ANDY" → "A" + "NY"). Reconstruct by prepending
@@ -1097,8 +1126,7 @@ def process_articles(raw_articles):
     # Deduplicate author names: merge variants like "Jonah Engel Bromwich" / "Jonah E. Bromwich" / "Jonah Bromwich"
     # by mapping all to the most frequent version sharing the same first+last name
     print("  Deduplicating author names...")
-    from collections import Counter as Ctr
-    name_counts = Ctr()
+    name_counts = Counter()
     for art in articles:
         for name in art["authors"]:
             name_counts[name] += 1
@@ -1434,6 +1462,7 @@ _INSTITUTIONAL_BYLINES = {
     'Compiled by The New York Times',
     'IFC Films',
     'Written Mr', 'Was Written Mr',
+    'Wire Reports', 'From Wire Reports',
 }
 
 
@@ -2599,8 +2628,11 @@ def main():
             json.dump(by_year[year], f, separators=(',', ':'))
     print(f"Saved article files for {len(years)} years ({sum(len(v) for v in by_year.values()):,} articles)")
 
-    # Only export authors with >= 2 articles to keep file size manageable
-    authors_export = [a for a in authors if a["article_count"] >= 2]
+    # Only export authors with >= 2 articles; exclude institutional bylines
+    authors_export = [
+        a for a in authors
+        if a["article_count"] >= 2 and a["name"] not in _INSTITUTIONAL_BYLINES
+    ]
     with open(os.path.join(DATA_DIR, "authors.json"), "w") as f:
         json.dump(authors_export, f)
     print(f"Saved authors.json ({len(authors_export):,} authors, >= 2 articles)")

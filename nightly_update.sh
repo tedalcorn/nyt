@@ -10,7 +10,7 @@
 #   3. To test manually: bash nightly_update.sh
 
 set -e
-cd /Users/tedalcorn/Desktop/claude-projects/nyt
+cd "$(dirname "$0")"
 
 # Load API key from dedicated secrets file (not tracked in git)
 if [ -f "$HOME/.nyt_api_key" ]; then
@@ -24,7 +24,7 @@ fi
 
 echo "$(date): Starting nightly update..." >> nightly_update.log
 
-/usr/bin/python3 update.py >> nightly_update.log 2>&1
+python3 update.py >> nightly_update.log 2>&1
 
 echo "$(date): Build complete." >> nightly_update.log
 
