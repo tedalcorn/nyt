@@ -248,6 +248,10 @@
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
 
+      <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
+      <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains.</p>
+      <p>Article counts in this dashboard are also affected by a URL-duplication problem in the API. Beginning around May 2006, the NYT introduced a new slug-based URL format alongside its old date-coded URLs, causing the API to index many articles twice — once under each URL. A similar issue affects blog content in 2009: blog posts and DealBook articles cross-posted to the main site were often indexed under two or three separate URLs simultaneously. To correct for this, this dashboard removes articles that share the same headline, publication date, and a closely matching word count (within 10%), retaining the shortest URL in each duplicate group. Approximately 62,000 duplicate entries were removed through this process, concentrated in 2006 and the 2008–2009 period of peak blog activity.</p>
+
       <h4 style="margin-top:16px;margin-bottom:4px">Sections</h4>
       <p>Each author is assigned a primary section based on where they have the most published articles, used to filter and sort the Reporters table. Author profiles also list all sections in which the author has published, reflecting the full range of their work. Primary section is a rough proxy for desk assignment and may not be accurate for authors who write regularly across multiple sections.</p>
 
@@ -279,7 +283,6 @@
         <li>"Critic's Choice" (arts picks feature) → <strong>Arts</strong></li>
       </ul>
       <p style="margin-top:8px">Technical categories, product sections, branded-content labels, and small stubs (newsletter aggregators, discontinued apps, TV tie-ins, blogs without a clear section home) are excluded entirely from the Sections tab. This includes the "Archives" section (predominantly paid death notices, not reported content), "Booming" (a baby-boomer lifestyle blog, 2012–2014), "UrbanEye" (a NYC events newsletter), "Guide" (a going-out listings service), and newsletter and podcast aggregators.</p>
-      <p style="margin-top:8px">Blog articles (published at <em>*.blogs.nytimes.com</em> subdomains) are included in the data. The NYT launched and wound down dozens of staff blogs between 2006 and 2017, which accounts for the elevated article counts and lower average word counts during that period.</p>
       <p style="margin-top:8px">Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is not included in the Archive API.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
@@ -700,7 +703,7 @@ async function loadData() {
     }).catch(e => console.error('Failed to load beats:', e));
 
     // Phase 2: article files in background (non-blocking)
-    // Skipped on mobile — loading 2.2M articles exceeds iOS Safari memory limits.
+    // Skipped on mobile — loading 2.1M articles exceeds iOS Safari memory limits.
     // Article lists in detail panels will show a desktop prompt instead.
     if (!IS_MOBILE) {
       (async () => {
@@ -783,23 +786,61 @@ function initOverview() {
     { v: s.total_authors.toLocaleString(), l: 'Authors' },
   ].map(d => `<div class="stat-card"><div class="value">${d.v}</div><div class="label">${d.l}</div></div>`).join('');
 
-  // Monthly chart — exclude current year from line to avoid plummeting partial data
+  // Monthly chart — stacked blog/non-blog bars + words line, with spike annotations
+  // Exclude current year to avoid plummeting partial data
   const cutoffYear = String(new Date().getFullYear());
   const monthly = dashboard.articles_per_month.filter(m => !m.month.startsWith(cutoffYear));
+  const monthLabels = monthly.map(m => m.month);
+
+  // Annotation plugin: draws vertical dashed lines with labels
+  const monthlyAnnotationPlugin = {
+    id: 'monthlyAnnotations',
+    afterDraw(chart) {
+      const ctx = chart.ctx;
+      const xAxis = chart.scales.x;
+      const yAxis = chart.scales.y;
+      const annotations = [
+        { month: '2006-05', label: 'URL duplication begins\n(mid-2006)', align: 'right' },
+        { month: '2009-09', label: 'Blog posts peak\n(55% of total)', align: 'right', labelOffset: 6 },
+        { month: '2017-06', label: 'Blog wind-down\nbegins', align: 'right' },
+      ];
+      ctx.save();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = 'rgba(80,80,80,0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = '#444';
+      annotations.forEach(ann => {
+        const idx = monthLabels.indexOf(ann.month);
+        if (idx < 0) return;
+        const x = xAxis.getPixelForValue(idx);
+        ctx.beginPath();
+        ctx.moveTo(x, yAxis.top);
+        ctx.lineTo(x, yAxis.bottom);
+        ctx.stroke();
+        const lines = ann.label.split('\n');
+        const lineH = 13;
+        const padding = 5;
+        const textW = Math.max(...lines.map(l => ctx.measureText(l).width));
+        const offset = ann.labelOffset || 0;
+        const textX = ann.align === 'right' ? x - padding - textW + offset : x + padding + offset;
+        const textY = yAxis.top + 8;
+        lines.forEach((line, i) => {
+          ctx.fillText(line, textX, textY + i * lineH);
+        });
+      });
+      ctx.restore();
+    }
+  };
+
   destroyChart('chartMonthly');
   chartInstances['chartMonthly'] = new Chart(document.getElementById('chartMonthly'), {
     type: 'bar',
+    plugins: [monthlyAnnotationPlugin],
     data: {
-      labels: monthly.map(m => m.month),
+      labels: monthLabels,
       datasets: [{
-        label: 'Articles',
-        data: monthly.map(m => m.count),
-        backgroundColor: 'rgba(50,104,145,0.6)',
-        borderColor: 'rgba(50,104,145,1)',
-        borderWidth: 1,
-        yAxisID: 'y',
-      }, {
-        label: 'Words (millions)',
+        label: 'Total words (millions)',
         data: monthly.map(m => Math.round(m.words / 1e4) / 100),
         type: 'line',
         borderColor: 'rgba(170,120,80,0.9)',
@@ -808,6 +849,23 @@ function initOverview() {
         pointRadius: 0,
         borderWidth: 2,
         yAxisID: 'y1',
+        order: 0,
+      }, {
+        label: 'Non-blog articles',
+        data: monthly.map(m => m.nonblog != null ? m.nonblog : m.count),
+        stack: 'articles',
+        backgroundColor: 'rgba(50,104,145,0.75)',
+        borderWidth: 0,
+        yAxisID: 'y',
+        order: 1,
+      }, {
+        label: 'Blog articles (*.blogs.nytimes.com + dealbook.nytimes.com)',
+        data: monthly.map(m => m.blog || 0),
+        stack: 'articles',
+        backgroundColor: 'rgba(60,160,140,0.75)',
+        borderWidth: 0,
+        yAxisID: 'y',
+        order: 1,
       }]
     },
     options: {
@@ -816,8 +874,11 @@ function initOverview() {
       animation: false,
       plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
       scales: {
-        x: { ticks: { callback: function(val, idx) { const l = monthly[idx].month; return l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: true, maxRotation: 0, font: { size: 11 } } },
-        y: { beginAtZero: true, title: { display: true, text: 'Articles', font: { size: 11 } } },
+        x: {
+          stacked: true,
+          ticks: { callback: function(val, idx) { const l = monthLabels[idx]; return l && l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: true, maxRotation: 0, font: { size: 11 } }
+        },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Articles', font: { size: 11 } } },
         y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Words (M)', font: { size: 11 } } }
       }
     }
@@ -3397,7 +3458,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/13/26 2:29pm</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 1:02am</span>
 </div>
 </body>
 </html>

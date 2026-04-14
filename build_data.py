@@ -361,6 +361,8 @@ def process_articles(raw_articles):
         # "St." compound last names — API drops the second word of the last name.
         # Only add entries here when the correct full name is confirmed.
         "Nicholas St":  "Nicholas St. Fleur",
+        # Middle initial sometimes dropped / capitalization varies
+        "Michael De La Merced": "Michael J. de la Merced",
         # Trailing "Photographs" suffix (byline parsed as "Name; Photographs by ...")
         "Ken Belson Photographs":   "Ken Belson",
         "Ilana Kaplan Photographs": "Ilana Kaplan",
@@ -1501,18 +1503,88 @@ def build_beats(articles, authors_list):
     return beats_json, author_beats_map
 
 
+def is_blog_url(url):
+    """Return True if the URL is a blog post (*.blogs.nytimes.com or dealbook.nytimes.com)."""
+    if not url:
+        return False
+    try:
+        domain = url.split('/')[2]
+    except IndexError:
+        return False
+    return domain.endswith('.blogs.nytimes.com') or domain == 'dealbook.nytimes.com'
+
+
+def deduplicate_articles(articles):
+    """
+    Remove duplicate articles caused by the 2006 NYT URL scheme transition.
+
+    From ~May 2006, the NYT introduced slug-based URLs alongside the old date-coded format,
+    causing the Archive API to index many articles twice under two different URLs.
+    Duplicates are detected by matching on (headline, pub_date, word_count ±10%).
+    Within each duplicate group, the article with the shorter URL (old date-coded format)
+    is retained; the longer slug URL is dropped.
+    """
+    from collections import defaultdict as _dd
+
+    # Group article indices by (normalized headline, date)
+    groups = _dd(list)
+    for i, art in enumerate(articles):
+        hl = art['headline'].strip().lower()
+        if not hl:
+            continue
+        key = (hl, art['pub_date'][:10])
+        groups[key].append(i)
+
+    to_remove = set()
+    n_dupes = 0
+    for key, indices in groups.items():
+        if len(indices) < 2:
+            continue
+        wcs = [articles[i]['word_count'] for i in indices]
+        max_wc = max(wcs)
+        if max_wc == 0:
+            continue
+        min_wc = min(wcs)
+        # All word counts within 10% of the max → treat as duplicates
+        if min_wc >= max_wc * 0.90:
+            # Keep the one with the shortest URL (old date-coded format is shorter)
+            sorted_idx = sorted(indices, key=lambda i: len(articles[i]['web_url']))
+            for i in sorted_idx[1:]:
+                to_remove.add(i)
+                n_dupes += 1
+
+    result = [art for i, art in enumerate(articles) if i not in to_remove]
+    print(f"  Removed {n_dupes:,} duplicate articles ({n_dupes / len(articles) * 100:.1f}% of total)")
+    return result, n_dupes
+
+
 def build_dashboard_data(articles, authors):
     """Pre-compute dashboard statistics."""
-    # Articles per month
+    # Articles per month — with blog/non-blog split
     monthly = Counter()
     monthly_words = defaultdict(int)
+    monthly_blog = Counter()
+    monthly_nonblog = Counter()
     for art in articles:
         ym = art["year_month"]
         monthly[ym] += 1
         monthly_words[ym] += art["word_count"]
+        if is_blog_url(art["web_url"]):
+            monthly_blog[ym] += 1
+        else:
+            monthly_nonblog[ym] += 1
 
     months_sorted = sorted(monthly.keys())
-    articles_per_month = [{"month": m, "count": monthly[m], "words": monthly_words[m]} for m in months_sorted]
+    articles_per_month = [
+        {
+            "month": m,
+            "count": monthly[m],
+            "words": monthly_words[m],
+            "blog": monthly_blog[m],
+            "nonblog": monthly_nonblog[m],
+        }
+        for m in months_sorted
+    ]
 
     # Section stats
     section_counts = Counter()
@@ -2428,6 +2500,10 @@ def build_subjects_data(articles):
 def main():
     raw = load_all_articles()
     articles = process_articles(raw)
+
+    print("Deduplicating articles...")
+    articles, n_dupes = deduplicate_articles(articles)
+
     authors = build_author_stats(articles)
 
     print("Building beats data...")
@@ -2437,6 +2513,7 @@ def main():
     print(f"  {len(beats_json['subjectList'])} unique beats subjects")
 
     dashboard = build_dashboard_data(articles, authors)
+    dashboard["summary"]["duplicates_removed"] = n_dupes
 
     os.makedirs(DATA_DIR, exist_ok=True)
 
