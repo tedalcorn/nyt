@@ -410,6 +410,7 @@
     <div class="chart-box" id="featuresBox">
       <h3>Features</h3>
       <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:14px">Recurring columns and special coverage that span sections or don't fit neatly into the section taxonomy.</p>
+      <div id="featureDetailPanel" style="display:none;margin-bottom:16px"></div>
       <div id="featuresContainer"></div>
     </div>
   </div>
@@ -467,7 +468,7 @@
       </div>
       <div style="margin-bottom:8px">
         <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
-          <input type="checkbox" id="statePerCapita" onchange="renderStateTrend(stateYears)"> Show per million residents/year
+          <input type="checkbox" id="statePerCapita" onchange="renderStateTrend(stateYears);if(document.getElementById('stateMapBox').style.display!=='none')renderStateMap(stateYears)"> Show per million residents/year
         </label>
       </div>
       <div id="stateTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
@@ -480,17 +481,6 @@
         <button id="toggleStateMapBtn" onclick="toggleStateMap()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Map state coverage</button>
       </div>
       <div id="stateMapBox" style="display:none;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-          <span style="font-size:12px;color:#888">Year range:</span>
-          <span id="mapYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
-          <div class="yr-slider-wrap" id="mapYrSliderWrap">
-            <div class="yr-slider-track"></div>
-            <div class="yr-slider-fill" id="mapYrSliderFill"></div>
-            <input type="range" id="mapYrStart">
-            <input type="range" id="mapYrEnd">
-          </div>
-          <span id="mapYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
-        </div>
         <div id="stateMapSvg" style="width:100%;max-width:700px;position:relative"></div>
         <div id="stateMapLegend" style="margin-top:6px;font-size:11px;color:#888"></div>
       </div>
@@ -506,7 +496,7 @@
         <span id="stateYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
       </div>
       <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
-        <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY, NJ &amp; CT
+        <input type="checkbox" id="includeNYSection" onchange="initStates();if(document.getElementById('stateMapBox').style.display!=='none')renderStateMap(stateYears)"> Include New York section coverage for NY, NJ &amp; CT
       </label>
       <div class="table-scroll-wrap"><div id="stateTableContainer"></div></div>
     </div>
@@ -1087,56 +1077,125 @@ function renderFeatures() {
   const wed = feat.weddings;
   if (!wed) return;
 
-  const allYears = dashboard.all_years;
+  const allYears = dashboard.all_years.filter(y => y !== String(new Date().getFullYear()));
   const byYear = wed.by_year || {};
-  const vowsByYear = wed.vows_col_by_year || {};
+  const totalWords = Object.values(byYear).reduce((s, n) => s + n, 0); // approx; announcements avg ~373 words
+  const firstYear = Object.keys(byYear).sort()[0] || '2000';
+  const lastYear = Object.keys(byYear).sort().reverse()[0] || '2025';
 
-  // Build the wedding announcements feature card
-  const cardId = 'featuresWeddings';
+  // Sparkline for the table row
+  const sparkTrend = {};
+  allYears.forEach(y => { sparkTrend[y] = byYear[y] || 0; });
+  const spark = makeCountrySparkline(sparkTrend, allYears);
+
+  // Avg word count across announcements (we know median is 223, avg 373 from analysis)
+  const avgWords = 373;
+
   container.innerHTML = `
-    <div style="border-top:2px solid #e8e8e8;padding-top:14px;margin-bottom:20px">
-      <h4 style="font-size:15px;font-weight:700;margin:0 0 4px 0;font-family:'nyt-cheltenham',Georgia,serif">Weddings &amp; Vows</h4>
-      <p style="font-size:12px;color:#666;margin:0 0 10px 0">Includes wedding announcements (Styles/Weddings subsection) and the Vows narrative column, which ran primarily 2011–2016. Total: ${wed.total.toLocaleString()} items, 2000–present.</p>
-      <div style="position:relative;height:180px;margin-bottom:10px"><canvas id="chartFeaturesWeddings"></canvas></div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:10px">
-        <div style="flex:1;min-width:180px">
-          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">Top announcement authors</div>
-          ${wed.top_authors.slice(0,8).map(a => `<div style="font-size:12px;padding:2px 0;display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #f5f5f5"><span>${escapeHtml(a.name)}</span><span style="color:#888">${a.count.toLocaleString()}</span></div>`).join('')}
+    <table class="author-table"><thead><tr>
+      <th>Feature</th>
+      <th>Period Active</th>
+      <th></th>
+      <th class="num">Items</th>
+      <th class="num">Avg Words/Item</th>
+    </tr></thead><tbody>
+    <tr id="featuresWeddingsRow" style="cursor:pointer">
+      <td class="author-name"><a href="#" class="feature-link" data-feature="weddings" style="color:#326891;text-decoration:none">Weddings &amp; Vows</a></td>
+      <td>${firstYear}–present</td>
+      <td style="padding:2px 8px">${spark}</td>
+      <td class="num">${wed.total.toLocaleString()}</td>
+      <td class="num">${avgWords.toLocaleString()}</td>
+    </tr>
+    </tbody></table>`;
+
+  container.querySelector('.feature-link').addEventListener('click', e => {
+    e.preventDefault();
+    openFeatureDetail('weddings');
+  });
+}
+
+function openFeatureDetail(featureKey) {
+  const feat = dashboard.features;
+  const wed = feat.weddings;
+  if (!wed) return;
+
+  const panel = document.getElementById('featureDetailPanel');
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const allYears = dashboard.all_years.filter(y => y !== String(new Date().getFullYear()));
+  const byYear = wed.by_year || {};
+
+  panel.innerHTML = `
+    <div class="author-timeline">
+      <button class="close-btn" onclick="document.getElementById('featureDetailPanel').style.display='none';destroyChart('chartFeatureDetail')">Close</button>
+      <h3>Weddings &amp; Vows</h3>
+      <div class="timeline-meta">${wed.total.toLocaleString()} items · 2000–present</div>
+      <p style="font-size:12px;color:#666;margin:8px 0 0 0">Includes weekly wedding announcements (Styles section) and the Vows narrative column — one couple profiled in depth. The announcements have run continuously from 2000; the Vows column is tagged in the API from 2011 onward, but the column itself predates this data by decades. Data source: NYT Styles/Weddings subsection and "weddings and engagements" subject keyword.</p>
+      <div style="margin-top:12px">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Items per year</div>
+        <canvas id="chartFeatureDetail" style="max-height:200px"></canvas>
+      </div>
+      <div style="margin-top:14px">
+        <div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Top authors</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0 20px">
+          ${wed.top_authors.slice(0,12).map(a =>
+            `<div style="font-size:12px;padding:3px 0;min-width:200px;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #f5f5f5">` +
+            `<a href="#" class="feature-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a>` +
+            `<span style="color:#888">${a.count.toLocaleString()}</span></div>`
+          ).join('')}
         </div>
-        <div style="flex:1;min-width:180px">
-          <div style="font-size:12px;font-weight:600;color:#555;margin-bottom:4px">Vows column authors (2011–2016)</div>
-          ${wed.vows_col_authors.slice(0,8).map(a => `<div style="font-size:12px;padding:2px 0;display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #f5f5f5"><span>${escapeHtml(a.name)}</span><span style="color:#888">${a.count.toLocaleString()}</span></div>`).join('')}
-        </div>
+      </div>
+      <div id="featureVowsArticles" style="margin-top:16px">
+        <div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Vows column articles (tagged in API from 2011; column predates these records)</div>
       </div>
     </div>`;
 
-  // Draw stacked bar chart: announcements (blue) + Vows column (teal)
-  destroyChart('chartFeaturesWeddings');
-  const announceData = allYears.map(y => Math.max(0, (byYear[y] || 0) - (vowsByYear[y] || 0)));
-  const vowsData = allYears.map(y => vowsByYear[y] || 0);
-  chartInstances['chartFeaturesWeddings'] = new Chart(
-    document.getElementById('chartFeaturesWeddings'), {
-      type: 'bar',
-      data: {
-        labels: allYears,
-        datasets: [
-          { label: 'Announcements', data: announceData, backgroundColor: 'rgba(50,104,145,0.75)', stack: 'a' },
-          { label: 'Vows column', data: vowsData, backgroundColor: 'rgba(60,160,140,0.75)', stack: 'a' },
-        ]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
-          datalabels: { display: false }
-        },
-        scales: {
-          x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
-          y: { beginAtZero: true, stacked: true, ticks: { font: { size: 10 } } }
-        }
+  // Wire author links
+  panel.querySelectorAll('.feature-author-link').forEach(el => {
+    el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+  });
+
+  // Chart
+  destroyChart('chartFeatureDetail');
+  chartInstances['chartFeatureDetail'] = new Chart(document.getElementById('chartFeatureDetail'), {
+    type: 'bar',
+    data: {
+      labels: allYears,
+      datasets: [{ label: 'Items', data: allYears.map(y => byYear[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, datalabels: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
+        y: { beginAtZero: true, ticks: { font: { size: 10 } } }
       }
     }
-  );
+  });
+
+  // Vows column article list
+  const vowsArts = wed.vows_col_articles || [];
+  const listEl = document.getElementById('featureVowsArticles');
+  if (vowsArts.length) {
+    const listDiv = document.createElement('div');
+    listDiv.id = 'featureVowsArticleList';
+    listEl.appendChild(listDiv);
+    renderArticleList('featureVowsArticleList', vowsArts.map(a => ({
+      pub_date: a.d, headline: a.h, authors: a.a, word_count: a.w,
+      web_url: a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || ''),
+      section: 'Styles',
+    })), a => {
+      const byline = (a.authors || []).join(', ');
+      return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+        <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+        <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
+        <span style="color:#aaa;font-size:11px"> · ${escapeHtml(byline)} · ${a.word_count.toLocaleString()} words</span>
+      </div>`;
+    }, { csvFilename: 'vows_column_articles.csv' });
+  } else {
+    listEl.innerHTML += '<p style="font-size:12px;color:#aaa">No tagged Vows column articles in data.</p>';
+  }
 }
 
 let sectionTableSort = { col: 'count', asc: false };
@@ -1980,37 +2039,75 @@ function showAuthorTimeline(name, opts = {}) {
   }
 
   // --- Monthly chart: render immediately from monthly_counts in authors.json ---
+  // If author has blog articles, show stacked annual (blog teal / non-blog blue) instead of monthly.
   // (when no subject filter; subject-filtered chart is rendered in fillArticleDetails)
   if (!subjectFilter && authorInfo.monthly_counts && Object.keys(authorInfo.monthly_counts).length) {
-    const byMonth = authorInfo.monthly_counts;
-    const first = authorInfo.first_date ? authorInfo.first_date.slice(0, 7) : null;
-    const last = authorInfo.last_date ? authorInfo.last_date.slice(0, 7) : null;
-    if (first && last) {
-      const allMonths = [];
-      let [ym, mm] = first.split('-').map(Number);
-      const [ly, lm] = last.split('-').map(Number);
-      while (ym < ly || (ym === ly && mm <= lm)) {
-        allMonths.push(`${ym}-${String(mm).padStart(2, '0')}`);
-        mm++; if (mm > 12) { mm = 1; ym++; }
-      }
-      const monthCanvas = document.getElementById(chartId);
-      if (monthCanvas) {
-        destroyChart(chartId);
+    const blogCounts = authorInfo.annual_blog_counts || {};
+    const totalBlog = Object.values(blogCounts).reduce((s, v) => s + v, 0);
+    const hasBlog = totalBlog > 0;
+    const monthCanvas = document.getElementById(chartId);
+    if (monthCanvas) {
+      destroyChart(chartId);
+      if (hasBlog) {
+        // Annual stacked blog/non-blog
+        const annualYears = Object.keys(authorInfo.annual_words).sort();
+        const byMonth = authorInfo.monthly_counts;
+        const annualTotals = {};
+        for (const [ym, n] of Object.entries(byMonth)) {
+          const y = ym.slice(0, 4);
+          annualTotals[y] = (annualTotals[y] || 0) + n;
+        }
+        const blogData = annualYears.map(y => blogCounts[y] || 0);
+        const nonBlogData = annualYears.map(y => Math.max(0, (annualTotals[y] || 0) - (blogCounts[y] || 0)));
         chartInstances[chartId] = new Chart(monthCanvas, {
           type: 'bar',
           data: {
-            labels: allMonths,
-            datasets: [{ label: 'Articles', data: allMonths.map(k => byMonth[k] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+            labels: annualYears,
+            datasets: [
+              { label: 'Standard articles', data: nonBlogData, backgroundColor: 'rgba(50,104,145,0.75)', stack: 'a' },
+              { label: 'Blog articles', data: blogData, backgroundColor: 'rgba(60,160,140,0.75)', stack: 'a' },
+            ]
           },
           options: {
             responsive: true,
-            plugins: { legend: { display: false } },
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
+              datalabels: { display: false }
+            },
             scales: {
-              x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return (l.endsWith('-01') && parseInt(l.slice(0,4)) % 5 === 0) ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
-              y: { beginAtZero: true, ticks: { stepSize: 1 } }
+              x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
+              y: { beginAtZero: true, stacked: true, ticks: { font: { size: 10 } } }
             }
           }
         });
+      } else {
+        const byMonth = authorInfo.monthly_counts;
+        const first = authorInfo.first_date ? authorInfo.first_date.slice(0, 7) : null;
+        const last = authorInfo.last_date ? authorInfo.last_date.slice(0, 7) : null;
+        if (first && last) {
+          const allMonths = [];
+          let [ym, mm] = first.split('-').map(Number);
+          const [ly, lm] = last.split('-').map(Number);
+          while (ym < ly || (ym === ly && mm <= lm)) {
+            allMonths.push(`${ym}-${String(mm).padStart(2, '0')}`);
+            mm++; if (mm > 12) { mm = 1; ym++; }
+          }
+          chartInstances[chartId] = new Chart(monthCanvas, {
+            type: 'bar',
+            data: {
+              labels: allMonths,
+              datasets: [{ label: 'Articles', data: allMonths.map(k => byMonth[k] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return (l.endsWith('-01') && parseInt(l.slice(0,4)) % 5 === 0) ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+              }
+            }
+          });
+        }
       }
     }
   }
@@ -2950,6 +3047,7 @@ function initStateYearSlider(allYears, states, combined) {
     document.getElementById('stateYrEndLbl').textContent = e;
     stateYears = allYears.filter(y => Number(y) >= s && Number(y) <= e);
     renderStatesTable(states, stateYears, combined);
+    if (document.getElementById('stateMapBox').style.display !== 'none') renderStateMap(stateYears);
   }
   sInput.addEventListener('input', update);
   eInput.addEventListener('input', update);
@@ -2983,53 +3081,38 @@ async function initStateMap() {
       return;
     }
   }
-  const sc = dashboard.us_state_coverage;
-  const allYears = sc.years.filter(y => y !== String(new Date().getFullYear()));
-  const minY = Number(allYears[0]), maxY = Number(allYears[allYears.length - 1]);
-
-  const sInput = document.getElementById('mapYrStart');
-  const eInput = document.getElementById('mapYrEnd');
-  sInput.min = eInput.min = minY;
-  sInput.max = eInput.max = maxY;
-  sInput.value = minY;
-  eInput.value = maxY;
-
-  function updateSlider() {
-    let s = parseInt(sInput.value), e = parseInt(eInput.value);
-    if (s > e) { s = e; sInput.value = s; }
-    const range = maxY - minY || 1;
-    document.getElementById('mapYrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
-    document.getElementById('mapYrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
-    document.getElementById('mapYrStartLbl').textContent = s;
-    document.getElementById('mapYrEndLbl').textContent = e;
-    const yrs = allYears.filter(y => Number(y) >= s && Number(y) <= e);
-    renderStateMap(yrs);
-  }
-  sInput.addEventListener('input', updateSlider);
-  eInput.addEventListener('input', updateSlider);
-  updateSlider();
+  renderStateMap(stateYears);
 }
 
 function renderStateMap(years) {
+  if (!stateGeoJson) return;
   const sc = dashboard.us_state_coverage;
   const includeNY = document.getElementById('includeNYSection')?.checked;
+  const perCapita = document.getElementById('statePerCapita')?.checked;
   const combined = getStateCounts(sc, includeNY);
+  const numYears = years.length || 1;
 
-  // Aggregate counts for the selected year range
-  const stateCounts = {};
+  // Aggregate counts for the selected year range, optionally per-capita per year
+  const stateVals = {};
   for (const [state, trend] of Object.entries(combined)) {
-    stateCounts[state] = years.reduce((s, y) => s + (trend[y] || 0), 0);
+    const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
+    const pop = STATE_POP_M[state];
+    stateVals[state] = (perCapita && pop) ? Math.round(total / pop / numYears * 10) / 10 : total;
   }
 
-  // Quintile thresholds (ignore zeros)
-  const vals = Object.values(stateCounts).filter(v => v > 0).sort((a, b) => a - b);
+  // Quintile thresholds (ignore zeros, exclude DC 2001-2003 distortion for per-capita)
+  const vals = Object.entries(stateVals)
+    .filter(([s, v]) => v > 0)
+    .map(([, v]) => v)
+    .sort((a, b) => a - b);
   const q = i => vals[Math.floor(vals.length * i / 5)] || 0;
   const breaks = [q(0), q(1), q(2), q(3), q(4), Infinity];
-  const colors = ['#eef4fa', '#b8d0e8', '#7aaed0', '#3d7bb5', '#1a4f80'];
+  const colors = ['#dce9f5', '#9dbdda', '#5e96c0', '#2c6fa3', '#0d3d6b'];
+  const noDataColor = '#e8d5b7'; // warm tan — clearly distinct from the blue scale
 
   function fillColor(state) {
-    const v = stateCounts[state] || 0;
-    if (v === 0) return '#f0f0f0';
+    const v = stateVals[state] || 0;
+    if (v === 0) return noDataColor;
     for (let i = 0; i < 5; i++) {
       if (v <= breaks[i + 1]) return colors[i];
     }
@@ -3070,9 +3153,9 @@ function renderStateMap(years) {
     .attr('stroke', '#fff').attr('stroke-width', 0.5)
     .on('mouseover', function(event, d) {
       const name = d.properties.NAME;
-      const count = stateCounts[name] || 0;
-      tip.style('display', 'block')
-         .html(`<strong>${name}</strong>: ${count.toLocaleString()} articles`);
+      const v = stateVals[name] || 0;
+      const label = perCapita ? `${v.toLocaleString()} art/M res/yr` : `${v.toLocaleString()} articles`;
+      tip.style('display', 'block').html(`<strong>${name}</strong>: ${label}`);
       d3.select(this).attr('stroke', '#333').attr('stroke-width', 1.2);
     })
     .on('mousemove', function(event) {
@@ -3085,20 +3168,21 @@ function renderStateMap(years) {
       d3.select(this).attr('stroke', '#fff').attr('stroke-width', 0.5);
     });
 
-  // Legend
+  const unit = perCapita ? 'art/million residents/yr' : 'articles total';
   const labelMax = i => {
     const v = breaks[i + 1];
     return v === Infinity ? `${(breaks[i] + 1).toLocaleString()}+` : `≤${v.toLocaleString()}`;
   };
+  const yrsLabel = years.length ? ` · ${years[0]}–${years[years.length - 1]}` : '';
   document.getElementById('stateMapLegend').innerHTML =
-    'Articles per state · Quintile scale: ' +
+    `${unit}${yrsLabel} · Quintile scale: ` +
     colors.map((c, i) =>
       `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px">` +
-      `<span style="width:12px;height:12px;background:${c};display:inline-block;border:1px solid #ccc;border-radius:2px"></span>` +
+      `<span style="width:12px;height:12px;background:${c};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
       `<span>${labelMax(i)}</span></span>`
     ).join('') +
     `<span style="display:inline-flex;align-items:center;gap:3px">` +
-    `<span style="width:12px;height:12px;background:#f0f0f0;display:inline-block;border:1px solid #ccc;border-radius:2px"></span>` +
+    `<span style="width:12px;height:12px;background:${noDataColor};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
     `<span>No data</span></span>`;
 }
 
@@ -3107,12 +3191,17 @@ let stateTableSort = { col: 'count', asc: false };
 function renderStatesTable(states, years, combined) {
   const numYears = years.length;
 
+  // D.C. 2001-2003 data is unreliable (9/11 over-tagging); exclude from per-capita
+  const DC_BAD_YEARS = new Set(['2001', '2002', '2003']);
   const rows = states.map(s => {
     const trend = combined[s] || {};
     const total = years.reduce((sum, y) => sum + (trend[y] || 0), 0);
     const pop = STATE_POP_M[s];
-    const perCapita = pop ? Math.round(total / pop / numYears * 10) / 10 : null;
-    return { name: s, count: total, perCapita };
+    const pcYears = s === 'D.C.' ? years.filter(y => !DC_BAD_YEARS.has(y)) : years;
+    const pcTotal = s === 'D.C.' ? pcYears.reduce((sum, y) => sum + (trend[y] || 0), 0) : total;
+    const perCapita = pop && pcYears.length ? Math.round(pcTotal / pop / pcYears.length * 10) / 10 : null;
+    const dcAdjusted = s === 'D.C.' && pcYears.length < years.length;
+    return { name: s, count: total, perCapita, dcAdjusted };
   });
 
   rows.sort((a, b) => {
@@ -3147,6 +3236,9 @@ function renderStatesTable(states, years, combined) {
       let v = r[c.key];
       if (c.key === 'name') {
         html += `<td class="author-name">${escapeHtml(String(v))}</td>`;
+      } else if (c.key === 'perCapita' && r.dcAdjusted) {
+        const disp = typeof v === 'number' ? v.toLocaleString() : '—';
+        html += `<td class="${c.cls||''}" title="D.C. per-capita excludes 2001–2003 due to observed over-tagging in the API following 9/11">${escapeHtml(disp)}*</td>`;
       } else {
         if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
         else if (v == null) v = '—';
@@ -3294,13 +3386,18 @@ function openStateDetail(state) {
   `;
 
   const vals = years.map(y => trend[y] || 0);
+  const DC_BAD = new Set(['2001', '2002', '2003']);
+  const isDC = state === 'D.C.';
+  const barColors = years.map(y =>
+    isDC && DC_BAD.has(y) ? 'rgba(180,80,80,0.55)' : 'rgba(50,104,145,0.7)'
+  );
 
   destroyChart('chartStateDetail');
   chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
     type: 'bar',
     data: {
       labels: years,
-      datasets: [{ label: 'Articles', data: vals, backgroundColor: 'rgba(50,104,145,0.7)' }]
+      datasets: [{ label: 'Articles', data: vals, backgroundColor: barColors }]
     },
     options: {
       responsive: true,
@@ -3308,13 +3405,24 @@ function openStateDetail(state) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            afterLabel: ctx => annotations[years[ctx.dataIndex]] ? `Notable event: ${annotations[years[ctx.dataIndex]]}` : ''
+            afterLabel: ctx => {
+              const y = years[ctx.dataIndex];
+              const note = annotations[y] ? `Notable: ${annotations[y]}` : '';
+              const dcNote = isDC && DC_BAD.has(y) ? '⚠ API over-tagging suspected (post-9/11)' : '';
+              return [note, dcNote].filter(Boolean).join('\n');
+            }
           }
         }
       },
       scales: { y: { beginAtZero: true } }
     }
   });
+  if (isDC) {
+    const noteEl = document.createElement('p');
+    noteEl.style.cssText = 'font-size:11px;color:#999;margin:4px 0 0 0';
+    noteEl.textContent = '⚠ Red bars (2001–2003): API geographic tags appear inflated following 9/11; per-capita figures for D.C. exclude these years.';
+    document.getElementById('chartStateDetail').parentNode.appendChild(noteEl);
+  }
 
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -3964,7 +4072,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 12:30pm ET</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 2:00pm ET</span>
 </div>
 </body>
 </html>

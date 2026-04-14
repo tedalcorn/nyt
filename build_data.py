@@ -1237,6 +1237,7 @@ def build_author_stats(articles):
         "annual_words": defaultdict(int),    # year -> words
         "annual_sections": defaultdict(Counter),  # year -> section counts
         "monthly_counts": defaultdict(int),  # YYYY-MM -> article count
+        "annual_blog_counts": defaultdict(int),  # year -> blog article count
         "shared_byline_count": 0,
         "monthly_shared_counts": defaultdict(int),  # YYYY-MM -> shared article count
         "coauthors": Counter(),
@@ -1260,6 +1261,8 @@ def build_author_stats(articles):
             d["annual_words"][year] += author_words
             d["annual_sections"][year][art["section"]] += 1
             d["monthly_counts"][art["year_month"]] += 1
+            if is_blog_url(art.get("web_url", "")):
+                d["annual_blog_counts"][year] += 1
             if art["word_count"] == 0:
                 d["zero_word_articles"] += 1
             if is_shared:
@@ -1389,6 +1392,7 @@ def build_author_stats(articles):
             "annual_words_norm": annual_words_norm,
             "annual_words": dict(d["annual_words"]),
             "monthly_counts": dict(d["monthly_counts"]),
+            "annual_blog_counts": dict(d["annual_blog_counts"]) if any(d["annual_blog_counts"].values()) else {},
             "shared_byline_count": shared_count,
             "monthly_shared_counts": dict(d["monthly_shared_counts"]),
             "coauthors": top_coauthors,
@@ -2506,12 +2510,33 @@ def build_dashboard_data(articles, authors):
                 if auth:
                     vows_col_authors[auth] += 1
 
+    # Collect Vows column articles for the popup article list
+    vows_col_articles = []
+    for art in articles:
+        sb = [s.lower() for s in (art.get("subjects", []) or [])]
+        if "vows (times column)" in sb:
+            vows_col_articles.append({
+                "d": art["pub_date"],
+                "h": art.get("headline", ""),
+                "a": art.get("authors", []),
+                "w": art.get("word_count", 0),
+                "u": art.get("web_url", ""),
+            })
+    vows_col_articles.sort(key=lambda x: x["d"], reverse=True)
+
+    # Merge author lists (announcements + Vows column together)
+    all_wed_authors = Counter()
+    for n, c in weddings_authors.items():
+        all_wed_authors[n] += c
+    for n, c in vows_col_authors.items():
+        all_wed_authors[n] += c
+
     features_data = {
         "weddings": {
             "by_year": dict(weddings_by_year),
             "vows_col_by_year": dict(vows_col_by_year),
-            "top_authors": [{"name": n, "count": c} for n, c in weddings_authors.most_common(15)],
-            "vows_col_authors": [{"name": n, "count": c} for n, c in vows_col_authors.most_common(10)],
+            "top_authors": [{"name": n, "count": c} for n, c in all_wed_authors.most_common(15)],
+            "vows_col_articles": vows_col_articles,
             "total": sum(weddings_by_year.values()),
         },
     }
