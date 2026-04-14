@@ -1086,6 +1086,8 @@ def process_articles(raw_articles):
         'Natalia Osipova': 'Natalia V. Osipova',   # Same NYT video journalist (LinkedIn)
         # NOT merging: 'Robert Frank' / 'Robert H. Frank' — different people
         # (Robert H. Frank = Cornell economist/columnist; Robert Frank = wealth/lifestyle reporter)
+        # Middle name present in most bylines but occasionally dropped (user-confirmed same person)
+        'Michael Shear': 'Michael D. Shear',
     }
 
     # Apply overrides to all articles so counts accumulate on the correct name
