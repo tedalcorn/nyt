@@ -1182,19 +1182,19 @@ function openFeatureDetail(featureKey) {
   const allYears = dashboard.all_years.filter(y => y !== String(new Date().getFullYear()));
   const byYear = wed.by_year || {};
 
-  const topAuthorsHtml = wed.top_authors.slice(0,10).map(a =>
-    `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="feature-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">${a.count.toLocaleString()}</span></span>`
+  const topAuthorsHtml = wed.top_authors.slice(0,8).map(a =>
+    `<span style="margin-right:14px;margin-bottom:4px;white-space:nowrap;display:inline-block"><a href="#" class="feature-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">${a.count.toLocaleString()}</span></span>`
   ).join('');
 
   panel.innerHTML = `
-    <div class="author-timeline">
+    <div class="author-timeline" style="overflow:hidden">
       <button class="close-btn" onclick="document.getElementById('featureDetailPanel').style.display='none';destroyChart('chartFeatureDetail')">Close</button>
       <h3>Weddings &amp; Vows</h3>
       <div class="timeline-meta">${wed.total.toLocaleString()} items · 2000–present</div>
       <p style="font-size:12px;color:#666;margin:8px 0 0 0">Includes weekly wedding announcements (Styles section) and the Vows narrative column — one couple profiled in depth.</p>
       <div style="margin-top:12px">
         <div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Top authors</div>
-        <div style="font-size:12px;line-height:2;margin-bottom:14px">${topAuthorsHtml}</div>
+        <div style="font-size:12px;line-height:1.8;margin-bottom:14px">${topAuthorsHtml}</div>
       </div>
       <div>
         <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Items per year</div>
@@ -1230,16 +1230,24 @@ function openFeatureDetail(featureKey) {
   fillWeddingArticleList();
 }
 
+let weddingArticleOrder = 'newest';
+
 function fillWeddingArticleList() {
   const wrap = document.getElementById('featureArticleListWrap');
   if (!wrap) return;
-  const prebuilt = dashboard.features?.weddings?.recent_articles || [];
+  const prebuilt = (dashboard.features?.weddings?.recent_articles || []).slice();
   if (!prebuilt.length) {
     wrap.innerHTML = '<p style="color:#aaa;font-size:12px">No wedding articles found.</p>';
     return;
   }
 
-  const csvBtn = `<button onclick="downloadArticlesCSV(dashboard.features.weddings.recent_articles.map(a=>({pub_date:a.d,headline:a.h,authors:(a.a||[]).join(', '),word_count:a.w,web_url:a.u&&a.u.startsWith('/')?'https://www.nytimes.com'+a.u:a.u})),'weddings_and_vows.csv')" style="font-size:11px;padding:2px 8px;margin-bottom:6px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer">Download CSV</button>`;
+  if (weddingArticleOrder === 'oldest') prebuilt.reverse();
+
+  const csvBtn = `<button onclick="downloadArticlesCSV(dashboard.features.weddings.recent_articles.map(a=>({pub_date:a.d,headline:a.h,authors:(a.a||[]).join(', '),word_count:a.w,web_url:a.u&&a.u.startsWith('/')?'https://www.nytimes.com'+a.u:a.u})),'weddings_and_vows.csv')" style="font-size:11px;padding:2px 8px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer">Download CSV</button>`;
+  const sortBtns = `<span style="margin-left:8px;font-size:11px">
+    <button onclick="weddingArticleOrder='newest';fillWeddingArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:${weddingArticleOrder==='newest'?'#326891':'#f0f4f8'};color:${weddingArticleOrder==='newest'?'#fff':'inherit'}">Newest</button>
+    <button onclick="weddingArticleOrder='oldest';fillWeddingArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:${weddingArticleOrder==='oldest'?'#326891':'#f0f4f8'};color:${weddingArticleOrder==='oldest'?'#fff':'inherit'}">Oldest</button>
+  </span>`;
 
   const rows = prebuilt.map(a => {
     const url = a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || '');
@@ -1252,7 +1260,8 @@ function fillWeddingArticleList() {
       `</div>`;
   }).join('');
 
-  wrap.innerHTML = csvBtn + `<div style="font-size:11px;color:#888;margin-bottom:4px">${prebuilt.length.toLocaleString()} most recent articles shown</div>` + rows;
+  wrap.innerHTML = `<div style="margin-bottom:6px">${csvBtn}${sortBtns}</div>` +
+    `<div style="font-size:11px;color:#888;margin-bottom:4px">${prebuilt.length.toLocaleString()} articles</div>` + rows;
 }
 
 let sectionTableSort = { col: 'count', asc: false };
@@ -2869,13 +2878,13 @@ function renderWorldMap(years) {
     if (total > 0) countByGeo[geoName] = (countByGeo[geoName] || 0) + total;
   }
 
-  // Fixed log-scale bins (articles total over selected years, very skewed distribution)
+  // Fixed bins scaled by year range (articles/year thresholds × number of years selected)
   const numY = numYears;
-  // Bins expressed as articles/year thresholds scaled to the selected year range
-  const binThresholds = [2, 8, 40, 200].map(t => t * numY); // <2/yr, 2-8/yr, 8-40/yr, 40-200/yr, 200+/yr
-  const colors = ['#dce9f5', '#9dbdda', '#5e96c0', '#2c6fa3', '#0d3d6b'];
+  const binThresholds = [2, 8, 40, 200].map(t => t * numY);
+  // Wide-contrast palette: very light for sparse coverage → dark navy for heavy coverage
+  const colors = ['#eef4fa', '#9dbdda', '#4a8bbf', '#1a5a94', '#082d52'];
   const noDataColor = '#e8d5b7';
-  const binLabels = [`<${binThresholds[0]}`, `${binThresholds[0]}–${binThresholds[1]}`, `${binThresholds[1]}–${binThresholds[2]}`, `${binThresholds[2]}–${binThresholds[3]}`, `${binThresholds[3]}+`];
+  const binLabels = ['< 2/yr', '2–8/yr', '8–40/yr', '40–200/yr', '200+/yr'];
 
   function fillColor(geoName) {
     const v = countByGeo[geoName] || 0;
@@ -2938,7 +2947,7 @@ function renderWorldMap(years) {
 
   const yrsLabel = years.length ? ` · ${years[0]}–${years[years.length - 1]}` : '';
   document.getElementById('worldMapLegend').innerHTML =
-    `articles total${yrsLabel} · Fixed log-scale bins (articles/year): ` +
+    `Coverage scale (articles/year)${yrsLabel}: ` +
     colors.map((c, i) =>
       `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:8px">` +
       `<span style="width:12px;height:12px;background:${c};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
@@ -4473,7 +4482,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 2:05pm</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 2:27pm</span>
 </div>
 </body>
 </html>
