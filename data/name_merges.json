@@ -155,7 +155,7 @@
   },
   {
     "canonical": "Adam B. Ellick",
-    "canonical_count": 213,
+    "canonical_count": 214,
     "merged": [
       {
         "name": "ADAM B. ELLICK",
@@ -1050,11 +1050,11 @@
     ]
   },
   {
-    "canonical": "ANDREW. C. REVKIN (NYT)",
+    "canonical": "ANDREW. C. REVKIN",
     "canonical_count": 1,
     "merged": [
       {
-        "name": "Andrew. C. Revkin (NYT)",
+        "name": "Andrew. C. Revkin",
         "count": 1
       }
     ]
@@ -1075,6 +1075,16 @@
     "merged": [
       {
         "name": "Angel Harris",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Angela Macropoulos",
+    "canonical_count": 38,
+    "merged": [
+      {
+        "name": "Angela M. MacRopoulos",
         "count": 1
       }
     ]
@@ -2288,6 +2298,16 @@
     ]
   },
   {
+    "canonical": "Bruce Lambert",
+    "canonical_count": 942,
+    "merged": [
+      {
+        "name": "Bruce M. Lambert",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Bruce Mccall",
     "canonical_count": 44,
     "merged": [
@@ -2379,7 +2399,7 @@
   },
   {
     "canonical": "C. J. Chivers",
-    "canonical_count": 1505,
+    "canonical_count": 1588,
     "merged": [
       {
         "name": "C. J <missing Dot> Chivers",
@@ -3434,16 +3454,6 @@
     ]
   },
   {
-    "canonical": "Daniel B. Schneider (NYT)",
-    "canonical_count": 29,
-    "merged": [
-      {
-        "name": "DANIEL B. SCHNEIDER (NYT)",
-        "count": 2
-      }
-    ]
-  },
-  {
     "canonical": "Daniel F. Becker",
     "canonical_count": 8,
     "merged": [
@@ -3615,11 +3625,11 @@
   },
   {
     "canonical": "Daniel B. Schneider",
-    "canonical_count": 101,
+    "canonical_count": 130,
     "merged": [
       {
         "name": "DANIEL B. SCHNEIDER",
-        "count": 12
+        "count": 14
       },
       {
         "name": "Daniel P. Schneider",
@@ -3726,20 +3736,6 @@
       {
         "name": "DAVE ITZKOFF",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "David M. Herszenhorn (NYT)",
-    "canonical_count": 43,
-    "merged": [
-      {
-        "name": "David M. Halbfinger (NYT)",
-        "count": 16
-      },
-      {
-        "name": "David D. Kirkpatrick (NYT)",
-        "count": 6
       }
     ]
   },
@@ -4101,7 +4097,7 @@
   },
   {
     "canonical": "David M. Halbfinger",
-    "canonical_count": 1402,
+    "canonical_count": 1420,
     "merged": [
       {
         "name": "David Halbfinger",
@@ -4179,7 +4175,7 @@
   },
   {
     "canonical": "David M. Herszenhorn",
-    "canonical_count": 2411,
+    "canonical_count": 2479,
     "merged": [
       {
         "name": "DAVID M. HERSZENHORN",
@@ -4333,7 +4329,7 @@
   },
   {
     "canonical": "David D. Kirkpatrick",
-    "canonical_count": 1983,
+    "canonical_count": 1990,
     "merged": [
       {
         "name": "David Kirkpatrick",
@@ -4553,16 +4549,6 @@
     "merged": [
       {
         "name": "David M. Perry",
-        "count": 2
-      }
-    ]
-  },
-  {
-    "canonical": "David M. Herszenhorn (NYT COMPILED BY ANTHONY RAMIREZ)",
-    "canonical_count": 22,
-    "merged": [
-      {
-        "name": "David M. Halbfinger (NYT COMPILED BY ANTHONY RAMIREZ)",
         "count": 2
       }
     ]
@@ -4995,7 +4981,7 @@
   },
   {
     "canonical": "Diana B. Henriques",
-    "canonical_count": 362,
+    "canonical_count": 364,
     "merged": [
       {
         "name": "DIANA B. HENRIQUES",
@@ -6759,7 +6745,7 @@
     "merged": [
       {
         "name": "Gary M. Gately",
-        "count": 1
+        "count": 3
       }
     ]
   },
@@ -7239,7 +7225,7 @@
   },
   {
     "canonical": "Hassan M. Fattah",
-    "canonical_count": 402,
+    "canonical_count": 430,
     "merged": [
       {
         "name": "HASSAN M. FATTAH",
@@ -7741,7 +7727,7 @@
   },
   {
     "canonical": "J. D. Biersdorfer",
-    "canonical_count": 3414,
+    "canonical_count": 3415,
     "merged": [
       {
         "name": "J. D. BIERSDORFER",
@@ -8513,7 +8499,7 @@
   },
   {
     "canonical": "Jeanne B. Pinder",
-    "canonical_count": 14,
+    "canonical_count": 15,
     "merged": [
       {
         "name": "Jeanne M. Pinder",
@@ -8744,15 +8730,11 @@
     ]
   },
   {
-    "canonical": "Jennifer 8. Lee (NYT)",
-    "canonical_count": 206,
+    "canonical": "JENNIFER 8.LEE",
+    "canonical_count": 1,
     "merged": [
       {
-        "name": "JENNIFER 8. LEE (NYT)",
-        "count": 3
-      },
-      {
-        "name": "Jennifer 8.lee (NYT)",
+        "name": "Jennifer 8.lee",
         "count": 1
       }
     ]
@@ -8763,16 +8745,6 @@
     "merged": [
       {
         "name": "Jennifer Van Allen",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Jennifer 8. Lee (COMPILED BY GARY BRADFORD)",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Jennifer 8. Lee (NYT COMPILED BY GARY BRADFORD)",
         "count": 1
       }
     ]
@@ -8819,11 +8791,11 @@
   },
   {
     "canonical": "Jennifer 8. Lee",
-    "canonical_count": 1765,
+    "canonical_count": 1995,
     "merged": [
       {
         "name": "JENNIFER 8. LEE",
-        "count": 341
+        "count": 344
       },
       {
         "name": "Jennifer Joan Lee",
@@ -9425,7 +9397,7 @@
   },
   {
     "canonical": "John M. Broder",
-    "canonical_count": 1351,
+    "canonical_count": 1378,
     "merged": [
       {
         "name": "JOHN M. BRODER",
@@ -10239,7 +10211,7 @@
   },
   {
     "canonical": "Jonathan D. Glater",
-    "canonical_count": 750,
+    "canonical_count": 772,
     "merged": [
       {
         "name": "Jonathan Glater",
@@ -10587,7 +10559,7 @@
   },
   {
     "canonical": "Joseph B. Treaster",
-    "canonical_count": 577,
+    "canonical_count": 595,
     "merged": [
       {
         "name": "JOSEPH B. TREASTER",
@@ -11810,11 +11782,11 @@
     ]
   },
   {
-    "canonical": "L. D. Kirshenbaum (NYT)",
-    "canonical_count": 5,
+    "canonical": "L. D. Kirshenbaum",
+    "canonical_count": 7,
     "merged": [
       {
-        "name": "L. D. KIRSHENBAUM (NYT)",
+        "name": "L. D. KIRSHENBAUM",
         "count": 1
       }
     ]
@@ -11901,7 +11873,7 @@
   },
   {
     "canonical": "Laura M. Holson",
-    "canonical_count": 937,
+    "canonical_count": 939,
     "merged": [
       {
         "name": "LAURA M. HOLSON",
@@ -15091,7 +15063,7 @@
     "merged": [
       {
         "name": "Patrick D. Healy",
-        "count": 213
+        "count": 231
       },
       {
         "name": "Patrick O'gilfoil Healy",
@@ -15411,7 +15383,7 @@
     "merged": [
       {
         "name": "Paul von Zielbauer",
-        "count": 360
+        "count": 379
       },
       {
         "name": "PAUL von ZIELBAUER",
@@ -16749,7 +16721,7 @@
   },
   {
     "canonical": "Riva D. Atlas",
-    "canonical_count": 384,
+    "canonical_count": 385,
     "merged": [
       {
         "name": "Riva Atlas",
@@ -16774,16 +16746,6 @@
       {
         "name": "Rob MacKey",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "Robert B. Gunnison (NYT)",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "Robert M. Frank (NYT)",
-        "count": 2
       }
     ]
   },
@@ -16837,7 +16799,7 @@
       },
       {
         "name": "Robert M. Frank",
-        "count": 3
+        "count": 9
       }
     ]
   },
@@ -17085,7 +17047,7 @@
   },
   {
     "canonical": "Robert D. McFadden",
-    "canonical_count": 1099,
+    "canonical_count": 1101,
     "merged": [
       {
         "name": "ROBERT D. McFADDEN",
@@ -18967,7 +18929,7 @@
   },
   {
     "canonical": "Sultan M. Munadi",
-    "canonical_count": 24,
+    "canonical_count": 25,
     "merged": [
       {
         "name": "SULTAN M. MUNADI",
@@ -19103,7 +19065,7 @@
     "merged": [
       {
         "name": "Susan M. Saulny",
-        "count": 1
+        "count": 2
       }
     ]
   },
@@ -19506,15 +19468,11 @@
     "canonical_count": 2,
     "merged": [
       {
-        "name": "the New York Times; Reuters; Ap; Agence France-Presse",
-        "count": 1
-      },
-      {
-        "name": "THE ASSOCIATED PRESS (NYT) BY AGENCE FRANCE-PRESSE",
-        "count": 1
-      },
-      {
         "name": "THE ASSOCIATED PRESS BY AGENCE FRANCE-PRESSE",
+        "count": 2
+      },
+      {
+        "name": "the New York Times; Reuters; Ap; Agence France-Presse",
         "count": 1
       }
     ]

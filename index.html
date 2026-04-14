@@ -248,7 +248,7 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update:</strong> With the help of users who identified duplicate data in the API, a process has been added to remove duplicate articles and subdivide blog and non-blog content, which resulted in some slight changes in the total material displayed.</p>
+      <p style="margin-top:16px"><strong>Latest update (April 2026):</strong> Fixed name consolidation for authors with API parenthetical suffixes (e.g. Jennifer 8. Lee); removed institutional bylines from the reporter list; fixed co-author links in reporter profiles; added world choropleth map and wedding article sort order.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
@@ -450,7 +450,8 @@
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <input type="text" id="worldCountrySearch" placeholder="Filter countries…" oninput="filterWorldTable()" style="padding:4px 8px;font-size:12px;border:1px solid #ccc;border-radius:4px;width:150px;font-family:inherit">
+        <span style="font-size:12px;color:#888;white-space:nowrap;margin-left:4px">Limit years</span>
         <span id="worldYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
         <div class="yr-slider-wrap" id="worldYrSliderWrap">
           <div class="yr-slider-track"></div>
@@ -459,9 +460,6 @@
           <input type="range" id="worldYrEnd">
         </div>
         <span id="worldYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
-      </div>
-      <div style="margin-bottom:8px">
-        <input type="text" id="worldCountrySearch" placeholder="Filter countries…" oninput="filterWorldTable()" style="padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;width:200px;font-family:inherit">
       </div>
       <div class="table-scroll-wrap"><div id="worldTableContainer"></div></div>
     </div>
@@ -2071,7 +2069,7 @@ function showAuthorTimeline(name, opts = {}) {
         .sort((a, b) => b[1] - a[1])
         .filter(([n]) => authorNames.has(n))
         .slice(0, 3)
-        .map(([n]) => `<span style="cursor:pointer;color:#326891;text-decoration:underline" onclick="openAuthor(${JSON.stringify(n)})">${escapeHtml(n)}</span>`);
+        .map(([n]) => `<span class="coauthor-link" data-author="${escapeHtml(n)}" style="cursor:pointer;color:#326891;text-decoration:underline">${escapeHtml(n)}</span>`);
       sharedHtml += `&ensp;·&ensp;<strong>Frequent collaborators:</strong> ${topCo.join(', ')}`;
     }
   }
@@ -2109,6 +2107,11 @@ function showAuthorTimeline(name, opts = {}) {
       </div>
     </div>
   `;
+
+  // Wire coauthor links (data-author instead of inline onclick to avoid HTML quote escaping)
+  container.querySelectorAll('.coauthor-link').forEach(el => {
+    el.addEventListener('click', () => openAuthor(el.dataset.author));
+  });
 
   // --- Productivity chart (from authors.json — available immediately) ---
   if (authorInfo.annual_words_norm) {

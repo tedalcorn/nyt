@@ -87,6 +87,9 @@ def extract_authors(byline):
             parts = [first, middle, last]
             fullname = " ".join(x for x in parts if x)
             fullname = TRAILING_WORDS.sub('', fullname).strip()
+            # Strip API parenthetical suffixes like "(NYT COMPILED BY ...)" that
+            # create spurious name variants (e.g. "Jennifer 8. Lee (NYT COMPILED BY ...)")
+            fullname = re.sub(r'\s*\(NYT[^)]*\)', '', fullname).strip()
             # Normalize compact double-initials: "A.o. Scott" → "A. O. Scott"
             fullname = re.sub(
                 r'([A-Za-z])\.([A-Za-z])\.',
@@ -165,6 +168,8 @@ def extract_authors(byline):
         if m:
             name = ('And' + m.group(1)).title()
         name = TRAILING_WORDS.sub('', name).strip()
+        # Strip API parenthetical suffixes like "(NYT)" or "(NYT COMPILED BY ...)"
+        name = re.sub(r'\s*\(NYT[^)]*\)', '', name).strip()
         # Normalize compact double-initials: "A.o. Scott" → "A. O. Scott"
         name = re.sub(
             r'([A-Za-z])\.([A-Za-z])\.',
@@ -1509,6 +1514,7 @@ _INSTITUTIONAL_BYLINES = {
     'Wire Reports', 'From Wire Reports',
     'T Magazine',
     'Courtesy of NBC', 'Courtesy of CBS', 'Courtesy of ABC',
+    'From THE NEW YORK TIMES ALMANAC 2004',
 }
 
 
