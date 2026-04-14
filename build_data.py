@@ -2477,6 +2477,45 @@ def build_dashboard_data(articles, authors):
         "years": all_years,
     }
 
+    # --- Features: recurring columns / special coverage (not standard sections) ---
+    weddings_by_year = defaultdict(int)
+    vows_col_by_year = defaultdict(int)
+    weddings_authors = Counter()
+    vows_col_authors = Counter()
+
+    for art in articles:
+        url = art.get("url", "") or ""
+        ss = (art.get("subsection", "") or "").lower()
+        sb = [s.lower() for s in (art.get("subjects", []) or [])]
+        is_weddings = (
+            "weddings" in ss
+            or "weddings and engagements" in sb
+            or "weddings" in sb
+        )
+        is_vows_col = "vows (times column)" in sb
+        y = str(art["year"])
+        if is_weddings:
+            weddings_by_year[y] += 1
+            if not is_vows_col:
+                for auth in art.get("authors", []):
+                    if auth:
+                        weddings_authors[auth] += 1
+        if is_vows_col:
+            vows_col_by_year[y] += 1
+            for auth in art.get("authors", []):
+                if auth:
+                    vows_col_authors[auth] += 1
+
+    features_data = {
+        "weddings": {
+            "by_year": dict(weddings_by_year),
+            "vows_col_by_year": dict(vows_col_by_year),
+            "top_authors": [{"name": n, "count": c} for n, c in weddings_authors.most_common(15)],
+            "vows_col_authors": [{"name": n, "count": c} for n, c in vows_col_authors.most_common(10)],
+            "total": sum(weddings_by_year.values()),
+        },
+    }
+
     # Multi-byline trend by year (precomputed so Overview tab works without full articles array)
     multi_byline_by_year = defaultdict(lambda: {"total": 0, "multi": 0})
     for art in articles:
@@ -2523,6 +2562,7 @@ def build_dashboard_data(articles, authors):
         "multi_byline_trend": multi_byline_trend,
         "world_coverage": world_coverage,
         "us_state_coverage": us_state_coverage,
+        "features": features_data,
     }
 
 
@@ -2663,6 +2703,20 @@ def main():
     with open(os.path.join(DATA_DIR, "subjects.json"), "w") as f:
         json.dump(subjects_data, f, separators=(',', ':'))
     print(f"Saved subjects.json ({len(subjects_data['persons'])} persons, {len(subjects_data['organizations'])} organizations)")
+
+    # --- US states GeoJSON for choropleth map ---
+    shp_path = os.path.join(DATA_DIR, "cb_2023_us_state_20m.shp")
+    geojson_path = os.path.join(DATA_DIR, "us_states.geojson")
+    if os.path.exists(shp_path):
+        try:
+            import geopandas as gpd
+            gdf = gpd.read_file(shp_path).to_crs("EPSG:4326")[["NAME", "STUSPS", "geometry"]]
+            gdf["geometry"] = gdf["geometry"].simplify(0.01)
+            with open(geojson_path, "w") as f:
+                f.write(gdf.to_json(drop_id=True))
+            print(f"Saved us_states.geojson ({os.path.getsize(geojson_path):,} bytes)")
+        except ImportError:
+            print("Skipping us_states.geojson (geopandas not installed)")
 
 
 if __name__ == "__main__":
