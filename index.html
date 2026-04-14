@@ -2451,12 +2451,203 @@ function renderLocationTrend() {
   });
 }
 
+// Notable events and blog-inflation notes explaining world coverage spikes.
+// Entries marked [blog] indicate years dominated by a dedicated NYT blog subdomain
+// rather than traditional reporting — coverage drops sharply when the blog closed.
+const WORLD_ANNOTATIONS = {
+  'India': {
+    '2011': '[blog] India Ink blog (india.blogs.nytimes.com) launched — 58% of articles from blog',
+    '2012': '[blog] India Ink blog peak — 86% of articles from blog; Dec. Delhi gang rape case',
+    '2013': '[blog] India Ink active — 76% from blog; general election run-up',
+    '2014': '[blog] India Ink winds down — 56% from blog; Modi election victory (May)',
+    '2015': '[blog] India Ink discontinued (March 2015); Paris climate summit',
+  },
+  'China': {
+    '2013': 'Sinosphere blog (sinosphere.blogs.nytimes.com) launched; Bo Xilai trial; Snowden in Hong Kong',
+    '2014': '[blog] Sinosphere blog peak — 56% of articles from blog; Hong Kong Umbrella protests',
+    '2015': '[blog] Sinosphere active — ~40% from blog; Tianjin explosions; stock market crash',
+  },
+  'Hong Kong': {
+    '2003': 'SARS epidemic',
+    '2014': '[blog] Sinosphere blog + Umbrella Movement pro-democracy protests',
+    '2019': 'Anti-extradition bill protests; National Security Law passed (2020)',
+  },
+  'Afghanistan': {
+    '2001': '9/11 attacks; U.S. invasion and fall of the Taliban',
+    '2002': 'Post-invasion reconstruction; Taliban resurgence begins',
+    '2021': 'U.S. withdrawal; Taliban retakes Kabul (Aug. 15)',
+  },
+  'Iraq': {
+    '2002': 'Pre-war intelligence debate; UN weapons inspections',
+    '2003': 'U.S. invasion; fall of Baghdad; occupation begins',
+    '2004': 'Abu Ghraib scandal; insurgency; First and Second Battles of Fallujah',
+    '2006': 'Sectarian civil war; Samarra mosque bombing; surge debate',
+    '2014': 'ISIS captures Mosul and northern Iraq; Yazidi genocide',
+  },
+  'Libya': {
+    '2004': 'Gaddafi renounces WMDs; U.S.-Libya diplomatic normalization',
+    '2011': 'Arab Spring uprising; NATO air campaign; Gaddafi killed (Oct.)',
+  },
+  'Haiti': {
+    '2004': 'President Aristide ousted; UN peacekeeping mission begins',
+    '2010': '7.0 magnitude earthquake kills 200,000+',
+    '2021': 'President Moïse assassinated (July); 7.2 magnitude earthquake (Aug.)',
+    '2024': 'Gang crisis; PM resignation; Kenyan-led security force',
+  },
+  'Georgia': {
+    '2008': 'Russia-Georgia War over South Ossetia and Abkhazia',
+  },
+  'Lebanon': {
+    '2005': 'Cedar Revolution; Rafik Hariri assassination',
+    '2006': 'Israel-Hezbollah War (34-day conflict)',
+    '2020': 'Beirut port explosion (Aug. 4)',
+    '2024': 'Israel-Hezbollah war escalation; Israeli ground incursion',
+  },
+  'Gaza Strip': {
+    '2008': 'Operation Cast Lead (Dec. 2008–Jan. 2009)',
+    '2014': 'Operation Protective Edge; 50-day war; 2,200 Palestinians killed',
+    '2018': 'Gaza border "Great March of Return" protests',
+    '2021': 'Operation Guardian of the Walls (11-day conflict)',
+    '2023': 'Hamas Oct. 7 attack; Israeli military campaign begins',
+    '2024': 'Israeli military campaign continues; humanitarian crisis; ICJ case',
+  },
+  'Israel': {
+    '2023': 'Hamas Oct. 7 attack; Israeli military campaign in Gaza',
+    '2024': 'Gaza war continues; ICC and ICJ proceedings',
+  },
+  'Syria': {
+    '2011': 'Arab Spring uprising; Assad crackdown; civil war begins',
+    '2012': 'Civil war intensifies; FSA vs. government forces',
+    '2013': 'Chemical weapons attacks; U.S. intervention debate',
+    '2015': 'Russian military intervention; refugee crisis reaches Europe',
+    '2016': 'Battle of Aleppo; Syrian government retakes city',
+  },
+  'Egypt': {
+    '2011': 'Arab Spring; Tahrir Square protests; Mubarak ousted (Feb. 11)',
+    '2012': 'Morsi elected; constitutional crisis',
+    '2013': 'Military coup; Morsi ousted; Rabaa massacre',
+  },
+  'Ukraine': {
+    '2014': 'Maidan Revolution; Crimea annexed by Russia; Donbas war begins',
+    '2022': 'Russia full-scale invasion (Feb. 24)',
+    '2023': 'Ukrainian counteroffensive; grain deal collapse',
+    '2024': 'War continues; U.S. aid debate; election-year diplomacy',
+  },
+  'Russia': {
+    '2022': 'Full-scale invasion of Ukraine; Western sanctions',
+    '2023': 'Wagner Group mutiny (June); continued Ukraine war',
+  },
+  'Greece': {
+    '2010': 'Sovereign debt crisis; first EU/IMF bailout',
+    '2012': 'Second bailout; austerity protests; near euro exit',
+    '2015': 'Syriza election; debt default; third bailout negotiations',
+  },
+  'Nepal': {
+    '2006': 'End of decade-long Maoist civil war; peace accord',
+    '2015': '7.8 magnitude earthquake; ~9,000 killed',
+  },
+  'Malaysia': {
+    '2014': 'MH370 disappearance (March); MH17 shot down over Ukraine (July)',
+  },
+  'Myanmar': {
+    '2007': 'Saffron Revolution — monk-led pro-democracy protests',
+    '2012': 'Aung San Suu Kyi enters parliament; Rohingya communal violence',
+    '2017': 'Military crackdown on Rohingya; ~700,000 flee to Bangladesh',
+    '2021': 'Military coup (Feb. 1); mass protests; civil war',
+  },
+  'Norway': {
+    '2011': 'Breivik attacks: Oslo bombing + Utøya massacre (77 killed)',
+  },
+  'Bangladesh': {
+    '2013': 'Rana Plaza factory collapse (1,100+ killed); Shahbag protests',
+    '2024': 'Student-led uprising; PM Sheikh Hasina resigns and flees',
+  },
+  'Ethiopia': {
+    '2021': 'Tigray War reaches peak; Tigrayan forces threaten Addis Ababa',
+  },
+  'Kenya': {
+    '2008': 'Post-election violence; 1,300 killed; Kofi Annan mediation',
+    '2013': 'Westgate mall terrorist attack (67 killed)',
+    '2024': 'Anti-tax protests; Gen Z movement; Deputy President impeached',
+  },
+  'Liberia': {
+    '2003': 'Second Liberian Civil War ends; Charles Taylor exiled to Nigeria',
+    '2014': 'Ebola epidemic epicenter; international emergency response',
+  },
+  'Honduras': {
+    '2009': 'Military coup; President Zelaya removed and exiled',
+  },
+  'Colombia': {
+    '2008': 'Operation Jaque frees Ingrid Betancourt and other FARC hostages',
+  },
+  'Algeria': {
+    '2013': 'In Amenas hostage crisis; al-Qaeda attack on gas plant (39 hostages killed)',
+  },
+  'Mali': {
+    '2013': 'Islamist insurgency; French military intervention (Operation Serval)',
+  },
+  'Kyrgyzstan': {
+    '2010': 'Revolution ousts President Bakiyev; ethnic clashes in south',
+  },
+  'Bahrain': {
+    '2011': 'Arab Spring protests; Saudi-led military intervention',
+  },
+  'Chile': {
+    '2010': 'Copiapó mining accident; 33 miners rescued after 69 days',
+  },
+  'New Zealand': {
+    '2019': 'Christchurch mosque shootings (51 killed)',
+  },
+  'Austria': {
+    '2015': 'Refugee crisis; record asylum seekers transit through country',
+  },
+  'Hungary': {
+    '2015': 'Refugee/migration crisis; Orbán builds border fence',
+  },
+  'Ivory Coast': {
+    '2011': 'Second Ivorian Civil War; Ouattara vs. Gbagbo election dispute',
+  },
+  'Guinea': {
+    '2014': 'Ebola epidemic first reported; ground zero of West Africa outbreak',
+  },
+  'Indian Ocean': {
+    '2005': 'Aftermath of Dec. 2004 tsunami (228,000 killed across 14 countries)',
+  },
+  'Macedonia': {
+    '2001': 'Insurgency by ethnic Albanian NLA; Ohrid Framework Agreement',
+  },
+  'Cyprus': {
+    '2002': 'UN-brokered reunification talks (Annan Plan) resume',
+  },
+  'Kuwait': {
+    '2003': 'U.S. forces stage Iraq invasion from Kuwait',
+  },
+  'Black Sea': {
+    '2023': 'Russia blocks Ukrainian grain exports; attacks on Odessa port',
+  },
+};
+
 function openCountryDetail(country) {
   lastOpenedCountry = country;
   const wc = dashboard.world_coverage;
   const years = wc.years;
   const trend = wc.location_trends[country] || {};
   const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
+  const annotations = WORLD_ANNOTATIONS[country] || {};
+
+  // Build notable events HTML
+  const eventEntries = Object.entries(annotations).sort((a, b) => a[0].localeCompare(b[0]));
+  const eventsHtml = eventEntries.length
+    ? `<div style="margin-top:10px;font-size:12px;color:#666">
+        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Notable events</div>
+        ${eventEntries.map(([y, ev]) => {
+          const isBlog = ev.startsWith('[blog]');
+          const label = isBlog ? ev.replace('[blog] ', '') : ev;
+          const style = isBlog ? 'color:#888;font-style:italic' : '';
+          return `<div style="padding:2px 0"><span style="font-weight:600;color:#326891;min-width:36px;display:inline-block">${y}</span> <span style="${style}">${escapeHtml(label)}</span></div>`;
+        }).join('')}
+       </div>`
+    : '';
 
   const panel = document.getElementById('countryDetailPanel');
   panel.style.display = 'block';
@@ -2470,6 +2661,7 @@ function openCountryDetail(country) {
         <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
         <canvas id="chartCountryDetail" style="max-height:180px"></canvas>
       </div>
+      ${eventsHtml}
       <div id="countryTopReporters" style="margin-top:12px"></div>
       <div id="countryArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
     </div>
@@ -2484,7 +2676,18 @@ function openCountryDetail(country) {
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            afterLabel: ctx => {
+              const note = annotations[years[ctx.dataIndex]];
+              if (!note) return '';
+              return `Notable: ${note.replace('[blog] ', '[blog] ')}`;
+            }
+          }
+        }
+      },
       scales: { y: { beginAtZero: true } }
     }
   });
@@ -3482,7 +3685,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 9:15am ET</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 10:30am ET</span>
 </div>
 </body>
 </html>
