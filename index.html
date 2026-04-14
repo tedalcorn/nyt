@@ -245,6 +245,13 @@
       <h3>Articles and Words per Month</h3>
       <div style="position:relative;height:280px"><canvas id="chartMonthly"></canvas></div>
     </div>
+    <div class="chart-box" style="margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <h3 style="margin:0">Articles, Words, and Average Length — 2016–2025</h3>
+        <button onclick="downloadDecadeChart(this)" style="font-size:11px;padding:3px 8px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer;white-space:nowrap;flex-shrink:0">↓ JPG</button>
+      </div>
+      <div style="position:relative;height:280px"><canvas id="chartDecade"></canvas></div>
+    </div>
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
@@ -915,6 +922,128 @@ function initOverview() {
     }
   });
 
+  renderDecadeChart();
+}
+
+// --- DECADE CHART: 2016–2025 annual articles + words + avg words per article ---
+function renderDecadeChart() {
+  const cutoffYear = String(new Date().getFullYear());
+  const monthly = dashboard.articles_per_month.filter(m => {
+    const y = m.month.slice(0, 4);
+    return y >= '2016' && y !== cutoffYear;
+  });
+
+  // Aggregate by year
+  const byYear = {};
+  monthly.forEach(m => {
+    const y = m.month.slice(0, 4);
+    if (!byYear[y]) byYear[y] = { articles: 0, words: 0 };
+    byYear[y].articles += m.nonblog != null ? m.nonblog : m.count;
+    byYear[y].words += m.words || 0;
+  });
+
+  const years    = Object.keys(byYear).sort();
+  const articles = years.map(y => byYear[y].articles);
+  const wordsM   = years.map(y => Math.round(byYear[y].words / 1e4) / 100);  // millions, 2 dp
+  const avgWords = years.map(y => byYear[y].articles > 0 ? Math.round(byYear[y].words / byYear[y].articles) : 0);
+
+  destroyChart('chartDecade');
+  chartInstances['chartDecade'] = new Chart(document.getElementById('chartDecade'), {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [{
+        label: 'Avg words per article',
+        data: avgWords,
+        type: 'line',
+        borderColor: 'rgba(100,60,160,0.85)',
+        backgroundColor: 'transparent',
+        borderDash: [5, 4],
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: 'rgba(100,60,160,0.85)',
+        tension: 0,
+        yAxisID: 'y2',
+        order: 0,
+        datalabels: {
+          display: true,
+          align: 'top',
+          anchor: 'end',
+          offset: 2,
+          color: 'rgba(100,60,160,0.9)',
+          font: { size: 10, weight: '600' },
+          formatter: v => v.toLocaleString(),
+        },
+      }, {
+        label: 'Total words (millions)',
+        data: wordsM,
+        type: 'line',
+        borderColor: 'rgba(170,120,80,0.9)',
+        backgroundColor: 'transparent',
+        tension: 0.2,
+        pointRadius: 3,
+        borderWidth: 2,
+        yAxisID: 'y1',
+        order: 0,
+        datalabels: { display: false },
+      }, {
+        label: 'Non-blog articles',
+        data: articles,
+        backgroundColor: 'rgba(50,104,145,0.75)',
+        borderWidth: 0,
+        yAxisID: 'y',
+        order: 1,
+        datalabels: { display: false },
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      layout: { padding: { top: 22 } },  // room for datalabels above bars
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 11 } } },
+        datalabels: { display: false },  // default off; overridden per-dataset above
+      },
+      scales: {
+        x: { ticks: { maxRotation: 0, font: { size: 11 } } },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Articles', font: { size: 11 } },
+        },
+        y1: {
+          beginAtZero: true,
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: 'Words (M)', font: { size: 11 } },
+        },
+        y2: {
+          display: false,   // hidden axis — values read via datalabels instead
+          min: 600,
+          max: 1400,
+        },
+      },
+    },
+  });
+}
+
+function downloadDecadeChart(btnEl) {
+  const canvas = document.getElementById('chartDecade');
+  if (!canvas) return;
+  btnEl.textContent = '…';
+  const offscreen = document.createElement('canvas');
+  offscreen.width  = canvas.width  * 2;
+  offscreen.height = canvas.height * 2;
+  const ctx = offscreen.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+  ctx.scale(2, 2);
+  ctx.drawImage(canvas, 0, 0);
+  const a = document.createElement('a');
+  a.download = 'nyt_articles_words_2016-2025.jpg';
+  a.href = offscreen.toDataURL('image/jpeg', 0.92);
+  a.click();
+  btnEl.textContent = '↓ JPG';
 }
 
 const INSTITUTIONAL_BYLINES = new Set([
