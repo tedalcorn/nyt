@@ -77,7 +77,9 @@ def extract_authors(byline):
                 "lastname": last,
                 "fullname": fullname,
             })
-        return authors
+        if authors:
+            return authors
+        # All persons had empty lastnames — fall through to original string fallback
 
     # Fallback: parse from "original" string (e.g. "By Sarah Mervosh and Mark Bonamo")
     original = (byline.get("original") or "").strip()
