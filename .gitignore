@@ -9,7 +9,6 @@ __pycache__/
 # Static charts (replaced by interactive dashboard)
 chart*.png
 chart*.jpg
-below-the-fold.png
 choropleth*.png
 
 # Shapefiles in data/ root (large GIS files; data/ne_world/ is tracked separately)

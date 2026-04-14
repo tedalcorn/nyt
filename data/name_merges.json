@@ -4309,7 +4309,7 @@
   },
   {
     "canonical": "David D. Kirkpatrick",
-    "canonical_count": 1984,
+    "canonical_count": 1983,
     "merged": [
       {
         "name": "David Kirkpatrick",
@@ -8715,7 +8715,7 @@
   },
   {
     "canonical": "Jennifer 8. Lee",
-    "canonical_count": 1764,
+    "canonical_count": 1765,
     "merged": [
       {
         "name": "JENNIFER 8. LEE",
@@ -9301,7 +9301,7 @@
   },
   {
     "canonical": "John M. Broder",
-    "canonical_count": 1350,
+    "canonical_count": 1351,
     "merged": [
       {
         "name": "JOHN M. BRODER",
@@ -15043,7 +15043,7 @@
   },
   {
     "canonical": "Patrick McGeehan",
-    "canonical_count": 2351,
+    "canonical_count": 2352,
     "merged": [
       {
         "name": "Patrick McGEEHAN",
@@ -15233,6 +15233,16 @@
     "merged": [
       {
         "name": "Paul Ryan",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Paul Theroux",
+    "canonical_count": 29,
+    "merged": [
+      {
+        "name": "PAUL THEROUX",
         "count": 1
       }
     ]

@@ -95,6 +95,10 @@ def extract_authors(byline):
         return []
     # Strip leading "By " (case-insensitive)
     text = re.sub(r'^by\s+', '', original, flags=re.IGNORECASE)
+    # Handle "Author: Written With Other" — colon separates main author from contribution note.
+    # Truncate at colon so "Malia Mills: Written With Alex Kuczynski" → "Malia Mills".
+    if ':' in text:
+        text = text.split(':')[0].strip()
     # Strip sentence-style attributions before trying to parse names
     text = re.sub(
         r'^(This (?:article|story) was (?:reported(?: and written)?|written and reported|compiled) by'
@@ -126,7 +130,7 @@ def extract_authors(byline):
         # Skip junk entries from malformed "original" byline strings
         if name[0] in '!-(\'&<':
             continue
-        if '<' in name or '&#' in name or '|' in name or ':' in name:
+        if '<' in name or '&#' in name or '|' in name:
             continue
         if name.lower().startswith('compiled by') or name.lower().startswith('special to'):
             continue
@@ -2410,19 +2414,27 @@ def build_dashboard_data(articles, authors):
             return loc_title
         return loc
 
+    # Countries where blog inflation was significant — pre-compute blog/non-blog split
+    BLOG_SPLIT_COUNTRIES = {"India", "China", "Hong Kong"}
+
     world_articles = [a for a in articles if a["section"] == "World"]
     glocation_year = defaultdict(lambda: defaultdict(int))
+    glocation_blog_year = defaultdict(lambda: defaultdict(int))
     glocation_total = Counter()
     region_year = defaultdict(lambda: defaultdict(int))
 
     for art in world_articles:
         y = str(art["year"])
+        url = art.get("web_url", "") or ""
+        is_blog = "blogs.nytimes.com" in url
         for loc in art.get("glocations", []):
             loc = _normalize_loc(loc)
             if loc is None:
                 continue
             glocation_year[loc][y] += 1
             glocation_total[loc] += 1
+            if is_blog and loc in BLOG_SPLIT_COUNTRIES:
+                glocation_blog_year[loc][y] += 1
         sub = art.get("subsection", "")
         if sub:
             region_year[sub][y] += 1
@@ -2432,6 +2444,7 @@ def build_dashboard_data(articles, authors):
     world_coverage = {
         "locations": top_locations,
         "location_trends": {loc: dict(glocation_year[loc]) for loc in top_locations},
+        "blog_location_trends": {loc: dict(glocation_blog_year[loc]) for loc in BLOG_SPLIT_COUNTRIES},
         "region_trends": {r: dict(region_year[r]) for r in sorted(region_year.keys())},
         "years": all_years,
     }

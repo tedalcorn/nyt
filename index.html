@@ -1335,8 +1335,35 @@ function makeSparkline(author) {
   return `<svg width="${W}" height="${H}" style="display:block;overflow:visible">${polylines}</svg>`;
 }
 
+// Download articles as CSV. arts: array of article objects; filename: suggested filename.
+function downloadArticlesCSV(arts, filename) {
+  const header = ['date', 'headline', 'section', 'word_count', 'url', 'byline'];
+  const escape = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const rows = [...arts]
+    .sort((a, b) => b.pub_date.localeCompare(a.pub_date))
+    .map(a => [
+      a.pub_date,
+      escape(a.headline || ''),
+      escape(a.section || ''),
+      a.word_count || 0,
+      escape(a.web_url || ''),
+      escape((a.authors || []).join(', '))
+    ].join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename || 'articles.csv';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 // Render a sortable article list into a container element
 // arts: array of article objects; formatFn: (article) => html string
+// opts.csvFilename: if set, shows a Download CSV button
 function renderArticleList(containerId, arts, formatFn, opts = {}) {
   const el = document.getElementById(containerId);
   if (!el) return;
@@ -1348,18 +1375,26 @@ function renderArticleList(containerId, arts, formatFn, opts = {}) {
   // Cache for re-sort without re-filtering
   window[`_artListCache_${containerId}`] = arts;
   window[`_artListFmt_${containerId}`] = formatFn;
+  if (opts.csvFilename) window[`_artListCSV_${containerId}`] = opts.csvFilename;
 
   const shown = sorted.slice(0, 300);
   const meta = `${arts.length.toLocaleString()} articles${arts.length > 300 ? ' · showing 300' : ''}`;
   const nextKey = sortKey === 'date_desc' ? 'date_asc' : 'date_desc';
   const toggleLabel = sortKey === 'date_desc' ? 'Newest to Oldest' : 'Oldest to Newest';
-  const toggleBtn = `<button onclick="renderArticleList('${containerId}',window._artListCache_${containerId},window._artListFmt_${containerId},{sortKey:'${nextKey}'})" `
+  const csvFn = opts.csvFilename || window[`_artListCSV_${containerId}`];
+  const toggleBtn = `<button onclick="renderArticleList('${containerId}',window._artListCache_${containerId},window._artListFmt_${containerId},{sortKey:'${nextKey}'${csvFn ? `,csvFilename:window._artListCSV_${containerId}` : ''}})" `
     + `style="font-size:11px;padding:2px 7px;border:1px solid #ccc;border-radius:3px;background:#f5f5f5;cursor:pointer;font-family:inherit;color:#555">`
     + `${toggleLabel} ↕</button>`;
+  const downloadBtn = csvFn
+    ? `<button onclick="downloadArticlesCSV(window._artListCache_${containerId},window._artListCSV_${containerId})" `
+      + `style="font-size:11px;padding:2px 7px;border:1px solid #ccc;border-radius:3px;background:#f5f5f5;cursor:pointer;font-family:inherit;color:#555">`
+      + `Download all ↓</button>`
+    : '';
   el.innerHTML =
     `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
        <span style="font-size:12px;color:#888">${meta}</span>
        ${toggleBtn}
+       ${downloadBtn}
      </div>` + shown.map(formatFn).join('');
 }
 
@@ -1965,6 +2000,7 @@ function showAuthorTimeline(name, opts = {}) {
     }
 
     // Article list with sort controls
+    const csvFilename = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_articles.csv';
     renderArticleList(listId, authorArticles, a => {
       const coauthors = a.authors.filter(n => n !== name);
       const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
@@ -1973,7 +2009,7 @@ function showAuthorTimeline(name, opts = {}) {
         <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
         <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
       </div>`;
-    });
+    }, { csvFilename });
 
     // Scroll to timeline
     const container2 = document.getElementById(containerId);
@@ -2634,6 +2670,8 @@ function openCountryDetail(country) {
   const trend = wc.location_trends[country] || {};
   const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
   const annotations = WORLD_ANNOTATIONS[country] || {};
+  // Blog breakdown available for countries with significant blog inflation
+  const blogTrends = (wc.blog_location_trends || {})[country] || null;
 
   // Build notable events HTML
   const eventEntries = Object.entries(annotations).sort((a, b) => a[0].localeCompare(b[0]));
@@ -2660,6 +2698,10 @@ function openCountryDetail(country) {
       <div style="margin-top:10px">
         <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
         <canvas id="chartCountryDetail" style="max-height:180px"></canvas>
+        ${blogTrends ? `<div style="margin-top:5px;font-size:11px;color:#888;display:flex;gap:14px">
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(50,104,145,0.75);border-radius:2px;margin-right:4px"></span>Standard articles</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(60,160,140,0.75);border-radius:2px;margin-right:4px"></span>Blog articles (${country === 'India' ? 'India Ink' : country === 'Hong Kong' ? 'Sinosphere' : 'Sinosphere'} blog)</span>
+        </div>` : ''}
       </div>
       ${eventsHtml}
       <div id="countryTopReporters" style="margin-top:12px"></div>
@@ -2668,12 +2710,17 @@ function openCountryDetail(country) {
   `;
 
   destroyChart('chartCountryDetail');
+  const blogCounts = blogTrends ? years.map(y => blogTrends[y] || 0) : null;
+  const nonBlogCounts = blogTrends ? years.map(y => Math.max(0, (trend[y] || 0) - (blogTrends[y] || 0))) : null;
+  const datasets = blogTrends
+    ? [
+        { label: 'Standard articles', data: nonBlogCounts, backgroundColor: 'rgba(50,104,145,0.75)', stack: 'a' },
+        { label: 'Blog articles', data: blogCounts, backgroundColor: 'rgba(60,160,140,0.75)', stack: 'a' },
+      ]
+    : [{ label: 'Articles', data: years.map(y => trend[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }];
   chartInstances['chartCountryDetail'] = new Chart(document.getElementById('chartCountryDetail'), {
     type: 'bar',
-    data: {
-      labels: years,
-      datasets: [{ label: 'Articles', data: years.map(y => trend[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
-    },
+    data: { labels: years, datasets },
     options: {
       responsive: true,
       plugins: {
@@ -2683,12 +2730,15 @@ function openCountryDetail(country) {
             afterLabel: ctx => {
               const note = annotations[years[ctx.dataIndex]];
               if (!note) return '';
-              return `Notable: ${note.replace('[blog] ', '[blog] ')}`;
+              return `Notable: ${note.replace('[blog] ', '')}`;
             }
           }
         }
       },
-      scales: { y: { beginAtZero: true } }
+      scales: {
+        x: { stacked: !!blogTrends },
+        y: { beginAtZero: true, stacked: !!blogTrends }
+      }
     }
   });
 
@@ -3685,7 +3735,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 10:30am ET</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 11:15am ET</span>
 </div>
 </body>
 </html>
