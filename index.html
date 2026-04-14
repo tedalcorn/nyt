@@ -450,9 +450,27 @@
   <!-- STATES -->
   <div class="view" id="view-states">
     <div id="stateDetailPanel" style="display:none"></div>
+    <div class="chart-box" id="stateTrendBox" style="display:none" data-dl-canvas-only="true">
+      <button class="close-btn" onclick="toggleStateTrend()" style="float:right;margin-top:-4px">Close</button>
+      <h3>Compare State Coverage</h3>
+      <div style="margin-bottom:8px">
+        <input type="text" id="stateSearch" placeholder="Type to filter states…" oninput="filterStateSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
+        <select id="stateSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
+        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
+          <input type="checkbox" id="statePerCapita" onchange="renderStateTrend(stateYears)"> Show per million residents/year
+        </label>
+      </div>
+      <div id="stateTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
+    </div>
     <div class="chart-box">
       <h3>Coverage by State</h3>
       <p style="font-size:13px;color:#666;margin-bottom:10px">Draws on geographic tags from NYT metadata in the "U.S." section and, optionally, "New York" section to encompass local coverage.</p>
+      <div style="margin-bottom:12px">
+        <button id="toggleStateTrendBtn" onclick="toggleStateTrend()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare state coverage over time</button>
+      </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
         <span id="stateYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
@@ -468,20 +486,6 @@
         <input type="checkbox" id="includeNYSection" onchange="initStates()"> Include New York section coverage for NY, NJ &amp; CT
       </label>
       <div class="table-scroll-wrap"><div id="stateTableContainer"></div></div>
-    </div>
-    <div class="chart-box" data-dl-canvas-only="true">
-      <h3>U.S. State Coverage Over Time</h3>
-      <div style="margin-bottom:8px">
-        <input type="text" id="stateSearch" placeholder="Type to filter states…" oninput="filterStateSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
-        <select id="stateSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
-        <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
-      </div>
-      <div style="margin-bottom:8px">
-        <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
-          <input type="checkbox" id="statePerCapita" onchange="renderStateTrend(stateYears)"> Show per million residents/year
-        </label>
-      </div>
-      <div id="stateTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
     </div>
   </div>
 
@@ -2254,7 +2258,8 @@ let stateYears = [];
 function initWorld() {
   if (!dashboard.world_coverage) return;
   const wc = dashboard.world_coverage;
-  const years = wc.years;
+  const currentYear = String(new Date().getFullYear());
+  const years = wc.years.filter(y => y !== currentYear);
   worldYears = years;
 
   // Location selector
@@ -2388,6 +2393,15 @@ function toggleWorldTrend() {
   box.style.display = visible ? 'none' : '';
   btn.textContent = visible ? 'Compare country coverage over time' : 'Hide chart';
   if (!visible) { renderLocationTrend(); addDownloadBtns(); }
+}
+
+function toggleStateTrend() {
+  const box = document.getElementById('stateTrendBox');
+  const btn = document.getElementById('toggleStateTrendBtn');
+  const visible = box.style.display !== 'none';
+  box.style.display = visible ? 'none' : '';
+  btn.textContent = visible ? 'Compare state coverage over time' : 'Hide chart';
+  if (!visible) { renderStateTrend(stateYears); addDownloadBtns(); }
 }
 
 function filterWorldLocationSelect() {
@@ -3467,7 +3481,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 10:18am</span>
+  <span style="pointer-events:none">Last revised: 4/14/26 11:05am</span>
 </div>
 </body>
 </html>
