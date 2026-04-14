@@ -462,7 +462,7 @@
         <span id="worldYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
       </div>
       <label style="font-size:12px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:5px;margin-bottom:8px">
-        <input type="checkbox" id="worldHideMicro" checked onchange="filterWorldTable()"> Hide micro-states (population &lt; 100,000)
+        <input type="checkbox" id="worldHideMicro" checked onchange="filterWorldTable()"> Hide places with population &lt; 100,000
       </label>
       <div class="table-scroll-wrap"><div id="worldTableContainer"></div></div>
     </div>
@@ -2655,6 +2655,12 @@ const POPULATION_M = {
   'Belarus':9,'Bolivia':12,'Hong Kong':7.4,'Slovakia':5.4,'Slovenia':2.1,
   'Macau':0.7,'Bahamas':0.4,'West Bank':3,'Gaza Strip':2,'Nagorno-Karabakh':0.15,
   'North Macedonia':2,'Somaliland':4,'Kosovo':2,
+  // Countries missing from earlier sweep
+  'Finland':5.6,'Kazakhstan':19,'South Sudan':12,
+  // Name-variant aliases used in NYT API tagging
+  'Congo, Democratic Republic of (Congo-Kinshasa)':105,
+  'Republic of Congo':6,'Congo, Republic of (Congo-Brazzaville)':6,
+  'Macedonia':2,  // pre-2019 name for North Macedonia
   // Small sovereign states — per-capita may be extreme, that's informative
   'Monaco':0.038,'Liechtenstein':0.038,'San Marino':0.034,'Andorra':0.077,
   'Nauru':0.011,'Tuvalu':0.011,'Palau':0.018,'Kiribati':0.12,
@@ -2892,8 +2898,8 @@ function renderWorldMap(years) {
   // Fixed bins scaled by year range (articles/year thresholds × number of years selected)
   const numY = numYears;
   const binThresholds = [2, 8, 40, 200].map(t => t * numY);
-  // Wide-contrast palette: very light for sparse coverage → dark navy for heavy coverage
-  const colors = ['#eef4fa', '#9dbdda', '#4a8bbf', '#1a5a94', '#082d52'];
+  // Q1 and Q2 both pale (only a few shades apart); Q3–Q5 progressively darker
+  const colors = ['#e8f2fa', '#c0d9ed', '#6baac8', '#2265a3', '#082d52'];
   const noDataColor = '#e8d5b7';
   const binLabels = ['< 2/yr', '2–8/yr', '8–40/yr', '40–200/yr', '200+/yr'];
 
