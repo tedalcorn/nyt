@@ -312,7 +312,7 @@ def process_articles(raw_articles):
             if kw_name in ("glocations", "Location"):
                 glocations.append(kw["value"])
             elif kw_name in ("subject", "Subject"):
-                subjects.append(kw["value"])
+                subjects.append(SUBJECT_RENAMES.get(kw["value"], kw["value"]))
             elif kw_name in ("persons", "Persons"):
                 persons_kw.append(kw["value"])
             elif kw_name in ("organizations", "Organizations"):
@@ -1370,6 +1370,42 @@ def build_author_stats(articles):
     print(f"  {len(authors):,} unique authors")
     return authors
 
+
+# Subject keyword renames: the NYT changed tag names over time; these map old → new
+# so that beats data and author profiles show a continuous timeline.
+# Verified by checking that old tag drops to ~0 exactly when new tag appears.
+SUBJECT_RENAMES = {
+    # Video/audio recordings
+    "Recordings and Downloads (Video)":     "Video Recordings and Downloads",
+    "RECORDINGS (VIDEO)":                   "Video Recordings and Downloads",
+    "Recordings and Downloads (Audio)":     "Audio Recordings, Downloads and Streaming",
+    "RECORDINGS (AUDIO)":                   "Audio Recordings, Downloads and Streaming",
+    "DVD (DIGITAL VERSATILE DISK)":         "DVD (Digital Versatile Disc)",
+    # Defense / military
+    "ARMAMENT, DEFENSE AND MILITARY FORCES": "Defense and Military Forces",
+    "UNITED STATES ARMAMENT AND DEFENSE":   "United States Defense and Military Forces",
+    # Law enforcement / justice
+    "Police Brutality and Misconduct":      "Police Brutality, Misconduct and Shootings",
+    "Suits and Litigation":                 "Suits and Litigation (Civil)",
+    "AMNESTIES AND PARDONS":                "Amnesties, Commutations and Pardons",
+    "ANTITRUST ACTIONS AND LAWS":           "Antitrust Laws and Competition Issues",
+    # Politics / society
+    "Demonstrations and Riots":             "Demonstrations, Protests and Riots",
+    "IMMIGRATION AND REFUGEES":             "Immigration and Emigration",
+    "PUBLIC OPINION":                       "Polls and Public Opinion",
+    "Children and Youth":                   "Children and Childhood",
+    "Intelligence Services":               "Espionage and Intelligence Services",
+    # Business / economy
+    "RETAIL STORES AND TRADE":              "Shopping and Retail",
+    "FACTORIES AND INDUSTRIAL PLANTS":      "Factories and Manufacturing",
+    "HOTELS AND MOTELS":                    "Hotels and Travel Lodgings",
+    "NIGHTCLUBS AND CABARETS":              "Bars and Nightclubs",
+    "Fringe Benefits":                      "Employee Fringe Benefits",
+    # Miscellaneous
+    "Monuments and Memorials":              "Monuments and Memorials (Structures)",
+    "Trade Shows and Fairs":                "Conventions, Fairs and Trade Shows",
+    "Reading and Writing Skills":           "Reading and Writing Skills (Education)",
+}
 
 _GENERIC_SUBJECTS = {
     'United States Politics and Government', 'Content Type: Personal Profile',
