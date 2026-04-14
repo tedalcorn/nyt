@@ -241,13 +241,15 @@
   <!-- ABOUT -->
   <div class="view" id="view-about">
     <div class="stats-row" id="statsRow"></div>
-    <div class="chart-box" style="margin-bottom:20px">
-      <h3>Articles and Words per Month</h3>
-      <div style="position:relative;height:280px"><canvas id="chartMonthly"></canvas></div>
-    </div>
-    <div class="chart-box" style="margin-bottom:20px" data-dl-canvas-only="true">
-      <h3>Articles, Words, and Average Length — 2016–2025</h3>
-      <div style="position:relative;height:280px"><canvas id="chartDecade"></canvas></div>
+    <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+      <div class="chart-box" style="flex:1;min-width:280px;margin-bottom:0">
+        <h3>Articles and Words per Month</h3>
+        <div style="position:relative;height:160px"><canvas id="chartMonthly"></canvas></div>
+      </div>
+      <div class="chart-box" style="flex:1;min-width:280px;margin-bottom:0" data-dl-canvas-only="true">
+        <h3>Articles, Words, and Average Length — 2016–2025</h3>
+        <div style="position:relative;height:160px"><canvas id="chartDecade"></canvas></div>
+      </div>
     </div>
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
