@@ -822,8 +822,16 @@ async function loadData() {
     initOverview();
     initHeadlineSearch();
     renderWordsDist();
-    // Only default to 'about' if the hash didn't already set a view
-    if (!location.hash || !_readHash().tab) showView('about');
+    // Activate tab from hash (data now loaded, so lazy-init tabs work correctly)
+    // or default to 'about' if no hash present
+    const _rTab = _pendingRestore?.tab;
+    if (_rTab && document.getElementById('view-' + _rTab)) {
+      _suppressHashWrite = true;
+      showView(_rTab);
+      _suppressHashWrite = false;
+    } else {
+      showView('about');
+    }
     setTimeout(addDownloadBtns, 200);
 
     // Phase 1b: load authors and beats independently (non-blocking)
@@ -2200,10 +2208,11 @@ function renderAuthors() {
     });
   });
 
-  // Author name click -> show timeline
+  // Author name click -> show timeline + update URL
   document.querySelectorAll('.author-table td.author-name').forEach(td => {
     td.addEventListener('click', () => {
       const name = td.closest('tr').dataset.author;
+      _writeHash({ tab: 'authors', author: name });
       showAuthorTimeline(name);
     });
   });
@@ -5124,22 +5133,11 @@ function initCareers() { // dead code kept for reference, no longer called
 
 _syncTrackerBtns();
 
-// Restore state from URL hash (shareable links)
+// Restore state from URL hash — defer everything until after data loads
+// (lazy-init tabs like Sections/World need dashboard to be populated first)
 (function() {
   const p = _readHash();
-  if (!p.tab && !p.country && !p.state && !p.author && !p.q) return;
-  _suppressHashWrite = true;
-  if (p.tab && document.getElementById('view-' + p.tab)) {
-    // Show the right tab without writing back to hash (we're reading it)
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
-    document.getElementById('view-' + p.tab).classList.add('active');
-    const nb = document.querySelector(`nav button[data-view="${p.tab}"]`);
-    if (nb) nb.classList.add('active');
-  }
-  _suppressHashWrite = false;
-  // Queue anything that needs data to be loaded first
-  if (p.country || p.state || p.author || p.q) _pendingRestore = p;
+  if (Object.keys(p).length) _pendingRestore = p;
 })();
 
 loadData();
@@ -5148,7 +5146,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 5:42pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 5:52pm</span>
 </div>
 </body>
 </html>
