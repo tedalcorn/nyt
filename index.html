@@ -282,7 +282,6 @@
       <p>Each author is assigned a primary section based on where they have the most published articles, used to filter and sort the Reporters table. Author profiles also list all sections in which the author has published, reflecting the full range of their work. Primary section is a rough proxy for desk assignment and may not be accurate for authors who write regularly across multiple sections.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Inferred reporters</h4>
-      <p>The Reporters and Sections tables include a toggle to "limit to inferred reporters," which filters out bylines that appear to belong to photographers, videographers, podcast producers, illustrators, and similar contributors rather than traditional text reporters. The inference is based on combinations of shared-byline rate, average word count, primary section, and section slug (e.g., someone with 90%+ shared bylines, near-zero word counts, and a primary section of "Multimedia/Photos" is unlikely to be a text reporter; someone with 20+ articles all returning zero words from the API is likely an interactive or visual journalist regardless of section). The heuristic is imperfect — some edge cases will be miscategorized in either direction — and is intended only as an exploratory filter, not a definitive classification.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Beat topics</h4>
       <p>The topics shown on author profiles are derived from the NYT's own subject tags on each article. Topics are scored by how disproportionately an author covers them relative to the full corpus — a topic must appear at least twice as often in an author's work as the corpus-wide average to qualify. Authors with few articles or articles lacking subject tags may have no beats listed. Subject tags are assigned by the NYT, not by this dashboard.</p>
@@ -336,10 +335,10 @@
       <div style="position:relative;height:220px"><canvas id="chartSubjectCompare"></canvas></div>
     </div>
     <div class="chart-box">
-      <h3>People &amp; Organizations</h3>
+      <h3>Coverage by Subject</h3>
       <p style="font-size:13px;color:#666;margin-bottom:10px">Persons and organizations drawn from NYT keyword metadata. Check names to compare coverage over time; click a name to see details. <span id="subjectDataNote" style="color:#999"></span></p>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <span style="font-size:12px;color:#888;white-space:nowrap">Years queried</span>
         <span id="subjectYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
         <div class="yr-slider-wrap" id="subjectYrSliderWrap">
           <div class="yr-slider-track"></div>
@@ -367,7 +366,7 @@
       <label>Primary Section: <select id="authorSectionFilter"><option value="">All</option></select></label>
     </div>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-      <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+      <span style="font-size:12px;color:#888;white-space:nowrap">Years queried</span>
       <span id="yrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
       <div class="yr-slider-wrap" id="yrSliderWrap">
         <div class="yr-slider-track"></div>
@@ -379,11 +378,6 @@
       <label style="font-size:12px;color:#888;white-space:nowrap">Min articles: <input type="number" id="authorMin" value="5" min="1" style="width:46px;padding:2px 4px;border:1px solid #ccc;border-radius:3px;font-size:12px;font-family:inherit"></label>
       <div id="distInfo" style="font-size:12px;color:#888;margin-left:auto;white-space:nowrap;font-family:sans-serif"></div>
     </div>
-    <div style="text-align:right;margin-top:4px;margin-bottom:8px">
-      <label style="font-size:12px;color:#888;cursor:pointer;user-select:none">
-        Limit to inferred reporters <input type="checkbox" id="inferredReportersOnly" style="vertical-align:middle;margin-left:4px">
-      </label>
-    </div>
     <div id="authorTimeline"></div>
     <div class="table-scroll-wrap"><div id="authorTableContainer"></div></div>
   </div>
@@ -394,7 +388,7 @@
       <h3>Find Reporters by Beat</h3>
       <p style="font-size:13px;color:#666;margin-bottom:12px">Search NYT subject tags to find which journalists cover a topic. Tags are drawn from the NYT's own metadata.</p>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <span style="font-size:12px;color:#888;white-space:nowrap">Years queried</span>
         <span id="beatYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
         <div class="yr-slider-wrap" id="beatYrSliderWrap">
           <div class="yr-slider-track"></div>
@@ -415,7 +409,7 @@
   <div class="view" id="view-sections">
     <div class="chart-box" data-dl-canvas-only="true">
       <h3>Compare Sections</h3>
-      <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">Includes major editorial sections. A few minor or discontinued categories are excluded from display. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names are merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for further details.</p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Major editorial sections; some renamed or merged sections are combined. See the About tab for details.</p>
       <div style="margin-bottom:8px">
         <input type="text" id="sectionSearch" placeholder="Type to filter sections…" oninput="filterSectionSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
         <select id="sectionCountSelect" multiple style="width:100%;min-height:160px;font-size:13px"></select>
@@ -429,12 +423,7 @@
       <div id="sectionCountCanvasWrap" style="position:relative;height:220px"><canvas id="chartSectionCount"></canvas></div>
     </div>
     <div class="chart-box">
-      <h3>Major Sections</h3>
-      <div style="margin-bottom:8px">
-        <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
-          <input type="checkbox" id="sectionExcludePhoto" onchange="renderSectionsTable()"> Limit to inferred reporters
-        </label>
-      </div>
+      <h3>Coverage by Section</h3>
       <div id="sectionDetailPanel" style="display:none;margin-bottom:16px"></div>
       <div class="table-scroll-wrap"><div id="sectionTableContainer"></div></div>
     </div>
@@ -481,7 +470,7 @@
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap">
         <input type="text" id="worldCountrySearch" placeholder="Filter countries…" oninput="filterWorldTable()" style="padding:4px 8px;font-size:12px;border:1px solid #ccc;border-radius:4px;width:150px;font-family:inherit">
-        <span style="font-size:12px;color:#888;white-space:nowrap;margin-left:4px">Limit years</span>
+        <span style="font-size:12px;color:#888;white-space:nowrap;margin-left:4px">Years queried</span>
         <span id="worldYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
         <div class="yr-slider-wrap" id="worldYrSliderWrap">
           <div class="yr-slider-track"></div>
@@ -526,7 +515,7 @@
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:12px;color:#888;white-space:nowrap">Limit years</span>
+        <span style="font-size:12px;color:#888;white-space:nowrap">Years queried</span>
         <span id="stateYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
         <div class="yr-slider-wrap" id="stateYrSliderWrap">
           <div class="yr-slider-track"></div>
@@ -563,7 +552,7 @@
         </span>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
-        <span style="font-size:12px;color:#888;white-space:nowrap">Years</span>
+        <span style="font-size:12px;color:#888;white-space:nowrap">Years queried</span>
         <span id="trackerYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
         <div class="yr-slider-wrap" id="trackerSliderWrap" style="min-width:160px">
           <div class="yr-slider-track"></div>
@@ -880,11 +869,9 @@ async function loadData() {
           } catch(_) {}
         }
         trackerReady = true;
-        // If user already has terms entered (clicked Visualize while waiting), render now
-        const hasTerms = ['term1','term2','term3','term4']
-          .some(id => document.getElementById(id)?.value?.trim());
-        if (hasTerms) trackTerms();
-        else trackTerms(); // auto-populate with default terms
+        _applyRestore('tracker');
+        // If no restore pending, run with whatever terms are in the inputs
+        if (!_pendingRestore || !_pendingRestore.q) trackTerms();
       })().catch(e => console.error('Tracker load failed:', e));
     }
 
@@ -901,7 +888,7 @@ async function loadData() {
         }
         articlesReady = true;
         populateHeadlineSection();
-        // (tracker already rendered via trackerReady above — no need to call trackTerms again)
+        _applyRestore('articles');
         // Refresh any open detail panels that were waiting for article data
         if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
           openStateDetail(lastOpenedState);
@@ -931,15 +918,55 @@ document.querySelectorAll('nav button').forEach(btn => {
   btn.addEventListener('click', () => showView(btn.dataset.view));
 });
 
+// ── URL state (shareable links) ──────────────────────────────────────────────
+let _suppressHashWrite = false;   // prevents hash writes during restore
+
+function _writeHash(params) {
+  if (_suppressHashWrite) return;
+  const clean = Object.entries(params).filter(([, v]) => v != null && v !== '');
+  const hash = clean.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  history.replaceState(null, '', hash ? '#' + hash : location.pathname + location.search);
+}
+
+function _readHash() {
+  const h = location.hash.slice(1);
+  if (!h) return {};
+  try {
+    return Object.fromEntries(h.split('&').map(p => { const [k, ...v] = p.split('='); return [k, decodeURIComponent(v.join('='))]; }));
+  } catch (_) { return {}; }
+}
+
+// Called after each data phase so detail panels open as soon as their data is ready
+let _pendingRestore = null;
+function _applyRestore(phase) {
+  const p = _pendingRestore;
+  if (!p) return;
+  if (phase === 'tracker' && p.q) {
+    p.q.split('|').forEach((t, i) => {
+      const el = document.getElementById(`term${i + 1}`);
+      if (el) el.value = t.trim();
+    });
+    trackTerms();
+    _pendingRestore = null;
+  }
+  if (phase === 'articles') {
+    if (p.country) { openCountryDetail(p.country); _pendingRestore = null; }
+    else if (p.state) { openStateDetail(p.state); _pendingRestore = null; }
+    else if (p.author) { openAuthor(p.author); _pendingRestore = null; }
+  }
+}
+
 function showView(view) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
   document.querySelector(`nav button[data-view="${view}"]`).classList.add('active');
+  _writeHash({ tab: view });
 }
 
 function openAuthor(name) {
   showView('authors');
+  _writeHash({ tab: 'authors', author: name });
   const searchBox = document.getElementById('authorSearch');
   searchBox.value = name;
   renderAuthors();
@@ -1541,15 +1568,12 @@ let sectionTableSort = { col: 'count', asc: false };
 
 function renderSectionsTable() {
   const currentYear = String(new Date().getFullYear());
-  const excludePhoto = document.getElementById('sectionExcludePhoto')?.checked;
-
   // Pre-compute per-section shared byline % from authors.json (if available)
   const sectionShared = {};
   if (authors && authors.some(a => typeof a.shared_byline_count === 'number')) {
     const sectionTotals = {}; // { sectionName: { articles, shared } }
     for (const a of authors) {
       if (INSTITUTIONAL_BYLINES.has(a.name) || !isValidAuthorName(a.name)) continue;
-      if (excludePhoto && a.likely_multimedia) continue;
       const sec = a.primary_section;
       if (!sec) continue;
       if (!sectionTotals[sec]) sectionTotals[sec] = { articles: 0, shared: 0 };
@@ -1670,12 +1694,18 @@ function openSectionDetail(sectionName) {
   });
   const hasInferred = Object.keys(inferredByYear).length > 0;
 
+  // Compute years active and avg words for meta line
+  const activeYrs = trend.filter(d => d.count > 0 && d.year !== String(new Date().getFullYear())).map(d => d.year).sort();
+  const yearRange = activeYrs.length ? `${activeYrs[0]}–${activeYrs[activeYrs.length-1]}` : '';
+  const totalWords = trend.reduce((s, d) => s + (d.count || 0) * (d.avg_words || 0), 0);
+  const avgWords = total > 0 ? Math.round(totalWords / total) : 0;
+
   panel.style.display = 'block';
   panel.innerHTML = `
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('sectionDetailPanel').style.display='none';destroyChart('chartSectionDetail')">Close</button>
       <h3>${escapeHtml(sectionName)}</h3>
-      <div class="timeline-meta">${total.toLocaleString()} articles</div>
+      <div class="timeline-meta">${total.toLocaleString()} articles · ${yearRange}${avgWords ? ` · ${avgWords.toLocaleString()} avg words` : ''}</div>
       <div style="margin-top:10px">
         <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
         <div style="position:relative">
@@ -1876,7 +1906,6 @@ document.getElementById('authorSearch').addEventListener('input', () => {
   renderWordsDist();
 });
 document.getElementById('authorMin').addEventListener('input', () => { renderAuthors(); renderWordsDist(); });
-document.getElementById('inferredReportersOnly').addEventListener('change', () => { renderAuthors(); renderWordsDist(); });
 
 let authorSort = { col: 'article_count', asc: false };
 
@@ -1891,10 +1920,7 @@ function getFilteredAuthors() {
   const allYears = dashboard.all_years.map(Number);
   const fullRange = !yr || (yr.start <= allYears[0] && yr.end >= allYears[allYears.length - 1]);
 
-  const inferredOnly = document.getElementById('inferredReportersOnly')?.checked;
-
   let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name) && isValidAuthorName(a.name));
-  if (inferredOnly) f = f.filter(a => !a.likely_multimedia);
   if (query) {
     // Strip middle initials (single letter + period) before comparing,
     // so "Stuart Thompson" matches "Stuart A. Thompson"
@@ -2894,9 +2920,9 @@ function _syncTrackerBtns() {
   const hi = (id, on) => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.style.background  = on ? '#326891' : '#f8f4ef';
-    el.style.color       = on ? '#fff'    : '#666';
-    el.style.fontWeight  = on ? '600'     : '400';
+    el.style.background  = on ? '#ddd'  : '#f5f5f5';
+    el.style.color       = on ? '#222'  : '#777';
+    el.style.fontWeight  = on ? '600'   : '400';
   };
   hi('tBtn-allpages', !a1); hi('tBtn-a1only', a1);
   hi('tBtn-online',  !pr);  hi('tBtn-print',  pr);
@@ -3021,6 +3047,8 @@ function trackTerms() {
       plugins: { legend: { position: 'bottom' } }
     }
   });
+  // Update URL so this search is shareable
+  _writeHash({ tab: 'tracker', q: terms.join('|') });
 }
 
 function downloadTrackerChart() {
@@ -3837,6 +3865,7 @@ const WORLD_ANNOTATIONS = {
 
 function openCountryDetail(country) {
   lastOpenedCountry = country;
+  _writeHash({ tab: 'world', country });
   const wc = dashboard.world_coverage;
   const years = wc.years;
   const trend = wc.location_trends[country] || {};
@@ -4368,6 +4397,7 @@ const STATE_ANNOTATIONS = {
 
 function openStateDetail(state) {
   lastOpenedState = state;
+  _writeHash({ tab: 'states', state });
   const sc = dashboard.us_state_coverage;
   const currentYear = String(new Date().getFullYear());
   const years = sc.years.filter(y => y !== currentYear);
@@ -5086,13 +5116,32 @@ function initCareers() { // dead code kept for reference, no longer called
 }
 
 _syncTrackerBtns();
+
+// Restore state from URL hash (shareable links)
+(function() {
+  const p = _readHash();
+  if (!p.tab && !p.country && !p.state && !p.author && !p.q) return;
+  _suppressHashWrite = true;
+  if (p.tab && document.getElementById('view-' + p.tab)) {
+    // Show the right tab without writing back to hash (we're reading it)
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + p.tab).classList.add('active');
+    const nb = document.querySelector(`nav button[data-view="${p.tab}"]`);
+    if (nb) nb.classList.add('active');
+  }
+  _suppressHashWrite = false;
+  // Queue anything that needs data to be loaded first
+  if (p.country || p.state || p.author || p.q) _pendingRestore = p;
+})();
+
 loadData();
 </script>
 <script data-goatcounter="https://alcorn.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 4:08pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 5:02pm</span>
 </div>
 </body>
 </html>
