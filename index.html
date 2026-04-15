@@ -1506,15 +1506,6 @@ function openSectionDetail(sectionName) {
   const sec = dashboard.sections.find(s => s.name === sectionName);
   const total = sec ? sec.count : 0;
 
-  // Top authors for this section from authors.json
-  const secAuthors = (authors || [])
-    .filter(a => a.primary_section === sectionName && !a.likely_multimedia && a.article_count >= 5)
-    .sort((a, b) => b.article_count - a.article_count)
-    .slice(0, 8);
-  const topAuthHtml = secAuthors.map(a =>
-    `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="sec-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">${a.article_count.toLocaleString()}</span></span>`
-  ).join('');
-
   const byYear = {}, avgByYear = {};
   trend.forEach(d => { byYear[d.year] = d.count; avgByYear[d.year] = d.avg_words || 0; });
 
@@ -1524,21 +1515,36 @@ function openSectionDetail(sectionName) {
       <button class="close-btn" onclick="document.getElementById('sectionDetailPanel').style.display='none';destroyChart('chartSectionDetail')">Close</button>
       <h3>${escapeHtml(sectionName)}</h3>
       <div class="timeline-meta">${total.toLocaleString()} articles</div>
-      ${topAuthHtml ? `<div style="margin:10px 0 0 0"><div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px">Most-published reporters in this section</div><div style="font-size:12px;line-height:2;margin-bottom:12px">${topAuthHtml}</div></div>` : ''}
-      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
-      <div style="position:relative">
-        <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
-        <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
+        <div style="position:relative">
+          <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
+          <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+        </div>
       </div>
+      <div id="sectionDetailReporters" style="margin-top:12px"></div>
       <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:14px;margin-bottom:4px">Recent articles</div>
       <div id="sectionDetailArticleList" style="max-height:300px;overflow-y:auto;font-size:13px">
         ${articlesReady ? '' : IS_MOBILE ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>' : '<p style="color:#888;font-size:13px">Loading article data…</p>'}
       </div>
     </div>`;
 
-  panel.querySelectorAll('.sec-author-link').forEach(el => {
-    el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
-  });
+  // Populate lead reporters (below chart, matching state/country pattern)
+  const secAuthors = (authors || [])
+    .filter(a => a.primary_section === sectionName && !a.likely_multimedia && a.article_count >= 5)
+    .sort((a, b) => b.article_count - a.article_count)
+    .slice(0, 8);
+  if (secAuthors.length) {
+    const rhtml = secAuthors.map(a =>
+      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="sec-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">${a.article_count.toLocaleString()}</span></span>`
+    ).join('');
+    document.getElementById('sectionDetailReporters').innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
+      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
+    document.getElementById('sectionDetailReporters').querySelectorAll('.sec-author-link').forEach(el => {
+      el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+    });
+  }
 
   const avgVals = allYears.map(y => avgByYear[y] || null);
   const maxAvg = Math.max(...avgVals.filter(Boolean));
@@ -3640,7 +3646,7 @@ function openCountryDetail(country) {
     ).join('');
     document.getElementById('countryTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
-      `<div style="font-size:13px;line-height:1.9">${rhtml}</div>`;
+      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
     document.getElementById('countryTopReporters').querySelectorAll('.country-reporter-link').forEach(el => {
       el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
     });
@@ -4175,7 +4181,7 @@ function openStateDetail(state) {
     ).join('');
     document.getElementById('stateTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
-      `<div style="font-size:13px;line-height:1.9">${rhtml}</div>`;
+      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
     document.getElementById('stateTopReporters').querySelectorAll('.state-reporter-link').forEach(el => {
       el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
     });
@@ -4588,7 +4594,7 @@ function openSubjectDetail(rawName, type) {
     ).join('');
     document.getElementById('subjectDetailReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
-      `<div style="font-size:13px;line-height:1.9">${rhtml}</div>`;
+      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
     document.getElementById('subjectDetailReporters').querySelectorAll('.subj-reporter-link').forEach(el => {
       el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
     });
