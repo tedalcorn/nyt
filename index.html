@@ -553,8 +553,14 @@
         <input type="text" id="term3" placeholder="">
         <input type="text" id="term4" placeholder="">
         <button id="trackBtn">Visualize</button>
-        <button id="trackerFrontPage" data-active="false" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'Page A1 Only':'All Pages';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(trackerReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#f0f4f8;color:#444">All Pages</button>
-        <button id="trackerUsePrint" data-active="true" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'In Print Edition':'Online';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(trackerReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#326891;color:#fff">In Print Edition</button>
+        <span id="trackerFrontPage" data-active="false" style="display:inline-flex;border:1px solid #ccc;border-radius:3px;overflow:hidden;font-size:11px;vertical-align:middle">
+          <button id="tBtn-allpages" onclick="document.getElementById('trackerFrontPage').dataset.active='false';_syncTrackerBtns();if(trackerReady)trackTerms()" style="padding:2px 8px;border:none;border-right:1px solid #ccc;cursor:pointer;font-family:inherit">All pages</button>
+          <button id="tBtn-a1only"   onclick="document.getElementById('trackerFrontPage').dataset.active='true'; _syncTrackerBtns();if(trackerReady)trackTerms()" style="padding:2px 8px;border:none;cursor:pointer;font-family:inherit">Page A1 only</button>
+        </span>
+        <span id="trackerUsePrint" data-active="true" style="display:inline-flex;border:1px solid #ccc;border-radius:3px;overflow:hidden;font-size:11px;vertical-align:middle">
+          <button id="tBtn-online" onclick="document.getElementById('trackerUsePrint').dataset.active='false';_syncTrackerBtns();if(trackerReady)trackTerms()" style="padding:2px 8px;border:none;border-right:1px solid #ccc;cursor:pointer;font-family:inherit">Online</button>
+          <button id="tBtn-print"  onclick="document.getElementById('trackerUsePrint').dataset.active='true'; _syncTrackerBtns();if(trackerReady)trackTerms()" style="padding:2px 8px;border:none;cursor:pointer;font-family:inherit">Print</button>
+        </span>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Years</span>
@@ -2882,6 +2888,20 @@ function initTrackerYears() {
   updateTrackerSlider();
 }
 
+function _syncTrackerBtns() {
+  const a1 = document.getElementById('trackerFrontPage').dataset.active === 'true';
+  const pr = document.getElementById('trackerUsePrint').dataset.active === 'true';
+  const hi = (id, on) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.background  = on ? '#326891' : '#f8f4ef';
+    el.style.color       = on ? '#fff'    : '#666';
+    el.style.fontWeight  = on ? '600'     : '400';
+  };
+  hi('tBtn-allpages', !a1); hi('tBtn-a1only', a1);
+  hi('tBtn-online',  !pr);  hi('tBtn-print',  pr);
+}
+
 function _clearTrackerLoadingMsg() {
   const el = document.getElementById('trackerLoadingMsg');
   if (el) el.remove();
@@ -2898,7 +2918,7 @@ function trackTerms() {
         const wrap = document.getElementById('chartTracker').parentElement;
         const msg = document.createElement('div');
         msg.id = 'trackerLoadingMsg';
-        msg.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(247,245,240,0.92);z-index:10;font-family:Georgia,serif;text-align:center;pointer-events:none';
+        msg.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(247,245,240,0.92);z-index:4;font-family:Georgia,serif;text-align:center;pointer-events:none';
         msg.innerHTML = `<div style="font-size:15px;color:#555">Loading…</div>`;
         wrap.appendChild(msg);
       }
@@ -5065,13 +5085,14 @@ function initCareers() { // dead code kept for reference, no longer called
   );
 }
 
+_syncTrackerBtns();
 loadData();
 </script>
 <script data-goatcounter="https://alcorn.goatcounter.com/count"
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 12:34pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 4:08pm</span>
 </div>
 </body>
 </html>
