@@ -80,6 +80,16 @@
     ]
   },
   {
+    "canonical": "Abby Ellin",
+    "canonical_count": 500,
+    "merged": [
+      {
+        "name": "ABBY ELLIN",
+        "count": 3
+      }
+    ]
+  },
+  {
     "canonical": "Abby Mcganney Nolan",
     "canonical_count": 23,
     "merged": [
@@ -482,6 +492,16 @@
     ]
   },
   {
+    "canonical": "Alexandra Lange",
+    "canonical_count": 53,
+    "merged": [
+      {
+        "name": "ALEXANDRA LANGE",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Alexandra E. Petri",
     "canonical_count": 355,
     "merged": [
@@ -754,6 +774,16 @@
     ]
   },
   {
+    "canonical": "Amy Gunderson",
+    "canonical_count": 203,
+    "merged": [
+      {
+        "name": "AMY GUNDERSON",
+        "count": 19
+      }
+    ]
+  },
+  {
     "canonical": "Amy Schalet",
     "canonical_count": 1,
     "merged": [
@@ -790,6 +820,16 @@
       {
         "name": "Amy L. Webb",
         "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Amy Zipkin",
+    "canonical_count": 95,
+    "merged": [
+      {
+        "name": "AMY ZIPKIN",
+        "count": 5
       }
     ]
   },
@@ -1444,132 +1484,12 @@
     ]
   },
   {
-    "canonical": "As told to Ryan Lenora Brown",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "As told to Paul B. Brown",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "As Told to MANOHLA DARGIS by LORD DARGIS",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "As told to Manohla Dargis by Lord Dargis",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Claudia H. Deutsch",
-    "canonical_count": 5,
-    "merged": [
-      {
-        "name": "As told to CLAUDIA H. DEUTSCH",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "As told to ABBY ELLIN",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "As told to Abby Ellin",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Amy Gunderson",
-    "canonical_count": 69,
-    "merged": [
-      {
-        "name": "As told to AMY GUNDERSON",
-        "count": 19
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Bethany Lyttle",
-    "canonical_count": 139,
-    "merged": [
-      {
-        "name": "As told to BETHANY LYTTLE",
-        "count": 16
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Alex Mindlin",
-    "canonical_count": 2,
-    "merged": [
-      {
-        "name": "As Told to Alex Mindlin",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Pamela Noel",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "As told to Pam Noel",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Patricia R. Olsen",
-    "canonical_count": 119,
-    "merged": [
-      {
-        "name": "As told to PATRICIA R. OLSEN",
-        "count": 6
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Elizabeth Olson",
-    "canonical_count": 3,
-    "merged": [
-      {
-        "name": "As told to ELIZABETH OLSON",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "as told to JOAN RAYMOND",
     "canonical_count": 1,
     "merged": [
       {
         "name": "As told to JOAN RAYMOND",
         "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Eve Tahmincioglu",
-    "canonical_count": 9,
-    "merged": [
-      {
-        "name": "As told to EVE TAHMINCIOGLU",
-        "count": 5
-      }
-    ]
-  },
-  {
-    "canonical": "As told to Amy Zipkin",
-    "canonical_count": 7,
-    "merged": [
-      {
-        "name": "As told to AMY ZIPKIN",
-        "count": 5
       }
     ]
   },
@@ -1962,6 +1882,16 @@
     ]
   },
   {
+    "canonical": "Bethany Lyttle",
+    "canonical_count": 310,
+    "merged": [
+      {
+        "name": "BETHANY LYTTLE",
+        "count": 16
+      }
+    ]
+  },
+  {
     "canonical": "Betsy Hughes",
     "canonical_count": 2,
     "merged": [
@@ -2022,6 +1952,16 @@
       {
         "name": "Bonnie DeSimone",
         "count": 3
+      }
+    ]
+  },
+  {
+    "canonical": "Bonnie Wertheim",
+    "canonical_count": 62,
+    "merged": [
+      {
+        "name": "BONNIE WERTHEIM",
+        "count": 1
       }
     ]
   },
@@ -3121,11 +3061,25 @@
   },
   {
     "canonical": "Claudia H. Deutsch",
-    "canonical_count": 617,
+    "canonical_count": 622,
     "merged": [
       {
         "name": "Claudia H <missing Dot> Deutsch",
         "count": 4
+      },
+      {
+        "name": "CLAUDIA H. DEUTSCH",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Claudia Dreifus",
+    "canonical_count": 258,
+    "merged": [
+      {
+        "name": "CLAUDIA DREIFUS",
+        "count": 1
       }
     ]
   },
@@ -3421,7 +3375,7 @@
   },
   {
     "canonical": "Dan Kaufman",
-    "canonical_count": 20,
+    "canonical_count": 21,
     "merged": [
       {
         "name": "dan kaufman",
@@ -5742,6 +5696,16 @@
     ]
   },
   {
+    "canonical": "Elizabeth Olson",
+    "canonical_count": 1240,
+    "merged": [
+      {
+        "name": "ELIZABETH OLSON",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Elizabeth Passarella",
     "canonical_count": 15,
     "merged": [
@@ -6374,6 +6338,16 @@
       {
         "name": "EVE M. KAHN",
         "count": 2
+      }
+    ]
+  },
+  {
+    "canonical": "Eve Tahmincioglu",
+    "canonical_count": 88,
+    "merged": [
+      {
+        "name": "EVE TAHMINCIOGLU",
+        "count": 5
       }
     ]
   },
@@ -7020,6 +6994,16 @@
       {
         "name": "Glenn Reynolds",
         "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Glenn Rifkin",
+    "canonical_count": 92,
+    "merged": [
+      {
+        "name": "GLENN RIFKIN",
+        "count": 2
       }
     ]
   },
@@ -8532,6 +8516,16 @@
     ]
   },
   {
+    "canonical": "Jeff Vandam",
+    "canonical_count": 331,
+    "merged": [
+      {
+        "name": "Jeff VanDam",
+        "count": 2
+      }
+    ]
+  },
+  {
     "canonical": "Jeffrey D. Barnett",
     "canonical_count": 9,
     "merged": [
@@ -8959,7 +8953,7 @@
   },
   {
     "canonical": "Jer\u00e9 Longman",
-    "canonical_count": 1235,
+    "canonical_count": 2102,
     "merged": [
       {
         "name": "JER\u00c9 LONGMAN",
@@ -10802,6 +10796,16 @@
     ]
   },
   {
+    "canonical": "Julie Bick",
+    "canonical_count": 42,
+    "merged": [
+      {
+        "name": "JULIE BICK",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Julie Bosman",
     "canonical_count": 2444,
     "merged": [
@@ -12056,6 +12060,16 @@
     ]
   },
   {
+    "canonical": "Leann Wilcox",
+    "canonical_count": 5,
+    "merged": [
+      {
+        "name": "LeAnn Wilcox",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Lee Bailey",
     "canonical_count": 4,
     "merged": [
@@ -12601,6 +12615,20 @@
     "merged": [
       {
         "name": "Malina Gilchrist",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Manohla Dargis",
+    "canonical_count": 2698,
+    "merged": [
+      {
+        "name": "MANOHLA DARGIS by LORD DARGIS",
+        "count": 1
+      },
+      {
+        "name": "Manohla Dargis by Lord Dargis",
         "count": 1
       }
     ]
@@ -15019,8 +15047,12 @@
   },
   {
     "canonical": "Patricia R. Olsen",
-    "canonical_count": 111,
+    "canonical_count": 230,
     "merged": [
+      {
+        "name": "PATRICIA R. OLSEN",
+        "count": 6
+      },
       {
         "name": "Patricia Olsen",
         "count": 1
@@ -15221,7 +15253,7 @@
   },
   {
     "canonical": "Paul B. Brown",
-    "canonical_count": 243,
+    "canonical_count": 244,
     "merged": [
       {
         "name": "PAUL B. BROWN",
@@ -16523,7 +16555,7 @@
   },
   {
     "canonical": "Richard Perez-Pena",
-    "canonical_count": 233,
+    "canonical_count": 7,
     "merged": [
       {
         "name": "Richard Perez-pena",
@@ -16563,7 +16595,7 @@
   },
   {
     "canonical": "Richard P\u00e9rez-Pe\u00f1a",
-    "canonical_count": 2155,
+    "canonical_count": 2381,
     "merged": [
       {
         "name": "RICHARD P\u00e9REZ-PE\u00f1A",
@@ -17704,12 +17736,12 @@
     ]
   },
   {
-    "canonical": "Ryan David Brown",
+    "canonical": "Ryan Lenora Brown",
     "canonical_count": 3,
     "merged": [
       {
-        "name": "Ryan Lenora Brown",
-        "count": 2
+        "name": "Ryan David Brown",
+        "count": 3
       }
     ]
   },
@@ -18777,7 +18809,7 @@
   },
   {
     "canonical": "Steven Kurutz",
-    "canonical_count": 892,
+    "canonical_count": 893,
     "merged": [
       {
         "name": "STEVEN KURUTZ",
@@ -18879,7 +18911,7 @@
   },
   {
     "canonical": "Stuart Elliott",
-    "canonical_count": 5493,
+    "canonical_count": 5810,
     "merged": [
       {
         "name": "Stuart J. Elliott",

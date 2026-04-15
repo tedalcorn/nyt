@@ -320,6 +320,7 @@ def process_articles(raw_articles):
         headline = doc.get("headline", {})
         main_headline = headline.get("main", "") if isinstance(headline, dict) else ""
         print_headline = (headline.get("print_headline", "") or "") if isinstance(headline, dict) else ""
+        kicker = (headline.get("kicker", "") or "") if isinstance(headline, dict) else ""
 
         authors = extract_authors(doc.get("byline"))
         word_count = doc.get("word_count") or 0
@@ -402,6 +403,7 @@ def process_articles(raw_articles):
             "year_month": pub_date.strftime("%Y-%m"),
             "headline": main_headline,
             "print_headline": print_headline,
+            "kicker": kicker,
             "authors": [a["fullname"] for a in authors],
             "author_details": authors,
             "word_count": word_count,
@@ -1398,16 +1400,22 @@ def build_author_stats(articles):
         avg_words = round(d["total_words"] / article_count) if article_count else 0
         # Likely non-editorial / collaborative byline: photographers, video producers,
         # podcast staff, crossword constructors, illustrators, etc.
-        # Four routes to flagging:
+        # Five routes to flagging:
         #   1. Photo/video: high shared rate + many zero-word articles
-        #   2. Low-word shared: nearly always shared + very low avg words (illustrators,
+        #   2. Pure zero-word: virtually all articles have zero words (video/interactive producers
+        #      who don't share bylines frequently but still produce no text content)
+        #   3. Low-word shared: nearly always shared + very low avg words (illustrators,
         #      photographers whose articles have captions but no bylined text)
-        #   3. Podcast / audio: primary section is Podcasts
-        #   4. Other structural: section is Crosswords & Games or Briefing + very high shared
+        #   4. Podcast / audio: primary section is Podcasts
+        #   5. Other structural: section is Crosswords & Games or Briefing + very high shared
         is_photo_video = (
             article_count >= 5 and
             shared_rate >= 0.75 and
             zero_word_rate >= 0.35
+        )
+        is_pure_zero_word = (
+            article_count >= 20 and
+            zero_word_rate >= 0.95
         )
         is_low_word_shared = (
             article_count >= 5 and
@@ -1427,7 +1435,7 @@ def build_author_stats(articles):
         # real reporting and should NOT be excluded — catches reporters who later transitioned
         # to podcasts/video (e.g. Michael Barbaro) or visual journalists who occasionally wrote.
         has_reporting_history = d["solo_text_articles"] >= 20
-        likely_multimedia = (is_photo_video or is_low_word_shared or is_podcast or is_structural) and not has_reporting_history
+        likely_multimedia = (is_photo_video or is_pure_zero_word or is_low_word_shared or is_podcast or is_structural) and not has_reporting_history
         top_coauthors = dict(d["coauthors"].most_common(10))
 
         authors.append({
@@ -1453,6 +1461,7 @@ def build_author_stats(articles):
             "monthly_shared_counts": dict(d["monthly_shared_counts"]),
             "coauthors": top_coauthors,
             "likely_multimedia": likely_multimedia,
+            "solo_text_articles": d["solo_text_articles"],
             "beats": [],  # filled in later by build_beats()
         })
 
@@ -1741,13 +1750,33 @@ def build_dashboard_data(articles, authors):
 
     # Words per section over time (all sections)
     top_sections = [s["name"] for s in sections if s["name"] not in ("", "(none)")]
-    section_time = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0}))
+    section_time = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0, "wc_list": []}))
     for art in articles:
         s = art["section"]
         if s in top_sections:
             y = str(art["year"])
             section_time[s][y]["count"] += 1
             section_time[s][y]["words"] += art["word_count"]
+            if art["word_count"] > 0:
+                section_time[s][y]["wc_list"].append(art["word_count"])
+
+    # --- Inferred Movies for 2005: in that year the API filed movie reviews under "Arts"  ---
+    # Identify "core movie reviewers" = authors with >=20 Movies articles in 2004 OR 2006.
+    # Then count their Arts-section articles with "motion pictures" in subjects in 2005
+    # as inferred Movies content.
+    movie_reviewer_counts = Counter()
+    for art in articles:
+        if art["section"] == "Movies" and art["year"] in (2004, 2006):
+            for auth in art["authors"]:
+                movie_reviewer_counts[auth] += 1
+    core_movie_reviewers = {name for name, c in movie_reviewer_counts.items() if c >= 20}
+    inferred_movies_2005 = sum(
+        1 for art in articles
+        if art["year"] == 2005
+        and art["section"] == "Arts"
+        and any(a in core_movie_reviewers for a in art["authors"])
+        and any("motion pictures" in s.lower() for s in art.get("subjects", []))
+    )
 
     section_trends = {}
     all_years = sorted(set(str(a["year"]) for a in articles))
@@ -1756,7 +1785,14 @@ def build_dashboard_data(articles, authors):
         for y in all_years:
             d = section_time[s][y]
             avg = round(d["words"] / d["count"]) if d["count"] else 0
-            trend.append({"year": y, "count": d["count"], "avg_words": avg})
+            wc = sorted(d["wc_list"])
+            n = len(wc)
+            median = round(wc[n // 2] if n % 2 else (wc[n // 2 - 1] + wc[n // 2]) / 2) if wc else 0
+            entry = {"year": y, "count": d["count"], "avg_words": avg, "median_words": median}
+            # Tag the inferred 2005 Movies gap
+            if s == "Movies" and y == "2005" and inferred_movies_2005 > 0:
+                entry["inferred_count"] = inferred_movies_2005
+            trend.append(entry)
         section_trends[s] = trend
 
     # Top 25 authors (by article count, 25+ articles)
@@ -2552,19 +2588,9 @@ def build_dashboard_data(articles, authors):
         sb = [s.lower() for s in (art.get("subjects", []) or [])]
         section = (art.get("section", "") or "").lower()
         is_vows_col = "vows (times column)" in sb
-        # Strict wedding filter: subsection must be "Weddings", or URL in /fashion/weddings/
-        # or /style/weddings/ path, or the explicit engagements subject in a style/fashion context.
-        # Avoids false positives from generic "weddings" subject tag on trend/culture articles.
-        is_weddings = (
-            ss == "weddings"
-            or "/fashion/weddings/" in url
-            or "/style/weddings/" in url
-            or is_vows_col
-            or (
-                "weddings and engagements" in sb
-                and section in ("styles", "style", "fashion", "u.s.")
-            )
-        )
+        # Strict wedding filter: only subsection "Weddings" or explicit Vows column.
+        # URL path and subject-based checks catch too many trend/celebrity/culture articles.
+        is_weddings = ss == "weddings" or is_vows_col
         y = str(art["year"])
         if is_weddings:
             weddings_by_year[y] += 1
@@ -2587,13 +2613,7 @@ def build_dashboard_data(articles, authors):
         sb = [s.lower() for s in (art.get("subjects", []) or [])]
         section = (art.get("section", "") or "").lower()
         is_vows_col = "vows (times column)" in sb
-        is_wed = (
-            ss == "weddings"
-            or "/fashion/weddings/" in url
-            or "/style/weddings/" in url
-            or is_vows_col
-            or ("weddings and engagements" in sb and section in ("styles", "style", "fashion", "u.s."))
-        )
+        is_wed = ss == "weddings" or is_vows_col
         if is_wed:
             u = url
             if u.startswith(URL_PREFIX_FULL):
@@ -2605,8 +2625,15 @@ def build_dashboard_data(articles, authors):
                 "w": art.get("word_count", 0),
                 "u": u,
             })
-    recent_wedding_articles.sort(key=lambda x: x["d"], reverse=True)
-    recent_wedding_articles = recent_wedding_articles[:400]
+    # Stratified sample: up to 16 articles per year, sorted by date ascending.
+    # This ensures newest/oldest toggle spans the full archive rather than just recent years.
+    _wed_by_year = defaultdict(list)
+    for art in recent_wedding_articles:
+        _wed_by_year[art["d"][:4]].append(art)
+    _sample = []
+    for _yr in sorted(_wed_by_year.keys()):
+        _sample.extend(sorted(_wed_by_year[_yr], key=lambda x: x["d"])[:16])
+    recent_wedding_articles = _sample
 
     # Merge author lists (announcements + Vows column together)
     all_wed_authors = Counter()
@@ -2615,6 +2642,39 @@ def build_dashboard_data(articles, authors):
     for n, c in vows_col_authors.items():
         all_wed_authors[n] += c
 
+    # --- Letter of Recommendation feature (Magazine column, 2015–present) ---
+    # Identified by headline prefix ("Letter of Recommendation: X") through ~2020,
+    # then by kicker field ("Letter of Recommendation") from 2021 onward.
+    lor_by_year = defaultdict(int)
+    lor_authors = Counter()
+    recent_lor_articles = []
+    for art in articles:
+        h = art.get("headline", "") or ""
+        kicker = art.get("kicker", "") or ""
+        is_lor = (
+            h.lower().startswith("letter of recommendation:") or
+            kicker.lower() == "letter of recommendation"
+        )
+        if not is_lor:
+            continue
+        y = str(art["year"])
+        lor_by_year[y] += 1
+        for auth in art.get("authors", []):
+            lor_authors[auth] += 1
+        url = art.get("web_url", "") or ""
+        if url.startswith(URL_PREFIX_FULL):
+            url = url[len(URL_PREFIX_FULL):]
+        # Normalize display headline: prefix with "Letter of Recommendation: " if kicker-only
+        display_h = h if h.lower().startswith("letter of recommendation:") else f"Letter of Recommendation: {h}"
+        recent_lor_articles.append({
+            "d": art["pub_date"][:10],
+            "h": display_h,
+            "a": art.get("authors", []),
+            "w": art.get("word_count", 0),
+            "u": url,
+        })
+    recent_lor_articles.sort(key=lambda x: x["d"], reverse=True)
+
     features_data = {
         "weddings": {
             "by_year": dict(weddings_by_year),
@@ -2622,6 +2682,12 @@ def build_dashboard_data(articles, authors):
             "top_authors": [{"name": n, "count": c} for n, c in all_wed_authors.most_common(15)],
             "recent_articles": recent_wedding_articles,
             "total": sum(weddings_by_year.values()),
+        },
+        "letter_of_recommendation": {
+            "by_year": dict(lor_by_year),
+            "top_authors": [{"name": n, "count": c} for n, c in lor_authors.most_common(15)],
+            "recent_articles": recent_lor_articles,
+            "total": sum(lor_by_year.values()),
         },
     }
 
@@ -2712,7 +2778,44 @@ def build_subjects_data(articles):
     all_data_years = sorted(year_totals.keys())
     last_year = all_data_years[-1] if all_data_years else str(currentYear - 1)
 
-    def make_entries(annual_dict):
+    GENERATION_SUFFIXES = {"Jr", "Sr", "II", "III", "IV", "V", "2nd", "3rd"}
+
+    def merge_person_variants(entries):
+        """Merge 'Last, First' into 'Last, First Middle' when they're clearly the same person."""
+        by_last = defaultdict(list)
+        for e in entries:
+            parts = e["name"].split(",", 1)
+            if len(parts) == 2:
+                by_last[parts[0].strip()].append(e)
+
+        absorbed = set()
+        for last, group in by_last.items():
+            for i, e1 in enumerate(group):
+                first1 = e1["name"].split(",", 1)[1].strip() if "," in e1["name"] else ""
+                for e2 in group[i+1:]:
+                    first2 = e2["name"].split(",", 1)[1].strip() if "," in e2["name"] else ""
+                    # Determine which is shorter (simpler) name
+                    if len(first1) < len(first2):
+                        short_e, long_e, short_f, long_f = e1, e2, first1, first2
+                    else:
+                        short_e, long_e, short_f, long_f = e2, e1, first2, first1
+                    # Must be a prefix match at word boundary
+                    if not long_f.startswith(short_f + " "):
+                        continue
+                    # Skip generation suffixes (Jr/Sr means different person)
+                    if long_f.split()[-1] in GENERATION_SUFFIXES:
+                        continue
+                    # Merge only when short name is clearly the rare variant
+                    if short_e["total"] <= 50 and long_e["total"] >= short_e["total"] * 15:
+                        # Absorb short into long
+                        for yr, cnt in short_e["annual"].items():
+                            long_e["annual"][yr] = long_e["annual"].get(yr, 0) + cnt
+                        long_e["total"] += short_e["total"]
+                        absorbed.add(short_e["name"])
+
+        return [e for e in entries if e["name"] not in absorbed]
+
+    def make_entries(annual_dict, is_persons=False):
         result = []
         for name, by_year in annual_dict.items():
             total = sum(by_year.values())
@@ -2720,10 +2823,13 @@ def build_subjects_data(articles):
                 continue
             result.append({"name": name, "total": total, "annual": dict(by_year)})
         result.sort(key=lambda x: x["total"], reverse=True)
+        if is_persons:
+            result = merge_person_variants(result)
+            result.sort(key=lambda x: x["total"], reverse=True)
         return result
 
     return {
-        "persons": make_entries(persons_annual),
+        "persons": make_entries(persons_annual, is_persons=True),
         "organizations": make_entries(orgs_annual),
         "last_year": last_year,
     }
@@ -2782,6 +2888,8 @@ def main():
             rec["og"] = a["organizations"]  # organizations keywords
         if a.get("print_headline"):
             rec["ph"] = a["print_headline"]  # print headline (omit if empty to save space)
+        if a.get("kicker"):
+            rec["k"] = a["kicker"]           # kicker (for feature detection)
         by_year[a["year"]].append(rec)
 
     years = sorted(by_year.keys())
