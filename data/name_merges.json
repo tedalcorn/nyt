@@ -10,6 +10,16 @@
     ]
   },
   {
+    "canonical": "A Student At Farmingdale State University of New York",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "A Journalism Student At Purchase College of the State University of New York",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "A. J. Chavar",
     "canonical_count": 161,
     "merged": [
@@ -674,6 +684,16 @@
     ]
   },
   {
+    "canonical": "Alton Brown",
+    "canonical_count": 2,
+    "merged": [
+      {
+        "name": "ALTON BROWN",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Alvaro M. Bedoya",
     "canonical_count": 2,
     "merged": [
@@ -754,6 +774,16 @@
     ]
   },
   {
+    "canonical": "Amy Barrett",
+    "canonical_count": 36,
+    "merged": [
+      {
+        "name": "Amy Richards As Told To Amy Barrett",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Amy Fabris-Shi",
     "canonical_count": 1,
     "merged": [
@@ -775,7 +805,7 @@
   },
   {
     "canonical": "Amy Gunderson",
-    "canonical_count": 203,
+    "canonical_count": 204,
     "merged": [
       {
         "name": "AMY GUNDERSON",
@@ -1484,12 +1514,46 @@
     ]
   },
   {
-    "canonical": "as told to JOAN RAYMOND",
+    "canonical": "As Told To Christopher Elliott",
+    "canonical_count": 12,
+    "merged": [
+      {
+        "name": "as told to Christopher Elliott",
+        "count": 9
+      },
+      {
+        "name": "as told to CHRISTOPHER ELLIOTT",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "as told to FRED HEEREN",
     "canonical_count": 1,
     "merged": [
       {
-        "name": "As told to JOAN RAYMOND",
+        "name": "As Told To Fred Heeren",
         "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "as told to PATRICIA R. OLSEN",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "As told to PATRICIA R. OLSEN",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "as told to JOAN RAYMOND",
+    "canonical_count": 10,
+    "merged": [
+      {
+        "name": "As told to JOAN RAYMOND",
+        "count": 10
       }
     ]
   },
@@ -1887,7 +1951,7 @@
     "merged": [
       {
         "name": "BETHANY LYTTLE",
-        "count": 16
+        "count": 17
       }
     ]
   },
@@ -2942,6 +3006,16 @@
     ]
   },
   {
+    "canonical": "Christopher Lee",
+    "canonical_count": 21,
+    "merged": [
+      {
+        "name": "CHRISTOPHER LEE",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Christopher Miller",
     "canonical_count": 3,
     "merged": [
@@ -3384,6 +3458,16 @@
     ]
   },
   {
+    "canonical": "DAN NAINAN; as told to JOAN RAYMOND",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "DAN GLICKMAN; as Told to JOAN RAYMOND",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Dan Reicher",
     "canonical_count": 2,
     "merged": [
@@ -3689,6 +3773,16 @@
     "merged": [
       {
         "name": "DAVE ITZKOFF",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "DAVE SARACHAN",
+    "canonical_count": 7,
+    "merged": [
+      {
+        "name": "Dave Sarachan",
         "count": 1
       }
     ]
@@ -4739,7 +4833,11 @@
     "merged": [
       {
         "name": "David Williams",
-        "count": 4
+        "count": 3
+      },
+      {
+        "name": "DAVID WILLIAMS",
+        "count": 1
       },
       {
         "name": "David Lay Williams",
@@ -4835,6 +4933,16 @@
     "merged": [
       {
         "name": "Debra J. Dickerson",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "DEBRA REED; As told to AMY ZIPKIN",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "DEBRA CAFARO; as told to AMY ZIPKIN",
         "count": 1
       }
     ]
@@ -7058,6 +7166,16 @@
     ]
   },
   {
+    "canonical": "GREG HANSON; as told to JOAN RAYMOND",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "GREG COHEN; as told to JOAN RAYMOND",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Gregory R. Clark",
     "canonical_count": 1,
     "merged": [
@@ -8432,6 +8550,16 @@
     ]
   },
   {
+    "canonical": "Jason Hotalen As Told To Gretchen Reynolds",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Jason Reynolds",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Jason K. Stearns",
     "canonical_count": 1,
     "merged": [
@@ -9138,6 +9266,20 @@
     ]
   },
   {
+    "canonical": "JIM LANZONE; As told to PATRICIA R. OLSEN",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "JIM McCANN; As told to PATRICIA R. OLSEN",
+        "count": 1
+      },
+      {
+        "name": "JIM GILLESPIE; As told to PATRICIA R. OLSEN",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Jo Craven McGinty",
     "canonical_count": 88,
     "merged": [
@@ -9542,16 +9684,6 @@
     ]
   },
   {
-    "canonical": "John Kifnerand Edward",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "John Edward",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "John S. Eisenhower",
     "canonical_count": 3,
     "merged": [
@@ -9927,6 +10059,16 @@
     "merged": [
       {
         "name": "John Perry",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "JOHN HAGEN; as told to JOAN RAYMOND",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "JOHN EDWARD; as told to JOAN RAYMOND",
         "count": 1
       }
     ]
@@ -12799,7 +12941,7 @@
   },
   {
     "canonical": "Mark W. Everson",
-    "canonical_count": 3,
+    "canonical_count": 2,
     "merged": [
       {
         "name": "Mark Everson",
@@ -12892,12 +13034,32 @@
     ]
   },
   {
+    "canonical": "Mark Olsen",
+    "canonical_count": 11,
+    "merged": [
+      {
+        "name": "MARK W. EVERSON; as told to PATRICIA R. OLSEN",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Mark J. Penn",
     "canonical_count": 14,
     "merged": [
       {
         "name": "Mark Penn",
         "count": 8
+      }
+    ]
+  },
+  {
+    "canonical": "MARK ROITHMAYR; As told to JOAN RAYMOND",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "MARK CONNOLLY; as told to JOAN RAYMOND",
+        "count": 1
       }
     ]
   },
@@ -13473,6 +13635,16 @@
     "merged": [
       {
         "name": "Michael A. Black",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "MICHAEL BOCIURKIW",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Michael Bociurkiw",
         "count": 1
       }
     ]
@@ -14157,6 +14329,16 @@
     "merged": [
       {
         "name": "Michelle J. Anderson",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "MICHELLE HENDERSON as told to HOWARD GOLD",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Michelle Henderson As Told To Howard Gold",
         "count": 1
       }
     ]
@@ -15320,16 +15502,6 @@
     ]
   },
   {
-    "canonical": "Paul McManus",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Paul McMANUS",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Paul O'Neill",
     "canonical_count": 5,
     "merged": [
@@ -15774,6 +15946,16 @@
     ]
   },
   {
+    "canonical": "Peter Wilson",
+    "canonical_count": 9,
+    "merged": [
+      {
+        "name": "PETER WILSON",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Philip B. Corbett",
     "canonical_count": 522,
     "merged": [
@@ -15933,6 +16115,16 @@
       },
       {
         "name": "R. N. Swanson",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "RAAD ALI ABDULAZIZ",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Raad Ali Abdulaziz",
         "count": 1
       }
     ]
@@ -17440,6 +17632,16 @@
     ]
   },
   {
+    "canonical": "Rodney Welch",
+    "canonical_count": 2,
+    "merged": [
+      {
+        "name": "Rodney Ellis As Told To Liz Welch",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Rogene Fisher Jacquette",
     "canonical_count": 13,
     "merged": [
@@ -18194,6 +18396,16 @@
     ]
   },
   {
+    "canonical": "Scott J. Shapiro",
+    "canonical_count": 3,
+    "merged": [
+      {
+        "name": "Scott Hogsett As Told To Dana Adam Shapiro",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Scott Stringer",
     "canonical_count": 3,
     "merged": [
@@ -18510,6 +18722,16 @@
     ]
   },
   {
+    "canonical": "SOHA HAGE as told to KATHERINE ZOEPF",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Soha Hage As Told To Katherine Zoepf",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Sony Pictures Classics",
     "canonical_count": 9,
     "merged": [
@@ -18778,16 +19000,6 @@
     ]
   },
   {
-    "canonical": "Steven A. Davis",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Steven Davis",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Steven Erlanger",
     "canonical_count": 3537,
     "merged": [
@@ -18940,16 +19152,6 @@
     ]
   },
   {
-    "canonical": "Sue A. Brush",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Sue Brush",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Sui-lee Wee",
     "canonical_count": 394,
     "merged": [
@@ -19077,6 +19279,16 @@
       },
       {
         "name": "Susan B. Novick",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "SUSAN FITTER; as told to JOAN RAYMOND",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "SUSAN LUCCI; As told to JOAN RAYMOND",
         "count": 1
       }
     ]
@@ -20264,6 +20476,26 @@
       {
         "name": "Tom Leclair",
         "count": 3
+      }
+    ]
+  },
+  {
+    "canonical": "Tom Wolfe",
+    "canonical_count": 14,
+    "merged": [
+      {
+        "name": "TOM WOLFE",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "TONY POTTS; as told to JOAN RAYMOND",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "TONY HAWK; as told to JOAN RAYMOND",
+        "count": 1
       }
     ]
   },

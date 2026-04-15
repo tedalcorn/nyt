@@ -261,7 +261,7 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Added Letter of Recommendation as a tracked feature (weekly Magazine column, 2015–present). Added median word count to Compare Sections chart. Added estimated movie-review count for 2005 (hatched bar in Movies section detail). Improved multimedia detection for bylines with consistent zero-word-count articles. Merged person-name variants in the Subjects tab (e.g. "Schumer, Charles" → "Schumer, Charles E"). Article lists in Weddings &amp; Vows and Letter of Recommendation features now show all matching articles rather than a capped recent subset.</p>
+      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Fixed article lists in section pop-ups and feature panels (Weddings &amp; Vows, Letter of Recommendation). Fixed "As Told To" bylines, which were appearing as a spurious author entry. Added inferred 2005 movie-review estimates to the Compare Sections chart. Improved Congo/DRC country name normalization in World Coverage. Minor chart and UI improvements.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
@@ -545,8 +545,8 @@
         <input type="text" id="term3" placeholder="">
         <input type="text" id="term4" placeholder="">
         <button id="trackBtn">Visualize</button>
-        <label style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" id="trackerFrontPage"><span>Page A1 only</span></label>
-        <label style="display:inline-flex;align-items:center;gap:5px;margin-left:8px"><input type="checkbox" id="trackerUsePrint" checked><span>Print headlines</span></label>
+        <button id="trackerFrontPage" data-active="false" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'Page A1 Only':'All Pages';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(articlesReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#f0f4f8;color:#444">All Pages</button>
+        <button id="trackerUsePrint" data-active="true" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'In Print Edition':'Online';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(articlesReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#326891;color:#fff">In Print Edition</button>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Years</span>
@@ -955,7 +955,7 @@ function initOverview() {
           ticks: { callback: function(val, idx) { const l = monthLabels[idx]; return l && l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: true, maxRotation: 0, font: { size: 11 } }
         },
         y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Articles', font: { size: 11 } } },
-        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Words (millions)', font: { size: 11 }, color: 'rgba(170,120,80,0.9)' } }
+        y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Words (millions)', font: { size: 11 }, color: 'rgba(170,120,80,0.9)' }, ticks: { color: 'rgba(170,120,80,0.9)' } }
       }
     }
   });
@@ -1044,14 +1044,20 @@ function renderDecadeChart() {
           position: 'bottom',
           labels: {
             font: { size: 11 }, boxWidth: 12,
-            generateLabels: chart => chart.data.datasets.map((ds, i) => ({
-              text: ds.label,
-              fillStyle: ds.label.startsWith('—') ? 'transparent' : (ds.backgroundColor || ds.borderColor),
-              strokeStyle: ds.borderColor || ds.backgroundColor,
-              lineWidth: ds.label.startsWith('—') ? 2 : 0,
-              hidden: !chart.isDatasetVisible(i),
-              datasetIndex: i,
-            }))
+            usePointStyle: true,
+            generateLabels: chart => chart.data.datasets.map((ds, i) => {
+              const isAvg = i === 0;   // "— Avg words/article"
+              const isWords = i === 1; // "Total words"
+              return {
+                text: ds.label,
+                fillStyle: (isAvg || isWords) ? 'transparent' : (ds.backgroundColor || ds.borderColor),
+                strokeStyle: ds.borderColor || ds.backgroundColor,
+                lineWidth: (isAvg || isWords) ? 2.5 : 0,
+                pointStyle: isAvg ? 'dash' : (isWords ? 'line' : 'rect'),
+                hidden: !chart.isDatasetVisible(i),
+                datasetIndex: i,
+              };
+            })
           }
         },
         datalabels: { display: false },  // default off; overridden per-dataset above
@@ -1067,6 +1073,7 @@ function renderDecadeChart() {
           position: 'right',
           grid: { drawOnChartArea: false },
           title: { display: true, text: 'Words (millions)', font: { size: 11 }, color: 'rgba(170,120,80,0.9)' },
+          ticks: { color: 'rgba(170,120,80,0.9)' },
         },
         y2: {
           display: false,   // hidden axis — values read via datalabels instead
@@ -1322,14 +1329,14 @@ function renderFeatures() {
 }
 
 function isWeddingArticle(a) {
-  const ss = (a.ss || '').toLowerCase();
-  const sb = (a.sb || []).map(s => s.toLowerCase());
+  const ss = (a.subsection || '').toLowerCase();
+  const sb = (a.subjects || []).map(s => s.toLowerCase());
   return ss === 'weddings' || sb.includes('vows (times column)');
 }
 
 function isLORArticle(a) {
-  const h = (a.headline || a.h || '').toLowerCase();
-  const k = (a.kicker || a.k || '').toLowerCase();
+  const h = (a.headline || '').toLowerCase();
+  const k = (a.kicker || '').toLowerCase();
   return h.startsWith('letter of recommendation:') || k === 'letter of recommendation';
 }
 
@@ -1401,8 +1408,8 @@ let _featureArticlesCache = [];
 function downloadFeatureCSV() {
   const meta = FEATURE_META[currentFeatureKey] || {};
   const csvData = _featureArticlesCache.map(a => ({
-    pub_date: a.d, headline: a.h, authors: (a.a || []).join(', '),
-    word_count: a.w, web_url: a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || '')
+    pub_date: a.pub_date, headline: a.headline, authors: (a.authors || []).join(', '),
+    word_count: a.word_count, web_url: a.web_url || ''
   }));
   downloadArticlesCSV(csvData, meta.csvFile || 'articles.csv');
 }
@@ -1422,7 +1429,7 @@ function fillFeatureArticleList() {
   const oldest = featureArticleOrder === 'oldest';
   _featureArticlesCache = articles
     .filter(filterFn)
-    .sort((a, b) => oldest ? (a.d || '').localeCompare(b.d || '') : (b.d || '').localeCompare(a.d || ''));
+    .sort((a, b) => oldest ? (a.pub_date || '').localeCompare(b.pub_date || '') : (b.pub_date || '').localeCompare(a.pub_date || ''));
 
   if (!_featureArticlesCache.length) {
     wrap.innerHTML = '<p style="color:#aaa;font-size:12px">No articles found.</p>';
@@ -1440,12 +1447,11 @@ function fillFeatureArticleList() {
   </span>`;
 
   const rows = shown.map(a => {
-    const url = a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || '');
-    const byline = (a.a || []).join(', ');
-    const words = a.w ? ` · ${a.w.toLocaleString()} words` : '';
+    const byline = (a.authors || []).join(', ');
+    const words = a.word_count ? ` · ${a.word_count.toLocaleString()} words` : '';
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">` +
-      `<span style="color:#aaa;font-size:11px;margin-right:6px">${a.d}</span>` +
-      `<a href="${escapeHtml(url)}" target="_blank" style="font-size:12px;color:#326891;text-decoration:none">${escapeHtml(a.h || '(no headline)')}</a>` +
+      `<span style="color:#aaa;font-size:11px;margin-right:6px">${a.pub_date}</span>` +
+      `<a href="${escapeHtml(a.web_url || '')}" target="_blank" style="font-size:12px;color:#326891;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>` +
       (byline ? `<span style="color:#aaa;font-size:11px"> · ${escapeHtml(byline)}${words}</span>` : '') +
       `</div>`;
   }).join('');
@@ -1600,7 +1606,7 @@ function openSectionDetail(sectionName) {
           <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
           <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
         </div>
-        ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): estimated articles inferred from core reviewers' Arts-section bylines — the NYT API does not index Movies separately for that year.</p>` : ''}
+        ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): ~795 articles estimated from core reviewers' bylines — the NYT API does not index Movies as a separate section for that year. All other bars are confirmed API counts.</p>` : ''}
       </div>
       <div id="sectionDetailReporters" style="margin-top:12px"></div>
       <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:14px;margin-bottom:4px">Recent articles</div>
@@ -1661,7 +1667,7 @@ function openSectionDetail(sectionName) {
     data: { labels: allYears, datasets: sdDatasets },
     options: {
       responsive: true,
-      plugins: { legend: { display: hasInferred, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 14 } } },
+      plugins: { legend: { display: false } },
       scales: {
         x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
         y: { stacked: true, beginAtZero: true, ticks: { font: { size: 10 } } },
@@ -1677,16 +1683,15 @@ function openSectionDetail(sectionName) {
 function fillSectionArticleList(sectionName) {
   const listEl = document.getElementById('sectionDetailArticleList');
   if (!listEl) return;
-  const secArts = articles.filter(a => a.s === sectionName)
-    .sort((a, b) => (b.d || '').localeCompare(a.d || ''))
+  const secArts = articles.filter(a => a.section === sectionName)
+    .sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''))
     .slice(0, 100);
   if (!secArts.length) { listEl.innerHTML = ''; return; }
   listEl.innerHTML = secArts.map(a => {
-    const url = a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || '');
-    const byline = (a.a || []).join(', ');
+    const byline = (a.authors || []).join(', ');
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">` +
-      `<span style="color:#aaa;font-size:11px;margin-right:6px">${a.d}</span>` +
-      `<a href="${escapeHtml(url)}" target="_blank" style="font-size:12px;color:#326891;text-decoration:none">${escapeHtml(a.h || '(no headline)')}</a>` +
+      `<span style="color:#aaa;font-size:11px;margin-right:6px">${a.pub_date}</span>` +
+      `<a href="${escapeHtml(a.web_url || '')}" target="_blank" style="font-size:12px;color:#326891;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>` +
       (byline ? `<span style="color:#aaa;font-size:11px"> · ${escapeHtml(byline)}</span>` : '') +
       `</div>`;
   }).join('');
@@ -1727,12 +1732,12 @@ function renderSectionCountTrend() {
   const datasets = [];
   selected.forEach((s, i) => {
     const trend = dashboard.section_trends[s] || [];
-    const byYear = {}, avgByYear = {}, medByYear = {};
-    trend.forEach(d => { byYear[d.year] = d.count; avgByYear[d.year] = d.avg_words; medByYear[d.year] = d.median_words; });
+    const byYear = {}, avgByYear = {}, medByYear = {}, inferredByYear = {};
+    trend.forEach(d => { byYear[d.year] = d.count; avgByYear[d.year] = d.avg_words; medByYear[d.year] = d.median_words; if (d.inferred_count) inferredByYear[d.year] = d.inferred_count; });
     const col = trendColors[i % trendColors.length];
     let data;
     if (sectionMetric === 'articles') {
-      data = years.map(y => byYear[y] || 0);
+      data = years.map(y => (byYear[y] || 0) + (inferredByYear[y] || 0));
     } else if (sectionMetric === 'words') {
       data = years.map(y => Math.round((byYear[y] || 0) * (avgByYear[y] || 0)));
     } else {
@@ -2774,8 +2779,7 @@ function toTitleCase(s) {
 
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
-document.getElementById('trackerFrontPage').addEventListener('change', trackTerms);
-document.getElementById('trackerUsePrint').addEventListener('change', () => { if (articlesReady) trackTerms(); });
+// trackerFrontPage and trackerUsePrint are now toggle buttons; handlers are inline onclick
 document.getElementById('trackerYrStart').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
 document.getElementById('trackerYrEnd').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
 ['term1','term2','term3','term4'].forEach(id => {
@@ -2824,8 +2828,8 @@ function trackTerms() {
   ].filter(Boolean);
   if (!terms.length) return;
 
-  const frontOnly = document.getElementById('trackerFrontPage').checked;
-  const usePrint = document.getElementById('trackerUsePrint').checked;
+  const frontOnly = document.getElementById('trackerFrontPage').dataset.active === 'true';
+  const usePrint = document.getElementById('trackerUsePrint').dataset.active === 'true';
   const cutoffYear = String(new Date().getFullYear());
   const startYear = document.getElementById('trackerYrStart').value;
   const endYear = document.getElementById('trackerYrEnd').value;

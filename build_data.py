@@ -60,6 +60,10 @@ def extract_authors(byline):
     persons = byline.get("person", [])
     if persons and any(FIRSTNAME_CREDIT.match((p.get("firstname") or "").strip()) for p in persons):
         persons = []  # malformed — force original string fallback
+    # Detect "By X, As Told To Y" bylines — the API person array gives malformed entries
+    # like {firstname:"As", lastname:"To"} — force original string fallback instead
+    if persons and 'as told to' in (byline.get("original") or "").lower():
+        persons = []  # malformed — force original string fallback
 
     def _clean(s):
         """Decode HTML entities and normalize non-breaking spaces in a name component."""
@@ -2511,6 +2515,10 @@ def build_dashboard_data(articles, authors):
         # Title-case if still entirely ALL-CAPS (handles remaining unknown all-caps tags)
         if loc == loc.upper() and len(loc) > 2 and any(c.isalpha() for c in loc):
             return loc_title
+        # Catch remaining DRC name variants (e.g. "Congo, The Democratic Republic of the")
+        loc_lower = loc.lower()
+        if 'democratic' in loc_lower and 'congo' in loc_lower:
+            return "Democratic Republic of Congo"
         return loc
 
     # Countries where blog inflation was significant — pre-compute blog/non-blog split
