@@ -551,7 +551,10 @@
         </div>
         <span id="trackerYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
       </div>
-      <div style="position:relative;height:calc(100vh - 210px)"><canvas id="chartTracker"></canvas></div>
+      <div style="position:relative;height:calc(100vh - 210px)">
+        <canvas id="chartTracker"></canvas>
+        <button onclick="downloadTrackerChart()" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2749,20 +2752,29 @@ function trackTerms() {
     });
   });
 
-  const colors = ['#c44', '#44c', '#4a4', '#c84'];
+  const trackerColors = ['#c44', '#44c', '#4a4', '#c84'];
+  // Convert short hex to rgba for semi-transparent fill
+  function hexFill(hex, a) {
+    const r = parseInt(hex[1]+hex[1],16), g = parseInt(hex[2]+hex[2],16), b = parseInt(hex[3]+hex[3],16);
+    return `rgba(${r},${g},${b},${a})`;
+  }
   destroyChart('chartTracker');
   chartInstances['chartTracker'] = new Chart(document.getElementById('chartTracker'), {
     type: 'line',
     data: {
       labels: months,
-      datasets: terms.map((t, i) => ({
-        label: t,
-        data: months.map(m => series[t][m] || 0),
-        borderColor: colors[i % colors.length],
-        backgroundColor: 'transparent',
-        tension: 0.2,
-        pointRadius: 1.5,
-      }))
+      datasets: terms.map((t, i) => {
+        const col = trackerColors[i % trackerColors.length];
+        return {
+          label: t,
+          data: months.map(m => series[t][m] || 0),
+          borderColor: col,
+          backgroundColor: hexFill(col, 0.07),
+          fill: true,
+          tension: 0.2,
+          pointRadius: 1.5,
+        };
+      })
     },
     options: {
       responsive: true,
@@ -2777,6 +2789,39 @@ function trackTerms() {
       plugins: { legend: { position: 'bottom' } }
     }
   });
+}
+
+function downloadTrackerChart() {
+  const chart = chartInstances['chartTracker'];
+  if (!chart) return;
+  const src = chart.canvas;
+  const terms = ['term1','term2','term3','term4'].map(id => document.getElementById(id)?.value?.trim()).filter(Boolean);
+  const termStr = terms.length ? terms.join(' · ') : 'headline search';
+  const W = src.width, H = src.height;
+  const PAD = 48;
+  const out = document.createElement('canvas');
+  out.width = W; out.height = H + PAD;
+  const ctx2 = out.getContext('2d');
+  ctx2.fillStyle = '#fff';
+  ctx2.fillRect(0, 0, W, H + PAD);
+  // Title
+  ctx2.fillStyle = '#222';
+  ctx2.font = `bold ${Math.round(W * 0.018)}px Arial,sans-serif`;
+  ctx2.textBaseline = 'top';
+  ctx2.fillText(`New York Times headline frequency: ${termStr}`, 16, 10);
+  // Source URL lower right
+  const url = 'https://tedalcorn.github.io/nyt/';
+  ctx2.font = `${Math.round(W * 0.013)}px Arial,sans-serif`;
+  ctx2.fillStyle = '#888';
+  ctx2.textAlign = 'right';
+  ctx2.fillText(url, W - 12, 28);
+  ctx2.textAlign = 'left';
+  // Chart canvas
+  ctx2.drawImage(src, 0, PAD);
+  const a = document.createElement('a');
+  a.download = `nyt-headlines-${termStr.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}.jpg`;
+  a.href = out.toDataURL('image/jpeg', 0.92);
+  a.click();
 }
 
 // --- WORLD ---
@@ -2881,10 +2926,20 @@ function renderWorldTable(years) {
   const yearEnd = years.length ? years[years.length - 1] : '';
   const articleColLabel = `Articles (${yearStart}–${yearEnd})`;
 
-  const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa', 'Abu Ghraib']);
+  const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa', 'Abu Ghraib', 'Antarctic Regions']);
+  // Locations that should absorb counts from an alias row (alias → canonical)
+  const LOCATION_ALIASES = { 'Antarctic Regions': 'Antarctica' };
+  // Pre-compute alias totals to merge into canonical rows
+  const aliasTrends = {};
+  Object.entries(LOCATION_ALIASES).forEach(([alias, canonical]) => {
+    const t = wc.location_trends[alias] || {};
+    if (!aliasTrends[canonical]) aliasTrends[canonical] = {};
+    years.forEach(y => { aliasTrends[canonical][y] = (aliasTrends[canonical][y] || 0) + (t[y] || 0); });
+  });
   const rows = wc.locations.filter(loc => !WORLD_TABLE_EXCLUDE.has(loc)).map(loc => {
     const trend = wc.location_trends[loc] || {};
-    const total = years.reduce((s, y) => s + (trend[y] || 0), 0);
+    const merged = aliasTrends[loc] || {};
+    const total = years.reduce((s, y) => s + (trend[y] || 0) + (merged[y] || 0), 0);
     const pop = POPULATION_M[loc];
     const perCapita = pop ? Math.round(total / pop / numYears * 100) / 100 : null;
     return { name: loc, count: total, perCapita };
@@ -3016,7 +3071,8 @@ const NYT_TO_GEO = {
   'South Korea': 'South Korea',
   'Vatican City': 'Vatican',
   'Cape Verde': 'Cabo Verde',
-  'Abu Ghraib': 'Iraq',  // city in Iraq; roll up to country
+  'Abu Ghraib': 'Iraq',          // city in Iraq; roll up to country
+  'Antarctic Regions': 'Antarctica',  // NYT API uses both; merge under cleaner name
   'Hong Kong': 'Hong Kong',
   'Taiwan': 'Taiwan',
   'Palestine': 'Palestine',
