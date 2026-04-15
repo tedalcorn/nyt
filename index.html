@@ -1396,31 +1396,50 @@ function openFeatureDetail(featureKey) {
   fillFeatureArticleList();
 }
 
+let _featureArticlesCache = [];
+
+function downloadFeatureCSV() {
+  const meta = FEATURE_META[currentFeatureKey] || {};
+  const csvData = _featureArticlesCache.map(a => ({
+    pub_date: a.d, headline: a.h, authors: (a.a || []).join(', '),
+    word_count: a.w, web_url: a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || '')
+  }));
+  downloadArticlesCSV(csvData, meta.csvFile || 'articles.csv');
+}
+
 function fillFeatureArticleList() {
   const wrap = document.getElementById('featureArticleListWrap');
   if (!wrap) return;
-  const meta = FEATURE_META[currentFeatureKey] || {};
 
-  const prebuilt = (dashboard.features?.[currentFeatureKey]?.recent_articles || []).slice();
-  if (!prebuilt.length) {
+  if (!articlesReady) {
+    wrap.innerHTML = IS_MOBILE
+      ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>'
+      : '<p style="color:#888;font-size:13px">Loading article data…</p>';
+    return;
+  }
+
+  const filterFn = currentFeatureKey === 'weddings' ? isWeddingArticle : isLORArticle;
+  const oldest = featureArticleOrder === 'oldest';
+  _featureArticlesCache = articles
+    .filter(filterFn)
+    .sort((a, b) => oldest ? (a.d || '').localeCompare(b.d || '') : (b.d || '').localeCompare(a.d || ''));
+
+  if (!_featureArticlesCache.length) {
     wrap.innerHTML = '<p style="color:#aaa;font-size:12px">No articles found.</p>';
     return;
   }
 
-  // prebuilt list is sorted oldest-first; reverse for newest view
-  if (featureArticleOrder === 'newest') prebuilt.reverse();
+  const shown = _featureArticlesCache.slice(0, 200);
+  const total = _featureArticlesCache.length;
 
-  const csvData = prebuilt.map(a => ({
-    pub_date: a.d, headline: a.h, authors: (a.a || []).join(', '),
-    word_count: a.w, web_url: a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : a.u
-  }));
-  const csvBtn = `<button onclick="downloadArticlesCSV(${JSON.stringify(csvData).replace(/</g,'\\u003c')},'${meta.csvFile || 'articles.csv'}')" style="font-size:11px;padding:2px 8px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer">Download CSV</button>`;
+  const csvBtn = `<button onclick="downloadFeatureCSV()" style="font-size:11px;padding:2px 8px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer">Download CSV</button>`;
+  const btn = s => `background:${featureArticleOrder===s?'#326891':'#f0f4f8'};color:${featureArticleOrder===s?'#fff':'inherit'}`;
   const sortBtns = `<span style="margin-left:8px;font-size:11px">
-    <button onclick="featureArticleOrder='newest';fillFeatureArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:${featureArticleOrder==='newest'?'#326891':'#f0f4f8'};color:${featureArticleOrder==='newest'?'#fff':'inherit'}">Newest</button>
-    <button onclick="featureArticleOrder='oldest';fillFeatureArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:${featureArticleOrder==='oldest'?'#326891':'#f0f4f8'};color:${featureArticleOrder==='oldest'?'#fff':'inherit'}">Oldest</button>
+    <button onclick="featureArticleOrder='newest';fillFeatureArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;${btn('newest')}">Newest</button>
+    <button onclick="featureArticleOrder='oldest';fillFeatureArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;${btn('oldest')}">Oldest</button>
   </span>`;
 
-  const rows = prebuilt.map(a => {
+  const rows = shown.map(a => {
     const url = a.u && a.u.startsWith('/') ? 'https://www.nytimes.com' + a.u : (a.u || '');
     const byline = (a.a || []).join(', ');
     const words = a.w ? ` · ${a.w.toLocaleString()} words` : '';
@@ -1431,8 +1450,9 @@ function fillFeatureArticleList() {
       `</div>`;
   }).join('');
 
+  const countNote = total > 200 ? `Showing 200 of ${total.toLocaleString()} — download CSV for full list` : `${total.toLocaleString()} articles`;
   wrap.innerHTML = `<div style="margin-bottom:6px">${csvBtn}${sortBtns}</div>` +
-    `<div style="font-size:11px;color:#888;margin-bottom:4px">${prebuilt.length.toLocaleString()} articles</div>` + rows;
+    `<div style="font-size:11px;color:#888;margin-bottom:4px">${countNote}</div>` + rows;
 }
 
 let sectionTableSort = { col: 'count', asc: false };
