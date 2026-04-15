@@ -113,6 +113,8 @@ def extract_authors(byline):
         return []
     # Strip leading "By " (case-insensitive)
     text = re.sub(r'^by\s+', '', original, flags=re.IGNORECASE)
+    # "As told to NAME" / "As told to NAME and NAME" — credit the interviewer/writer
+    text = re.sub(r'^as\s+told\s+to\s+', '', text, flags=re.IGNORECASE)
     # Handle "Author: Written With Other" — colon separates main author from contribution note.
     # Truncate at colon so "Malia Mills: Written With Alex Kuczynski" → "Malia Mills".
     if ':' in text:
@@ -1066,7 +1068,13 @@ def process_articles(raw_articles):
         'Steve Strunsky Nyt': 'Steve Strunsky',
         'Steven Erlanger Nyt': 'Steven Erlanger',
         'Steven Greenhouse Nyt': 'Steven Greenhouse',
-        'Stuart Elliot Nyt': 'Stuart Elliot',
+        'Stuart Elliot': 'Stuart Elliott',        # typo variant of the advertising columnist
+        'Stuart Elliot Nyt': 'Stuart Elliott',
+        # Accent mark variants (API inconsistently strips/preserves diacritics)
+        'Richard Perez-Pena': 'Richard Pérez-Peña',
+        'Jere Longman': 'Jeré Longman',
+        'Ceylan Yeğinsu': 'Ceylan Yeginsu',
+        'Orlando Mayorquin': 'Orlando Mayorquín',
         'Stuart Elliott Nyt': 'Stuart Elliott',
         'Sual Hansell Nyt': 'Sual Hansell',
         'Suha Maayeh Nyt': 'Suha Maayeh',
@@ -1273,6 +1281,7 @@ def build_author_stats(articles):
         "monthly_shared_counts": defaultdict(int),  # YYYY-MM -> shared article count
         "coauthors": Counter(),
         "zero_word_articles": 0,
+        "solo_text_articles": 0,  # solo bylines with word_count > 200
     })
 
     for art in articles:
@@ -1297,6 +1306,8 @@ def build_author_stats(articles):
                 d["annual_blog_words"][year] += author_words
             if art["word_count"] == 0:
                 d["zero_word_articles"] += 1
+            if not is_shared and art["word_count"] > 200:
+                d["solo_text_articles"] += 1
             if is_shared:
                 d["shared_byline_count"] += 1
                 d["monthly_shared_counts"][art["year_month"]] += 1
@@ -1412,7 +1423,11 @@ def build_author_stats(articles):
             shared_rate >= 0.90 and
             primary_section in ("Crosswords & Games", "Briefing")
         )
-        likely_multimedia = is_photo_video or is_low_word_shared or is_podcast or is_structural
+        # Carve-out: anyone with 20+ solo text articles (solo byline, >200 words) has done
+        # real reporting and should NOT be excluded — catches reporters who later transitioned
+        # to podcasts/video (e.g. Michael Barbaro) or visual journalists who occasionally wrote.
+        has_reporting_history = d["solo_text_articles"] >= 20
+        likely_multimedia = (is_photo_video or is_low_word_shared or is_podcast or is_structural) and not has_reporting_history
         top_coauthors = dict(d["coauthors"].most_common(10))
 
         authors.append({
