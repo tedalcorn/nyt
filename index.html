@@ -822,7 +822,8 @@ async function loadData() {
     initOverview();
     initHeadlineSearch();
     renderWordsDist();
-    showView('about');
+    // Only default to 'about' if the hash didn't already set a view
+    if (!location.hash || !_readHash().tab) showView('about');
     setTimeout(addDownloadBtns, 200);
 
     // Phase 1b: load authors and beats independently (non-blocking)
@@ -953,6 +954,10 @@ function _applyRestore(phase) {
     if (p.country) { openCountryDetail(p.country); _pendingRestore = null; }
     else if (p.state) { openStateDetail(p.state); _pendingRestore = null; }
     else if (p.author) { openAuthor(p.author); _pendingRestore = null; }
+  }
+  if (phase === 'subjects' && p.subject) {
+    openSubjectDetail(p.subject, p.stype || 'person');
+    _pendingRestore = null;
   }
 }
 
@@ -4803,6 +4808,7 @@ function initSubjects() {
     initSubjectYearSlider();
     document.getElementById('subjectSearch').addEventListener('input', renderSubjectsTable);
     renderSubjectsTable();
+    _applyRestore('subjects');
   }).catch(e => {
     console.error('Failed to load subjects:', e);
     container.innerHTML = '<p style="color:#c00;padding:16px">Failed to load subjects data. Try refreshing the page.</p>';
@@ -4857,6 +4863,7 @@ function openSubjectDetail(rawName, type) {
   const entry = (type === 'person' ? subjectsData.persons : subjectsData.organizations)
     .find(e => e.name === rawName);
   if (!entry) return;
+  _writeHash({ tab: 'subjects', subject: rawName, stype: type });
 
   const allYearsForChart = subjectsAllYears;
   const total = Object.values(entry.annual).reduce((s, v) => s + v, 0);
@@ -5141,7 +5148,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 5:02pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 5:42pm</span>
 </div>
 </body>
 </html>
