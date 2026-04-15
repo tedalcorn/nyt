@@ -254,7 +254,7 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update (April 14, 2026):</strong> Fixed name consolidation for authors with API parenthetical suffixes (e.g. Jennifer 8. Lee); removed institutional bylines from the reporter list; fixed co-author links in reporter profiles; added world choropleth map and wedding article sort order.</p>
+      <p style="margin-top:16px"><strong>Latest update (April 14, 2026):</strong> Fixed name consolidation for authors with API parenthetical suffixes (e.g. Jennifer 8. Lee); removed institutional bylines from the reporter list; fixed co-author links in reporter profiles; added world choropleth map and wedding article sort order. Added metric toggle (articles/words/avg words per article) and text filter to Compare Sections chart; added avg words per article markers to section detail popups.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
@@ -399,8 +399,14 @@
       <h3>Compare Sections</h3>
       <p style="font-size:13px;color:#555;line-height:1.6;margin-bottom:10px">Includes major editorial sections. A few minor or discontinued categories are excluded from display. Where the NYT renamed a section while preserving its editorial identity, data from the old and new names are merged — for example, "Fashion &amp; Style" and "Fashion" are counted together under "Style." See the About tab for further details.</p>
       <div style="margin-bottom:8px">
+        <input type="text" id="sectionSearch" placeholder="Type to filter sections…" oninput="filterSectionSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
         <select id="sectionCountSelect" multiple style="width:100%;min-height:160px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple sections</div>
+      </div>
+      <div style="margin-bottom:8px;display:flex;gap:6px;flex-wrap:wrap">
+        <button id="sectionMetricArticles" onclick="setSectionMetric('articles')" style="padding:4px 10px;font-size:12px;border:1px solid #ccc;border-radius:4px;background:#567;color:#fff;cursor:pointer">Articles/year</button>
+        <button id="sectionMetricWords" onclick="setSectionMetric('words')" style="padding:4px 10px;font-size:12px;border:1px solid #ccc;border-radius:4px;background:#fff;color:#444;cursor:pointer">Words/year</button>
+        <button id="sectionMetricAvgWords" onclick="setSectionMetric('avg_words')" style="padding:4px 10px;font-size:12px;border:1px solid #ccc;border-radius:4px;background:#fff;color:#444;cursor:pointer">Avg words/article</button>
       </div>
       <div id="sectionCountCanvasWrap" style="position:relative;height:220px"><canvas id="chartSectionCount"></canvas></div>
     </div>
@@ -1623,10 +1629,31 @@ const trendColors = [
   '#7c5a8b','#8b7c4a','#5a8b7c','#8b4a5a','#4a5a8b','#7c8b4a',
 ];
 
+let sectionMetric = 'articles';
+
+function filterSectionSelect() {
+  const q = (document.getElementById('sectionSearch').value || '').toLowerCase();
+  Array.from(document.getElementById('sectionCountSelect').options).forEach(opt => {
+    opt.hidden = q && !opt.value.toLowerCase().includes(q);
+  });
+}
+
+function setSectionMetric(metric) {
+  sectionMetric = metric;
+  const btnIds = { articles: 'sectionMetricArticles', words: 'sectionMetricWords', avg_words: 'sectionMetricAvgWords' };
+  Object.entries(btnIds).forEach(([m, id]) => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.style.background = m === metric ? '#567' : '#fff'; btn.style.color = m === metric ? '#fff' : '#444'; }
+  });
+  renderSectionCountTrend();
+}
+
 function renderSectionCountTrend() {
   const selected = Array.from(document.getElementById('sectionCountSelect').selectedOptions).map(o => o.value);
   const currentYear = String(new Date().getFullYear());
   const years = dashboard.all_years.filter(y => y !== currentYear);
+
+  const yLabels = { articles: 'Articles per year', words: 'Words per year', avg_words: 'Avg words per article' };
 
   destroyChart('chartSectionCount');
   chartInstances['chartSectionCount'] = new Chart(document.getElementById('chartSectionCount'), {
@@ -1635,10 +1662,19 @@ function renderSectionCountTrend() {
       labels: years,
       datasets: selected.map((s, i) => {
         const trend = dashboard.section_trends[s] || [];
-        const byYear = {}; trend.forEach(d => byYear[d.year] = d.count);
+        const byYear = {}, avgByYear = {};
+        trend.forEach(d => { byYear[d.year] = d.count; avgByYear[d.year] = d.avg_words; });
+        let data;
+        if (sectionMetric === 'articles') {
+          data = years.map(y => byYear[y] || 0);
+        } else if (sectionMetric === 'words') {
+          data = years.map(y => Math.round((byYear[y] || 0) * (avgByYear[y] || 0)));
+        } else {
+          data = years.map(y => avgByYear[y] || null);
+        }
         return {
           label: s,
-          data: years.map(y => byYear[y] || 0),
+          data,
           borderColor: trendColors[i % trendColors.length],
           backgroundColor: 'transparent',
           tension: 0.3,
@@ -1650,7 +1686,7 @@ function renderSectionCountTrend() {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { beginAtZero: true, title: { display: true, text: 'Articles per year' } }
+        y: { beginAtZero: true, title: { display: true, text: yLabels[sectionMetric] } }
       },
       plugins: { legend: { position: 'bottom' } }
     }
