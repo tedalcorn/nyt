@@ -1509,7 +1509,8 @@ function openSectionDetail(sectionName) {
     `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="sec-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">${a.article_count.toLocaleString()}</span></span>`
   ).join('');
 
-  const byYear = {}; trend.forEach(d => byYear[d.year] = d.count);
+  const byYear = {}, avgByYear = {};
+  trend.forEach(d => { byYear[d.year] = d.count; avgByYear[d.year] = d.avg_words || 0; });
 
   panel.style.display = 'block';
   panel.innerHTML = `
@@ -1533,21 +1534,65 @@ function openSectionDetail(sectionName) {
     el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
   });
 
+  const avgVals = allYears.map(y => avgByYear[y] || null);
+  const maxAvg = Math.max(...avgVals.filter(Boolean));
+  const avgAxisMax = Math.ceil(maxAvg / 100) * 100 + 100;  // round up to next 100, add buffer
+
   destroyChart('chartSectionDetail');
   chartInstances['chartSectionDetail'] = new Chart(document.getElementById('chartSectionDetail'), {
     type: 'bar',
     data: {
       labels: allYears,
-      datasets: [{ label: 'Articles', data: allYears.map(y => byYear[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
+      datasets: [{
+        label: 'Avg words/article',
+        data: avgVals,
+        type: 'line',
+        showLine: false,
+        pointStyle: 'dash',
+        pointRadius: 8,
+        pointBorderWidth: 2,
+        pointBorderColor: 'rgba(100,100,100,0.6)',
+        backgroundColor: 'transparent',
+        yAxisID: 'y1',
+        order: 0,
+        datalabels: {
+          display: true,
+          align: 'top',
+          anchor: 'end',
+          offset: 2,
+          color: 'rgba(80,80,80,0.75)',
+          font: { size: 9 },
+          formatter: v => v != null ? String(Math.round(v)) : '',
+        },
+      }, {
+        label: 'Articles',
+        data: allYears.map(y => byYear[y] || 0),
+        backgroundColor: 'rgba(50,104,145,0.7)',
+        yAxisID: 'y',
+        order: 1,
+        datalabels: { display: false },
+      }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      layout: { padding: { top: 18 } },
+      plugins: {
+        legend: { display: false },
+        datalabels: { display: false },
+      },
       scales: {
         x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
-        y: { beginAtZero: true, ticks: { font: { size: 10 } } }
-      }
-    }
+        y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+        y1: {
+          beginAtZero: true,
+          max: avgAxisMax,
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          ticks: { font: { size: 10 }, stepSize: 200, callback: v => Number.isInteger(v) ? v : '' },
+          title: { display: true, text: 'Avg words', font: { size: 9 }, color: '#999' },
+        },
+      },
+    },
   });
 
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
