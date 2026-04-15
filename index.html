@@ -829,6 +829,16 @@ async function loadData() {
       _suppressHashWrite = true;
       showView(_rTab);
       _suppressHashWrite = false;
+      // Explicitly init lazy tabs — don't rely on MutationObserver timing alone
+      if (_rTab === 'states' && !statesInitialized) { statesInitialized = true; initStates(); }
+      if (_rTab === 'sections' && !sectionsInitialized) { sectionsInitialized = true; initSections(); }
+      if (_rTab === 'world' && !worldInitialized) { worldInitialized = true; initWorld(); }
+      if (_rTab === 'subjects' && !subjectsInitialized) { initSubjects(); }
+      // Open state/country detail immediately — openStateDetail handles !articlesReady gracefully
+      const _rp = _pendingRestore;
+      if (_rp?.state) { openStateDetail(_rp.state); _pendingRestore = null; }
+      else if (_rp?.country) { openCountryDetail(_rp.country); _pendingRestore = null; }
+      // author/tracker/subjects detail are deferred until their data loads
     } else {
       showView('about');
     }
@@ -4807,13 +4817,15 @@ function initSubjects() {
   if (subjectsData) {
     initSubjectYearSlider();
     renderSubjectsTable();
+    _applyRestore('subjects');
     return;
   }
+  if (subjectsInitialized) return;   // fetch already in progress
+  subjectsInitialized = true;
   const container = document.getElementById('subjectsTableContainer');
   container.innerHTML = '<p style="color:#888;padding:16px">Loading subjects data…</p>';
   fetch('data/subjects.json').then(r => r.json()).then(data => {
     subjectsData = data;
-    subjectsInitialized = true;
     initSubjectYearSlider();
     document.getElementById('subjectSearch').addEventListener('input', renderSubjectsTable);
     renderSubjectsTable();
@@ -5146,7 +5158,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 5:52pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 2:41pm</span>
 </div>
 </body>
 </html>
