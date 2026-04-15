@@ -2907,6 +2907,22 @@ def main():
             json.dump(by_year[year], f, separators=(',', ':'))
     print(f"Saved article files for {len(years)} years ({sum(len(v) for v in by_year.values()):,} articles)")
 
+    # Write lean tracker files (headline+month only, ~28% the size of full articles)
+    # Loaded first by the browser so the Headline Frequency tab is usable sooner.
+    for year in years:
+        tracker = []
+        for rec in by_year[year]:
+            t = {"h": rec["h"], "m": rec["m"]}
+            if rec.get("ph"):
+                t["ph"] = rec["ph"]
+            if rec.get("ps") == "A" and str(rec.get("pp", "")) == "1":
+                t["fp"] = 1
+            tracker.append(t)
+        fpath = os.path.join(DATA_DIR, f"tracker_{year}.json")
+        with open(fpath, "w") as f:
+            json.dump(tracker, f, separators=(',', ':'))
+    print(f"Saved tracker files for {len(years)} years")
+
     # Only export authors with >= 2 articles; exclude institutional bylines
     authors_export = [
         a for a in authors

@@ -212,6 +212,14 @@
     #sectionTableContainer td.sec-spark,
     #sectionTableContainer th.sec-avg,
     #sectionTableContainer td.sec-avg { display: none; }
+    /* World/States tables: hide sparkline (col 3) and per-capita (col 4) on mobile */
+    #worldTableContainer th:nth-child(3), #worldTableContainer td:nth-child(3),
+    #worldTableContainer th:nth-child(4), #worldTableContainer td:nth-child(4),
+    #stateTableContainer th:nth-child(3), #stateTableContainer td:nth-child(3),
+    #stateTableContainer th:nth-child(4), #stateTableContainer td:nth-child(4) { display: none; }
+    /* Subjects table: hide Type (col 3) and sparkline (col 5) on mobile */
+    #subjectsTableContainer th:nth-child(3), #subjectsTableContainer td:nth-child(3),
+    #subjectsTableContainer th:nth-child(5), #subjectsTableContainer td:nth-child(5) { display: none; }
     /* Compact per-capita header */
     th.percap-hdr { font-size: 9px; letter-spacing: 0; }
     /* Reduce search box for mobile */
@@ -545,8 +553,8 @@
         <input type="text" id="term3" placeholder="">
         <input type="text" id="term4" placeholder="">
         <button id="trackBtn">Visualize</button>
-        <button id="trackerFrontPage" data-active="false" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'Page A1 Only':'All Pages';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(articlesReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#f0f4f8;color:#444">All Pages</button>
-        <button id="trackerUsePrint" data-active="true" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'In Print Edition':'Online';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(articlesReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#326891;color:#fff">In Print Edition</button>
+        <button id="trackerFrontPage" data-active="false" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'Page A1 Only':'All Pages';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(trackerReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#f0f4f8;color:#444">All Pages</button>
+        <button id="trackerUsePrint" data-active="true" onclick="this.dataset.active=(this.dataset.active==='true'?'false':'true');this.textContent=this.dataset.active==='true'?'In Print Edition':'Online';this.style.background=this.dataset.active==='true'?'#326891':'#f0f4f8';this.style.color=this.dataset.active==='true'?'#fff':'#444';if(trackerReady)trackTerms()" style="padding:3px 10px;font-size:12px;border:1px solid #ccc;border-radius:3px;cursor:pointer;background:#326891;color:#fff">In Print Edition</button>
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Years</span>
@@ -561,7 +569,6 @@
       </div>
       <div style="position:relative;height:calc(100vh - 210px)">
         <canvas id="chartTracker"></canvas>
-        <button onclick="downloadTrackerChart()" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
       </div>
     </div>
   </div>
@@ -573,6 +580,8 @@ let dashboard = null;
 let articles = [];
 let authors = null;
 let articlesReady = false;
+let trackerArticles = [];   // lean headline+month data — loaded first for fast tracker
+let trackerReady = false;
 
 // Detect mobile to skip heavy article pre-loading (prevents iOS Safari memory crash)
 const IS_MOBILE = window.innerWidth <= 768 || /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -628,15 +637,30 @@ function getChartFilename(box) {
 function addDownloadBtns() {
   document.querySelectorAll('.chart-box').forEach(box => {
     if (box.querySelector('.chart-dl-btn') || !box.querySelector('canvas')) return;
+
+    // Tracker box: add CSV + JPG at lower-right, using tracker-specific functions
+    if (box.closest('#view-tracker')) {
+      const csvBtn = document.createElement('button');
+      csvBtn.className = 'chart-dl-btn';
+      csvBtn.textContent = '↓ CSV';
+      csvBtn.style.right = '56px';
+      csvBtn.addEventListener('click', e => { e.stopPropagation(); downloadTrackerCSV(); });
+      box.appendChild(csvBtn);
+      const jpgBtn = document.createElement('button');
+      jpgBtn.className = 'chart-dl-btn';
+      jpgBtn.textContent = '↓ JPG';
+      jpgBtn.addEventListener('click', e => { e.stopPropagation(); downloadTrackerChart(); });
+      box.appendChild(jpgBtn);
+      return;
+    }
+
     const btn = document.createElement('button');
     btn.className = 'chart-dl-btn';
     btn.textContent = '↓ JPG';
     btn.addEventListener('click', e => {
       e.stopPropagation();
       btn.textContent = '…';
-      // Canvas-only: capture just the canvas element (skips title/controls)
-      // Applied to tracker, state trend, world trend, section compare charts
-      const canvasOnly = box.dataset.dlCanvasOnly || box.closest('#view-tracker');
+      const canvasOnly = box.dataset.dlCanvasOnly;
       const canvas = box.querySelector('canvas');
       const target = canvasOnly ? canvas : box;
       const filename = getChartFilename(box);
@@ -699,6 +723,17 @@ function destroyChart(id) {
 
 // Year file cache: compact raw records keyed by year (populated on demand + background)
 const yearCache = {};
+
+function _parseTrackerRecords(recs) {
+  // Expands lean tracker_{year}.json format → objects compatible with trackTerms()
+  return recs.map(a => ({
+    year_month:    a.m,
+    headline:      a.h,
+    print_headline: a.ph || '',
+    print_section: a.fp ? 'A' : '',
+    print_page:    a.fp ? '1' : '',
+  }));
+}
 
 function _parseYearRecords(yearArticles) {
   const URL_PREFIX = 'https://www.nytimes.com';
@@ -767,6 +802,16 @@ async function loadData() {
               hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
             });
             el.textContent = fmt;
+            // Also update the bottom-right timestamp
+            const stamp = document.getElementById('bottomRevStamp');
+            if (stamp) {
+              const shortFmt = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/New_York',
+                month: 'numeric', day: 'numeric', year: '2-digit',
+                hour: 'numeric', minute: '2-digit', hour12: true
+              }).format(d).replace(',', '').replace(' AM', 'am').replace(' PM', 'pm');
+              stamp.textContent = 'Last revised: ' + shortFmt;
+            }
             return;
           }
         }
@@ -812,7 +857,32 @@ async function loadData() {
       initBeats();
     }).catch(e => console.error('Failed to load beats:', e));
 
-    // Phase 2: article files in background (non-blocking)
+    // Phase 2a: tracker files — headline+month only, 226MB (28% of full articles).
+    // Loads first so the Headline Frequency tab is usable in ~1/4 the usual wait.
+    // Skipped on mobile for the same memory reasons as full articles.
+    if (!IS_MOBILE) {
+      (async () => {
+        const years = dashboard.all_years.map(Number);
+        trackerArticles = [];
+        for (const y of years) {
+          try {
+            const res = await fetch(`data/tracker_${y}.json`);
+            if (res.ok) {
+              const recs = _parseTrackerRecords(await res.json());
+              for (const r of recs) trackerArticles.push(r);
+            }
+          } catch(_) {}
+        }
+        trackerReady = true;
+        // If user already has terms entered (clicked Visualize while waiting), render now
+        const hasTerms = ['term1','term2','term3','term4']
+          .some(id => document.getElementById(id)?.value?.trim());
+        if (hasTerms) trackTerms();
+        else trackTerms(); // auto-populate with default terms
+      })().catch(e => console.error('Tracker load failed:', e));
+    }
+
+    // Phase 2b: full article files (for detail panels, article lists, author analysis, etc.)
     // Skipped on mobile — loading 2.1M articles exceeds iOS Safari memory limits.
     // Article lists in detail panels will show a desktop prompt instead.
     if (!IS_MOBILE) {
@@ -825,7 +895,7 @@ async function loadData() {
         }
         articlesReady = true;
         populateHeadlineSection();
-        trackTerms(); // auto-populate Headlines tracker with default terms
+        // (tracker already rendered via trackerReady above — no need to call trackTerms again)
         // Refresh any open detail panels that were waiting for article data
         if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
           openStateDetail(lastOpenedState);
@@ -2780,8 +2850,8 @@ function toTitleCase(s) {
 // --- HEADLINE TRACKER ---
 document.getElementById('trackBtn').addEventListener('click', trackTerms);
 // trackerFrontPage and trackerUsePrint are now toggle buttons; handlers are inline onclick
-document.getElementById('trackerYrStart').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
-document.getElementById('trackerYrEnd').addEventListener('input', () => { updateTrackerSlider(); if (articlesReady) trackTerms(); });
+document.getElementById('trackerYrStart').addEventListener('input', () => { updateTrackerSlider(); if (trackerReady) trackTerms(); });
+document.getElementById('trackerYrEnd').addEventListener('input', () => { updateTrackerSlider(); if (trackerReady) trackTerms(); });
 ['term1','term2','term3','term4'].forEach(id => {
   document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
 });
@@ -2812,14 +2882,43 @@ function initTrackerYears() {
   updateTrackerSlider();
 }
 
+function _clearTrackerLoadingMsg() {
+  const el = document.getElementById('trackerLoadingMsg');
+  if (el) el.remove();
+}
+
 function trackTerms() {
-  if (!articlesReady) {
+  if (!trackerReady) {
     if (IS_MOBILE) {
       document.getElementById('chartTracker').parentElement.innerHTML =
         '<p style="color:#888;font-size:13px;padding:20px 0">The headline tracker requires the full article dataset, which is not loaded on mobile devices due to memory constraints. Use a desktop browser to access this feature.</p>';
+    } else {
+      // Show a loading message so the user knows it's working, not frozen
+      if (!document.getElementById('trackerLoadingMsg')) {
+        const wrap = document.getElementById('chartTracker').parentElement;
+        const msg = document.createElement('div');
+        msg.id = 'trackerLoadingMsg';
+        msg.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(247,245,240,0.92);z-index:10;font-family:Georgia,serif;text-align:center;pointer-events:none';
+        msg.innerHTML = `
+          <div style="font-size:15px;color:#555;margin-bottom:10px">Loading headline data…</div>
+          <div style="font-size:12px;color:#999;max-width:320px;line-height:1.6">On a first visit this takes about 10–20 seconds. The chart will appear automatically — no need to click Visualize again.</div>
+          <div style="margin-top:16px;width:200px;height:4px;background:#e0dbd4;border-radius:2px;overflow:hidden">
+            <div id="trackerLoadingBar" style="height:100%;width:0%;background:#326891;border-radius:2px;transition:width 0.4s ease"></div>
+          </div>`;
+        wrap.appendChild(msg);
+        let pct = 0;
+        const timer = setInterval(() => {
+          if (!document.getElementById('trackerLoadingMsg')) { clearInterval(timer); return; }
+          pct = Math.min(92, pct + (92 - pct) * 0.06);
+          const bar = document.getElementById('trackerLoadingBar');
+          if (bar) bar.style.width = pct + '%';
+        }, 600);
+      }
     }
     return;
   }
+  _clearTrackerLoadingMsg();
+
   const terms = [
     document.getElementById('term1').value.trim(),
     document.getElementById('term2').value.trim(),
@@ -2833,7 +2932,7 @@ function trackTerms() {
   const cutoffYear = String(new Date().getFullYear());
   const startYear = document.getElementById('trackerYrStart').value;
   const endYear = document.getElementById('trackerYrEnd').value;
-  let pool = articles.filter(a => {
+  let pool = trackerArticles.filter(a => {
     const y = a.year_month.slice(0, 4);
     return y !== cutoffYear && y >= startYear && y <= endYear;
   });
@@ -2897,7 +2996,16 @@ function trackTerms() {
       maintainAspectRatio: false,
       scales: {
         x: {
-          ticks: { callback: function(val, idx) { const l = months[idx]; return l && l.endsWith('-01') ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 11 } },
+          ticks: { callback: function(val, idx) {
+            const l = months[idx];
+            if (!l || !l.endsWith('-01')) return '';
+            const yr = parseInt(l.slice(0, 4));
+            const cw = (this.chart && this.chart.canvas) ? (this.chart.canvas.clientWidth || 800) : 800;
+            const nyrs = months.filter(m => m.endsWith('-01')).length;
+            if (nyrs > cw / 40) return yr % 5 === 0 ? l.slice(0, 4) : '';
+            if (nyrs > cw / 70) return yr % 2 === 0 ? l.slice(0, 4) : '';
+            return l.slice(0, 4);
+          }, autoSkip: false, maxRotation: 0, font: { size: 11 } },
           grid: { color: function(ctx) { const l = months[ctx.index]; return l && l.endsWith('-01') ? 'rgba(0,0,0,0.1)' : 'transparent'; } }
         },
         y: { beginAtZero: true, title: { display: true, text: 'Headlines/month' } }
@@ -2938,6 +3046,36 @@ function downloadTrackerChart() {
   a.download = `nyt-headlines-${termStr.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}.jpg`;
   a.href = out.toDataURL('image/jpeg', 0.92);
   a.click();
+}
+
+function downloadTrackerCSV() {
+  const chart = chartInstances['chartTracker'];
+  if (!chart) return;
+  const months = chart.data.labels;
+  const datasets = chart.data.datasets;
+  if (!months || !datasets || !datasets.length) return;
+
+  const terms = datasets.map(d => d.label);
+  const frontOnly = document.getElementById('trackerFrontPage').dataset.active === 'true';
+  const usePrint  = document.getElementById('trackerUsePrint').dataset.active === 'true';
+
+  const editionNote = `${usePrint ? 'Print edition' : 'Online'}, ${frontOnly ? 'Page A1 only' : 'All pages'}`;
+  const sourceNote  = 'Source: tedalcorn.github.io/nyt/ (NYT Archive API)';
+
+  let csv = `# ${editionNote}\n# ${sourceNote}\n`;
+  csv += 'Month,' + terms.map(t => `"${t.replace(/"/g, '""')}"`).join(',') + '\n';
+  months.forEach((m, idx) => {
+    csv += m + ',' + datasets.map(d => d.data[idx] ?? 0).join(',') + '\n';
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const slug = terms.join('-').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  a.download = `nyt-headlines-${slug}.csv`;
+  a.href = url;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // --- WORLD ---
@@ -4371,9 +4509,9 @@ const statesObserver = new MutationObserver(() => {
 });
 statesObserver.observe(document.getElementById('view-states'), { attributes: true });
 
-// Trigger Headlines tracker when tab shown (needs articlesReady)
+// Trigger Headlines tracker when tab shown (needs trackerReady)
 const trackerObserver = new MutationObserver(() => {
-  if (document.getElementById('view-tracker').classList.contains('active') && articlesReady) {
+  if (document.getElementById('view-tracker').classList.contains('active') && trackerReady) {
     if (!chartInstances['chartTracker']) trackTerms();
   }
 });
@@ -4945,7 +5083,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span style="pointer-events:none">Last revised: 4/14/26 2:27pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 12:09pm</span>
 </div>
 </body>
 </html>
