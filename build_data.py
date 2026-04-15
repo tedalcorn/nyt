@@ -2637,6 +2637,7 @@ def build_dashboard_data(articles, authors):
     date_range = f"{months_sorted[0]} to {months_sorted[-1]}" if months_sorted else ""
 
     return {
+        "build_date": datetime.now().strftime("%B %-d, %Y"),
         "summary": {
             "total_articles": total_articles,
             "total_words": total_words,

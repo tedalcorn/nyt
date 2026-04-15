@@ -254,7 +254,7 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update (April 14, 2026):</strong> Fixed name consolidation for authors with API parenthetical suffixes (e.g. Jennifer 8. Lee); removed institutional bylines from the reporter list; fixed co-author links in reporter profiles; added world choropleth map and wedding article sort order. Added metric toggle (articles/words/avg words per article) and text filter to Compare Sections chart; added avg words per article markers to section detail popups.</p>
+      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Fixed name consolidation for authors with API parenthetical suffixes (e.g. Jennifer 8. Lee); removed institutional bylines from the reporter list; fixed co-author links in reporter profiles; added world choropleth map and wedding article sort order. Added metric toggle (articles/words/avg words per article) and text filter to Compare Sections chart.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
@@ -741,6 +741,10 @@ async function loadData() {
     // Phase 1a: load dashboard only → show page immediately
     const dRes = await fetch('data/dashboard.json');
     dashboard = await dRes.json();
+    if (dashboard.build_date) {
+      const el = document.getElementById('buildDateDisplay');
+      if (el) el.textContent = dashboard.build_date;
+    }
 
     document.getElementById('loading').style.display = 'none';
     const allYears = dashboard.all_years;
@@ -1546,63 +1550,23 @@ function openSectionDetail(sectionName) {
     });
   }
 
-  const avgVals = allYears.map(y => avgByYear[y] || null);
-  const maxAvg = Math.max(...avgVals.filter(Boolean));
-  const avgAxisMax = Math.ceil(maxAvg / 100) * 100 + 100;  // round up to next 100, add buffer
-
   destroyChart('chartSectionDetail');
   chartInstances['chartSectionDetail'] = new Chart(document.getElementById('chartSectionDetail'), {
     type: 'bar',
     data: {
       labels: allYears,
       datasets: [{
-        label: 'Avg words/article',
-        data: avgVals,
-        type: 'line',
-        showLine: false,
-        pointStyle: 'dash',
-        pointRadius: 8,
-        pointBorderWidth: 2,
-        pointBorderColor: 'rgba(100,100,100,0.6)',
-        backgroundColor: 'transparent',
-        yAxisID: 'y1',
-        order: 0,
-        datalabels: {
-          display: true,
-          align: 'top',
-          anchor: 'end',
-          offset: 2,
-          color: 'rgba(80,80,80,0.75)',
-          font: { size: 9 },
-          formatter: v => v != null ? String(Math.round(v)) : '',
-        },
-      }, {
         label: 'Articles',
         data: allYears.map(y => byYear[y] || 0),
         backgroundColor: 'rgba(50,104,145,0.7)',
-        yAxisID: 'y',
-        order: 1,
-        datalabels: { display: false },
       }]
     },
     options: {
       responsive: true,
-      layout: { padding: { top: 18 } },
-      plugins: {
-        legend: { display: false },
-        datalabels: { display: false },
-      },
+      plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
         y: { beginAtZero: true, ticks: { font: { size: 10 } } },
-        y1: {
-          beginAtZero: true,
-          max: avgAxisMax,
-          position: 'right',
-          grid: { drawOnChartArea: false },
-          ticks: { font: { size: 10 }, stepSize: 200, callback: v => Number.isInteger(v) ? v : '' },
-          title: { display: true, text: 'Avg words', font: { size: 9 }, color: '#999' },
-        },
       },
     },
   });
