@@ -2043,7 +2043,7 @@ function renderArticleList(containerId, arts, formatFn, opts = {}) {
       + `Download all ↓</button>`
     : '';
   el.innerHTML =
-    `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+    `<div style="position:sticky;top:0;background:#fff;z-index:2;padding-bottom:4px;border-bottom:1px solid #eee;margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
        <span style="font-size:12px;color:#888">${meta}</span>
        ${toggleBtn}
        ${downloadBtn}
@@ -2899,20 +2899,8 @@ function trackTerms() {
         const msg = document.createElement('div');
         msg.id = 'trackerLoadingMsg';
         msg.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(247,245,240,0.92);z-index:10;font-family:Georgia,serif;text-align:center;pointer-events:none';
-        msg.innerHTML = `
-          <div style="font-size:15px;color:#555;margin-bottom:10px">Loading headline data…</div>
-          <div style="font-size:12px;color:#999;max-width:320px;line-height:1.6">On a first visit this takes about 10–20 seconds. The chart will appear automatically — no need to click Visualize again.</div>
-          <div style="margin-top:16px;width:200px;height:4px;background:#e0dbd4;border-radius:2px;overflow:hidden">
-            <div id="trackerLoadingBar" style="height:100%;width:0%;background:#326891;border-radius:2px;transition:width 0.4s ease"></div>
-          </div>`;
+        msg.innerHTML = `<div style="font-size:15px;color:#555">Loading…</div>`;
         wrap.appendChild(msg);
-        let pct = 0;
-        const timer = setInterval(() => {
-          if (!document.getElementById('trackerLoadingMsg')) { clearInterval(timer); return; }
-          pct = Math.min(92, pct + (92 - pct) * 0.06);
-          const bar = document.getElementById('trackerLoadingBar');
-          if (bar) bar.style.width = pct + '%';
-        }, 600);
       }
     }
     return;
@@ -5083,7 +5071,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 12:09pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 12:34pm</span>
 </div>
 </body>
 </html>
