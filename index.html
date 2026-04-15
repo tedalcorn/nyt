@@ -211,9 +211,11 @@
     th.percap-hdr { font-size: 9px; letter-spacing: 0; }
     /* Reduce search box for mobile */
     .search-box { padding: 10px; gap: 8px; }
-    .search-box input:not([type=checkbox]) { min-width: 0; }
+    .search-box input:not([type=checkbox]) { min-width: 0; width: 100%; }
     /* Coauthor network: hide on mobile to save memory */
     #coauthorSection { display: none; }
+    /* Headline Tracker not usable on mobile */
+    nav button[data-view="tracker"] { display: none; }
   }
 </style>
 </head>
@@ -490,11 +492,6 @@
         <input type="text" id="stateSearch" placeholder="Type to filter states…" oninput="filterStateSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
         <select id="stateSelect" multiple style="width:100%;min-height:80px;font-size:13px"></select>
         <div style="font-size:11px;color:#888;margin-top:4px">Hold Cmd/Ctrl to select multiple states</div>
-      </div>
-      <div style="margin-bottom:8px">
-        <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px">
-          <input type="checkbox" id="statePerCapita" onchange="renderStateTrend(stateYears);if(document.getElementById('stateMapBox').style.display!=='none')renderStateMap(stateYears)"> Show per million residents/year
-        </label>
       </div>
       <div id="stateTrendCanvasWrap" style="position:relative;height:220px"><canvas id="chartStateTrend"></canvas></div>
     </div>
@@ -1702,7 +1699,16 @@ function getFilteredAuthors() {
 
   let f = authors.filter(a => !INSTITUTIONAL_BYLINES.has(a.name) && isValidAuthorName(a.name));
   if (inferredOnly) f = f.filter(a => !a.likely_multimedia);
-  if (query) f = f.filter(a => a.name.toLowerCase().includes(query));
+  if (query) {
+    // Strip middle initials (single letter + period) before comparing,
+    // so "Stuart Thompson" matches "Stuart A. Thompson"
+    const stripMid = s => s.replace(/\s+[a-z]\.\s+/g, ' ').replace(/\s+/g, ' ').trim();
+    const normQ = stripMid(query);
+    f = f.filter(a => {
+      const n = a.name.toLowerCase();
+      return n.includes(query) || stripMid(n).includes(normQ);
+    });
+  }
   if (sectionFilter) f = f.filter(a => (a.all_sections || [a.primary_section]).includes(sectionFilter));
 
   // Attach range-specific stats
@@ -2148,6 +2154,7 @@ function selectBeat(subject) {
         listId: 'beatReporterArticleList',
         subject: subject
       });
+      document.getElementById('beatReporterDetail').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
 
@@ -2250,7 +2257,7 @@ function showAuthorTimeline(name, opts = {}) {
       <div style="font-size:13px;color:#555;margin-top:6px">${sections.length ? `<strong>Primary Section${sections.length > 1 ? 's' : ''}:</strong> ${sections.join(', ')}` : ''}</div>
       <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:4px">${beatsHtml}</div>
       ${sharedHtml ? `<div style="font-size:13px;color:#555;margin-top:4px">${sharedHtml}</div>` : ''}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px">
         <div>
           <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per month</div>
           <canvas id="${chartId}" style="max-height:160px"></canvas>
@@ -3774,7 +3781,7 @@ function renderStateMap(years) {
   if (!stateGeoJson) return;
   const sc = dashboard.us_state_coverage;
   const includeNY = document.getElementById('includeNYSection')?.checked;
-  const perCapita = document.getElementById('statePerCapita')?.checked;
+  const perCapita = true;
   const combined = getStateCounts(sc, includeNY);
   const numYears = years.length || 1;
 
@@ -3976,7 +3983,7 @@ function renderStateTrend(years, combined) {
     combined = getStateCounts(sc, includeNY);
   }
   const selected = Array.from(document.getElementById('stateSelect').selectedOptions).map(o => o.value);
-  const perCapita = document.getElementById('statePerCapita')?.checked;
+  const perCapita = true;
 
   destroyChart('chartStateTrend');
   chartInstances['chartStateTrend'] = new Chart(document.getElementById('chartStateTrend'), {
