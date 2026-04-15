@@ -3116,6 +3116,8 @@ function renderWorldTable(years) {
   container.querySelectorAll('tr[data-country]').forEach(row => {
     row.addEventListener('click', () => openCountryDetail(row.dataset.country));
   });
+
+  filterWorldTable();
 }
 
 function initWorldYearSlider() {
