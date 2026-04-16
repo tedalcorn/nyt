@@ -834,11 +834,12 @@ async function loadData() {
       if (_rTab === 'sections' && !sectionsInitialized) { sectionsInitialized = true; initSections(); }
       if (_rTab === 'world' && !worldInitialized) { worldInitialized = true; initWorld(); }
       if (_rTab === 'subjects' && !subjectsInitialized) { initSubjects(); }
-      // Open state/country detail immediately — openStateDetail handles !articlesReady gracefully
+      // Open state/country/section detail immediately — these use only dashboard data
       const _rp = _pendingRestore;
       if (_rp?.state) { openStateDetail(_rp.state); _pendingRestore = null; }
       else if (_rp?.country) { openCountryDetail(_rp.country); _pendingRestore = null; }
-      // author/tracker/subjects detail are deferred until their data loads
+      else if (_rp?.section) { openSectionDetail(_rp.section); _pendingRestore = null; }
+      // author/beats/tracker/subjects detail are deferred until their data loads
     } else {
       showView('about');
     }
@@ -857,6 +858,7 @@ async function loadData() {
       if (sectionsInitialized) {
         renderSectionsTable();
       }
+      _applyRestore('authors');
     }).catch(e => {
       console.error('Failed to load authors:', e);
       document.getElementById('authorTableContainer').innerHTML = '<p style="color:#c00;padding:16px">Failed to load reporter data.</p>';
@@ -869,6 +871,7 @@ async function loadData() {
       corpusSubjectDocs = beatsData.corpusSubjectDocs;
       window._beatsCooccur = beatsData.cooccur;
       initBeats();
+      _applyRestore('beats');
     }).catch(e => console.error('Failed to load beats:', e));
 
     // Phase 2a: tracker files — headline+month only, 226MB (28% of full articles).
@@ -923,6 +926,19 @@ async function loadData() {
           const openSec = sectionDetailPanel.querySelector('h3')?.textContent?.trim();
           if (openSec) fillSectionArticleList(openSec);
         }
+        // Refresh subject detail article list if panel is open
+        const subjectDetailPanel = document.getElementById('subjectDetailPanel');
+        if (subjectDetailPanel?.style.display !== 'none') {
+          const openSubj = subjectDetailPanel.querySelector('h3')?.textContent?.trim();
+          if (openSubj && window._lastOpenedSubjectRaw) {
+            openSubjectDetail(window._lastOpenedSubjectRaw, window._lastOpenedSubjectType || 'person');
+          }
+        }
+        // Refresh author timeline if open and waiting for articles
+        if (document.getElementById('view-authors').classList.contains('active') && _pendingRestore?.author) {
+          openAuthor(_pendingRestore.author);
+          _pendingRestore = null;
+        }
       })().catch(e => console.error('Failed to load articles:', e));
     }
 
@@ -968,10 +984,18 @@ function _applyRestore(phase) {
     trackTerms();
     _pendingRestore = null;
   }
+  if (phase === 'authors' && p.author && authors) {
+    openAuthor(p.author);
+    _pendingRestore = null;
+  }
+  if (phase === 'beats' && p.beat && subjectList) {
+    const beatInput = document.getElementById('beatSearch');
+    if (beatInput) beatInput.value = toTitleCase(p.beat);
+    selectBeat(p.beat);
+    _pendingRestore = null;
+  }
   if (phase === 'articles') {
-    if (p.country) { openCountryDetail(p.country); _pendingRestore = null; }
-    else if (p.state) { openStateDetail(p.state); _pendingRestore = null; }
-    else if (p.author) { openAuthor(p.author); _pendingRestore = null; }
+    if (p.author && authors) { openAuthor(p.author); _pendingRestore = null; }
   }
   if (phase === 'subjects' && p.subject) {
     openSubjectDetail(p.subject, p.stype || 'person');
@@ -1702,6 +1726,7 @@ function renderSectionsTable() {
 }
 
 function openSectionDetail(sectionName) {
+  _writeHash({ tab: 'sections', section: sectionName });
   const panel = document.getElementById('sectionDetailPanel');
   const currentYear = String(new Date().getFullYear());
   const trend = dashboard.section_trends[sectionName] || [];
@@ -2332,6 +2357,7 @@ function initBeats() {
 }
 
 function selectBeat(subject) {
+  _writeHash({ tab: 'beats', beat: subject });
   const resultsBox = document.getElementById('beatResults');
 
   // Store current subject on input for slider re-runs
@@ -4880,6 +4906,8 @@ function renderSubjectCompareChart() {
 }
 
 function openSubjectDetail(rawName, type) {
+  window._lastOpenedSubjectRaw = rawName;
+  window._lastOpenedSubjectType = type;
   const displayName = type === 'person' ? formatPersonName(rawName) : rawName;
   const entry = (type === 'person' ? subjectsData.persons : subjectsData.organizations)
     .find(e => e.name === rawName);
@@ -5158,7 +5186,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 2:41pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/15/26 4:18pm</span>
 </div>
 </body>
 </html>
