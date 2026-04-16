@@ -864,6 +864,10 @@ async function loadData() {
       document.getElementById('authorTableContainer').innerHTML = '<p style="color:#c00;padding:16px">Failed to load reporter data.</p>';
     });
 
+    fetch('data/author_bio_urls.json').then(r => r.json()).then(bioUrls => {
+      window._authorBioUrls = bioUrls;
+    }).catch(() => {}); // optional file — fail silently
+
     fetch('data/beats.json').then(r => r.json()).then(beatsData => {
       subjectIndex = beatsData.subjectIndex;
       subjectList = beatsData.subjectList;
@@ -2523,7 +2527,7 @@ function showAuthorTimeline(name, opts = {}) {
       <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_prod');pendingTimelineRefresh=null">Close</button>
       <h3>${escapeHtml(name)}</h3>
       <div class="timeline-meta">
-        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}${authorInfo.year_range}
+        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}${authorInfo.year_range}${window._authorBioUrls?.[name] ? ` · <a href="${window._authorBioUrls[name]}" target="_blank" rel="noopener" style="color:#326891;text-decoration:none;border-bottom:1px dotted #326891">bio page</a>` : ''}
       </div>
       ${subjectNote}
       <div style="font-size:13px;color:#555;margin-top:6px">${sections.length ? `<strong>Primary Section${sections.length > 1 ? 's' : ''}:</strong> ${sections.join(', ')}` : ''}</div>
@@ -5186,7 +5190,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/16/26 8:42am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/16/26 6:34pm</span>
 </div>
 </body>
 </html>
