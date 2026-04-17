@@ -2535,7 +2535,7 @@ function showAuthorTimeline(name, opts = {}) {
   const container = document.getElementById(containerId);
   container.innerHTML = `
     <div class="author-timeline">
-      <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_prod');pendingTimelineRefresh=null">Close</button>
+      <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_hist');pendingTimelineRefresh=null">Close</button>
       <h3>${escapeHtml(name)}</h3>
       <div class="timeline-meta">
         ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}${authorInfo.year_range}${window._authorBioUrls?.[name] ? ` · <a href="${window._authorBioUrls[name]}" target="_blank" rel="noopener" style="color:#326891;text-decoration:none;border-bottom:1px dotted #326891">bio page</a>` : ''}
@@ -2546,18 +2546,20 @@ function showAuthorTimeline(name, opts = {}) {
       ${sharedHtml ? `<div style="font-size:13px;color:#555;margin-top:4px">${sharedHtml}</div>` : ''}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px">
         <div>
-          <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per month</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
+            <span id="${chartId}-lbl" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Articles per month</span>
+            <span style="display:flex;border:1px solid #ddd;border-radius:3px;overflow:hidden;font-size:10px;line-height:1">
+              <button id="${chartId}-btn-art" style="padding:2px 9px;background:#326891;color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:10px">Articles</button>
+              <button id="${chartId}-btn-wrd" style="padding:2px 9px;background:#fff;color:#666;border:none;cursor:pointer;font-family:inherit;font-size:10px">Words</button>
+            </span>
+          </div>
+          <div id="${chartId}-legend" style="font-size:10px;color:#888;margin-bottom:3px;display:flex;gap:10px;flex-wrap:wrap"></div>
           <canvas id="${chartId}" style="max-height:160px"></canvas>
         </div>
         <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Words/year (annualized)</div>
-            <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:#888">
-              <svg width="12" height="12" style="flex-shrink:0"><defs><pattern id="stripeHint" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="rgba(50,104,145,0.2)"/><line x1="0" y1="0" x2="0" y2="5" stroke="rgba(50,104,145,0.75)" stroke-width="2"/></pattern></defs><rect width="12" height="12" fill="url(#stripeHint)"/></svg>
-              Partial year (extrapolated)
-            </div>
-          </div>
-          <canvas id="${chartId}_prod" style="max-height:160px"></canvas>
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Word count per article</div>
+          <canvas id="${chartId}_hist" style="max-height:160px"></canvas>
+          <div id="${chartId}-hist-note" style="font-size:10px;color:#bbb;margin-top:2px"></div>
         </div>
       </div>
       <div id="${listId}" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px">
@@ -2571,200 +2573,190 @@ function showAuthorTimeline(name, opts = {}) {
     el.addEventListener('click', () => openAuthor(el.dataset.author));
   });
 
-  // --- Productivity chart (from authors.json — available immediately) ---
-  if (authorInfo.annual_words_norm) {
-    const MIN_DAYS = 90;
-    let allYears = Object.keys(authorInfo.annual_words_norm).sort();
-    if (allYears.length > 1 && authorInfo.first_date) {
-      const fd = new Date(authorInfo.first_date);
-      const firstYearEnd = new Date(allYears[0] + '-12-31');
-      const daysInFirst = (firstYearEnd - fd) / 86400000 + 1;
-      if (daysInFirst < MIN_DAYS) allYears = allYears.slice(1);
-    }
-    if (allYears.length > 1 && authorInfo.last_date) {
-      const ld = new Date(authorInfo.last_date);
-      const lastYearStart = new Date(allYears[allYears.length-1] + '-01-01');
-      const daysInLast = (ld - lastYearStart) / 86400000 + 1;
-      if (daysInLast < MIN_DAYS) allYears = allYears.slice(0, -1);
-    }
-    const prodYears = allYears;
-    const prodVals  = prodYears.map(y => authorInfo.annual_words_norm[y]);
-    const avgLine   = authorInfo.avg_words_per_year || 0;
-
-    const blogWordNorm = authorInfo.annual_blog_words_norm || {};
-    const hasBlogWords = Object.keys(blogWordNorm).length > 0;
-
-    const prodCanvas = document.getElementById(chartId + '_prod');
-    if (prodCanvas) {
-      destroyChart(chartId + '_prod');
-      if (hasBlogWords) {
-        // Stacked: standard words (blue) + blog words (teal)
-        const blogWData = prodYears.map(y => blogWordNorm[y] || 0);
-        const nonBlogWData = prodYears.map(y => Math.max(0, (authorInfo.annual_words_norm[y] || 0) - (blogWordNorm[y] || 0)));
-        chartInstances[chartId + '_prod'] = new Chart(prodCanvas, {
-          type: 'bar',
-          data: {
-            labels: prodYears,
-            datasets: [
-              { label: 'Standard words', data: nonBlogWData, backgroundColor: 'rgba(50,104,145,0.75)', stack: 'w' },
-              { label: 'Blog words', data: blogWData, backgroundColor: 'rgba(60,160,140,0.75)', stack: 'w' },
-              { label: 'Avg', data: prodYears.map(() => avgLine), type: 'line',
-                borderColor: 'rgba(180,50,50,0.7)', borderDash: [4,3], borderWidth: 1.5,
-                pointRadius: 0, fill: false }
-            ]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: {
-                label: ctx => {
-                  if (ctx.datasetIndex === 2) return 'avg ' + (ctx.parsed.y/1000).toFixed(0) + 'k';
-                  const lbl = ctx.datasetIndex === 1 ? 'Blog' : 'Standard';
-                  return `${lbl}: ${(ctx.parsed.y/1000).toFixed(0)}k words`;
-                }
-              }}
-            },
-            scales: {
-              x: { ticks: { font: { size: 10 }, maxRotation: 0 } },
-              y: { beginAtZero: true, stacked: true, ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } }
-            }
-          }
-        });
-      } else {
-        const patEl = document.createElement('canvas');
-        patEl.width = 10; patEl.height = 10;
-        const pc = patEl.getContext('2d');
-        pc.fillStyle = 'rgba(50,104,145,0.2)';
-        pc.fillRect(0, 0, 10, 10);
-        pc.strokeStyle = 'rgba(50,104,145,0.75)';
-        pc.lineWidth = 2.5;
-        [[-2,10,8,0],[3,10,13,0],[8,10,18,0]].forEach(([x1,y1,x2,y2]) => {
-          pc.beginPath(); pc.moveTo(x1,y1); pc.lineTo(x2,y2); pc.stroke();
-        });
-        const stripePattern = prodCanvas.getContext('2d').createPattern(patEl, 'repeat');
-        const solidBlue = 'rgba(50,104,145,0.7)';
-        const thisYear = String(new Date().getFullYear());
-        const isEdge = (i) => prodYears.length > 1 && (
-          i === 0 || (i === prodYears.length - 1 && prodYears[i] === thisYear)
-        );
-        chartInstances[chartId + '_prod'] = new Chart(prodCanvas, {
-          type: 'bar',
-          data: {
-            labels: prodYears,
-            datasets: [
-              {
-                label: 'Words/year',
-                data: prodVals,
-                backgroundColor: prodYears.map((_, i) => isEdge(i) ? stripePattern : solidBlue),
-              },
-              {
-                label: 'Avg',
-                data: prodYears.map(() => avgLine),
-                type: 'line',
-                borderColor: 'rgba(180,50,50,0.7)',
-                borderDash: [4,3],
-                borderWidth: 1.5,
-                pointRadius: 0,
-                fill: false,
-              }
-            ]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { display: false },
-              tooltip: { callbacks: {
-                label: ctx => ctx.datasetIndex === 0
-                  ? (ctx.parsed.y/1000).toFixed(0) + 'k words'
-                  : 'avg ' + (ctx.parsed.y/1000).toFixed(0) + 'k'
-              }}
-            },
-            scales: {
-              x: { ticks: { font: { size: 10 }, maxRotation: 0 } },
-              y: { beginAtZero: true, ticks: { callback: v => v >= 1000 ? (v/1000).toFixed(0)+'k' : v } }
-            }
-          }
-        });
-      }
-    }
-  }
-
-  // --- Monthly chart: render immediately from monthly_counts in authors.json ---
-  // If author has blog articles, show stacked annual (blog teal / non-blog blue) instead of monthly.
-  // (when no subject filter; subject-filtered chart is rendered in fillArticleDetails)
-  if (!subjectFilter && authorInfo.monthly_counts && Object.keys(authorInfo.monthly_counts).length) {
+  // ── Toggle chart: Articles / Words ──────────────────────────────────────────
+  // Decide monthly vs annual: annual if hasBlog OR span > 10 years
+  {
     const blogCounts = authorInfo.annual_blog_counts || {};
-    const totalBlog = Object.values(blogCounts).reduce((s, v) => s + v, 0);
-    const hasBlog = totalBlog > 0;
-    const monthCanvas = document.getElementById(chartId);
-    if (monthCanvas) {
-      destroyChart(chartId);
+    const blogWordNorm = authorInfo.annual_blog_words_norm || {};
+    const hasBlog = Object.values(blogCounts).reduce((s,v)=>s+v,0) > 0;
+    const spanYears = (authorInfo.last_year||0) - (authorInfo.first_year||0) + 1;
+    const useAnnual = hasBlog || spanYears > 10;
+    const granLabel = useAnnual ? 'per year' : 'per month';
+    const thisYear = String(new Date().getFullYear());
+    const avgWordsPerYear = authorInfo.avg_words_per_year || 0;
+
+    // ── Build annual article data ──────────────────────────────────────────────
+    const byMonth = authorInfo.monthly_counts || {};
+    const annualArtTotals = {};
+    for (const [ym, n] of Object.entries(byMonth)) {
+      const y = ym.slice(0, 4);
+      annualArtTotals[y] = (annualArtTotals[y] || 0) + n;
+    }
+
+    // ── Build words annual data (trim partial first/last if < MIN_DAYS) ────────
+    const MIN_DAYS = 90;
+    let wYears = Object.keys(authorInfo.annual_words_norm || {}).sort();
+    if (wYears.length > 1 && authorInfo.first_date) {
+      const fd = new Date(authorInfo.first_date);
+      const daysInFirst = (new Date(wYears[0]+'-12-31') - fd) / 86400000 + 1;
+      if (daysInFirst < MIN_DAYS) wYears = wYears.slice(1);
+    }
+    if (wYears.length > 1 && authorInfo.last_date) {
+      const ld = new Date(authorInfo.last_date);
+      const daysInLast = (ld - new Date(wYears[wYears.length-1]+'-01-01')) / 86400000 + 1;
+      if (daysInLast < MIN_DAYS) wYears = wYears.slice(0, -1);
+    }
+
+    // ── Stripe pattern for partial-year bars ──────────────────────────────────
+    function makeStripePattern(canvas) {
+      const p = document.createElement('canvas'); p.width = 10; p.height = 10;
+      const ctx = p.getContext('2d');
+      ctx.fillStyle = 'rgba(50,104,145,0.2)'; ctx.fillRect(0,0,10,10);
+      ctx.strokeStyle = 'rgba(50,104,145,0.75)'; ctx.lineWidth = 2.5;
+      [[-2,10,8,0],[3,10,13,0],[8,10,18,0]].forEach(([x1,y1,x2,y2]) => {
+        ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+      });
+      return canvas.getContext('2d').createPattern(p, 'repeat');
+    }
+
+    // ── Build legend HTML ─────────────────────────────────────────────────────
+    function buildLegend(mode) {
+      const parts = [];
       if (hasBlog) {
-        // Annual stacked blog/non-blog
-        const annualYears = Object.keys(authorInfo.annual_words).sort();
-        const byMonth = authorInfo.monthly_counts;
-        const annualTotals = {};
-        for (const [ym, n] of Object.entries(byMonth)) {
-          const y = ym.slice(0, 4);
-          annualTotals[y] = (annualTotals[y] || 0) + n;
-        }
-        const blogData = annualYears.map(y => blogCounts[y] || 0);
-        const nonBlogData = annualYears.map(y => Math.max(0, (annualTotals[y] || 0) - (blogCounts[y] || 0)));
-        chartInstances[chartId] = new Chart(monthCanvas, {
-          type: 'bar',
-          data: {
-            labels: annualYears,
-            datasets: [
-              { label: 'Standard articles', data: nonBlogData, backgroundColor: 'rgba(50,104,145,0.75)', stack: 'a' },
-              { label: 'Blog articles', data: blogData, backgroundColor: 'rgba(60,160,140,0.75)', stack: 'a' },
-            ]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } },
-              datalabels: { display: false }
-            },
-            scales: {
-              x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
-              y: { beginAtZero: true, stacked: true, ticks: { font: { size: 10 } } }
-            }
+        parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:rgba(50,104,145,0.75);display:inline-block;border-radius:1px"></span>Standard</span>');
+        parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:rgba(60,160,140,0.75);display:inline-block;border-radius:1px"></span>Blog</span>');
+      }
+      if (useAnnual) {
+        parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><svg width="10" height="10"><defs><pattern id="sH2" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="rgba(50,104,145,0.2)"/><line x1="0" y1="0" x2="0" y2="5" stroke="rgba(50,104,145,0.75)" stroke-width="2"/></pattern></defs><rect width="10" height="10" fill="url(#sH2)"/></svg>Partial year</span>');
+      }
+      if (avgWordsPerYear && mode === 'words') {
+        parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="rgba(180,50,50,0.7)" stroke-width="1.5" stroke-dasharray="4,3"/></svg>Avg</span>');
+      }
+      return parts.join('');
+    }
+
+    // ── Render chart in given mode ────────────────────────────────────────────
+    function renderToggleChart(mode) {
+      const canvas = document.getElementById(chartId);
+      if (!canvas) return;
+      destroyChart(chartId);
+
+      const lblEl = document.getElementById(chartId + '-lbl');
+      const legEl = document.getElementById(chartId + '-legend');
+      const btnArt = document.getElementById(chartId + '-btn-art');
+      const btnWrd = document.getElementById(chartId + '-btn-wrd');
+      if (lblEl) lblEl.textContent = (mode === 'articles' ? 'Articles' : 'Words') + ' ' + granLabel;
+      if (legEl) legEl.innerHTML = buildLegend(mode);
+      if (btnArt) { btnArt.style.background = mode==='articles'?'#326891':'#fff'; btnArt.style.color = mode==='articles'?'#fff':'#666'; }
+      if (btnWrd) { btnWrd.style.background = mode==='words'?'#326891':'#fff'; btnWrd.style.color = mode==='words'?'#fff':'#666'; }
+
+      if (useAnnual) {
+        // ── Annual mode ──────────────────────────────────────────────────────
+        const years = mode === 'articles'
+          ? Object.keys(annualArtTotals).sort()
+          : wYears;
+        const stripePattern = makeStripePattern(canvas);
+        const solidBlue = 'rgba(50,104,145,0.7)';
+        const isEdge = (i, arr) => arr.length > 1 && (i === 0 || (i === arr.length-1 && arr[i] === thisYear));
+
+        if (hasBlog && mode === 'articles') {
+          const nonBlog = years.map(y => Math.max(0, (annualArtTotals[y]||0) - (blogCounts[y]||0)));
+          const blog    = years.map(y => blogCounts[y] || 0);
+          chartInstances[chartId] = new Chart(canvas, {
+            type:'bar', data:{ labels:years,
+              datasets:[
+                { label:'Standard', data:nonBlog, backgroundColor:'rgba(50,104,145,0.75)', stack:'a' },
+                { label:'Blog',     data:blog,    backgroundColor:'rgba(60,160,140,0.75)', stack:'a' },
+              ]},
+            options:{ responsive:true, plugins:{ legend:{display:false} },
+              scales:{ x:{ stacked:true, ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:14} }, y:{ beginAtZero:true, stacked:true } } }
+          });
+        } else if (hasBlog && mode === 'words') {
+          const nonBlog = wYears.map(y => Math.max(0,(authorInfo.annual_words_norm[y]||0)-(blogWordNorm[y]||0)));
+          const blog    = wYears.map(y => blogWordNorm[y] || 0);
+          chartInstances[chartId] = new Chart(canvas, {
+            type:'bar', data:{ labels:wYears,
+              datasets:[
+                { label:'Standard', data:nonBlog, backgroundColor:'rgba(50,104,145,0.75)', stack:'w' },
+                { label:'Blog',     data:blog,    backgroundColor:'rgba(60,160,140,0.75)', stack:'w' },
+                { label:'Avg', data:wYears.map(()=>avgWordsPerYear), type:'line',
+                  borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3], borderWidth:1.5, pointRadius:0, fill:false }
+              ]},
+            options:{ responsive:true, plugins:{ legend:{display:false},
+              tooltip:{callbacks:{label:ctx=>{ if(ctx.datasetIndex===2) return 'avg '+(ctx.parsed.y/1000).toFixed(0)+'k'; return (ctx.datasetIndex===1?'Blog':'Standard')+': '+(ctx.parsed.y/1000).toFixed(0)+'k'; }}} },
+              scales:{ x:{ stacked:true, ticks:{font:{size:10},maxRotation:0} }, y:{ beginAtZero:true, stacked:true, ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v} } } }
+          });
+        } else {
+          // No blog — single color + stripe for edges + avg line for words
+          const vals = mode==='articles' ? years.map(y=>annualArtTotals[y]||0) : wYears.map(y=>authorInfo.annual_words_norm[y]||0);
+          const useYears = mode==='articles' ? years : wYears;
+          const colors = useYears.map((_,i)=>isEdge(i,useYears)?stripePattern:solidBlue);
+          const datasets = [{ label: mode==='articles'?'Articles':'Words', data:vals, backgroundColor:colors }];
+          if (mode==='words' && avgWordsPerYear) {
+            datasets.push({ label:'Avg', data:useYears.map(()=>avgWordsPerYear), type:'line',
+              borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3], borderWidth:1.5, pointRadius:0, fill:false });
           }
-        });
-      } else {
-        const byMonth = authorInfo.monthly_counts;
-        const first = authorInfo.first_date ? authorInfo.first_date.slice(0, 7) : null;
-        const last = authorInfo.last_date ? authorInfo.last_date.slice(0, 7) : null;
-        if (first && last) {
-          const allMonths = [];
-          let [ym, mm] = first.split('-').map(Number);
-          const [ly, lm] = last.split('-').map(Number);
-          while (ym < ly || (ym === ly && mm <= lm)) {
-            allMonths.push(`${ym}-${String(mm).padStart(2, '0')}`);
-            mm++; if (mm > 12) { mm = 1; ym++; }
-          }
-          chartInstances[chartId] = new Chart(monthCanvas, {
-            type: 'bar',
-            data: {
-              labels: allMonths,
-              datasets: [{ label: 'Articles', data: allMonths.map(k => byMonth[k] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
-            },
-            options: {
-              responsive: true,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { ticks: { callback: function(val, idx) { const l = allMonths[idx]; return (l.endsWith('-01') && parseInt(l.slice(0,4)) % 5 === 0) ? l.slice(0,4) : ''; }, autoSkip: false, maxRotation: 0, font: { size: 10 } } },
-                y: { beginAtZero: true, ticks: { stepSize: 1 } }
-              }
-            }
+          chartInstances[chartId] = new Chart(canvas, {
+            type:'bar', data:{ labels:useYears, datasets },
+            options:{ responsive:true, plugins:{ legend:{display:false},
+              tooltip:{callbacks:{label:ctx=>mode==='words' ? (ctx.datasetIndex===0?(ctx.parsed.y/1000).toFixed(0)+'k words':'avg '+(ctx.parsed.y/1000).toFixed(0)+'k') : ctx.parsed.y+' articles'}} },
+              scales:{ x:{ticks:{font:{size:10},maxRotation:0}}, y:{beginAtZero:true, ticks:{callback:v=>mode==='words'&&v>=1000?(v/1000).toFixed(0)+'k':v}} } }
           });
         }
+      } else {
+        // ── Monthly mode ─────────────────────────────────────────────────────
+        const first = authorInfo.first_date ? authorInfo.first_date.slice(0,7) : null;
+        const last  = authorInfo.last_date  ? authorInfo.last_date.slice(0,7)  : null;
+        if (!first || !last) return;
+        const allMonths = [];
+        let [ym, mm] = first.split('-').map(Number);
+        const [ly, lm] = last.split('-').map(Number);
+        while (ym < ly || (ym===ly && mm<=lm)) {
+          allMonths.push(`${ym}-${String(mm).padStart(2,'0')}`);
+          mm++; if (mm>12){mm=1;ym++;}
+        }
+        let vals;
+        if (mode === 'articles') {
+          vals = allMonths.map(k => byMonth[k] || 0);
+        } else {
+          // words: spread annual total evenly across months in that year
+          const monthsPerYear = {};
+          allMonths.forEach(k => { const y=k.slice(0,4); monthsPerYear[y]=(monthsPerYear[y]||0)+1; });
+          vals = allMonths.map(k => {
+            const y = k.slice(0,4);
+            return Math.round((authorInfo.annual_words[y] || 0) / (monthsPerYear[y] || 1));
+          });
+        }
+        const avgLine = mode==='words' && avgWordsPerYear
+          ? allMonths.map(()=>Math.round(avgWordsPerYear/12)) : null;
+        const datasets = [{
+          label: mode==='articles'?'Articles':'Words',
+          data: vals, backgroundColor:'rgba(50,104,145,0.7)'
+        }];
+        if (avgLine) datasets.push({ label:'Avg', data:avgLine, type:'line',
+          borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3], borderWidth:1.5, pointRadius:0, fill:false });
+        chartInstances[chartId] = new Chart(canvas, {
+          type:'bar', data:{ labels:allMonths, datasets },
+          options:{ responsive:true, plugins:{ legend:{display:false},
+            tooltip:{callbacks:{label:ctx=>mode==='words'?ctx.parsed.y.toLocaleString()+' words':ctx.parsed.y+' articles'}} },
+            scales:{
+              x:{ ticks:{ callback:(val,idx)=>{ const l=allMonths[idx]; return (l.endsWith('-01')&&parseInt(l.slice(0,4))%5===0)?l.slice(0,4):''; }, autoSkip:false, maxRotation:0, font:{size:10} } },
+              y:{ beginAtZero:true, ticks:{ callback:v=>mode==='words'&&v>=1000?(v/1000).toFixed(0)+'k':v } }
+            }
+          }
+        });
       }
     }
+
+    // Wire toggle buttons and render initial
+    const btnArt = document.getElementById(chartId + '-btn-art');
+    const btnWrd = document.getElementById(chartId + '-btn-wrd');
+    if (btnArt) btnArt.addEventListener('click', () => renderToggleChart('articles'));
+    if (btnWrd) btnWrd.addEventListener('click', () => renderToggleChart('words'));
+    renderToggleChart('articles');
   }
 
-  // --- Article list (+ subject-filtered monthly chart + beats) ---
+  // --- Article list (+ word count histogram + subject-filtered chart) ---
   // Loads on-demand: only the year files covering this author's active range.
   async function fillArticleDetails() {
     const firstYear = authorInfo.first_year;
@@ -2819,6 +2811,55 @@ function showAuthorTimeline(name, opts = {}) {
             }
           }
         });
+      }
+    }
+
+    // --- Word count histogram (all articles, not subject-filtered) ---
+    if (!subjectFilter) {
+      const histCanvas = document.getElementById(chartId + '_hist');
+      const noteEl = document.getElementById(chartId + '-hist-note');
+      if (histCanvas) {
+        destroyChart(chartId + '_hist');
+        const wcs = allAuthorArticles.map(a => a.word_count || 0).filter(w => w > 0);
+        if (wcs.length) {
+          const BIN = 200;
+          const maxBin = Math.min(Math.ceil(Math.max(...wcs) / BIN) * BIN, 4000);
+          const binEdges = [];
+          for (let b = 0; b <= maxBin; b += BIN) binEdges.push(b);
+          const binLabels = binEdges.slice(0,-1).map((b,i) => i===binEdges.length-2 && maxBin===4000 ? `${b/1000}k+` : `${b}`);
+          const counts = new Array(binLabels.length).fill(0);
+          wcs.forEach(w => {
+            const idx = Math.min(Math.floor(w / BIN), counts.length - 1);
+            counts[idx]++;
+          });
+          const avgWC = authorInfo.avg_words || 0;
+          const avgBin = avgWC / BIN;
+          chartInstances[chartId + '_hist'] = new Chart(histCanvas, {
+            type: 'bar',
+            data: {
+              labels: binLabels,
+              datasets: [
+                { label: 'Articles', data: counts, backgroundColor: 'rgba(50,104,145,0.65)',
+                  barPercentage: 1.0, categoryPercentage: 1.0 },
+                { label: 'Avg', data: binLabels.map((_,i) => i === Math.round(avgBin) ? Math.max(...counts) * 0.85 : null),
+                  type: 'line', borderColor: 'rgba(180,50,50,0.7)', borderDash: [4,3],
+                  borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: false }
+              ]
+            },
+            options: {
+              responsive: true,
+              plugins: { legend: { display: false },
+                tooltip: { callbacks: { title: (items) => `${items[0].label}–${parseInt(items[0].label)+BIN} words`,
+                  label: ctx => ctx.datasetIndex===0 ? ctx.parsed.y + ' articles' : `avg ${avgWC} words` } } },
+              scales: {
+                x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+                     grid: { display: false } },
+                y: { beginAtZero: true, ticks: { font: { size: 9 } } }
+              }
+            }
+          });
+          if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${wcs.length}`;
+        }
       }
     }
 
@@ -5201,7 +5242,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/16/26 7:21pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/17/26 11:14am</span>
 </div>
 </body>
 </html>
