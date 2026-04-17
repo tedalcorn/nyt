@@ -1165,11 +1165,54 @@ def process_articles(raw_articles):
         # (Robert H. Frank = Cornell economist/columnist; Robert Frank = wealth/lifestyle reporter)
         # Middle name present in most bylines but occasionally dropped (user-confirmed same person)
         'Michael Shear': 'Michael D. Shear',
+        # Middle-initial variants confirmed same person (count > 10 so auto-dedup skips them)
+        'David Sanger':         'David E. Sanger',
+        'Andrew Kramer':        'Andrew E. Kramer',
+        'Michael Grynbaum':     'Michael M. Grynbaum',
+        'Michael Gordon':       'Michael R. Gordon',
+        'David Kirkpatrick':    'David D. Kirkpatrick',
+        'David Halbfinger':     'David M. Halbfinger',
+        'Julian Barnes':        'Julian E. Barnes',
+        'John Broder':          'John M. Broder',
+        'Sheryl Stolberg':      'Sheryl Gay Stolberg',
+        'Matthew Wald':         'Matthew L. Wald',
+        'Robert Worth':         'Robert F. Worth',
+        'Howard French':        'Howard W. French',
+        'Craig Smith':          'Craig S. Smith',
+        'Evelyn Rusli':         'Evelyn M. Rusli',
+        'Jonathan Glater':      'Jonathan D. Glater',
+        'Barnaby Feder':        'Barnaby J. Feder',
+        'Carlos Conde':         'Carlos H. Conde',
+        'Lisa Foderaro':        'Lisa W. Foderaro',
+        'Nelson Schwartz':      'Nelson D. Schwartz',
+        'Rebecca Ruiz':         'Rebecca R. Ruiz',
+        'Timothy Williams':     'Timothy Williams',   # keep as-is; R. variant is the rare one
+        'Dylan Mcclain':        'Dylan Loeb McClain',
+        'Laura Holson':         'Laura M. Holson',
+        'Emily Hager':          'Emily B. Hager',
+        'Richard Chang':        'Richard S. Chang',
+        'Jane Levere':          'Jane L. Levere',
+        'Laurie Flynn':         'Laurie J. Flynn',
+        'Deborah B. Solomon':   'Deborah Solomon',    # shorter form is canonical
+        'Christopher Shea':     'Christopher D. Shea',
+        'Ellen L. Rosen':       'Ellen Rosen',
+        'Sheila Yasmin Marikar':'Sheila Marikar',
+        'Jeffrey J. Selingo':   'Jeffrey Selingo',
+        'George Gustines':      'George Gene Gustines',
+        'Alan S. Blinder':      'Alan Blinder',       # shorter form is canonical
+        'Scott L. Malcomson':   'Scott Malcomson',
     }
 
-    # Apply overrides to all articles so counts accumulate on the correct name
-    for art in articles:
-        art["authors"] = [AUTHOR_OVERRIDES.get(a, a) for a in art["authors"]]
+    # Apply overrides iteratively (handles chains like "X Nyt" → "X" → "X Y. X")
+    for _ in range(3):
+        changed = False
+        for art in articles:
+            new = [AUTHOR_OVERRIDES.get(a, a) for a in art["authors"]]
+            if new != art["authors"]:
+                art["authors"] = new
+                changed = True
+        if not changed:
+            break
 
     # Deduplicate author names: merge variants like "Jonah Engel Bromwich" / "Jonah E. Bromwich" / "Jonah Bromwich"
     # by mapping all to the most frequent version sharing the same first+last name
@@ -1288,6 +1331,7 @@ def build_author_stats(articles):
         "coauthors": Counter(),
         "zero_word_articles": 0,
         "solo_text_articles": 0,  # solo bylines with word_count > 200
+        "wc_hist": [0] * 21,     # word-count histogram: 21 bins of 200 words (last = 4000+)
     })
 
     for art in articles:
@@ -1312,6 +1356,9 @@ def build_author_stats(articles):
                 d["annual_blog_words"][year] += author_words
             if art["word_count"] == 0:
                 d["zero_word_articles"] += 1
+            else:
+                bin_idx = min(art["word_count"] // 200, 20)
+                d["wc_hist"][bin_idx] += 1
             if not is_shared and art["word_count"] > 200:
                 d["solo_text_articles"] += 1
             if is_shared:
@@ -1466,6 +1513,7 @@ def build_author_stats(articles):
             "coauthors": top_coauthors,
             "likely_multimedia": likely_multimedia,
             "solo_text_articles": d["solo_text_articles"],
+            "wc_hist": d["wc_hist"],  # 21-bin word-count histogram (200-word bins, last = 4000+)
             "beats": [],  # filled in later by build_beats()
         })
 

@@ -269,7 +269,7 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Fixed article lists in section pop-ups and feature panels (Weddings &amp; Vows, Letter of Recommendation). Fixed "As Told To" bylines, which were appearing as a spurious author entry. Added inferred 2005 movie-review estimates to the Compare Sections chart. Improved Congo/DRC country name normalization in World Coverage. Minor chart and UI improvements.</p>
+      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Added per-author word-count histogram (click bars to filter article list). Added ~35 name merge fixes for middle-initial variants. Additional data and UI improvements.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
@@ -2760,27 +2760,152 @@ function showAuthorTimeline(name, opts = {}) {
     renderToggleChart('articles');
   }
 
-  // --- Article list (+ word count histogram + subject-filtered chart) ---
-  // Loads on-demand: only the year files covering this author's active range.
-  async function fillArticleDetails() {
-    if (IS_MOBILE) {
-      const histNote = document.getElementById(chartId + '-hist-note');
-      if (histNote) histNote.textContent = 'Article data not loaded on mobile.';
+  // --- Word count histogram: rendered immediately from precomputed wc_hist ---
+  let allAuthorArticles = null;  // set by fillArticleDetails when loaded
+
+  function renderHistArticles(binIdx) {
+    const histCanvas = document.getElementById(chartId + '_hist');
+    const noteEl = document.getElementById(chartId + '-hist-note');
+    const wcHist = authorInfo.wc_hist || [];
+    const total = wcHist.reduce((s,v)=>s+v,0);
+    const BIN = 200;
+
+    // Update bar highlight
+    const chart = chartInstances[chartId + '_hist'];
+    if (chart && chart.data.datasets[0]) {
+      const normal = 'rgba(50,104,145,0.65)';
+      const active = 'rgba(50,104,145,1)';
+      const dim    = 'rgba(50,104,145,0.2)';
+      chart.data.datasets[0].backgroundColor = wcHist.map((_,i) =>
+        binIdx === null ? normal : (i === binIdx ? active : dim));
+      chart.update('none');
+    }
+
+    if (binIdx === null) {
+      if (noteEl) noteEl.textContent = IS_MOBILE
+        ? `avg ${authorInfo.avg_words.toLocaleString()} words · n=${total}`
+        : `avg ${authorInfo.avg_words.toLocaleString()} words · n=${total} · click a bar to filter`;
+      if (allAuthorArticles && !IS_MOBILE) {
+        renderArticleList(listId, allAuthorArticles, articleRowFormatter);
+      }
       return;
     }
+
+    const lo = binIdx * BIN, hi = lo + BIN;
+    if (!allAuthorArticles) {
+      if (noteEl) noteEl.textContent = IS_MOBILE
+        ? 'Article filter available on desktop'
+        : 'Loading articles…';
+      return;
+    }
+    const filtered = allAuthorArticles.filter(a => (a.word_count||0) >= lo && (a.word_count||0) < (binIdx===20?Infinity:hi));
+    const pct = ((filtered.length / total) * 100).toFixed(1);
+    const rangeStr = binIdx === 20 ? '4000+ words' : `${lo}–${hi} words`;
+    if (noteEl) noteEl.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" style="color:#326891" id="${chartId}-hist-clear">show all</a>`;
+    document.getElementById(chartId + '-hist-clear')?.addEventListener('click', e => {
+      e.preventDefault(); renderHistArticles(null);
+    });
+    renderArticleList(listId, filtered, articleRowFormatter);
+  }
+
+  function articleRowFormatter(a) {
+    const coauthors = a.authors.filter(n => n !== name);
+    const coStr = coauthors.length ? ` · with ${escapeHtml(coauthors.join(', '))}` : '';
+    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+      <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+      <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline||'(no headline)')}</a>
+      <span style="color:#aaa;font-size:11px">${coStr} · ${a.section} · ${(a.word_count||0).toLocaleString()} words</span>
+    </div>`;
+  }
+
+  // Render histogram immediately from precomputed wc_hist in authors.json
+  if (!subjectFilter) {
+    const wcHist = authorInfo.wc_hist || [];
+    const total = wcHist.reduce((s,v)=>s+v,0);
+    const histCanvas = document.getElementById(chartId + '_hist');
+    const noteEl = document.getElementById(chartId + '-hist-note');
+    if (histCanvas && total > 0) {
+      destroyChart(chartId + '_hist');
+      const BIN = 200;
+      // Trim trailing-zero bins but always keep at least through bin where max is
+      let lastBin = wcHist.length - 1;
+      while (lastBin > 0 && wcHist[lastBin] === 0) lastBin--;
+      const counts = wcHist.slice(0, lastBin + 1);
+      const binLabels = counts.map((_, i) => i === 20 ? '4k+' : String(i * BIN));
+      const avgWC = authorInfo.avg_words || 0;
+      const avgBinIdx = Math.round(avgWC / BIN);
+
+      chartInstances[chartId + '_hist'] = new Chart(histCanvas, {
+        type: 'bar',
+        data: {
+          labels: binLabels,
+          datasets: [
+            { label: 'Articles', data: counts, backgroundColor: 'rgba(50,104,145,0.65)',
+              barPercentage: 1.0, categoryPercentage: 1.0 },
+            { label: 'Avg', data: counts.map((_,i) => i === avgBinIdx ? Math.max(...counts) * 0.85 : null),
+              type: 'line', borderColor: 'rgba(180,50,50,0.7)', borderDash: [4,3],
+              borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: false }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: 'index', axis: 'x', intersect: false },  // full-column hover/click
+          onClick: (_, elements) => {
+            if (!elements.length || elements[0].datasetIndex !== 0) return;
+            const idx = elements[0].index;
+            const chart = chartInstances[chartId + '_hist'];
+            const currentlyActive = chart._activeHistBin;
+            const newBin = currentlyActive === idx ? null : idx;
+            chart._activeHistBin = newBin;
+            renderHistArticles(newBin);
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: {
+              title: items => {
+                const i = parseInt(items[0].label) || (items[0].label === '4k+' ? 20 : 0);
+                const lo = i * BIN;
+                return items[0].label === '4k+' ? '4000+ words' : `${lo}–${lo+BIN} words`;
+              },
+              label: ctx => {
+                if (ctx.datasetIndex !== 0) return `avg ${avgWC} words`;
+                const pct = ((ctx.parsed.y / total) * 100).toFixed(1);
+                return `${ctx.parsed.y} articles (${pct}%)`;
+              }
+            }}
+          },
+          scales: {
+            x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+                 grid: { display: false } },
+            y: { beginAtZero: true, ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+      histCanvas.style.cursor = 'pointer';
+      if (noteEl) noteEl.textContent = IS_MOBILE
+        ? `avg ${avgWC.toLocaleString()} words · n=${total}`
+        : `avg ${avgWC.toLocaleString()} words · n=${total} · click a bar to filter`;
+    }
+  }
+
+  // --- Article list + subject-filtered chart ---
+  // Loads on-demand: only the year files covering this author's active range.
+  async function fillArticleDetails() {
+    if (IS_MOBILE) return;
     const firstYear = authorInfo.first_year;
     const lastYear = authorInfo.last_year;
     if (!firstYear || !lastYear) return;
 
-    // Load only the years this author was active (sequentially to avoid memory pressure on mobile)
-    const allAuthorArticles = [];
+    // Load only the years this author was active
+    const _loaded = [];
     for (let y = firstYear; y <= lastYear; y++) {
       const yd = await ensureYearLoaded(y);
       for (const a of yd) {
-        if (a.authors.includes(name)) allAuthorArticles.push(a);
+        if (a.authors.includes(name)) _loaded.push(a);
       }
     }
-    allAuthorArticles.sort((a, b) => a.pub_date.localeCompare(b.pub_date));
+    _loaded.sort((a, b) => a.pub_date.localeCompare(b.pub_date));
+    allAuthorArticles = _loaded;  // set outer-scope variable — enables click-to-filter
 
     const authorArticles = subjectFilter
       ? allAuthorArticles.filter(a => a.subjects.includes(subjectFilter))
@@ -2823,113 +2948,10 @@ function showAuthorTimeline(name, opts = {}) {
       }
     }
 
-    // --- Word count histogram (all articles, not subject-filtered) ---
+    // Histogram already rendered from precomputed wc_hist; now populate article list
+    // Histogram already rendered from precomputed wc_hist; populate article list now
     if (!subjectFilter) {
-      const histCanvas = document.getElementById(chartId + '_hist');
-      const noteEl = document.getElementById(chartId + '-hist-note');
-      if (histCanvas) {
-        destroyChart(chartId + '_hist');
-        const wcs = allAuthorArticles.map(a => a.word_count || 0).filter(w => w > 0);
-        if (wcs.length) {
-          const BIN = 200;
-          const maxBin = Math.min(Math.ceil(Math.max(...wcs) / BIN) * BIN, 4000);
-          const binEdges = [];
-          for (let b = 0; b <= maxBin; b += BIN) binEdges.push(b);
-          const binLabels = binEdges.slice(0,-1).map((b,i) => i===binEdges.length-2 && maxBin===4000 ? `${b/1000}k+` : `${b}`);
-          const counts = new Array(binLabels.length).fill(0);
-          wcs.forEach(w => {
-            const idx = Math.min(Math.floor(w / BIN), counts.length - 1);
-            counts[idx]++;
-          });
-          const avgWC = authorInfo.avg_words || 0;
-          const avgBin = avgWC / BIN;
-          const total = wcs.length;
-          let activeHistBin = null;  // tracks which bin is selected, null = all
-
-          function renderHistArticles(binIdx) {
-            activeHistBin = binIdx;
-            // Update bar colors — highlight selected bin
-            const chart = chartInstances[chartId + '_hist'];
-            if (chart) {
-              const normal = 'rgba(50,104,145,0.65)';
-              const active = 'rgba(50,104,145,1)';
-              const dim    = 'rgba(50,104,145,0.2)';
-              chart.data.datasets[0].backgroundColor = counts.map((_,i) =>
-                binIdx === null ? normal : (i === binIdx ? active : dim));
-              chart.update('none');
-            }
-            // Filter article list
-            let filtered;
-            if (binIdx === null) {
-              filtered = allAuthorArticles;
-              if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${total} · click a bar to filter`;
-            } else {
-              const lo = binIdx * BIN;
-              const hi = lo + BIN;
-              filtered = allAuthorArticles.filter(a => (a.word_count||0) >= lo && (a.word_count||0) < hi);
-              const pct = ((filtered.length / total) * 100).toFixed(1);
-              const rangeStr = hi > maxBin ? `${lo}+ words` : `${lo}–${hi} words`;
-              if (noteEl) noteEl.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" style="color:#326891" id="${chartId}-hist-clear">show all</a>`;
-              document.getElementById(chartId + '-hist-clear')?.addEventListener('click', e => {
-                e.preventDefault(); renderHistArticles(null);
-              });
-            }
-            renderArticleList(listId, filtered, a => {
-              const coauthors = a.authors.filter(n => n !== name);
-              const coStr = coauthors.length ? ` · with ${escapeHtml(coauthors.join(', '))}` : '';
-              return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
-                <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
-                <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline||'(no headline)')}</a>
-                <span style="color:#aaa;font-size:11px">${coStr} · ${a.section} · ${(a.word_count||0).toLocaleString()} words</span>
-              </div>`;
-            });
-          }
-
-          chartInstances[chartId + '_hist'] = new Chart(histCanvas, {
-            type: 'bar',
-            data: {
-              labels: binLabels,
-              datasets: [
-                { label: 'Articles', data: counts, backgroundColor: 'rgba(50,104,145,0.65)',
-                  barPercentage: 1.0, categoryPercentage: 1.0 },
-                { label: 'Avg', data: binLabels.map((_,i) => i === Math.round(avgBin) ? Math.max(...counts) * 0.85 : null),
-                  type: 'line', borderColor: 'rgba(180,50,50,0.7)', borderDash: [4,3],
-                  borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: false }
-              ]
-            },
-            options: {
-              responsive: true,
-              onClick: (_, elements) => {
-                if (!elements.length || elements[0].datasetIndex !== 0) return;
-                const idx = elements[0].index;
-                renderHistArticles(activeHistBin === idx ? null : idx);
-              },
-              plugins: { legend: { display: false },
-                tooltip: { callbacks: {
-                  title: items => {
-                    const lo = parseInt(items[0].label) || 0;
-                    const hi = lo + BIN;
-                    return hi > maxBin ? `${lo}+ words` : `${lo}–${hi} words`;
-                  },
-                  label: ctx => {
-                    if (ctx.datasetIndex !== 0) return `avg ${avgWC} words`;
-                    const pct = ((ctx.parsed.y / total) * 100).toFixed(1);
-                    return `${ctx.parsed.y} articles (${pct}%)`;
-                  }
-                }}
-              },
-              scales: {
-                x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
-                     grid: { display: false } },
-                y: { beginAtZero: true, ticks: { font: { size: 9 } } }
-              }
-            }
-          });
-          histCanvas.style.cursor = 'pointer';
-          if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${total} · click a bar to filter`;
-          renderHistArticles(null);  // initial full list
-        }
-      }
+      renderHistArticles(null);
     }
 
     // Beats (subject-filtered only; unfiltered beats already shown from authors.json)
