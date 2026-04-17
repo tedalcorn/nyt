@@ -2704,7 +2704,31 @@ function showAuthorTimeline(name, opts = {}) {
           });
         }
       } else {
-        // ── Monthly mode ─────────────────────────────────────────────────────
+        // ── Monthly mode (articles only) ─────────────────────────────────────
+        // Words data is only available annually — switch to annual render for Words mode
+        if (mode === 'words') {
+          // Re-use the annual render path with wYears + annual_words_norm
+          const useYears = wYears;
+          const stripePattern = makeStripePattern(canvas);
+          const solidBlue = 'rgba(50,104,145,0.7)';
+          const isEdge = (i, arr) => arr.length > 1 && (i === 0 || (i === arr.length-1 && arr[i] === thisYear));
+          const vals = useYears.map(y => authorInfo.annual_words_norm[y] || 0);
+          const datasets = [{ label:'Words', data:vals,
+            backgroundColor: useYears.map((_,i) => isEdge(i,useYears) ? stripePattern : solidBlue) }];
+          if (avgWordsPerYear) datasets.push({ label:'Avg', data:useYears.map(()=>avgWordsPerYear),
+            type:'line', borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3],
+            borderWidth:1.5, pointRadius:0, fill:false });
+          if (lblEl) lblEl.textContent = 'Words per year';  // override label — data is annual
+          chartInstances[chartId] = new Chart(canvas, {
+            type:'bar', data:{ labels:useYears, datasets },
+            options:{ responsive:true, plugins:{ legend:{display:false},
+              tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?(ctx.parsed.y/1000).toFixed(0)+'k words':'avg '+(ctx.parsed.y/1000).toFixed(0)+'k'}} },
+              scales:{ x:{ticks:{font:{size:10},maxRotation:0}},
+                y:{beginAtZero:true,ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}} } }
+          });
+          return;
+        }
+        // Articles per month
         const first = authorInfo.first_date ? authorInfo.first_date.slice(0,7) : null;
         const last  = authorInfo.last_date  ? authorInfo.last_date.slice(0,7)  : null;
         if (!first || !last) return;
@@ -2715,33 +2739,13 @@ function showAuthorTimeline(name, opts = {}) {
           allMonths.push(`${ym}-${String(mm).padStart(2,'0')}`);
           mm++; if (mm>12){mm=1;ym++;}
         }
-        let vals;
-        if (mode === 'articles') {
-          vals = allMonths.map(k => byMonth[k] || 0);
-        } else {
-          // words: spread annual total evenly across months in that year
-          const monthsPerYear = {};
-          allMonths.forEach(k => { const y=k.slice(0,4); monthsPerYear[y]=(monthsPerYear[y]||0)+1; });
-          vals = allMonths.map(k => {
-            const y = k.slice(0,4);
-            return Math.round((authorInfo.annual_words[y] || 0) / (monthsPerYear[y] || 1));
-          });
-        }
-        const avgLine = mode==='words' && avgWordsPerYear
-          ? allMonths.map(()=>Math.round(avgWordsPerYear/12)) : null;
-        const datasets = [{
-          label: mode==='articles'?'Articles':'Words',
-          data: vals, backgroundColor:'rgba(50,104,145,0.7)'
-        }];
-        if (avgLine) datasets.push({ label:'Avg', data:avgLine, type:'line',
-          borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3], borderWidth:1.5, pointRadius:0, fill:false });
         chartInstances[chartId] = new Chart(canvas, {
-          type:'bar', data:{ labels:allMonths, datasets },
-          options:{ responsive:true, plugins:{ legend:{display:false},
-            tooltip:{callbacks:{label:ctx=>mode==='words'?ctx.parsed.y.toLocaleString()+' words':ctx.parsed.y+' articles'}} },
+          type:'bar', data:{ labels:allMonths,
+            datasets:[{ label:'Articles', data:allMonths.map(k=>byMonth[k]||0), backgroundColor:'rgba(50,104,145,0.7)' }] },
+          options:{ responsive:true, plugins:{ legend:{display:false} },
             scales:{
               x:{ ticks:{ callback:(val,idx)=>{ const l=allMonths[idx]; return (l.endsWith('-01')&&parseInt(l.slice(0,4))%5===0)?l.slice(0,4):''; }, autoSkip:false, maxRotation:0, font:{size:10} } },
-              y:{ beginAtZero:true, ticks:{ callback:v=>mode==='words'&&v>=1000?(v/1000).toFixed(0)+'k':v } }
+              y:{ beginAtZero:true }
             }
           }
         });
@@ -2759,6 +2763,11 @@ function showAuthorTimeline(name, opts = {}) {
   // --- Article list (+ word count histogram + subject-filtered chart) ---
   // Loads on-demand: only the year files covering this author's active range.
   async function fillArticleDetails() {
+    if (IS_MOBILE) {
+      const histNote = document.getElementById(chartId + '-hist-note');
+      if (histNote) histNote.textContent = 'Article data not loaded on mobile.';
+      return;
+    }
     const firstYear = authorInfo.first_year;
     const lastYear = authorInfo.last_year;
     if (!firstYear || !lastYear) return;
@@ -5304,7 +5313,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/17/26 11:14am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/17/26 12:31pm</span>
 </div>
 </body>
 </html>
