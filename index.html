@@ -2834,6 +2834,48 @@ function showAuthorTimeline(name, opts = {}) {
           });
           const avgWC = authorInfo.avg_words || 0;
           const avgBin = avgWC / BIN;
+          const total = wcs.length;
+          let activeHistBin = null;  // tracks which bin is selected, null = all
+
+          function renderHistArticles(binIdx) {
+            activeHistBin = binIdx;
+            // Update bar colors — highlight selected bin
+            const chart = chartInstances[chartId + '_hist'];
+            if (chart) {
+              const normal = 'rgba(50,104,145,0.65)';
+              const active = 'rgba(50,104,145,1)';
+              const dim    = 'rgba(50,104,145,0.2)';
+              chart.data.datasets[0].backgroundColor = counts.map((_,i) =>
+                binIdx === null ? normal : (i === binIdx ? active : dim));
+              chart.update('none');
+            }
+            // Filter article list
+            let filtered;
+            if (binIdx === null) {
+              filtered = allAuthorArticles;
+              if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${total} · click a bar to filter`;
+            } else {
+              const lo = binIdx * BIN;
+              const hi = lo + BIN;
+              filtered = allAuthorArticles.filter(a => (a.word_count||0) >= lo && (a.word_count||0) < hi);
+              const pct = ((filtered.length / total) * 100).toFixed(1);
+              const rangeStr = hi > maxBin ? `${lo}+ words` : `${lo}–${hi} words`;
+              if (noteEl) noteEl.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" style="color:#326891" id="${chartId}-hist-clear">show all</a>`;
+              document.getElementById(chartId + '-hist-clear')?.addEventListener('click', e => {
+                e.preventDefault(); renderHistArticles(null);
+              });
+            }
+            renderArticleList(listId, filtered, a => {
+              const coauthors = a.authors.filter(n => n !== name);
+              const coStr = coauthors.length ? ` · with ${escapeHtml(coauthors.join(', '))}` : '';
+              return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+                <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+                <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline||'(no headline)')}</a>
+                <span style="color:#aaa;font-size:11px">${coStr} · ${a.section} · ${(a.word_count||0).toLocaleString()} words</span>
+              </div>`;
+            });
+          }
+
           chartInstances[chartId + '_hist'] = new Chart(histCanvas, {
             type: 'bar',
             data: {
@@ -2848,9 +2890,25 @@ function showAuthorTimeline(name, opts = {}) {
             },
             options: {
               responsive: true,
+              onClick: (_, elements) => {
+                if (!elements.length || elements[0].datasetIndex !== 0) return;
+                const idx = elements[0].index;
+                renderHistArticles(activeHistBin === idx ? null : idx);
+              },
               plugins: { legend: { display: false },
-                tooltip: { callbacks: { title: (items) => `${items[0].label}–${parseInt(items[0].label)+BIN} words`,
-                  label: ctx => ctx.datasetIndex===0 ? ctx.parsed.y + ' articles' : `avg ${avgWC} words` } } },
+                tooltip: { callbacks: {
+                  title: items => {
+                    const lo = parseInt(items[0].label) || 0;
+                    const hi = lo + BIN;
+                    return hi > maxBin ? `${lo}+ words` : `${lo}–${hi} words`;
+                  },
+                  label: ctx => {
+                    if (ctx.datasetIndex !== 0) return `avg ${avgWC} words`;
+                    const pct = ((ctx.parsed.y / total) * 100).toFixed(1);
+                    return `${ctx.parsed.y} articles (${pct}%)`;
+                  }
+                }}
+              },
               scales: {
                 x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
                      grid: { display: false } },
@@ -2858,7 +2916,9 @@ function showAuthorTimeline(name, opts = {}) {
               }
             }
           });
-          if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${wcs.length}`;
+          histCanvas.style.cursor = 'pointer';
+          if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${total} · click a bar to filter`;
+          renderHistArticles(null);  // initial full list
         }
       }
     }
@@ -2872,17 +2932,19 @@ function showAuthorTimeline(name, opts = {}) {
       }
     }
 
-    // Article list with sort controls
-    const csvFilename = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_articles.csv';
-    renderArticleList(listId, authorArticles, a => {
-      const coauthors = a.authors.filter(n => n !== name);
-      const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
-      return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
-        <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
-        <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
-        <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
-      </div>`;
-    }, { csvFilename });
+    // Article list — subject-filtered path only (unfiltered handled via renderHistArticles above)
+    if (subjectFilter) {
+      const csvFilename = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_articles.csv';
+      renderArticleList(listId, authorArticles, a => {
+        const coauthors = a.authors.filter(n => n !== name);
+        const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
+        return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+          <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+          <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
+          <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
+        </div>`;
+      }, { csvFilename });
+    }
 
     // Scroll to timeline
     const container2 = document.getElementById(containerId);
