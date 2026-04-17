@@ -2863,9 +2863,9 @@ function showAuthorTimeline(name, opts = {}) {
             legend: { display: false },
             tooltip: { callbacks: {
               title: items => {
-                const i = parseInt(items[0].label) || (items[0].label === '4k+' ? 20 : 0);
+                const i = items[0].dataIndex;
                 const lo = i * BIN;
-                return items[0].label === '4k+' ? '4000+ words' : `${lo}–${lo+BIN} words`;
+                return i === 20 ? '4000+ words' : `${lo}–${lo+BIN} words`;
               },
               label: ctx => {
                 if (ctx.datasetIndex !== 0) return `avg ${avgWC} words`;
