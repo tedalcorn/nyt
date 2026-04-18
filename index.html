@@ -2545,7 +2545,7 @@ function showAuthorTimeline(name, opts = {}) {
   // Build classification line: [Role] · [staff/freelance] · [years] · [bio page]
   const _classParts = [];
   if (_role) _classParts.push(_role.charAt(0).toUpperCase() + _role.slice(1));
-  if (_classification) _classParts.push(_classification === 'staff' ? 'Staff' : 'Freelance');
+  if (_classification && _bioUrl) _classParts.push(_classification === 'staff' ? 'Staff' : 'Freelance');
   if (authorInfo.year_range) _classParts.push(authorInfo.year_range);
   if (_bioUrl) _classParts.push(`<a href="${_bioUrl}" target="_blank" rel="noopener" style="color:#326891;text-decoration:none;border-bottom:1px dotted #326891">bio page ↗</a>`);
   const _classLine = _classParts.join(' · ');
