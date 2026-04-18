@@ -1771,16 +1771,25 @@ function openSectionDetail(sectionName) {
   panel.style.display = 'block';
   panel.innerHTML = `
     <div class="author-timeline">
-      <button class="close-btn" onclick="document.getElementById('sectionDetailPanel').style.display='none';destroyChart('chartSectionDetail')">Close</button>
+      <button class="close-btn" onclick="document.getElementById('sectionDetailPanel').style.display='none';destroyChart('chartSectionDetail');destroyChart('chartSectionHist')">Close</button>
       <h3>${escapeHtml(sectionName)}</h3>
       <div class="timeline-meta">${total.toLocaleString()} articles · ${yearRange}${avgWords ? ` · ${avgWords.toLocaleString()} avg words` : ''}</div>
-      <div style="margin-top:10px">
-        <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
-        <div style="position:relative">
-          <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
-          <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px">
+        <div>
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
+          <div style="position:relative">
+            <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
+            <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+          </div>
+          ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): ~795 articles estimated from core reviewers' bylines — API gap year.</p>` : ''}
         </div>
-        ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): ~795 articles estimated from core reviewers' bylines — the NYT API does not index Movies as a separate section for that year. All other bars are confirmed API counts.</p>` : ''}
+        <div>
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Word count distribution</div>
+          <canvas id="chartSectionHist" style="max-height:180px;cursor:pointer"></canvas>
+          <div id="sectionHistNote" style="font-size:10px;color:#bbb;margin-top:2px">
+            ${articlesReady && !IS_MOBILE ? 'Loading…' : IS_MOBILE ? '' : 'Loading article data…'}
+          </div>
+        </div>
       </div>
       <div id="sectionDetailReporters" style="margin-top:12px"></div>
       <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:14px;margin-bottom:4px">Recent articles</div>
@@ -1854,21 +1863,114 @@ function openSectionDetail(sectionName) {
   if (articlesReady) fillSectionArticleList(sectionName);
 }
 
-function fillSectionArticleList(sectionName) {
+function fillSectionArticleList(sectionName, filteredArts) {
   const listEl = document.getElementById('sectionDetailArticleList');
   if (!listEl) return;
-  const secArts = articles.filter(a => a.section === sectionName)
-    .sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''))
-    .slice(0, 100);
-  if (!secArts.length) { listEl.innerHTML = ''; return; }
-  listEl.innerHTML = secArts.map(a => {
+  const allSecArts = articles.filter(a => a.section === sectionName)
+    .sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''));
+  const displayArts = (filteredArts || allSecArts).slice(0, 100);
+  if (!displayArts.length) { listEl.innerHTML = '<p style="color:#aaa;font-size:13px">No articles found.</p>'; return; }
+  listEl.innerHTML = displayArts.map(a => {
     const byline = (a.authors || []).join(', ');
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">` +
       `<span style="color:#aaa;font-size:11px;margin-right:6px">${a.pub_date}</span>` +
       `<a href="${escapeHtml(a.web_url || '')}" target="_blank" style="font-size:12px;color:#326891;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>` +
       (byline ? `<span style="color:#aaa;font-size:11px"> · ${escapeHtml(byline)}</span>` : '') +
+      `<span style="color:#ccc;font-size:11px"> · ${(a.word_count||0).toLocaleString()} words</span>` +
       `</div>`;
   }).join('');
+
+  // Build word-count histogram if not yet rendered
+  if (IS_MOBILE || filteredArts) return; // skip on mobile; skip histogram rebuild when called for filtering
+  const histCanvas = document.getElementById('chartSectionHist');
+  const noteEl = document.getElementById('sectionHistNote');
+  if (!histCanvas) return;
+
+  const BIN = 200;
+  const bins = new Array(21).fill(0);
+  let withWords = 0;
+  allSecArts.forEach(a => {
+    const wc = a.word_count || 0;
+    if (wc > 0) { bins[Math.min(Math.floor(wc / BIN), 20)]++; withWords++; }
+  });
+  const totalWC = allSecArts.reduce((s, a) => s + (a.word_count || 0), 0);
+  const nonZeroCount = allSecArts.filter(a => a.word_count > 0).length;
+  const avgWC = nonZeroCount > 0 ? Math.round(totalWC / nonZeroCount) : 0;
+  const avgBinIdx = Math.min(Math.floor(avgWC / BIN), 20);
+
+  // Trim trailing zero bins
+  let lastBin = bins.length - 1;
+  while (lastBin > 0 && bins[lastBin] === 0) lastBin--;
+  const counts = bins.slice(0, lastBin + 1);
+  const binLabels = counts.map((_, i) => i === 20 ? '4k+' : String(i * BIN));
+
+  destroyChart('chartSectionHist');
+
+  function renderSectionHistBin(binIdx) {
+    const chart = chartInstances['chartSectionHist'];
+    if (chart && chart.data.datasets[0]) {
+      const normal = 'rgba(50,104,145,0.65)', active = 'rgba(50,104,145,1)', dim = 'rgba(50,104,145,0.2)';
+      chart.data.datasets[0].backgroundColor = counts.map((_, i) =>
+        binIdx === null ? normal : (i === binIdx ? active : dim));
+      chart.update('none');
+    }
+    if (binIdx === null) {
+      if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${withWords} · click a bar to filter`;
+      fillSectionArticleList(sectionName, null);
+      return;
+    }
+    const lo = binIdx * BIN, hi = lo + BIN;
+    const filtered = allSecArts.filter(a => {
+      const wc = a.word_count || 0;
+      return binIdx === 20 ? wc >= 4000 : wc >= lo && wc < hi;
+    });
+    const pct = ((filtered.length / withWords) * 100).toFixed(1);
+    const rangeStr = binIdx === 20 ? '4000+ words' : `${lo}–${hi} words`;
+    if (noteEl) noteEl.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" style="color:#326891" id="secHistClear">show all</a>`;
+    document.getElementById('secHistClear')?.addEventListener('click', e => { e.preventDefault(); renderSectionHistBin(null); });
+    fillSectionArticleList(sectionName, filtered);
+  }
+
+  chartInstances['chartSectionHist'] = new Chart(histCanvas, {
+    type: 'bar',
+    data: {
+      labels: binLabels,
+      datasets: [
+        { label: 'Articles', data: counts, backgroundColor: 'rgba(50,104,145,0.65)', barPercentage: 1.0, categoryPercentage: 1.0 },
+        { label: 'Avg', data: counts.map((_, i) => i === avgBinIdx ? Math.max(...counts) * 0.85 : null),
+          type: 'line', borderColor: 'rgba(180,50,50,0.7)', borderDash: [4,3],
+          borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: false },
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', axis: 'x', intersect: false },
+      onClick: (_, elements) => {
+        if (!elements.length || elements[0].datasetIndex !== 0) return;
+        const idx = elements[0].index;
+        const chart = chartInstances['chartSectionHist'];
+        const newBin = chart._activeHistBin === idx ? null : idx;
+        chart._activeHistBin = newBin;
+        renderSectionHistBin(newBin);
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          title: items => { const i = items[0].dataIndex; return i === 20 ? '4000+ words' : `${i*BIN}–${i*BIN+BIN} words`; },
+          label: ctx => {
+            if (ctx.datasetIndex !== 0) return `avg ${avgWC} words`;
+            const pct = ((ctx.parsed.y / withWords) * 100).toFixed(1);
+            return `${ctx.parsed.y} articles (${pct}%)`;
+          }
+        }}
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+  if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${withWords} · click a bar to filter`;
 }
 
 const trendColors = [
@@ -4723,14 +4825,87 @@ function openStateDetail(state) {
     });
   }
 
-  renderArticleList('stateArticleList', stateArticles, a => {
+  // Recurring themes: TF-IDF-style scoring of subject tags vs. corpus
+  const GENERIC_SUBJECTS = new Set([
+    'Politics and Government','United States Politics and Government',
+    'United States International Relations','News and News Media','Law and Legislation',
+    'Presidential Election of 2020','Presidential Election of 2024',
+    'Presidential Election of 2016','Presidential Election of 2012',
+    'Presidential Election of 2008','Primaries and Caucuses',
+    'Presidential Election (US)','Elections','Decisions and Verdicts',
+    'Deaths (Obituaries)','Finances','Economic Conditions and Trends',
+  ]);
+  const totalCorpusArticles = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
+  const stateTotal = stateArticles.length || 1;
+  const tagCounts = {};
+  stateArticles.forEach(a => {
+    (a.subjects || []).forEach(tag => {
+      if (!GENERIC_SUBJECTS.has(tag)) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+  // Score: (tag freq in state / state articles) / (tag freq in corpus / corpus articles)
+  const topTags = Object.entries(tagCounts)
+    .filter(([, cnt]) => cnt >= Math.max(3, stateTotal * 0.005))
+    .map(([tag, cnt]) => {
+      const corpusFreq = (corpusSubjectFreq && corpusSubjectFreq[tag]) || 1;
+      const score = totalCorpusArticles > 0
+        ? (cnt / stateTotal) / (corpusFreq / totalCorpusArticles)
+        : cnt;
+      return { tag, cnt, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 7);
+
+  if (topTags.length) {
+    const tagsHtml = topTags.map(({ tag, cnt }) =>
+      `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:#eef3f7;border-radius:10px;font-size:12px;color:#326891;cursor:pointer" class="state-tag-filter" data-tag="${escapeHtml(tag)}" title="${cnt} articles">${escapeHtml(tag)}</span>`
+    ).join('');
+    const tagsContainer = document.createElement('div');
+    tagsContainer.style.cssText = 'margin-top:12px';
+    tagsContainer.innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Recurring themes</div>` +
+      `<div id="stateTagsRow">${tagsHtml}</div>` +
+      `<div id="stateTagNote" style="font-size:11px;color:#aaa;margin-top:4px"></div>`;
+    document.getElementById('stateTopReporters').after(tagsContainer);
+
+    // Click tag to filter article list
+    tagsContainer.querySelectorAll('.state-tag-filter').forEach(el => {
+      el.addEventListener('click', () => {
+        const tag = el.dataset.tag;
+        const isActive = el.style.background === 'rgb(50, 104, 145)';
+        tagsContainer.querySelectorAll('.state-tag-filter').forEach(t => {
+          t.style.background = '#eef3f7'; t.style.color = '#326891';
+        });
+        if (!isActive) {
+          el.style.background = '#326891'; el.style.color = '#fff';
+          const filtered = stateArticles.filter(a => (a.subjects || []).includes(tag));
+          const noteEl = document.getElementById('stateTagNote');
+          if (noteEl) noteEl.innerHTML = `<strong>${escapeHtml(tag)}</strong> · ${filtered.length} articles · <a href="#" id="stateTagClear" style="color:#326891">show all</a>`;
+          document.getElementById('stateTagClear')?.addEventListener('click', e => {
+            e.preventDefault();
+            el.style.background = '#eef3f7'; el.style.color = '#326891';
+            noteEl.innerHTML = '';
+            renderArticleList('stateArticleList', stateArticles, stateRowFmt);
+          });
+          renderArticleList('stateArticleList', filtered, stateRowFmt);
+        } else {
+          const noteEl = document.getElementById('stateTagNote');
+          if (noteEl) noteEl.innerHTML = '';
+          renderArticleList('stateArticleList', stateArticles, stateRowFmt);
+        }
+      });
+    });
+  }
+
+  function stateRowFmt(a) {
     const byline = a.authors.join(', ') || 'No byline';
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
       <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
       <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
       <span style="color:#aaa;font-size:11px"> · ${byline} · ${a.word_count.toLocaleString()} words</span>
     </div>`;
-  });
+  }
+  renderArticleList('stateArticleList', stateArticles, stateRowFmt);
 }
 
 function debounce(fn, ms) {
