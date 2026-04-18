@@ -4165,7 +4165,7 @@
  },
  "Vivian Giang": {
   "url": "https://www.nytimes.com/by/vivian-giang",
-  "classification": "freelance"
+  "classification": "staff"
  },
  "Amy Julia Harris": {
   "url": "https://www.nytimes.com/by/amy-julia-harris",
@@ -7642,6 +7642,9 @@
  "Joel Wolfram": {
   "url": "https://www.nytimes.com/by/joel-wolfram"
  },
+ "Juliette Gu\u00e9ron-Gabrielle": {
+  "url": "https://www.nytimes.com/by/juliette-gu-ron-gabrielle"
+ },
  "Anna Sauerbrey": {
   "url": "https://www.nytimes.com/by/anna-sauerbrey"
  },
@@ -7845,7 +7848,7 @@
  },
  "Hilary Howard": {
   "url": "https://www.nytimes.com/by/hilary-howard",
-  "classification": "freelance"
+  "classification": "staff"
  },
  "Zach Buchanan": {
   "url": "https://www.nytimes.com/by/zach-buchanan"
@@ -10397,7 +10400,7 @@
  },
  "Stefano Montali": {
   "url": "https://www.nytimes.com/by/stefano-montali",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Meredith Mendelsohn": {
@@ -12722,7 +12725,7 @@
  },
  "Jacey Fortin": {
   "url": "https://www.nytimes.com/by/jacey-fortin",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Alexander Burns": {
@@ -15901,7 +15904,7 @@
  },
  "Jacob Gallagher": {
   "url": "https://www.nytimes.com/by/jacob-gallagher",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Ben Stein": {
@@ -21562,6 +21565,9 @@
  "Johnny Magdaleno": {
   "url": "https://www.nytimes.com/by/johnny-magdaleno"
  },
+ "Gab\u00e9 Doppelt": {
+  "url": "https://www.nytimes.com/by/gab-doppelt"
+ },
  "Alyssa Schukar": {
   "url": "https://www.nytimes.com/by/alyssa-schukar"
  },
@@ -22462,6 +22468,9 @@
  "Jon Grinspan": {
   "url": "https://www.nytimes.com/by/jon-grinspan"
  },
+ "Damien Flor\u00e9bert Cuypers": {
+  "url": "https://www.nytimes.com/by/damien-flor-bert-cuypers"
+ },
  "Jessica Gross": {
   "url": "https://www.nytimes.com/by/jessica-gross"
  },
@@ -23329,6 +23338,9 @@
  "Brianna Holt": {
   "url": "https://www.nytimes.com/by/brianna-holt"
  },
+ "T\u00e9a Kvetenadze": {
+  "url": "https://www.nytimes.com/by/t-a-kvetenadze"
+ },
  "Julia Bergin": {
   "url": "https://www.nytimes.com/by/julia-bergin"
  },
@@ -23623,6 +23635,9 @@
  },
  "Jordan Michelman": {
   "url": "https://www.nytimes.com/by/jordan-michelman"
+ },
+ "Herv\u00e9 Taoko": {
+  "url": "https://www.nytimes.com/by/herv-taoko"
  },
  "Claire Novak": {
   "url": "https://www.nytimes.com/by/claire-novak"
@@ -24134,6 +24149,9 @@
  },
  "Oliver Horton": {
   "url": "https://www.nytimes.com/by/oliver-horton"
+ },
+ "Andr\u00e9 Aciman": {
+  "url": "https://www.nytimes.com/by/andr-aciman"
  },
  "John Simon": {
   "url": "https://www.nytimes.com/by/john-simon"
@@ -24714,6 +24732,9 @@
  },
  "Hanna Rosin": {
   "url": "https://www.nytimes.com/by/hanna-rosin"
+ },
+ "Francesca Segr\u00e8": {
+  "url": "https://www.nytimes.com/by/francesca-segr"
  },
  "Sheila Heti": {
   "url": "https://www.nytimes.com/by/sheila-heti"
@@ -25481,6 +25502,9 @@
  "Jasmina Nielsen": {
   "url": "https://www.nytimes.com/by/jasmina-nielsen"
  },
+ "L\u00e9ontine Gallois": {
+  "url": "https://www.nytimes.com/by/l-ontine-gallois"
+ },
  "Sophie Park": {
   "url": "https://www.nytimes.com/by/sophie-park"
  },
@@ -26238,6 +26262,9 @@
  "Christine Lennon": {
   "url": "https://www.nytimes.com/by/christine-lennon"
  },
+ "Zo\u00eb Wolff": {
+  "url": "https://www.nytimes.com/by/zo-wolff"
+ },
  "Daniel Gilbert": {
   "url": "https://www.nytimes.com/by/daniel-gilbert"
  },
@@ -26504,6 +26531,9 @@
  },
  "Twyla Tharp": {
   "url": "https://www.nytimes.com/by/twyla-tharp"
+ },
+ "Jennine Cap\u00f3 Crucet": {
+  "url": "https://www.nytimes.com/by/jennine-cap-crucet"
  },
  "Craig Jenkins": {
   "url": "https://www.nytimes.com/by/craig-jenkins"
@@ -27217,6 +27247,9 @@
  "John-michael Murphy": {
   "url": "https://www.nytimes.com/by/john-michael-murphy"
  },
+ "Hogla Enecia P\u00e9rez": {
+  "url": "https://www.nytimes.com/by/hogla-enecia-p-rez"
+ },
  "Anna Fixsen": {
   "url": "https://www.nytimes.com/by/anna-fixsen"
  },
@@ -27476,6 +27509,9 @@
  },
  "Zubin Jelveh": {
   "url": "https://www.nytimes.com/by/zubin-jelveh"
+ },
+ "Uki Go\u00f1i": {
+  "url": "https://www.nytimes.com/column/uki-goni"
  },
  "Alicia Cheng": {
   "url": "https://www.nytimes.com/by/alicia-cheng"
@@ -28812,6 +28848,9 @@
  "Benjamin Foley": {
   "url": "https://www.nytimes.com/by/benjamin-foley"
  },
+ "David Bola\u00f1os": {
+  "url": "https://www.nytimes.com/by/david-bola-os"
+ },
  "Haruka Aoki": {
   "url": "https://www.nytimes.com/by/haruka-aoki"
  },
@@ -28821,6 +28860,9 @@
  "Maya Shwayder": {
   "url": "https://www.nytimes.com/by/maya-shwayder"
  },
+ "Verena H\u00f6lzl": {
+  "url": "https://www.nytimes.com/by/verena-h-lzl"
+ },
  "Oksana Parafeniuk": {
   "url": "https://www.nytimes.com/by/oksana-parafeniuk"
  },
@@ -28829,6 +28871,9 @@
  },
  "Ye Fan": {
   "url": "https://www.nytimes.com/by/ye-fan"
+ },
+ "Tanya P\u00e9rez": {
+  "url": "https://www.nytimes.com/by/tanya-p-rez"
  },
  "Dayana Iwaza": {
   "url": "https://www.nytimes.com/by/dayana-iwaza"
@@ -29255,6 +29300,9 @@
  },
  "Tony Iyare": {
   "url": "https://www.nytimes.com/by/tony-iyare"
+ },
+ "\u00c1ngel Franco": {
+  "url": "https://www.nytimes.com/by/ngel-franco"
  },
  "Jon Fasman": {
   "url": "https://www.nytimes.com/by/jon-fasman"
@@ -29736,6 +29784,10 @@
  },
  "Mark Caro": {
   "url": "https://www.nytimes.com/by/mark-caro"
+ },
+ "J. D. Vance": {
+  "url": "https://www.nytimes.com/column/j-d-vance",
+  "role": "columnist"
  },
  "Edward Fetner": {
   "url": "https://www.nytimes.com/by/edward-fetner"
@@ -31083,6 +31135,9 @@
  "Jean Guerrero": {
   "url": "https://www.nytimes.com/by/jean-guerrero"
  },
+ "M\u00e9lissa Godin": {
+  "url": "https://www.nytimes.com/by/m-lissa-godin"
+ },
  "Ellen Almer Durston": {
   "url": "https://www.nytimes.com/by/ellen-almer-durston"
  },
@@ -31167,6 +31222,9 @@
  },
  "Yuvraj Khanna": {
   "url": "https://www.nytimes.com/by/yuvraj-khanna"
+ },
+ "Anton J\u00e4ger": {
+  "url": "https://www.nytimes.com/by/anton-j-ger"
  },
  "Jamal Michel": {
   "url": "https://www.nytimes.com/by/jamal-michel"
@@ -32486,6 +32544,9 @@
  "Rembert Browne": {
   "url": "https://www.nytimes.com/by/rembert-browne"
  },
+ "Cl\u00e0udia Prat": {
+  "url": "https://www.nytimes.com/by/cl-udia-prat"
+ },
  "Gina Prince-Bythewood": {
   "url": "https://www.nytimes.com/by/gina-prince-bythewood"
  },
@@ -32628,6 +32689,9 @@
  "Lynn Steger Strong": {
   "url": "https://www.nytimes.com/by/lynn-steger-strong"
  },
+ "Sof\u00eda Villamil": {
+  "url": "https://www.nytimes.com/by/sof-a-villamil"
+ },
  "Sue Li": {
   "url": "https://www.nytimes.com/by/sue-li"
  },
@@ -32681,6 +32745,9 @@
  "Simon Ostrovsky": {
   "url": "https://www.nytimes.com/by/simon-ostrovsky"
  },
+ "Carolina Abbott Galv\u00e3o": {
+  "url": "https://www.nytimes.com/by/carolina-abbott-galv-o"
+ },
  "Alessandro Pavone": {
   "url": "https://www.nytimes.com/by/alessandro-pavone"
  },
@@ -32704,6 +32771,9 @@
  },
  "Katherine Marks": {
   "url": "https://www.nytimes.com/by/katherine-marks"
+ },
+ "Sim\u00f3n Posada": {
+  "url": "https://www.nytimes.com/by/sim-n-posada"
  },
  "Christopher Damien": {
   "url": "https://www.nytimes.com/by/christopher-damien",
@@ -32761,6 +32831,9 @@
   "url": "https://www.nytimes.com/by/amy-fan",
   "classification": "staff",
   "role": "reporter"
+ },
+ "Josephine de La Bruy\u00e8re": {
+  "url": "https://www.nytimes.com/by/josephine-de-la-bruy-re"
  },
  "Stella Raine Chu": {
   "url": "https://www.nytimes.com/by/stella-raine-chu"
@@ -32935,6 +33008,9 @@
  },
  "Arlen Specter": {
   "url": "https://www.nytimes.com/by/arlen-specter"
+ },
+ "John Le Carr\u00e9": {
+  "url": "https://www.nytimes.com/by/john-le-carr"
  },
  "Aryeh Neier": {
   "url": "https://www.nytimes.com/by/aryeh-neier"
@@ -34536,6 +34612,9 @@
  "Tricia Fulks Kelley": {
   "url": "https://www.nytimes.com/by/tricia-fulks-kelley"
  },
+ "La\u00eds Martins": {
+  "url": "https://www.nytimes.com/by/la-s-martins"
+ },
  "Carisa Crawford Chappell": {
   "url": "https://www.nytimes.com/by/carisa-crawford-chappell"
  },
@@ -35779,6 +35858,9 @@
  "Wesley Stace": {
   "url": "https://www.nytimes.com/by/wesley-stace"
  },
+ "Chlo\u00eb Schama": {
+  "url": "https://www.nytimes.com/by/chlo-schama"
+ },
  "Patrick Rehkamp": {
   "url": "https://www.nytimes.com/by/patrick-rehkamp"
  },
@@ -35874,6 +35956,9 @@
  },
  "Steven Hahn": {
   "url": "https://www.nytimes.com/by/steven-hahn"
+ },
+ "Zo\u00eb Slutzky": {
+  "url": "https://www.nytimes.com/by/zo-slutzky"
  },
  "Scott Hutchins": {
   "url": "https://www.nytimes.com/by/scott-hutchins"
@@ -36627,6 +36712,9 @@
  "Kyle Dropp": {
   "url": "https://www.nytimes.com/by/kyle-dropp"
  },
+ "Alexander G\u00f6rlach": {
+  "url": "https://www.nytimes.com/by/alexander-g-rlach"
+ },
  "Brett Gundlock": {
   "url": "https://www.nytimes.com/by/brett-gundlock"
  },
@@ -36758,6 +36846,9 @@
  },
  "Emily Laber-Warren": {
   "url": "https://www.nytimes.com/by/emily-laber-warren"
+ },
+ "Francisco Rodr\u00edguez": {
+  "url": "https://www.nytimes.com/by/francisco-rodr-guez"
  },
  "Alexander Villegas": {
   "url": "https://www.nytimes.com/by/alexander-villegas"
@@ -36996,6 +37087,9 @@
  },
  "Janice Chung": {
   "url": "https://www.nytimes.com/by/janice-chung"
+ },
+ "Cl\u00e9ment Vayssieres": {
+  "url": "https://www.nytimes.com/by/cl-ment-vayssieres"
  },
  "Elke Scholiers": {
   "url": "https://www.nytimes.com/by/elke-scholiers"

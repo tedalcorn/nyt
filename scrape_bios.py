@@ -92,6 +92,23 @@ FREELANCE_PATTERNS = [
 ]
 FREELANCE_RE = re.compile('|'.join(FREELANCE_PATTERNS), re.IGNORECASE)
 
+# Sentence-level past-tense freelance detector — used to veto a freelance match
+_PAST_FREELANCE_RE = re.compile(
+    r'\b(?:was|were|had been|formerly|previously)\b.{0,50}freelance', re.IGNORECASE
+)
+
+def is_freelance(text):
+    """Return True only if text has a present-tense freelance signal with no staff override."""
+    m = FREELANCE_RE.search(text)
+    if not m:
+        return False, None
+    # Veto if the match appears within a past-tense context
+    start = max(0, m.start() - 60)
+    context = text[start:m.end()]
+    if _PAST_FREELANCE_RE.search(context):
+        return False, None
+    return True, m.group(0)[:120]
+
 # ── Photographer indicator phrases ────────────────────────────────────────────
 PHOTO_PATTERNS = [
     # Self-identification as photographer (first or third person)
@@ -215,11 +232,11 @@ def check_bio(name: str) -> dict:
             result['bio_text'] = (body_text[:800] if body_text
                                   else meta_text[:400])
 
-            # Freelance detection first — explicit freelance label overrides staff patterns
-            m = FREELANCE_RE.search(full_text)
-            if m:
+            # Freelance detection — past-tense mentions ("was a freelance writer") don't count
+            _is_free, _free_phrase = is_freelance(full_text)
+            if _is_free:
                 result['is_freelance'] = True
-                result['freelance_phrase'] = m.group(0)[:120]
+                result['freelance_phrase'] = _free_phrase
 
             # Photographer detection (independent of staff/freelance)
             m = PHOTO_RE.search(full_text)
