@@ -19,26 +19,45 @@ DELAY = 1.5               # seconds between requests (be polite)
 RESULTS_FILE = 'data/author_bios.json'
 
 # ── Staff indicator phrases found on NYT bio pages ───────────────────────────
-TIMES_REF = r'(?:new york times?|n\.y\.t\.|nyt|the times?|times)'
+TIMES_REF = r'(?:(?:the )?new york times?|n\.y\.t\.|nyt|the times?|times)'
+_VERB = r'(?:is|was|has been|have been)'
+# Expanded role list includes video/visual journalists, features writers, news assistants
 _ROLE = (r'(?:reporter|correspondent|columnist|editor|photographer|writer|producer|'
          r'critic|contributor|bureau chief|investigative reporter|senior writer|'
          r'staff writer|culture reporter|science reporter|political reporter|'
          r'obituar[yi]|senior editor|deputy editor|opinion writer|op-ed|'
-         r'deputy bureau chief|culture desk|metro reporter)')
-_VERB = r'(?:is|was|has been|have been)'
+         r'deputy bureau chief|culture desk|metro reporter|'
+         r'video journalist|visual journalist|photojournalist|features writer|'
+         r'news assistant|news editor|managing editor|executive editor|'
+         r'graphics editor|data reporter|audio producer|podcast host|'
+         r'international correspondent|foreign correspondent)')
 STAFF_PATTERNS = [
     # Third-person: "is/was/has been a [role] ... Times"
     r'\b' + _VERB + r' an? (?:former |veteran |longtime |long-?time |senior )?' + _ROLE + r'.{0,120}' + TIMES_REF,
     # Third-person: "is a Times reporter"
     r'\b' + _VERB + r' an? (?:former |veteran |longtime )?' + TIMES_REF + r'[\s]+' + _ROLE,
     # First-person: "I am a reporter/correspondent ... Times"
-    r"\bI(?:'m| am) an? (?:former |veteran |longtime |senior )?" + _ROLE + r'.{0,120}' + TIMES_REF,
-    # First-person: "I am a Times reporter"
-    r"\bI(?:'m| am) an? (?:former |)?" + TIMES_REF + r'[\s]+' + _ROLE,
-    # First-person: "I cover/covered ... for The Times"
-    r"\bI (?:cover|covered|write|wrote|report|reported) .{0,80} for " + TIMES_REF,
+    r"\bI(?:[\u2019']m| am) an? (?:former |veteran |longtime |senior )?" + _ROLE + r'.{0,250}' + TIMES_REF,
+    # First-person: "I am a Times reporter" or "I'm a New York Times [modifier] reporter"
+    r"\bI(?:[\u2019']m| am) an? (?:former |)?" + TIMES_REF + r'[\s\w]* ' + _ROLE,
+    # First-person: "I am a [role] for/at/in The Times"
+    r"\bI(?:[\u2019']m| am) an? (?:former |veteran |longtime |senior )?" + _ROLE + r' (?:for|at|in) ' + TIMES_REF,
+    # First-person: "I am the [role]..." or "I am deputy editor..." (definite article or no article)
+    r"\bI(?:[\u2019']m| am) (?:the |an? )?(?:[\w-]+ ){0,4}" + _ROLE + r'.{0,250}' + TIMES_REF,
+    # First-person: any verb + Times ref (broad catch-all for unusual phrasing)
+    r"\bI (?:cover|covered|write|wrote|report|reported|oversee|manage|lead|led|run|work|conduct|host|produce|edit).{0,200} (?:at|for|of) " + TIMES_REF,
+    # "I lead/am a member of/am on The New York Times's [team]"
+    r"\bI (?:lead|am) .{0,60}" + TIMES_REF,
+    # Times ref followed by a role word (catches "New York Times bureau chief in Beirut")
+    TIMES_REF + r'[^.!?]{0,60}\b(?:reporter|journalist|editor|bureau chief|chief|correspondent|columnist|critic|host|producer|researcher|fellow|designer|photographer|team)',
+    # Third-person with Times ref followed by a role (catches "Kayla Guo covered ... for The NYT as a fellow")
+    r'(?:covered|writes|worked|reported|was).{0,80}' + TIMES_REF + r'.{0,80}\b(?:reporter|journalist|fellow|class|program|correspondent|investigative)',
+    # First-person: "I am part of The Times"
+    r"\bI(?:[\u2019']m| am) part of " + TIMES_REF,
+    # First-person: "I work as ... at/for The Times"
+    r"\bI work(?:ed)? as .{0,100} (?:at|for) " + TIMES_REF,
     # First-person career: "I've been a Times reporter", "I joined The Times"
-    r"\bI(?:'ve| have) been .{0,40}" + TIMES_REF,
+    r"\bI(?:[\u2019']ve| have) been .{0,80}" + TIMES_REF,
     r"\bI joined " + TIMES_REF,
     # "[role] for The Times" (any person)
     _ROLE + r' for ' + TIMES_REF,
@@ -83,6 +102,12 @@ PHOTO_PATTERNS = [
 ]
 PHOTO_RE = re.compile('|'.join(PHOTO_PATTERNS), re.IGNORECASE)
 
+# ── Manual URL overrides (name changes, unusual slugs, etc.) ─────────────────
+MANUAL_URL_OVERRIDES = {
+    # Jodi Wilgoren married Gary Ruderman in 2004 and now bylines as Jodi Rudoren
+    'Jodi Wilgoren': 'https://www.nytimes.com/by/jodi-rudoren',
+}
+
 # ── URL slug construction ─────────────────────────────────────────────────────
 def name_to_slug(name: str) -> str:
     """Convert 'Michael S. Schmidt' → 'michael-s-schmidt',
@@ -99,7 +124,9 @@ def name_to_slug(name: str) -> str:
     name = name.replace('.', '')
     # Convert Irish/Scottish O' prefix to O- (NYT uses hyphen: o-reilly, not oreilly)
     name = re.sub(r"\bO'([A-Z])", r'O-\1', name)
-    # Replace remaining apostrophes and non-alphanumeric (except hyphen) with space
+    # Mid-word apostrophes (e.g. Dell'Antonia → DellAntonia): remove without space
+    name = re.sub(r"(?<=[a-zA-Z])'(?=[a-zA-Z])", '', name)
+    # Replace remaining non-alphanumeric (except hyphen) with space
     name = re.sub(r"[^a-zA-Z0-9 \-]", ' ', name)
     # Collapse spaces, strip
     name = re.sub(r'\s+', ' ', name).strip()
@@ -110,6 +137,8 @@ def name_to_slug(name: str) -> str:
     return slug
 
 def build_url(name: str) -> str:
+    if name in MANUAL_URL_OVERRIDES:
+        return MANUAL_URL_OVERRIDES[name]
     return f"https://www.nytimes.com/by/{name_to_slug(name)}"
 
 # ── HTTP session ──────────────────────────────────────────────────────────────

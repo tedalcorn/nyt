@@ -269,7 +269,7 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
       <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Added per-author word-count histogram (click bars to filter article list). Added ~35 name merge fixes for middle-initial variants. Additional data and UI improvements.</p>
+      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Author detail panels now show bio page link, staff/freelance classification, and role (reporter, editor, photographer, etc.) where known. Bio scrape complete: 1,053 confirmed staff, 78 freelance, roles classified across 1,027 authors with custom bio pages.</p>
 
       <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
       <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
@@ -864,9 +864,14 @@ async function loadData() {
       document.getElementById('authorTableContainer').innerHTML = '<p style="color:#c00;padding:16px">Failed to load reporter data.</p>';
     });
 
-    fetch('data/author_bio_urls.json').then(r => r.json()).then(bioUrls => {
-      window._authorBioUrls = bioUrls;
-    }).catch(() => {}); // optional file — fail silently
+    fetch('data/author_bio_meta.json').then(r => r.json()).then(bioMeta => {
+      window._authorBioMeta = bioMeta;
+    }).catch(() => {
+      // fall back to old urls-only file
+      fetch('data/author_bio_urls.json').then(r => r.json()).then(bioUrls => {
+        window._authorBioMeta = Object.fromEntries(Object.entries(bioUrls).map(([k,v]) => [k, {url: v}]));
+      }).catch(() => {});
+    });
 
     fetch('data/beats.json').then(r => r.json()).then(beatsData => {
       subjectIndex = beatsData.subjectIndex;
@@ -2532,13 +2537,27 @@ function showAuthorTimeline(name, opts = {}) {
     }
   }
 
+  const _bioMeta = window._authorBioMeta?.[name] || null;
+  const _bioUrl = _bioMeta?.url || null;
+  const _classification = _bioMeta?.classification || null;
+  const _role = _bioMeta?.role || null;
+
+  // Build classification line: [Role] · [staff/freelance] · [years] · [bio page]
+  const _classParts = [];
+  if (_role) _classParts.push(_role.charAt(0).toUpperCase() + _role.slice(1));
+  if (_classification) _classParts.push(_classification === 'staff' ? 'Staff' : 'Freelance');
+  if (authorInfo.year_range) _classParts.push(authorInfo.year_range);
+  if (_bioUrl) _classParts.push(`<a href="${_bioUrl}" target="_blank" rel="noopener" style="color:#326891;text-decoration:none;border-bottom:1px dotted #326891">bio page ↗</a>`);
+  const _classLine = _classParts.join(' · ');
+
   const container = document.getElementById(containerId);
   container.innerHTML = `
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_hist');pendingTimelineRefresh=null">Close</button>
       <h3>${escapeHtml(name)}</h3>
+      ${_classLine ? `<div class="timeline-meta" style="margin-bottom:2px">${_classLine}</div>` : ''}
       <div class="timeline-meta">
-        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article · ${authorInfo.avg_words_per_year ? authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year · ' : ''}${authorInfo.year_range}${window._authorBioUrls?.[name] ? ` · <a href="${window._authorBioUrls[name]}" target="_blank" rel="noopener" style="color:#326891;text-decoration:none;border-bottom:1px dotted #326891">bio page</a>` : ''}
+        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article${authorInfo.avg_words_per_year ? ' · ' + authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year' : ''}
       </div>
       ${subjectNote}
       <div style="font-size:13px;color:#555;margin-top:6px">${sections.length ? `<strong>Primary Section${sections.length > 1 ? 's' : ''}:</strong> ${sections.join(', ')}` : ''}</div>
