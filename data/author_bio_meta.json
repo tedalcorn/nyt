@@ -556,6 +556,9 @@
  "Adam Zagoria": {
   "url": "https://www.nytimes.com/by/adam-zagoria"
  },
+ "Fl\u00e1via Milhorance": {
+  "url": "https://www.nytimes.com/by/fl-via-milhorance"
+ },
  "Joe Drape": {
   "url": "https://www.nytimes.com/by/joe-drape",
   "classification": "staff",
@@ -1617,6 +1620,9 @@
   "url": "https://www.nytimes.com/by/maria-abi-habib",
   "classification": "staff",
   "role": "editor"
+ },
+ "Jody Garc\u00eda": {
+  "url": "https://www.nytimes.com/by/jody-garc-a"
  },
  "David E. Sanger": {
   "url": "https://www.nytimes.com/by/david-e-sanger",
@@ -8449,6 +8455,9 @@
  },
  "Bron Moyi": {
   "url": "https://www.nytimes.com/by/bron-moyi"
+ },
+ "Luc\u00eda Cholakian Herrera": {
+  "url": "https://www.nytimes.com/by/luc-a-cholakian-herrera"
  },
  "Alex de Waal": {
   "url": "https://www.nytimes.com/by/alex-de-waal"
@@ -19851,6 +19860,11 @@
  "Ann Patchett": {
   "url": "https://www.nytimes.com/by/ann-patchett"
  },
+ "Andr\u00e9s Martinez": {
+  "url": "https://www.nytimes.com/by/andres-r-martinez",
+  "classification": "staff",
+  "role": "editor"
+ },
  "John Clarke": {
   "url": "https://www.nytimes.com/by/john-clarke-jr"
  },
@@ -19859,6 +19873,9 @@
  },
  "David Karp": {
   "url": "https://www.nytimes.com/by/david-karp"
+ },
+ "Jorge G. Casta\u00f1eda": {
+  "url": "https://www.nytimes.com/column/jorge-g-castaneda"
  },
  "Susan E. Rice": {
   "url": "https://www.nytimes.com/by/susan-e-rice"
@@ -20841,6 +20858,9 @@
  },
  "Joe Lemire": {
   "url": "https://www.nytimes.com/by/joe-lemire"
+ },
+ "H\u00e9ctor Tobar": {
+  "url": "https://www.nytimes.com/column/hector-tobar"
  },
  "Elliot Ackerman": {
   "url": "https://www.nytimes.com/by/elliot-ackerman"
@@ -22002,6 +22022,9 @@
  },
  "Daniel Arnold": {
   "url": "https://www.nytimes.com/by/daniel-arnold"
+ },
+ "Tina Isaac-Goiz\u00e9": {
+  "url": "https://www.nytimes.com/by/tina-isaac-goiz-"
  },
  "Adam Dean": {
   "url": "https://www.nytimes.com/by/adam-dean"
