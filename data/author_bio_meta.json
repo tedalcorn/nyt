@@ -5286,7 +5286,8 @@
  },
  "Eve Washington": {
   "url": "https://www.nytimes.com/by/eve-washington",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "interactive designer"
  },
  "Andrea Kannapell": {
   "url": "https://www.nytimes.com/by/andrea-kannapell"
@@ -10423,7 +10424,7 @@
  "James Robinson": {
   "url": "https://www.nytimes.com/by/james-robinson",
   "classification": "staff",
-  "role": "editor"
+  "role": "video producer"
  },
  "Romy Gill": {
   "url": "https://www.nytimes.com/by/romy-gill"
@@ -10730,7 +10731,7 @@
  "Matt Dorfman": {
   "url": "https://www.nytimes.com/by/matt-dorfman",
   "classification": "staff",
-  "role": "editor"
+  "role": "art director"
  },
  "May-lee Chai": {
   "url": "https://www.nytimes.com/by/may-lee-chai"
@@ -13271,7 +13272,7 @@
  "A. G. Sulzberger": {
   "url": "https://www.nytimes.com/by/a-g-sulzberger",
   "classification": "staff",
-  "role": "editor"
+  "role": "publisher"
  },
  "Lara Jakes": {
   "url": "https://www.nytimes.com/by/lara-jakes",
@@ -13477,7 +13478,7 @@
  "Suzanne Daley": {
   "url": "https://www.nytimes.com/by/suzanne-daley",
   "classification": "staff",
-  "role": "reporter"
+  "role": "editor"
  },
  "Amy Qin": {
   "url": "https://www.nytimes.com/by/amy-qin",
@@ -13970,7 +13971,8 @@
  },
  "Melissa Kirsch": {
   "url": "https://www.nytimes.com/by/melissa-kirsch",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "newsletter host"
  },
  "Robert Byrne": {
   "url": "https://www.nytimes.com/by/robert-byrne"
@@ -31147,7 +31149,9 @@
   "url": "https://www.nytimes.com/by/brian-karlsson"
  },
  "Anjana Sankar": {
-  "url": "https://www.nytimes.com/by/anjana-sankar"
+  "url": "https://www.nytimes.com/by/anjana-sankar",
+  "classification": "staff",
+  "role": "reporter"
  },
  "Jovan Johnson": {
   "url": "https://www.nytimes.com/by/jovan-johnson"
