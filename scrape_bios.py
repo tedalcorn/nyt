@@ -136,8 +136,9 @@ def name_to_slug(name: str) -> str:
     name = re.sub(r'(?<=\b[A-Za-z])\.(?=[A-Za-z]\b)', '-', name)
     # Remove remaining periods
     name = name.replace('.', '')
-    # Convert Irish/Scottish O' prefix to O- (NYT uses hyphen: o-reilly, not oreilly)
-    name = re.sub(r"\bO'([A-Z])", r'O-\1', name)
+    # Convert Irish/Scottish O' prefix: NYT is inconsistent (o-reilly vs oreilly),
+    # so we try o- form as default; caller can retry without hyphen if this 404s.
+    name = re.sub(r"\bO[\u2019']([A-Z])", r'O-\1', name)
     # Mid-word apostrophes (e.g. Dell'Antonia → DellAntonia): remove without space
     name = re.sub(r"(?<=[a-zA-Z])'(?=[a-zA-Z])", '', name)
     # Replace remaining non-alphanumeric (except hyphen) with space
