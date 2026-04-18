@@ -21,7 +21,7 @@ RESULTS_FILE = 'data/author_bios.json'
 # ── Staff indicator phrases found on NYT bio pages ───────────────────────────
 TIMES_REF = r'(?:(?:the )?new york times?|n\.y\.t\.|nyt|the times?|times)'
 _VERB = r'(?:is|was|has been|have been)'
-# Expanded role list includes video/visual journalists, features writers, news assistants
+# Expanded role list
 _ROLE = (r'(?:reporter|correspondent|columnist|editor|photographer|writer|producer|'
          r'critic|contributor|bureau chief|investigative reporter|senior writer|'
          r'staff writer|culture reporter|science reporter|political reporter|'
@@ -30,7 +30,8 @@ _ROLE = (r'(?:reporter|correspondent|columnist|editor|photographer|writer|produc
          r'video journalist|visual journalist|photojournalist|features writer|'
          r'news assistant|news editor|managing editor|executive editor|'
          r'graphics editor|data reporter|audio producer|podcast host|'
-         r'international correspondent|foreign correspondent)')
+         r'international correspondent|foreign correspondent|'
+         r'journalist|publisher|art director|newsletter editor|newsletter host)')
 STAFF_PATTERNS = [
     # Third-person: "is/was/has been a [role] ... Times"
     r'\b' + _VERB + r' an? (?:former |veteran |longtime |long-?time |senior )?' + _ROLE + r'.{0,120}' + TIMES_REF,
@@ -45,7 +46,9 @@ STAFF_PATTERNS = [
     # First-person: "I am the [role]..." or "I am deputy editor..." (definite article or no article)
     r"\bI(?:[\u2019']m| am) (?:the |an? )?(?:[\w-]+ ){0,4}" + _ROLE + r'.{0,250}' + TIMES_REF,
     # First-person: any verb + Times ref (broad catch-all for unusual phrasing)
-    r"\bI (?:cover|covered|write|wrote|report|reported|oversee|manage|lead|led|run|work|conduct|host|produce|edit).{0,200} (?:at|for|of) " + TIMES_REF,
+    r"\bI (?:cover|covered|write|wrote|report|reported|oversee|manage|lead|led|run|work|conduct|host|produce|edit|create).{0,200} (?:at|for|of) " + TIMES_REF,
+    # "My job ... TIMES_REF" (Suzanne Daley: "My job in the newsroom is to oversee The New York Times International Edition")
+    r"\bMy job .{0,60}" + TIMES_REF,
     # "I lead/am a member of/am on The New York Times's [team]"
     r"\bI (?:lead|am) .{0,60}" + TIMES_REF,
     # Times ref followed by a role word (catches "New York Times bureau chief in Beirut")
@@ -101,6 +104,17 @@ PHOTO_PATTERNS = [
     r'\bphotographer and (?:writer|editor|reporter)\b',
 ]
 PHOTO_RE = re.compile('|'.join(PHOTO_PATTERNS), re.IGNORECASE)
+
+# ── Manual staff overrides (NYT mention beyond 800-char bio_text truncation) ──
+# These authors' bios confirm NYT employment but the mention falls after the stored excerpt.
+MANUAL_STAFF_OVERRIDES = {
+    'Audra D. S. Burch',   # "national reporter... race and identity" — NYT appears later in bio
+    'Carlos Lozada',       # Opinion columnist — NYT appears later in bio
+    'Jesse Drucker',       # "investigative reporter for the Business section" — NYT later in bio
+    'John Branch',         # long-time NYT staff writer — NYT appears later in bio
+    'Lisa Miller',         # "domestic correspondent for the Well section" — NYT later in bio
+    'Melissa Kirsch',      # hosts The Good List + The Morning newsletters — NYT appears after truncation
+}
 
 # ── Manual URL overrides (name changes, unusual slugs, etc.) ─────────────────
 MANUAL_URL_OVERRIDES = {

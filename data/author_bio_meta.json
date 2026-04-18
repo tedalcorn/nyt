@@ -354,7 +354,8 @@
  },
  "Helene Cooper": {
   "url": "https://www.nytimes.com/by/helene-cooper",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Mitra Taj": {
   "url": "https://www.nytimes.com/by/mitra-taj"
@@ -1123,7 +1124,8 @@
  },
  "Scott Reyburn": {
   "url": "https://www.nytimes.com/by/scott-reyburn",
-  "classification": "freelance"
+  "classification": "freelance",
+  "role": "reporter"
  },
  "Richard Scheinin": {
   "url": "https://www.nytimes.com/by/richard-scheinin"
@@ -1423,7 +1425,9 @@
   "role": "reporter"
  },
  "Li Yuan": {
-  "url": "https://www.nytimes.com/by/li-yuan"
+  "url": "https://www.nytimes.com/by/li-yuan",
+  "classification": "staff",
+  "role": "reporter"
  },
  "Winston Choi-Schagrin": {
   "url": "https://www.nytimes.com/by/winston-choi-schagrin",
@@ -2769,7 +2773,8 @@
  },
  "Muktita Suhartono": {
   "url": "https://www.nytimes.com/by/muktita-suhartono",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Adrienne Raphel": {
   "url": "https://www.nytimes.com/by/adrienne-raphel"
@@ -2870,7 +2875,8 @@
  },
  "Leo Dominguez": {
   "url": "https://www.nytimes.com/by/leo-dominguez",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Elizabeth Nelson": {
   "url": "https://www.nytimes.com/by/elizabeth-nelson"
@@ -3517,7 +3523,8 @@
  },
  "C. J. Chivers": {
   "url": "https://www.nytimes.com/by/c-j-chivers",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Naomi Cohen": {
   "url": "https://www.nytimes.com/by/naomi-cohen"
@@ -4308,7 +4315,8 @@
  },
  "David Enrich": {
   "url": "https://www.nytimes.com/by/david-enrich",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Anupreeta Das": {
   "url": "https://www.nytimes.com/by/anupreeta-das",
@@ -4492,7 +4500,8 @@
  },
  "Richard C. Paddock": {
   "url": "https://www.nytimes.com/by/richard-c-paddock",
-  "classification": "freelance"
+  "classification": "freelance",
+  "role": "reporter"
  },
  "Rich Barbieri": {
   "url": "https://www.nytimes.com/by/rich-barbieri"
@@ -4585,7 +4594,8 @@
  },
  "Coralie Kraft": {
   "url": "https://www.nytimes.com/by/coralie-kraft",
-  "classification": "freelance"
+  "classification": "freelance",
+  "role": "reporter"
  },
  "Melena Ryzik": {
   "url": "https://www.nytimes.com/by/melena-ryzik",
@@ -5275,7 +5285,8 @@
   "url": "https://www.nytimes.com/by/matthew-conlen"
  },
  "Eve Washington": {
-  "url": "https://www.nytimes.com/by/eve-washington"
+  "url": "https://www.nytimes.com/by/eve-washington",
+  "classification": "staff"
  },
  "Andrea Kannapell": {
   "url": "https://www.nytimes.com/by/andrea-kannapell"
@@ -5377,7 +5388,8 @@
  },
  "Riley Mellen": {
   "url": "https://www.nytimes.com/by/riley-mellen",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Pete McKenzie": {
   "url": "https://www.nytimes.com/by/pete-mckenzie"
@@ -5424,6 +5436,7 @@
  },
  "John Branch": {
   "url": "https://www.nytimes.com/by/john-branch",
+  "classification": "staff",
   "role": "reporter"
  },
  "Mary Pipher": {
@@ -5580,7 +5593,8 @@
  },
  "Madeleine Ngo": {
   "url": "https://www.nytimes.com/by/madeleine-ngo",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Daniel T. Willingham": {
   "url": "https://www.nytimes.com/by/daniel-t-willingham"
@@ -6960,6 +6974,7 @@
  },
  "Jesse Drucker": {
   "url": "https://www.nytimes.com/by/jesse-drucker",
+  "classification": "staff",
   "role": "reporter"
  },
  "Richard L. Hasen": {
@@ -7481,7 +7496,8 @@
  },
  "Romaissaa Benzizoune": {
   "url": "https://www.nytimes.com/by/romaissaa-benzizoune",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Daniel Hahn": {
   "url": "https://www.nytimes.com/by/daniel-hahn"
@@ -7920,7 +7936,8 @@
  },
  "Sara Aridi": {
   "url": "https://www.nytimes.com/by/sara-aridi",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "editor"
  },
  "Chavi Karkowsky": {
   "url": "https://www.nytimes.com/by/chavi-karkowsky"
@@ -8072,7 +8089,8 @@
  },
  "Ken Jaworowski": {
   "url": "https://www.nytimes.com/by/ken-jaworowski",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Sophie Bew": {
   "url": "https://www.nytimes.com/by/sophie-bew"
@@ -8914,7 +8932,8 @@
  },
  "Danial Adkison": {
   "url": "https://www.nytimes.com/by/danial-adkison",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Fiona Mozley": {
   "url": "https://www.nytimes.com/by/fiona-mozley"
@@ -9145,7 +9164,8 @@
   "url": "https://www.nytimes.com/by/david-szalay"
  },
  "Vauhini Vara": {
-  "url": "https://www.nytimes.com/by/vauhini-vara"
+  "url": "https://www.nytimes.com/by/vauhini-vara",
+  "role": "reporter"
  },
  "Daniel Schlozman": {
   "url": "https://www.nytimes.com/by/daniel-schlozman"
@@ -9516,7 +9536,8 @@
  },
  "Larissa Anderson": {
   "url": "https://www.nytimes.com/by/larissa-anderson",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Pierre Esp\u00e9rance": {
   "url": "https://www.nytimes.com/by/pierre-esperance"
@@ -10401,6 +10422,7 @@
  },
  "James Robinson": {
   "url": "https://www.nytimes.com/by/james-robinson",
+  "classification": "staff",
   "role": "editor"
  },
  "Romy Gill": {
@@ -10707,7 +10729,8 @@
  },
  "Matt Dorfman": {
   "url": "https://www.nytimes.com/by/matt-dorfman",
-  "role": "designer"
+  "classification": "staff",
+  "role": "editor"
  },
  "May-lee Chai": {
   "url": "https://www.nytimes.com/by/may-lee-chai"
@@ -11635,7 +11658,8 @@
   "role": "reporter"
  },
  "John F. Burns": {
-  "url": "https://www.nytimes.com/by/john-f-burns"
+  "url": "https://www.nytimes.com/by/john-f-burns",
+  "role": "reporter"
  },
  "Phillip Alder": {
   "url": "https://www.nytimes.com/by/phillip-alder"
@@ -12487,7 +12511,8 @@
  },
  "Stanley Reed": {
   "url": "https://www.nytimes.com/by/stanley-reed",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Glenn Collins": {
   "url": "https://www.nytimes.com/by/glenn-collins"
@@ -13137,7 +13162,7 @@
  "Clifford J. Levy": {
   "url": "https://www.nytimes.com/by/clifford-j-levy",
   "classification": "staff",
-  "role": "reporter"
+  "role": "editor"
  },
  "Alan Schwarz": {
   "url": "https://www.nytimes.com/by/alan-schwarz"
@@ -13244,7 +13269,9 @@
   "url": "https://www.nytimes.com/by/catherine-saint-louis"
  },
  "A. G. Sulzberger": {
-  "url": "https://www.nytimes.com/by/a-g-sulzberger"
+  "url": "https://www.nytimes.com/by/a-g-sulzberger",
+  "classification": "staff",
+  "role": "editor"
  },
  "Lara Jakes": {
   "url": "https://www.nytimes.com/by/lara-jakes",
@@ -13449,6 +13476,7 @@
  },
  "Suzanne Daley": {
   "url": "https://www.nytimes.com/by/suzanne-daley",
+  "classification": "staff",
   "role": "reporter"
  },
  "Amy Qin": {
@@ -13941,7 +13969,8 @@
   "role": "reporter"
  },
  "Melissa Kirsch": {
-  "url": "https://www.nytimes.com/by/melissa-kirsch"
+  "url": "https://www.nytimes.com/by/melissa-kirsch",
+  "classification": "staff"
  },
  "Robert Byrne": {
   "url": "https://www.nytimes.com/by/robert-byrne"
@@ -15734,6 +15763,7 @@
  },
  "Audra D. S. Burch": {
   "url": "https://www.nytimes.com/by/audra-d-s-burch",
+  "classification": "staff",
   "role": "reporter"
  },
  "Coral Murphy Marcos": {
@@ -15777,6 +15807,7 @@
  },
  "Carlos Lozada": {
   "url": "https://www.nytimes.com/by/carlos-lozada",
+  "classification": "staff",
   "role": "columnist"
  },
  "Lizzie Dearden": {
@@ -17347,7 +17378,7 @@
  },
  "Eden Weingart": {
   "url": "https://www.nytimes.com/by/eden-weingart",
-  "role": "designer"
+  "role": "editor"
  },
  "Naveen Kumar": {
   "url": "https://www.nytimes.com/by/naveen-kumar"
@@ -20775,6 +20806,7 @@
  },
  "Lisa Miller": {
   "url": "https://www.nytimes.com/by/lisa-miller",
+  "classification": "staff",
   "role": "reporter"
  },
  "Sam Schembari": {
@@ -27855,7 +27887,8 @@
  },
  "Jia Lynn Yang": {
   "url": "https://www.nytimes.com/by/jia-lynn-yang",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Jordan Salama": {
   "url": "https://www.nytimes.com/by/jordan-salama"
@@ -32538,7 +32571,8 @@
   "url": "https://www.nytimes.com/by/sarah-viren"
  },
  "Kate Morgan": {
-  "url": "https://www.nytimes.com/by/kate-morgan"
+  "url": "https://www.nytimes.com/by/kate-morgan",
+  "role": "reporter"
  },
  "Alla Katsnelson": {
   "url": "https://www.nytimes.com/by/alla-katsnelson"
@@ -34301,7 +34335,8 @@
  },
  "Deborah Leiderman": {
   "url": "https://www.nytimes.com/by/deborah-leiderman",
-  "classification": "staff"
+  "classification": "staff",
+  "role": "reporter"
  },
  "Nona Willis Aronowitz": {
   "url": "https://www.nytimes.com/by/nona-willis-aronowitz"
@@ -34524,7 +34559,7 @@
  "Davaughnia Wilson": {
   "url": "https://www.nytimes.com/by/davaughnia-wilson",
   "classification": "staff",
-  "role": "news assistant"
+  "role": "reporter"
  },
  "Marcus Maddox": {
   "url": "https://www.nytimes.com/by/marcus-maddox"
