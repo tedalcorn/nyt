@@ -918,14 +918,8 @@ async function loadData() {
           for (const a of yearArticles) articles.push(a);
         }
         articlesReady = true;
-        // Build section index for O(1) lookup (avoids filtering 1M articles per section popup)
+        // Section index is built lazily on first open of each section (avoids blocking main thread)
         window._articlesBySection = {};
-        for (const a of articles) {
-          if (a.section) {
-            if (!window._articlesBySection[a.section]) window._articlesBySection[a.section] = [];
-            window._articlesBySection[a.section].push(a);
-          }
-        }
         populateHeadlineSection();
         _applyRestore('articles');
         // Refresh any open detail panels that were waiting for article data
@@ -955,6 +949,11 @@ async function loadData() {
         if (document.getElementById('view-authors').classList.contains('active') && _pendingRestore?.author) {
           openAuthor(_pendingRestore.author);
           _pendingRestore = null;
+        }
+        // Re-trigger fillArticleDetails for any reporter panel already open when articles loaded
+        if (window._pendingFillArticleDetails) {
+          window._pendingFillArticleDetails().catch(e => console.error('Article details retry failed:', e));
+          window._pendingFillArticleDetails = null;
         }
       })().catch(e => console.error('Failed to load articles:', e));
     }
@@ -1947,7 +1946,10 @@ function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal
     return;
   }
   const lo = binIdx * BIN;
-  const secArts = window._articlesBySection?.[sectionName] || articles.filter(a => a.section === sectionName);
+  if (!window._articlesBySection) window._articlesBySection = {};
+  if (!window._articlesBySection[sectionName])
+    window._articlesBySection[sectionName] = articles.filter(a => a.section === sectionName);
+  const secArts = window._articlesBySection[sectionName];
   const filtered = secArts.filter(a => binIdx===20 ? (a.word_count||0)>=4000 : (a.word_count||0)>=lo && (a.word_count||0)<lo+BIN);
   const pct = histTotal > 0 ? ((filtered.length/histTotal)*100).toFixed(1) : '0';
   const rangeStr = binIdx===20 ? '4000+ words' : `${lo}–${lo+BIN} words`;
@@ -1963,8 +1965,13 @@ function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal
 function fillSectionArticleList(sectionName, filteredArts) {
   const listEl = document.getElementById('sectionDetailArticleList');
   if (!listEl) return;
-  // Use prebuilt index when available (built on articlesReady); avoids O(n) filter on 1M articles
-  const src = filteredArts || (window._articlesBySection?.[sectionName] || articles.filter(a => a.section === sectionName));
+  // Lazy section index: built on first open of each section, O(1M) once per section per session
+  if (!filteredArts) {
+    if (!window._articlesBySection) window._articlesBySection = {};
+    if (!window._articlesBySection[sectionName])
+      window._articlesBySection[sectionName] = articles.filter(a => a.section === sectionName);
+  }
+  const src = filteredArts || window._articlesBySection[sectionName];
   const displayArts = src
     .slice().sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''))
     .slice(0, 100);
@@ -3120,8 +3127,11 @@ function showAuthorTimeline(name, opts = {}) {
     }
   } // end fillArticleDetails
 
-  // fillArticleDetails loads year files on demand — always call immediately
-  fillArticleDetails();
+  // fillArticleDetails loads year files on demand — always call immediately.
+  // Store reference so the articles-ready callback can re-trigger it if loading
+  // finishes after this panel was opened.
+  window._pendingFillArticleDetails = fillArticleDetails;
+  fillArticleDetails().catch(e => console.error('Article details failed:', e));
 }
 
 // --- HEADLINE SEARCH ---
