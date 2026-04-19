@@ -4962,18 +4962,22 @@ function openStateDetail(state) {
   const stateAbbrev = STATE_ABBREVS[state] || '';
 
   function isSubLocation(loc) {
-    if (allStateNames.has(loc)) return false;  // bare state name
-    if (/^(United States|Mexico|Canada|Europe|Asia|Africa|Middle East|Latin America|Caribbean)/.test(loc)) return false;
+    // Require a parenthetical abbreviation — this is the only reliable way to know
+    // a location is within this state. Bare names like "New York City", "Iraq",
+    // "Chicago" are rejected because they lack geographic context.
     const m = loc.match(/\(([^)]+)\)$/);
-    if (m) {
-      const abbrev = m[1];
-      if (abbrev === 'US') return true;  // multi-state US region — keep
-      if (allStateAbbrevs.has(abbrev)) return abbrev === stateAbbrev;  // only if matches current state
-    }
-    // No parenthetical: keep only if not a state name (already checked above)
-    // Catches "New York City" for non-NY states — exclude cities of other states heuristically
-    // by checking if the name contains another state's abbreviation pattern
-    return true;
+    if (!m) return false;  // no parenthetical → reject
+    const abbrev = m[1];
+    if (abbrev === 'US') return true;   // multi-state US region (e.g. "Sierra Nevada Region (US)")
+    if (allStateAbbrevs.has(abbrev)) return abbrev === stateAbbrev;
+    return false;  // unknown parenthetical
+  }
+
+  function displayLoc(loc) {
+    // Strip the redundant state abbreviation from the label and apply title case
+    // "LOS ANGELES (Calif)" → "Los Angeles"   "Sierra Nevada Region (US)" → "Sierra Nevada Region"
+    const label = loc.replace(/\s*\([^)]+\)$/, '').trim();
+    return label.replace(/\b([A-Z][A-Z]+)\b/g, w => w.charAt(0) + w.slice(1).toLowerCase());
   }
 
   const glocCounts = {};
@@ -4992,7 +4996,7 @@ function openStateDetail(state) {
     const glocsContainer = document.createElement('div');
     glocsContainer.style.cssText = 'margin-top:12px';
     const glocsHtml = topGlocs.map(([loc, cnt]) =>
-      `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:#f0f0ea;border-radius:10px;font-size:12px;color:#555;cursor:pointer" class="state-gloc-filter" data-loc="${escapeHtml(loc)}" title="${cnt} articles">${escapeHtml(loc)}</span>`
+      `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:#f0f0ea;border-radius:10px;font-size:12px;color:#555;cursor:pointer" class="state-gloc-filter" data-loc="${escapeHtml(loc)}" title="${cnt} articles">${escapeHtml(displayLoc(loc))}</span>`
     ).join('');
     glocsContainer.innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Geographic sub-locations</div>` +
