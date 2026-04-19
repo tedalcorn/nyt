@@ -1965,14 +1965,17 @@ function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal
 function fillSectionArticleList(sectionName, filteredArts) {
   const listEl = document.getElementById('sectionDetailArticleList');
   if (!listEl) return;
-  // Lazy section index: built on first open of each section, O(1M) once per section per session
+  // Lazy section index: built on first open, stored for reuse within session
   if (!filteredArts) {
     if (!window._articlesBySection) window._articlesBySection = {};
     if (!window._articlesBySection[sectionName])
       window._articlesBySection[sectionName] = articles.filter(a => a.section === sectionName);
   }
   const src = filteredArts || window._articlesBySection[sectionName];
-  const displayArts = src
+  // Articles are stored roughly chronologically (year files 2000→2026).
+  // Slice the tail before sorting to avoid O(n log n) sort on 170k+ items for large sections.
+  const pool = src.length > 600 ? src.slice(-600) : src;
+  const displayArts = pool
     .slice().sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''))
     .slice(0, 100);
   if (!displayArts.length) { listEl.innerHTML = '<p style="color:#aaa;font-size:13px">No articles found.</p>'; return; }
