@@ -92,22 +92,41 @@ FREELANCE_PATTERNS = [
 ]
 FREELANCE_RE = re.compile('|'.join(FREELANCE_PATTERNS), re.IGNORECASE)
 
-# Sentence-level past-tense freelance detector — used to veto a freelance match
-_PAST_FREELANCE_RE = re.compile(
-    r'\b(?:was|were|had been|formerly|previously)\b.{0,50}freelance', re.IGNORECASE
+# Past-tense indicators within a sentence containing a freelance match
+_PAST_IN_SENTENCE_RE = re.compile(
+    r'\b(?:was|were|had been|formerly|previously|used to be|started as|began as|arrived as|came as)\b',
+    re.IGNORECASE
 )
 
 def is_freelance(text):
-    """Return True only if text has a present-tense freelance signal with no staff override."""
-    m = FREELANCE_RE.search(text)
-    if not m:
-        return False, None
-    # Veto if the match appears within a past-tense context
-    start = max(0, m.start() - 60)
-    context = text[start:m.end()]
-    if _PAST_FREELANCE_RE.search(context):
-        return False, None
-    return True, m.group(0)[:120]
+    """Return True only if text has a present-tense freelance signal not overridden by staff.
+
+    Two vetoes applied to each freelance match:
+    1. Sentence-level past tense: if the sentence containing the match has a past-tense
+       verb (was/were/had been/formerly/...) anywhere in it, reject the match.
+    2. Prior-sentence staff: if a staff signal appears in a sentence BEFORE the sentence
+       containing the freelance match, staff is the primary self-identification.
+       If staff and freelance appear in the SAME sentence (e.g. Florence Fabricant:
+       "reporting for the Times as a freelance contributor since 1972"), freelance wins.
+    """
+    for m in FREELANCE_RE.finditer(text):
+        # Sentence boundaries around this freelance match
+        sent_start = max(0, text.rfind('.', 0, m.start()) + 1)
+        sent_end_idx = text.find('.', m.end())
+        sent_end = sent_end_idx if sent_end_idx != -1 else len(text)
+        sentence = text[sent_start:sent_end]
+
+        # Veto 1: past-tense language in the same sentence
+        if _PAST_IN_SENTENCE_RE.search(sentence):
+            continue
+
+        # Veto 2: staff signal in a PRIOR sentence (not the current one)
+        prior_text = text[:sent_start]
+        if STAFF_RE.search(prior_text):
+            continue
+
+        return True, m.group(0)[:120]
+    return False, None
 
 # ── Photographer indicator phrases ────────────────────────────────────────────
 PHOTO_PATTERNS = [

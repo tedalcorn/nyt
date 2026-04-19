@@ -277,7 +277,7 @@
  },
  "Alice Callahan": {
   "url": "https://www.nytimes.com/by/alice-callahan",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Michael Steinberger": {
@@ -367,7 +367,7 @@
  },
  "Genevieve Glatsky": {
   "url": "https://www.nytimes.com/by/genevieve-glatsky",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Stephen Reiss": {
@@ -765,7 +765,7 @@
  },
  "Jeff Sommer": {
   "url": "https://www.nytimes.com/by/jeff-sommer",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Jessica Bennett": {
@@ -888,7 +888,7 @@
  },
  "Priya Krishna": {
   "url": "https://www.nytimes.com/by/priya-krishna",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Jesse Green": {
@@ -1598,7 +1598,7 @@
  },
  "Tony Cenicola": {
   "url": "https://www.nytimes.com/by/tony-cenicola",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "photographer"
  },
  "David Gardner": {
@@ -1688,7 +1688,7 @@
  },
  "Joao Silva": {
   "url": "https://www.nytimes.com/by/joao-silva",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "photographer"
  },
  "Grayson Haver Currin": {
@@ -2344,7 +2344,7 @@
  },
  "Knvul Sheikh": {
   "url": "https://www.nytimes.com/by/knvul-sheikh",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Anita Badejo": {
@@ -2534,7 +2534,7 @@
  },
  "Jason Farago": {
   "url": "https://www.nytimes.com/by/jason-farago",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "critic"
  },
  "Desiree Ibekwe": {
@@ -3876,7 +3876,7 @@
  },
  "Sarah Hurtes": {
   "url": "https://www.nytimes.com/by/sarah-hurtes",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Robbie Spencer": {
@@ -4209,7 +4209,7 @@
  },
  "Max Bearak": {
   "url": "https://www.nytimes.com/by/max-bearak",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Bill Pennington": {
@@ -4223,7 +4223,7 @@
  },
  "Sarah Diamond": {
   "url": "https://www.nytimes.com/by/sarah-diamond",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "audio/producer"
  },
  "Gulshan Khan": {
@@ -4600,7 +4600,7 @@
  },
  "Coralie Kraft": {
   "url": "https://www.nytimes.com/by/coralie-kraft",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Melena Ryzik": {
@@ -4816,7 +4816,7 @@
  },
  "Emiliano Rodr\u00edguez Mega": {
   "url": "https://www.nytimes.com/by/emiliano-rodriguez-mega",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "audio/producer"
  },
  "Taffy Brodesser-Akner": {
@@ -5660,7 +5660,7 @@
  },
  "Koba Ryckewaert": {
   "url": "https://www.nytimes.com/by/koba-ryckewaert",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Ilvy Njiokiktjien": {
@@ -5917,7 +5917,7 @@
  },
  "Jonathan Mahler": {
   "url": "https://www.nytimes.com/by/jonathan-mahler",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Noah Gittell": {
@@ -6274,7 +6274,7 @@
  },
  "Whet Moser": {
   "url": "https://www.nytimes.com/by/whet-moser",
-  "classification": "freelance"
+  "classification": "staff"
  },
  "Ege Uz": {
   "url": "https://www.nytimes.com/by/ege-uz"
@@ -8119,7 +8119,7 @@
  },
  "Molly Young": {
   "url": "https://www.nytimes.com/by/molly-young",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "critic"
  },
  "Oliver Strand": {
@@ -9045,7 +9045,7 @@
  },
  "Virginia Hughes": {
   "url": "https://www.nytimes.com/by/virginia-hughes",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Kaitlin Prest": {
@@ -9354,7 +9354,7 @@
  },
  "Nathan Taylor Pemberton": {
   "url": "https://www.nytimes.com/by/nathan-taylor-pemberton",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Russ Buettner": {
@@ -9852,7 +9852,7 @@
  },
  "Adam Sella": {
   "url": "https://www.nytimes.com/by/adam-sella",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Mariella Rudi": {
@@ -10458,7 +10458,7 @@
  },
  "Alissa Wilkinson": {
   "url": "https://www.nytimes.com/by/alissa-wilkinson",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "critic"
  },
  "Rosie Schaap": {
@@ -13922,7 +13922,7 @@
  },
  "Anatoly Kurmanaev": {
   "url": "https://www.nytimes.com/by/anatoly-kurmanaev",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Neil Strauss": {
@@ -15101,7 +15101,7 @@
  },
  "Tanya Sichynsky": {
   "url": "https://www.nytimes.com/by/tanya-sichynsky",
-  "classification": "freelance"
+  "classification": "staff"
  },
  "Verne G. Kopytoff": {
   "url": "https://www.nytimes.com/by/verne-g-kopytoff"
@@ -15492,7 +15492,7 @@
  },
  "Robert Draper": {
   "url": "https://www.nytimes.com/by/robert-draper",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Lynn Hirschberg": {
@@ -15965,7 +15965,7 @@
  },
  "Marie Solis": {
   "url": "https://www.nytimes.com/by/marie-solis",
-  "classification": "freelance"
+  "classification": "staff"
  },
  "Steven A. Holmes": {
   "url": "https://www.nytimes.com/by/steven-a-holmes"
@@ -16096,7 +16096,7 @@
  },
  "Minho Kim": {
   "url": "https://www.nytimes.com/by/minho-kim",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "news assistant"
  },
  "Eve Sampson": {
@@ -16887,7 +16887,7 @@
  },
  "Austyn Gaffney": {
   "url": "https://www.nytimes.com/by/austyn-gaffney",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Bilal Shbair": {
@@ -16985,7 +16985,7 @@
  },
  "Camille Baker": {
   "url": "https://www.nytimes.com/by/camille-baker",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "reporter"
  },
  "Regina Schrambling": {
@@ -22867,7 +22867,7 @@
  },
  "Andrea Mohin": {
   "url": "https://www.nytimes.com/by/andrea-mohin",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "photographer"
  },
  "Richard A. Clarke": {
@@ -23357,7 +23357,7 @@
  },
  "Xinyun Wu": {
   "url": "https://www.nytimes.com/by/xinyun-wu",
-  "classification": "freelance",
+  "classification": "staff",
   "role": "audio/producer"
  },
  "Jim Reisler": {
@@ -29408,6 +29408,7 @@
  },
  "Iht Producer": {
   "url": "https://www.nytimes.com/by/iht-producer",
+  "classification": "staff",
   "role": "audio/producer"
  },
  "Robert P. Hartwig": {
@@ -31237,7 +31238,6 @@
  },
  "Anjana Sankar": {
   "url": "https://www.nytimes.com/by/anjana-sankar",
-  "classification": "staff",
   "role": "reporter"
  },
  "Jovan Johnson": {

@@ -918,6 +918,14 @@ async function loadData() {
           for (const a of yearArticles) articles.push(a);
         }
         articlesReady = true;
+        // Build section index for O(1) lookup (avoids filtering 1M articles per section popup)
+        window._articlesBySection = {};
+        for (const a of articles) {
+          if (a.section) {
+            if (!window._articlesBySection[a.section]) window._articlesBySection[a.section] = [];
+            window._articlesBySection[a.section].push(a);
+          }
+        }
         populateHeadlineSection();
         _applyRestore('articles');
         // Refresh any open detail panels that were waiting for article data
@@ -1777,9 +1785,9 @@ function openSectionDetail(sectionName) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px">
         <div>
           <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
-          <div style="position:relative">
-            <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
-            <button onclick="downloadSectionChart(this)" style="position:absolute;bottom:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+          <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
+          <div style="text-align:right;margin-top:2px">
+            <button onclick="downloadSectionChart(this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
           ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): ~795 articles estimated from core reviewers' bylines — API gap year.</p>` : ''}
         </div>
@@ -1939,7 +1947,7 @@ function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal
     return;
   }
   const lo = binIdx * BIN;
-  const secArts = articles.filter(a => a.section === sectionName);
+  const secArts = window._articlesBySection?.[sectionName] || articles.filter(a => a.section === sectionName);
   const filtered = secArts.filter(a => binIdx===20 ? (a.word_count||0)>=4000 : (a.word_count||0)>=lo && (a.word_count||0)<lo+BIN);
   const pct = histTotal > 0 ? ((filtered.length/histTotal)*100).toFixed(1) : '0';
   const rangeStr = binIdx===20 ? '4000+ words' : `${lo}–${lo+BIN} words`;
@@ -1955,8 +1963,8 @@ function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal
 function fillSectionArticleList(sectionName, filteredArts) {
   const listEl = document.getElementById('sectionDetailArticleList');
   if (!listEl) return;
-  // Sort only what we need to display — avoids sorting 50k+ articles for large sections
-  const src = filteredArts || articles.filter(a => a.section === sectionName);
+  // Use prebuilt index when available (built on articlesReady); avoids O(n) filter on 1M articles
+  const src = filteredArts || (window._articlesBySection?.[sectionName] || articles.filter(a => a.section === sectionName));
   const displayArts = src
     .slice().sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''))
     .slice(0, 100);
