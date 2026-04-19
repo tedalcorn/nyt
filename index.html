@@ -918,6 +918,7 @@ async function loadData() {
           for (const a of yearArticles) articles.push(a);
         }
         articlesReady = true;
+        console.log('[NYT] articlesReady: articles.length =', articles.length);
         // Section index is built lazily on first open of each section (avoids blocking main thread)
         window._articlesBySection = {};
         populateHeadlineSection();
@@ -935,6 +936,7 @@ async function loadData() {
         const sectionDetailPanel = document.getElementById('sectionDetailPanel');
         if (sectionDetailPanel?.style.display !== 'none') {
           const openSec = sectionDetailPanel.querySelector('h3')?.textContent?.trim();
+          console.log('[NYT] section panel open, section =', openSec);
           if (openSec) fillSectionArticleList(openSec);
         }
         // Refresh subject detail article list if panel is open
@@ -1972,6 +1974,7 @@ function fillSectionArticleList(sectionName, filteredArts) {
       window._articlesBySection[sectionName] = articles.filter(a => a.section === sectionName);
   }
   const src = filteredArts || window._articlesBySection[sectionName];
+  console.log('[NYT] fillSectionArticleList', sectionName, 'src.length =', src.length);
   // Articles are stored roughly chronologically (year files 2000→2026).
   // Slice the tail before sorting to avoid O(n log n) sort on 170k+ items for large sections.
   const pool = src.length > 600 ? src.slice(-600) : src;
