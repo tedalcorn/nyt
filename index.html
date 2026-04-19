@@ -1779,7 +1779,7 @@ function openSectionDetail(sectionName) {
           <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
           <div style="position:relative">
             <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
-            <button onclick="downloadSectionChart(this)" style="position:absolute;top:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
+            <button onclick="downloadSectionChart(this)" style="position:absolute;bottom:4px;right:4px;font-size:11px;padding:2px 8px;background:rgba(255,255,255,0.85);border:1px solid #ccc;border-radius:3px;cursor:pointer">↓ JPG</button>
           </div>
           ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): ~795 articles estimated from core reviewers' bylines — API gap year.</p>` : ''}
         </div>
@@ -1860,15 +1860,106 @@ function openSectionDetail(sectionName) {
 
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+  // Render word-count histogram immediately from precomputed wc_hist in dashboard.json
+  // (same pattern as reporter panel — no article loading required)
+  const wcHist = sec ? (sec.wc_hist || []) : [];
+  const histTotal = wcHist.reduce((s,v)=>s+v,0);
+  const histCanvas = document.getElementById('chartSectionHist');
+  const histNote = document.getElementById('sectionHistNote');
+  if (histCanvas && histTotal > 0) {
+    const BIN = 200;
+    let lastBin = wcHist.length - 1;
+    while (lastBin > 0 && wcHist[lastBin] === 0) lastBin--;
+    const counts = wcHist.slice(0, lastBin + 1);
+    const binLabels = counts.map((_, i) => i === 20 ? '4k+' : String(i * BIN));
+    const avgBinIdx = Math.min(Math.floor((avgWords || 0) / BIN), 20);
+    destroyChart('chartSectionHist');
+    chartInstances['chartSectionHist'] = new Chart(histCanvas, {
+      type: 'bar',
+      data: {
+        labels: binLabels,
+        datasets: [
+          { label: 'Articles', data: counts, backgroundColor: 'rgba(50,104,145,0.65)',
+            barPercentage: 1.0, categoryPercentage: 1.0 },
+          { label: 'Avg', data: counts.map((_,i) => i===avgBinIdx ? Math.max(...counts)*0.85 : null),
+            type: 'line', borderColor: 'rgba(180,50,50,0.7)', borderDash: [4,3],
+            borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: false },
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: { mode: 'index', axis: 'x', intersect: false },
+        onClick: (_, elements) => {
+          if (!elements.length || elements[0].datasetIndex !== 0) return;
+          const idx = elements[0].index;
+          const chart = chartInstances['chartSectionHist'];
+          const newBin = chart._activeHistBin === idx ? null : idx;
+          chart._activeHistBin = newBin;
+          if (!articlesReady) { if (histNote) histNote.textContent = 'Article filter available once data finishes loading…'; return; }
+          renderSectionHistBinFromArticles(sectionName, newBin, wcHist, histTotal, avgWords);
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            title: items => { const i=items[0].dataIndex; return i===20?'4000+ words':`${i*BIN}–${i*BIN+BIN} words`; },
+            label: ctx => {
+              if (ctx.datasetIndex!==0) return `avg ${avgWords} words`;
+              return `${ctx.parsed.y.toLocaleString()} articles (${((ctx.parsed.y/histTotal)*100).toFixed(1)}%)`;
+            }
+          }}
+        },
+        scales: {
+          x: { ticks: { font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:10 }, grid:{display:false} },
+          y: { beginAtZero:true, ticks:{font:{size:9}} }
+        }
+      }
+    });
+    histCanvas.style.cursor = 'pointer';
+    if (histNote) histNote.textContent = avgWords
+      ? `avg ${avgWords.toLocaleString()} words · n=${histTotal.toLocaleString()}${articlesReady && !IS_MOBILE ? ' · click a bar to filter' : ''}`
+      : '';
+  }
+
   if (articlesReady) fillSectionArticleList(sectionName);
+}
+
+function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal, avgWords) {
+  const histNote = document.getElementById('sectionHistNote');
+  const chart = chartInstances['chartSectionHist'];
+  const BIN = 200;
+  if (chart && chart.data.datasets[0]) {
+    const normal = 'rgba(50,104,145,0.65)', active = 'rgba(50,104,145,1)', dim = 'rgba(50,104,145,0.2)';
+    chart.data.datasets[0].backgroundColor = (wcHist.slice(0, chart.data.labels.length))
+      .map((_,i) => binIdx===null ? normal : (i===binIdx ? active : dim));
+    chart.update('none');
+  }
+  if (binIdx === null) {
+    if (histNote) histNote.textContent = `avg ${(avgWords||0).toLocaleString()} words · n=${histTotal.toLocaleString()} · click a bar to filter`;
+    fillSectionArticleList(sectionName, null);
+    return;
+  }
+  const lo = binIdx * BIN;
+  const secArts = articles.filter(a => a.section === sectionName);
+  const filtered = secArts.filter(a => binIdx===20 ? (a.word_count||0)>=4000 : (a.word_count||0)>=lo && (a.word_count||0)<lo+BIN);
+  const pct = histTotal > 0 ? ((filtered.length/histTotal)*100).toFixed(1) : '0';
+  const rangeStr = binIdx===20 ? '4000+ words' : `${lo}–${lo+BIN} words`;
+  if (histNote) histNote.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" id="secHistClear2" style="color:#326891">show all</a>`;
+  document.getElementById('secHistClear2')?.addEventListener('click', e => {
+    e.preventDefault();
+    if (chart) chart._activeHistBin = null;
+    renderSectionHistBinFromArticles(sectionName, null, wcHist, histTotal, avgWords);
+  });
+  fillSectionArticleList(sectionName, filtered);
 }
 
 function fillSectionArticleList(sectionName, filteredArts) {
   const listEl = document.getElementById('sectionDetailArticleList');
   if (!listEl) return;
-  const allSecArts = articles.filter(a => a.section === sectionName)
-    .sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''));
-  const displayArts = (filteredArts || allSecArts).slice(0, 100);
+  // Sort only what we need to display — avoids sorting 50k+ articles for large sections
+  const src = filteredArts || articles.filter(a => a.section === sectionName);
+  const displayArts = src
+    .slice().sort((a, b) => (b.pub_date || '').localeCompare(a.pub_date || ''))
+    .slice(0, 100);
   if (!displayArts.length) { listEl.innerHTML = '<p style="color:#aaa;font-size:13px">No articles found.</p>'; return; }
   listEl.innerHTML = displayArts.map(a => {
     const byline = (a.authors || []).join(', ');
@@ -1879,98 +1970,11 @@ function fillSectionArticleList(sectionName, filteredArts) {
       `<span style="color:#ccc;font-size:11px"> · ${(a.word_count||0).toLocaleString()} words</span>` +
       `</div>`;
   }).join('');
-
-  // Build word-count histogram if not yet rendered
-  if (IS_MOBILE || filteredArts) return; // skip on mobile; skip histogram rebuild when called for filtering
-  const histCanvas = document.getElementById('chartSectionHist');
-  const noteEl = document.getElementById('sectionHistNote');
-  if (!histCanvas) return;
-
-  const BIN = 200;
-  const bins = new Array(21).fill(0);
-  let withWords = 0;
-  allSecArts.forEach(a => {
-    const wc = a.word_count || 0;
-    if (wc > 0) { bins[Math.min(Math.floor(wc / BIN), 20)]++; withWords++; }
-  });
-  const totalWC = allSecArts.reduce((s, a) => s + (a.word_count || 0), 0);
-  const nonZeroCount = allSecArts.filter(a => a.word_count > 0).length;
-  const avgWC = nonZeroCount > 0 ? Math.round(totalWC / nonZeroCount) : 0;
-  const avgBinIdx = Math.min(Math.floor(avgWC / BIN), 20);
-
-  // Trim trailing zero bins
-  let lastBin = bins.length - 1;
-  while (lastBin > 0 && bins[lastBin] === 0) lastBin--;
-  const counts = bins.slice(0, lastBin + 1);
-  const binLabels = counts.map((_, i) => i === 20 ? '4k+' : String(i * BIN));
-
-  destroyChart('chartSectionHist');
-
-  function renderSectionHistBin(binIdx) {
-    const chart = chartInstances['chartSectionHist'];
-    if (chart && chart.data.datasets[0]) {
-      const normal = 'rgba(50,104,145,0.65)', active = 'rgba(50,104,145,1)', dim = 'rgba(50,104,145,0.2)';
-      chart.data.datasets[0].backgroundColor = counts.map((_, i) =>
-        binIdx === null ? normal : (i === binIdx ? active : dim));
-      chart.update('none');
-    }
-    if (binIdx === null) {
-      if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${withWords} · click a bar to filter`;
-      fillSectionArticleList(sectionName, null);
-      return;
-    }
-    const lo = binIdx * BIN, hi = lo + BIN;
-    const filtered = allSecArts.filter(a => {
-      const wc = a.word_count || 0;
-      return binIdx === 20 ? wc >= 4000 : wc >= lo && wc < hi;
-    });
-    const pct = ((filtered.length / withWords) * 100).toFixed(1);
-    const rangeStr = binIdx === 20 ? '4000+ words' : `${lo}–${hi} words`;
-    if (noteEl) noteEl.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" style="color:#326891" id="secHistClear">show all</a>`;
-    document.getElementById('secHistClear')?.addEventListener('click', e => { e.preventDefault(); renderSectionHistBin(null); });
-    fillSectionArticleList(sectionName, filtered);
+  // Update histogram click-to-filter note if articles loaded after chart already rendered
+  const histNote = document.getElementById('sectionHistNote');
+  if (histNote && !filteredArts && !IS_MOBILE && histNote.textContent && !histNote.textContent.includes('click')) {
+    histNote.textContent = histNote.textContent.replace(/\s*$/, ' · click a bar to filter');
   }
-
-  chartInstances['chartSectionHist'] = new Chart(histCanvas, {
-    type: 'bar',
-    data: {
-      labels: binLabels,
-      datasets: [
-        { label: 'Articles', data: counts, backgroundColor: 'rgba(50,104,145,0.65)', barPercentage: 1.0, categoryPercentage: 1.0 },
-        { label: 'Avg', data: counts.map((_, i) => i === avgBinIdx ? Math.max(...counts) * 0.85 : null),
-          type: 'line', borderColor: 'rgba(180,50,50,0.7)', borderDash: [4,3],
-          borderWidth: 1.5, pointRadius: 0, fill: false, spanGaps: false },
-      ]
-    },
-    options: {
-      responsive: true,
-      interaction: { mode: 'index', axis: 'x', intersect: false },
-      onClick: (_, elements) => {
-        if (!elements.length || elements[0].datasetIndex !== 0) return;
-        const idx = elements[0].index;
-        const chart = chartInstances['chartSectionHist'];
-        const newBin = chart._activeHistBin === idx ? null : idx;
-        chart._activeHistBin = newBin;
-        renderSectionHistBin(newBin);
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: {
-          title: items => { const i = items[0].dataIndex; return i === 20 ? '4000+ words' : `${i*BIN}–${i*BIN+BIN} words`; },
-          label: ctx => {
-            if (ctx.datasetIndex !== 0) return `avg ${avgWC} words`;
-            const pct = ((ctx.parsed.y / withWords) * 100).toFixed(1);
-            return `${ctx.parsed.y} articles (${pct}%)`;
-          }
-        }}
-      },
-      scales: {
-        x: { ticks: { font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 10 }, grid: { display: false } },
-        y: { beginAtZero: true, ticks: { font: { size: 9 } } }
-      }
-    }
-  });
-  if (noteEl) noteEl.textContent = `avg ${avgWC.toLocaleString()} words · n=${withWords} · click a bar to filter`;
 }
 
 const trendColors = [
@@ -2368,9 +2372,7 @@ function renderAuthors() {
   // Author name click -> show timeline + update URL
   document.querySelectorAll('.author-table td.author-name').forEach(td => {
     td.addEventListener('click', () => {
-      const name = td.closest('tr').dataset.author;
-      _writeHash({ tab: 'authors', author: name });
-      showAuthorTimeline(name);
+      openAuthor(td.closest('tr').dataset.author);
     });
   });
 }
@@ -4826,7 +4828,7 @@ function openStateDetail(state) {
   }
 
   // Recurring themes: TF-IDF-style scoring of subject tags vs. corpus
-  const GENERIC_SUBJECTS = new Set([
+  const STATE_GENERIC = new Set([
     'Politics and Government','United States Politics and Government',
     'United States International Relations','News and News Media','Law and Legislation',
     'Presidential Election of 2020','Presidential Election of 2024',
@@ -4840,7 +4842,7 @@ function openStateDetail(state) {
   const tagCounts = {};
   stateArticles.forEach(a => {
     (a.subjects || []).forEach(tag => {
-      if (!GENERIC_SUBJECTS.has(tag)) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      if (!STATE_GENERIC.has(tag)) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     });
   });
   // Score: (tag freq in state / state articles) / (tag freq in corpus / corpus articles)
@@ -4890,6 +4892,63 @@ function openStateDetail(state) {
           renderArticleList('stateArticleList', filtered, stateRowFmt);
         } else {
           const noteEl = document.getElementById('stateTagNote');
+          if (noteEl) noteEl.innerHTML = '';
+          renderArticleList('stateArticleList', stateArticles, stateRowFmt);
+        }
+      });
+    });
+  }
+
+  // Geographic sub-locations: collect glocations that map to this state, show as filters
+  const glocCounts = {};
+  stateArticles.forEach(a => {
+    (a.glocations || []).forEach(loc => {
+      // Exclude entries that are just the state name itself or too generic
+      if (loc !== state && !loc.match(/^United States$/i) && loc.length > 2)
+        glocCounts[loc] = (glocCounts[loc] || 0) + 1;
+    });
+  });
+  const topGlocs = Object.entries(glocCounts)
+    .filter(([, cnt]) => cnt >= Math.max(3, stateArticles.length * 0.003))
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12);
+
+  if (topGlocs.length) {
+    const glocsContainer = document.createElement('div');
+    glocsContainer.style.cssText = 'margin-top:12px';
+    const glocsHtml = topGlocs.map(([loc, cnt]) =>
+      `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:#f0f0ea;border-radius:10px;font-size:12px;color:#555;cursor:pointer" class="state-gloc-filter" data-loc="${escapeHtml(loc)}" title="${cnt} articles">${escapeHtml(loc)}</span>`
+    ).join('');
+    glocsContainer.innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Geographic sub-locations</div>` +
+      `<div>${glocsHtml}</div>` +
+      `<div id="stateGlocNote" style="font-size:11px;color:#aaa;margin-top:4px"></div>`;
+
+    // Insert after recurring themes container (or after stateTopReporters if no themes)
+    const afterEl = document.getElementById('stateTagsRow')?.closest('div') ||
+                    document.getElementById('stateTopReporters');
+    if (afterEl) afterEl.after(glocsContainer);
+
+    glocsContainer.querySelectorAll('.state-gloc-filter').forEach(el => {
+      el.addEventListener('click', () => {
+        const loc = el.dataset.loc;
+        const isActive = el.style.background === 'rgb(50, 104, 145)';
+        glocsContainer.querySelectorAll('.state-gloc-filter').forEach(t => {
+          t.style.background = '#f0f0ea'; t.style.color = '#555';
+        });
+        const noteEl = document.getElementById('stateGlocNote');
+        if (!isActive) {
+          el.style.background = '#326891'; el.style.color = '#fff';
+          const filtered = stateArticles.filter(a => (a.glocations || []).includes(loc));
+          if (noteEl) noteEl.innerHTML = `<strong>${escapeHtml(loc)}</strong> · ${filtered.length} articles · <a href="#" id="stateGlocClear" style="color:#326891">show all</a>`;
+          document.getElementById('stateGlocClear')?.addEventListener('click', e => {
+            e.preventDefault();
+            el.style.background = '#f0f0ea'; el.style.color = '#555';
+            if (noteEl) noteEl.innerHTML = '';
+            renderArticleList('stateArticleList', stateArticles, stateRowFmt);
+          });
+          renderArticleList('stateArticleList', filtered, stateRowFmt);
+        } else {
           if (noteEl) noteEl.innerHTML = '';
           renderArticleList('stateArticleList', stateArticles, stateRowFmt);
         }
