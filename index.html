@@ -1030,6 +1030,7 @@ function showView(view) {
 }
 
 function openAuthor(name) {
+  if (!name || typeof name !== 'string') return;  // guard against undefined/null author names
   showView('authors');
   _writeHash({ tab: 'authors', author: name });
   const searchBox = document.getElementById('authorSearch');
@@ -4833,11 +4834,12 @@ function openStateDetail(state) {
   const stateArticles = articles
     .filter(a => a.canonical_states && a.canonical_states.includes(state));
 
-  // Top reporters
+  // Top reporters — guard against null/undefined/empty author names in article data
   const stateReporterCounts = {};
   stateArticles.forEach(a => {
     (a.authors || []).forEach(name => {
-      if (!INSTITUTIONAL_BYLINES.has(name)) stateReporterCounts[name] = (stateReporterCounts[name] || 0) + 1;
+      if (name && typeof name === 'string' && !INSTITUTIONAL_BYLINES.has(name))
+        stateReporterCounts[name] = (stateReporterCounts[name] || 0) + 1;
     });
   });
   const topStateReporters = Object.entries(stateReporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -4863,6 +4865,9 @@ function openStateDetail(state) {
     'Presidential Election (US)','Elections','Decisions and Verdicts',
     'Deaths (Obituaries)','Finances','Economic Conditions and Trends',
     'States (US)',
+    'Elections, Secretary of State','Elections, Attorneys General',
+    'Elections, Courts and the Judiciary','Elections, Mayors',
+    'Voting Rights, Registration and Requirements','Voting Machines',
   ]);
   function isStateJunkTag(tag) {
     // Same logic as extractBeats(), plus Content Type: patterns
