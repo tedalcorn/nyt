@@ -919,44 +919,44 @@ async function loadData() {
         }
         articlesReady = true;
         console.log('[NYT] articlesReady: articles.length =', articles.length);
-        // Section index is built lazily on first open of each section (avoids blocking main thread)
         window._articlesBySection = {};
-        populateHeadlineSection();
         _applyRestore('articles');
-        // Refresh any open detail panels that were waiting for article data
-        if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
-          openStateDetail(lastOpenedState);
-        }
-        if (lastOpenedCountry && document.getElementById('countryDetailPanel')?.style.display !== 'none') {
-          openCountryDetail(lastOpenedCountry);
-        }
-        if (document.getElementById('featureDetailPanel')?.style.display !== 'none') {
-          fillFeatureArticleList();
-        }
-        const sectionDetailPanel = document.getElementById('sectionDetailPanel');
-        if (sectionDetailPanel?.style.display !== 'none') {
-          const openSec = sectionDetailPanel.querySelector('h3')?.textContent?.trim();
-          console.log('[NYT] section panel open, section =', openSec);
-          if (openSec) fillSectionArticleList(openSec);
-        }
-        // Refresh subject detail article list if panel is open
-        const subjectDetailPanel = document.getElementById('subjectDetailPanel');
-        if (subjectDetailPanel?.style.display !== 'none') {
-          const openSubj = subjectDetailPanel.querySelector('h3')?.textContent?.trim();
-          if (openSubj && window._lastOpenedSubjectRaw) {
-            openSubjectDetail(window._lastOpenedSubjectRaw, window._lastOpenedSubjectType || 'person');
+        // Refresh open detail panels first — user is waiting on these
+        // setTimeout yields to the browser so it can repaint before heavy work
+        setTimeout(() => {
+          if (lastOpenedState && document.getElementById('stateDetailPanel')?.style.display !== 'none') {
+            openStateDetail(lastOpenedState);
           }
-        }
-        // Refresh author timeline if open and waiting for articles
-        if (document.getElementById('view-authors').classList.contains('active') && _pendingRestore?.author) {
-          openAuthor(_pendingRestore.author);
-          _pendingRestore = null;
-        }
-        // Re-trigger fillArticleDetails for any reporter panel already open when articles loaded
-        if (window._pendingFillArticleDetails) {
-          window._pendingFillArticleDetails().catch(e => console.error('Article details retry failed:', e));
-          window._pendingFillArticleDetails = null;
-        }
+          if (lastOpenedCountry && document.getElementById('countryDetailPanel')?.style.display !== 'none') {
+            openCountryDetail(lastOpenedCountry);
+          }
+          if (document.getElementById('featureDetailPanel')?.style.display !== 'none') {
+            fillFeatureArticleList();
+          }
+          const sectionDetailPanel = document.getElementById('sectionDetailPanel');
+          if (sectionDetailPanel?.style.display !== 'none') {
+            const openSec = sectionDetailPanel.querySelector('h3')?.textContent?.trim();
+            console.log('[NYT] section panel open, section =', openSec);
+            if (openSec) fillSectionArticleList(openSec);
+          }
+          const subjectDetailPanel = document.getElementById('subjectDetailPanel');
+          if (subjectDetailPanel?.style.display !== 'none') {
+            const openSubj = subjectDetailPanel.querySelector('h3')?.textContent?.trim();
+            if (openSubj && window._lastOpenedSubjectRaw) {
+              openSubjectDetail(window._lastOpenedSubjectRaw, window._lastOpenedSubjectType || 'person');
+            }
+          }
+          if (document.getElementById('view-authors').classList.contains('active') && _pendingRestore?.author) {
+            openAuthor(_pendingRestore.author);
+            _pendingRestore = null;
+          }
+          if (window._pendingFillArticleDetails) {
+            window._pendingFillArticleDetails().catch(e => console.error('Article details retry failed:', e));
+            window._pendingFillArticleDetails = null;
+          }
+        }, 0);
+        // Populate headline section dropdown after panels refresh (O(1M) scan — deferred)
+        setTimeout(populateHeadlineSection, 200);
       })().catch(e => console.error('Failed to load articles:', e));
     }
 
@@ -4867,6 +4867,8 @@ function openStateDetail(state) {
     'States (US)',
     'Elections, Secretary of State','Elections, Attorneys General',
     'Elections, Courts and the Judiciary','Elections, Mayors',
+    'Elections, Governors','Elections, State Legislatures',
+    'Elections, Lieutenant Governors','Supreme Courts (State)',
     'Voting Rights, Registration and Requirements','Voting Machines',
   ]);
   function isStateJunkTag(tag) {
