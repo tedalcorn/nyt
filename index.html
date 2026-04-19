@@ -4856,11 +4856,13 @@ function openStateDetail(state) {
     'Deaths (Obituaries)','Finances','Economic Conditions and Trends',
     'States (US)',
   ]);
-  function isJunkTag(tag) {
-    const t = tag.toLowerCase();
-    return t.startsWith('internal-') || t.startsWith('content type:') ||
-           t.startsWith('audio:') || t.startsWith('vis-') ||
-           t.startsWith('your-feed') || t.startsWith('durable-uri');
+  function isStateJunkTag(tag) {
+    // Same logic as extractBeats(), plus Content Type: patterns
+    return GENERIC_SUBJECTS.has(tag) || STATE_GENERIC.has(tag) ||
+           tag.startsWith('internal-') || tag.startsWith('audio-') ||
+           tag.startsWith('vis-') || tag.startsWith('your-feed') ||
+           tag.startsWith('Content Type:') || tag.startsWith('Content type:') ||
+           tag.startsWith('durable-uri');
   }
   function toTitleCaseTag(tag) {
     // Only convert tags that are all-uppercase words; leave normal mixed-case alone
@@ -4871,7 +4873,7 @@ function openStateDetail(state) {
   const tagCounts = {};
   stateArticles.forEach(a => {
     (a.subjects || []).forEach(tag => {
-      if (!STATE_GENERIC.has(tag) && !isJunkTag(tag)) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      if (!isStateJunkTag(tag)) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     });
   });
   // Score: (tag freq in state / state articles) / (tag freq in corpus / corpus articles)
