@@ -1570,7 +1570,7 @@ _GENERIC_SUBJECTS = {
     'your-feed-internet', 'your-feed-animals', 'your-feed-weather',
     'States (US)', 'Research',
 }
-_GENERIC_PREFIXES = ('internal-', 'audio-', 'vis-', 'your-feed')
+_GENERIC_PREFIXES = ('internal-', 'audio-', 'vis-', 'your-feed', 'live-', 'durable-uri')
 _INSTITUTIONAL_BYLINES = {
     'The New York Times', 'The Associated Press', 'The Editorial Board',
     'The Learning Network', 'New York Times Games', 'International Herald Tribune',
@@ -2638,15 +2638,26 @@ def build_dashboard_data(articles, authors):
     weddings_authors = Counter()
     vows_col_authors = Counter()
 
-    for art in articles:
-        url = art.get("web_url", "") or ""
+    def _is_wedding_announcement(art):
+        """Wedding announcement / Vows column filter.
+
+        Pre-2021: NYT tagged these with subsection="Weddings".
+        2021+: subsection went empty; announcements moved to /style/*-wedding.html
+        and carry the "Weddings and Engagements" keyword. Pairing URL+keyword
+        avoids sweeping in generic trend/analysis pieces that share the keyword.
+        """
+        url_lc = (art.get("web_url", "") or "").lower()
         ss = (art.get("subsection", "") or "").lower()
-        sb = [s.lower() for s in (art.get("subjects", []) or [])]
-        section = (art.get("section", "") or "").lower()
-        is_vows_col = "vows (times column)" in sb
-        # Strict wedding filter: only subsection "Weddings" or explicit Vows column.
-        # URL path and subject-based checks catch too many trend/celebrity/culture articles.
-        is_weddings = ss == "weddings" or is_vows_col
+        sb_lc = [s.lower() for s in (art.get("subjects", []) or [])]
+        is_vows_col = "vows (times column)" in sb_lc
+        is_new_announcement = (
+            url_lc.endswith("-wedding.html")
+            and "weddings and engagements" in sb_lc
+        )
+        return ss == "weddings" or is_vows_col or is_new_announcement, is_vows_col
+
+    for art in articles:
+        is_weddings, is_vows_col = _is_wedding_announcement(art)
         y = str(art["year"])
         if is_weddings:
             weddings_by_year[y] += 1
@@ -2665,11 +2676,7 @@ def build_dashboard_data(articles, authors):
     recent_wedding_articles = []
     for art in articles:
         url = art.get("web_url", "") or ""
-        ss = (art.get("subsection", "") or "").lower()
-        sb = [s.lower() for s in (art.get("subjects", []) or [])]
-        section = (art.get("section", "") or "").lower()
-        is_vows_col = "vows (times column)" in sb
-        is_wed = ss == "weddings" or is_vows_col
+        is_wed, _ = _is_wedding_announcement(art)
         if is_wed:
             u = url
             if u.startswith(URL_PREFIX_FULL):

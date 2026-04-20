@@ -1509,9 +1509,15 @@ function renderFeatures() {
 }
 
 function isWeddingArticle(a) {
+  // Pre-2021: subsection "Weddings". 2021+: URL /style/*-wedding.html + keyword
+  // "Weddings and Engagements". Must pair URL + keyword to skip generic trend pieces.
   const ss = (a.subsection || '').toLowerCase();
   const sb = (a.subjects || []).map(s => s.toLowerCase());
-  return ss === 'weddings' || sb.includes('vows (times column)');
+  const url = (a.web_url || '').toLowerCase();
+  if (ss === 'weddings') return true;
+  if (sb.includes('vows (times column)')) return true;
+  if (url.endsWith('-wedding.html') && sb.includes('weddings and engagements')) return true;
+  return false;
 }
 
 function isLORArticle(a) {
@@ -2422,7 +2428,7 @@ function extractBeats(authorArticles) {
   for (const a of authorArticles) {
     const seen = new Set();
     for (const s of a.subjects) {
-      if (GENERIC_SUBJECTS.has(s) || s.startsWith('internal-') || s.startsWith('audio-') || s.startsWith('vis-') || s.startsWith('your-feed')) continue;
+      if (GENERIC_SUBJECTS.has(s) || s.startsWith('internal-') || s.startsWith('audio-') || s.startsWith('vis-') || s.startsWith('your-feed') || s.startsWith('live-') || s.startsWith('durable-uri')) continue;
       if (!seen.has(s)) { authorFreq[s] = (authorFreq[s] || 0) + 1; seen.add(s); }
     }
   }
@@ -4870,6 +4876,7 @@ function openStateDetail(state) {
     'Elections, Governors','Elections, State Legislatures',
     'Elections, Lieutenant Governors','Supreme Courts (State)',
     'Voting Rights, Registration and Requirements','Voting Machines',
+    'Primaries','Absentee Voting','Redistricting and Reapportionment',
   ]);
   function isStateJunkTag(tag) {
     // Same logic as extractBeats(), plus Content Type: patterns
@@ -4877,7 +4884,8 @@ function openStateDetail(state) {
            tag.startsWith('internal-') || tag.startsWith('audio-') ||
            tag.startsWith('vis-') || tag.startsWith('your-feed') ||
            tag.startsWith('Content Type:') || tag.startsWith('Content type:') ||
-           tag.startsWith('durable-uri');
+           tag.startsWith('durable-uri') || tag.startsWith('live-') ||
+           tag.startsWith('Midterm Elections (');
   }
   function toTitleCaseTag(tag) {
     // Only convert tags that are all-uppercase words; leave normal mixed-case alone
@@ -5674,7 +5682,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/17/26 12:31pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/20/26 8:29am</span>
 </div>
 </body>
 </html>
