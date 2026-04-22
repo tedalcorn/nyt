@@ -1467,13 +1467,11 @@ const FEATURE_META = {
     label: 'Weddings & Vows',
     desc: 'Weekly wedding announcements (Styles section) and the Vows narrative column — one couple profiled in depth.',
     period: '2000–present',
-    csvFile: 'weddings_and_vows.csv',
   },
   letter_of_recommendation: {
     label: 'Letter of Recommendation',
     desc: 'A weekly Magazine column in which a writer makes a personal case for something overlooked — an obscure album, a habit, an underrated place. Running since 2015.',
     period: '2015–present',
-    csvFile: 'letter_of_recommendation.csv',
   },
 };
 
@@ -1520,6 +1518,11 @@ function isWeddingArticle(a) {
   return false;
 }
 
+function isVowsColumnArticle(a) {
+  const sb = (a.subjects || []).map(s => s.toLowerCase());
+  return sb.includes('vows (times column)');
+}
+
 function isLORArticle(a) {
   const h = (a.headline || '').toLowerCase();
   const k = (a.kicker || '').toLowerCase();
@@ -1528,6 +1531,7 @@ function isLORArticle(a) {
 
 let currentFeatureKey = 'weddings';
 let featureArticleOrder = 'newest';
+let featureVowsOnly = false;
 
 function openFeatureDetail(featureKey) {
   const feat = dashboard.features;
@@ -1535,8 +1539,9 @@ function openFeatureDetail(featureKey) {
   if (!f) return;
   currentFeatureKey = featureKey;
   featureArticleOrder = 'newest';
+  featureVowsOnly = false;
 
-  const meta = FEATURE_META[featureKey] || { label: featureKey, desc: '', period: '', csvFile: featureKey + '.csv' };
+  const meta = FEATURE_META[featureKey] || { label: featureKey, desc: '', period: '' };
   const panel = document.getElementById('featureDetailPanel');
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1570,18 +1575,30 @@ function openFeatureDetail(featureKey) {
   });
 
   destroyChart('chartFeatureDetail');
+  const isWeddings = featureKey === 'weddings';
+  const vowsByYear = f.vows_col_by_year || {};
+  const datasets = isWeddings
+    ? [
+        { label: 'Announcements', data: allYears.map(y => Math.max(0, (byYear[y] || 0) - (vowsByYear[y] || 0))), backgroundColor: 'rgba(50,104,145,0.75)', stack: 'a' },
+        { label: 'Vows column',   data: allYears.map(y => vowsByYear[y] || 0),                                    backgroundColor: 'rgba(222,120,165,0.85)', stack: 'a' },
+      ]
+    : [{ label: 'Items', data: allYears.map(y => byYear[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }];
   chartInstances['chartFeatureDetail'] = new Chart(document.getElementById('chartFeatureDetail'), {
     type: 'bar',
-    data: {
-      labels: allYears,
-      datasets: [{ label: 'Items', data: allYears.map(y => byYear[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
-    },
+    data: { labels: allYears, datasets },
     options: {
       responsive: true,
-      plugins: { legend: { display: false }, datalabels: { display: false } },
+      plugins: {
+        legend: { display: isWeddings, position: 'bottom', labels: { font: { size: 10 }, boxWidth: 10 } },
+        datalabels: { display: false },
+        tooltip: isWeddings ? { callbacks: { footer: items => {
+          const total = items.reduce((s,i)=>s+(i.parsed.y||0),0);
+          return 'Total: ' + total.toLocaleString();
+        } } } : {}
+      },
       scales: {
-        x: { ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
-        y: { beginAtZero: true, ticks: { font: { size: 10 } } }
+        x: { stacked: isWeddings, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
+        y: { stacked: isWeddings, beginAtZero: true, ticks: { font: { size: 10 } } }
       }
     }
   });
@@ -1590,15 +1607,6 @@ function openFeatureDetail(featureKey) {
 }
 
 let _featureArticlesCache = [];
-
-function downloadFeatureCSV() {
-  const meta = FEATURE_META[currentFeatureKey] || {};
-  const csvData = _featureArticlesCache.map(a => ({
-    pub_date: a.pub_date, headline: a.headline, authors: (a.authors || []).join(', '),
-    word_count: a.word_count, web_url: a.web_url || ''
-  }));
-  downloadArticlesCSV(csvData, meta.csvFile || 'articles.csv');
-}
 
 function fillFeatureArticleList() {
   const wrap = document.getElementById('featureArticleListWrap');
@@ -1611,10 +1619,12 @@ function fillFeatureArticleList() {
     return;
   }
 
-  const filterFn = currentFeatureKey === 'weddings' ? isWeddingArticle : isLORArticle;
+  const isWeddings = currentFeatureKey === 'weddings';
+  const filterFn = isWeddings ? isWeddingArticle : isLORArticle;
   const oldest = featureArticleOrder === 'oldest';
-  _featureArticlesCache = articles
-    .filter(filterFn)
+  let filtered = articles.filter(filterFn);
+  if (isWeddings && featureVowsOnly) filtered = filtered.filter(isVowsColumnArticle);
+  _featureArticlesCache = filtered
     .sort((a, b) => oldest ? (a.pub_date || '').localeCompare(b.pub_date || '') : (b.pub_date || '').localeCompare(a.pub_date || ''));
 
   if (!_featureArticlesCache.length) {
@@ -1625,25 +1635,34 @@ function fillFeatureArticleList() {
   const shown = _featureArticlesCache.slice(0, 200);
   const total = _featureArticlesCache.length;
 
-  const csvBtn = `<button onclick="downloadFeatureCSV()" style="font-size:11px;padding:2px 8px;background:#f0f4f8;border:1px solid #ccc;border-radius:3px;cursor:pointer">Download CSV</button>`;
   const btn = s => `background:${featureArticleOrder===s?'#326891':'#f0f4f8'};color:${featureArticleOrder===s?'#fff':'inherit'}`;
-  const sortBtns = `<span style="margin-left:8px;font-size:11px">
+  const vowsBtn = `background:${featureVowsOnly?'#d478a5':'#f0f4f8'};color:${featureVowsOnly?'#fff':'inherit'}`;
+  const sortBtns = `<span style="font-size:11px">
     <button onclick="featureArticleOrder='newest';fillFeatureArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;${btn('newest')}">Newest</button>
     <button onclick="featureArticleOrder='oldest';fillFeatureArticleList()" style="font-size:11px;padding:2px 6px;border:1px solid #ccc;border-radius:3px;cursor:pointer;${btn('oldest')}">Oldest</button>
+    ${isWeddings ? `<button onclick="featureVowsOnly=!featureVowsOnly;fillFeatureArticleList()" style="font-size:11px;padding:2px 6px;margin-left:8px;border:1px solid #ccc;border-radius:3px;cursor:pointer;${vowsBtn}">Vows column only</button>` : ''}
   </span>`;
 
   const rows = shown.map(a => {
     const byline = (a.authors || []).join(', ');
     const words = a.word_count ? ` · ${a.word_count.toLocaleString()} words` : '';
-    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">` +
+    const accent = isWeddings
+      ? (isVowsColumnArticle(a) ? 'border-left:3px solid rgba(222,120,165,0.85);padding-left:6px'
+                                : 'border-left:3px solid rgba(50,104,145,0.75);padding-left:6px')
+      : '';
+    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;${accent}">` +
       `<span style="color:#aaa;font-size:11px;margin-right:6px">${a.pub_date}</span>` +
       `<a href="${escapeHtml(a.web_url || '')}" target="_blank" style="font-size:12px;color:#326891;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>` +
       (byline ? `<span style="color:#aaa;font-size:11px"> · ${escapeHtml(byline)}${words}</span>` : '') +
       `</div>`;
   }).join('');
 
-  const countNote = total > 200 ? `Showing 200 of ${total.toLocaleString()} — download CSV for full list` : `${total.toLocaleString()} articles`;
-  wrap.innerHTML = `<div style="margin-bottom:6px">${csvBtn}${sortBtns}</div>` +
+  const legend = isWeddings ? `<span style="margin-left:10px;color:#888;font-size:11px">
+      <span style="display:inline-block;width:10px;height:10px;background:rgba(50,104,145,0.75);vertical-align:middle;margin-right:3px"></span>Announcement
+      <span style="display:inline-block;width:10px;height:10px;background:rgba(222,120,165,0.85);vertical-align:middle;margin:0 3px 0 8px"></span>Vows column
+    </span>` : '';
+  const countNote = total > 200 ? `Showing 200 of ${total.toLocaleString()}` : `${total.toLocaleString()} articles`;
+  wrap.innerHTML = `<div style="margin-bottom:6px">${sortBtns}${legend}</div>` +
     `<div style="font-size:11px;color:#888;margin-bottom:4px">${countNote}</div>` + rows;
 }
 
@@ -5682,7 +5701,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/20/26 8:29am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/22/26 8:52am</span>
 </div>
 </body>
 </html>
