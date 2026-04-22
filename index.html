@@ -1519,8 +1519,18 @@ function isWeddingArticle(a) {
 }
 
 function isVowsColumnArticle(a) {
+  // Vows column ID across eras:
+  //   2011-17 had the "Vows (Times Column)" subject tag (authoritative when present)
+  //   2006-present: kicker is "Vows"
+  //   2000-05: kicker was "WEDDINGS: VOWS" / "WEDDINGS/CELEBRATIONS: VOWS"
+  // Exclude Mini-Vows — it's a separate, lighter feature.
+  const k = (a.kicker || '').trim().toLowerCase();
+  if (k.includes('mini')) return false;
   const sb = (a.subjects || []).map(s => s.toLowerCase());
-  return sb.includes('vows (times column)');
+  if (sb.includes('vows (times column)')) return true;
+  if (k === 'vows') return true;
+  if (k.endsWith(': vows')) return true;
+  return false;
 }
 
 function isLORArticle(a) {
@@ -1579,8 +1589,8 @@ function openFeatureDetail(featureKey) {
   const vowsByYear = f.vows_col_by_year || {};
   const datasets = isWeddings
     ? [
-        { label: 'Announcements', data: allYears.map(y => Math.max(0, (byYear[y] || 0) - (vowsByYear[y] || 0))), backgroundColor: 'rgba(50,104,145,0.75)', stack: 'a' },
         { label: 'Vows column',   data: allYears.map(y => vowsByYear[y] || 0),                                    backgroundColor: 'rgba(222,120,165,0.85)', stack: 'a' },
+        { label: 'Announcements', data: allYears.map(y => Math.max(0, (byYear[y] || 0) - (vowsByYear[y] || 0))), backgroundColor: 'rgba(50,104,145,0.75)', stack: 'a' },
       ]
     : [{ label: 'Items', data: allYears.map(y => byYear[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }];
   chartInstances['chartFeatureDetail'] = new Chart(document.getElementById('chartFeatureDetail'), {
@@ -1646,23 +1656,15 @@ function fillFeatureArticleList() {
   const rows = shown.map(a => {
     const byline = (a.authors || []).join(', ');
     const words = a.word_count ? ` · ${a.word_count.toLocaleString()} words` : '';
-    const accent = isWeddings
-      ? (isVowsColumnArticle(a) ? 'border-left:3px solid rgba(222,120,165,0.85);padding-left:6px'
-                                : 'border-left:3px solid rgba(50,104,145,0.75);padding-left:6px')
-      : '';
-    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0;${accent}">` +
+    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">` +
       `<span style="color:#aaa;font-size:11px;margin-right:6px">${a.pub_date}</span>` +
       `<a href="${escapeHtml(a.web_url || '')}" target="_blank" style="font-size:12px;color:#326891;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>` +
       (byline ? `<span style="color:#aaa;font-size:11px"> · ${escapeHtml(byline)}${words}</span>` : '') +
       `</div>`;
   }).join('');
 
-  const legend = isWeddings ? `<span style="margin-left:10px;color:#888;font-size:11px">
-      <span style="display:inline-block;width:10px;height:10px;background:rgba(50,104,145,0.75);vertical-align:middle;margin-right:3px"></span>Announcement
-      <span style="display:inline-block;width:10px;height:10px;background:rgba(222,120,165,0.85);vertical-align:middle;margin:0 3px 0 8px"></span>Vows column
-    </span>` : '';
   const countNote = total > 200 ? `Showing 200 of ${total.toLocaleString()}` : `${total.toLocaleString()} articles`;
-  wrap.innerHTML = `<div style="margin-bottom:6px">${sortBtns}${legend}</div>` +
+  wrap.innerHTML = `<div style="margin-bottom:6px">${sortBtns}</div>` +
     `<div style="font-size:11px;color:#888;margin-bottom:4px">${countNote}</div>` + rows;
 }
 
@@ -5701,7 +5703,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/22/26 8:52am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/22/26 10:08am</span>
 </div>
 </body>
 </html>

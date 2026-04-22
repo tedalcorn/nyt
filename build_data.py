@@ -2645,11 +2645,23 @@ def build_dashboard_data(articles, authors):
         2021+: subsection went empty; announcements moved to /style/*-wedding.html
         and carry the "Weddings and Engagements" keyword. Pairing URL+keyword
         avoids sweeping in generic trend/analysis pieces that share the keyword.
+
+        Vows column ID (historically): the "Vows (Times Column)" subject tag
+        existed only 2011-2017. Before and after, the only reliable signal is
+        the kicker. The kicker has read "Vows" consistently 2006-present, and
+        "WEDDINGS: VOWS" / "WEDDINGS/CELEBRATIONS: VOWS" 2000-2005. Exclude
+        "Mini-Vows" (a separate, lighter feature that emerged in 2017).
         """
         url_lc = (art.get("web_url", "") or "").lower()
         ss = (art.get("subsection", "") or "").lower()
         sb_lc = [s.lower() for s in (art.get("subjects", []) or [])]
-        is_vows_col = "vows (times column)" in sb_lc
+        kicker_lc = (art.get("kicker", "") or "").strip().lower()
+        is_mini = "mini" in kicker_lc  # 'mini-vows', 'mini vows', variants
+        is_vows_col = (not is_mini) and (
+            "vows (times column)" in sb_lc
+            or kicker_lc == "vows"
+            or kicker_lc.endswith(": vows")  # 2000-05: 'weddings: vows', 'weddings/celebrations: vows'
+        )
         is_new_announcement = (
             url_lc.endswith("-wedding.html")
             and "weddings and engagements" in sb_lc
