@@ -85,11 +85,6 @@
   .slide-more { margin:10px 0 0; font-size:13px; }
   .slide-more a { color:#326891; cursor:pointer; text-decoration:none; }
   .slide-more a:hover { text-decoration:underline; }
-  .slide-placeholder {
-    flex:1; display:flex; align-items:center; justify-content:center;
-    border:1px dashed #ccc; color:#999; font-size:13px;
-    background:#fafafa; border-radius:4px; min-height:260px;
-  }
   .cprev, .cnext {
     position:absolute; top:50%; transform:translateY(-50%);
     width:32px; height:32px; border-radius:50%; border:1px solid #ddd;
@@ -1215,7 +1210,6 @@ function closeAuthorPanel(containerId, chartId) {
   if (c) c.innerHTML = '';
   destroyChart(chartId);
   destroyChart(chartId + '_hist');
-  pendingTimelineRefresh = null;
   // If we're on the reporters tab, clear the name filter so the full list returns.
   if (containerId === 'authorTimeline') {
     const sb = document.getElementById('authorSearch');
@@ -1366,7 +1360,6 @@ function initHomeCarousel() {
       grid.dataset.loaded = '1';
     }).catch(err => console.warn('bio photo manifest load failed', err));
   }
-
 }
 
 // --- DECADE CHART: 2016–2025 annual articles + words + avg words per article ---
@@ -5940,7 +5933,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/23/26 9:50pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/23/26 9:56pm</span>
 </div>
 </body>
 </html>
