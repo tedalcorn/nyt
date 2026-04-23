@@ -440,6 +440,8 @@ def process_articles(raw_articles):
         "Ken Belson Photographs":   "Ken Belson",
         "Ilana Kaplan Photographs": "Ilana Kaplan",
         "Sarah Bahr Photographs":   "Sarah Bahr",
+        # Podcast show names indexed as bylines — merge to the host's personal byline
+        "The Ezra Klein Show":      "Ezra Klein",
         # "X Nyt" suffix — Metro Briefing and wire-style bylines (2001-2006)
         'Abby Goodnough Nyt': 'Abby Goodnough',
         'Abby Gruen Nyt': 'Abby Gruen',

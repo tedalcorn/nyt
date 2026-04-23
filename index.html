@@ -43,6 +43,112 @@
   .view { display: none; }
   .view.active { display: block; }
 
+  /* Home header (disclaimer + stats) */
+  .home-header { margin: 4px 0 18px; }
+  .home-disclaimer {
+    margin: 0 0 14px; font-size: 14px; line-height: 1.55; color: #333;
+  }
+  .home-disclaimer a { color: #326891; }
+  .home-header .stats-row { margin-bottom: 0; }
+  .home-footer { font-size: 13px; color: #666; margin: 18px 0 48px; text-align: left; }
+  .home-footer a { color: #326891; cursor: pointer; }
+
+  /* Carousel (Home tab) */
+  .carousel { position: relative; margin: 0; }
+  .carousel-tag {
+    position: absolute; left: 10px; top: -9px; z-index: 3;
+    background:#a9bac9; color:#fff;
+    font-family:'nyt-franklin', Arial, sans-serif;
+    font-size:9px; font-weight:600; letter-spacing:1.3px; text-transform:uppercase;
+    padding:3px 9px;
+    border-radius:3px;
+    pointer-events:none;
+  }
+  .carousel-track {
+    display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+    scroll-behavior: smooth; scrollbar-width: none;
+  }
+  .carousel-track::-webkit-scrollbar { display: none; }
+  .slide {
+    flex: 0 0 100%; scroll-snap-align: start; box-sizing: border-box; padding: 0 2px;
+  }
+  .slide-inner {
+    background:#fff; border:1px solid #e6e6e6; border-radius:6px;
+    padding:16px 20px 18px; min-height:500px;
+    display:flex; flex-direction:column;
+  }
+  @media (max-width: 760px) {
+    .slide-inner { min-height:440px; }
+  }
+  .slide-title { margin:0 0 4px; font-size:16px; font-weight:600; color:#222; }
+  .slide-caption { margin:0 0 12px; font-size:13px; color:#555; line-height:1.5; }
+  .slide-more { margin:10px 0 0; font-size:13px; }
+  .slide-more a { color:#326891; cursor:pointer; text-decoration:none; }
+  .slide-more a:hover { text-decoration:underline; }
+  .slide-placeholder {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    border:1px dashed #ccc; color:#999; font-size:13px;
+    background:#fafafa; border-radius:4px; min-height:260px;
+  }
+  .cprev, .cnext {
+    position:absolute; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border-radius:50%; border:1px solid #ddd;
+    background:rgba(255,255,255,0.92); color:#555; font-size:20px; line-height:1;
+    cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,0.08); z-index:2;
+  }
+  .cprev:hover, .cnext:hover { background:#fff; color:#222; }
+  .cprev { left:-14px; } .cnext { right:-14px; }
+  .carousel-dots {
+    display:flex; justify-content:center; gap:6px; margin-top:10px;
+  }
+  .carousel-dots button {
+    width:7px; height:7px; border-radius:50%; border:none; padding:0;
+    background:#ccc; cursor:pointer;
+  }
+  .carousel-dots button.active { background:#326891; }
+
+  /* Top-100 photo grid (inside a slide) — 20 across x 5 down on desktop,
+     5 across x 20 down below 760px where 20 cols would be unreadably small. */
+  .photo-grid {
+    display:grid; grid-template-columns:repeat(20, 1fr); gap:4px;
+    width:100%; margin:0 auto;
+  }
+  .photo-grid .cell {
+    aspect-ratio:1/1; border-radius:50%; overflow:hidden; background:#d4d4d4;
+    cursor:pointer;
+  }
+  .photo-grid .cell img { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-grid .cell.missing { background:#cccccc; }
+  @media (max-width: 1060px) and (min-width: 761px) {
+    .photo-grid { grid-template-columns:repeat(10, 1fr); gap:5px; max-width:560px; }
+  }
+  @media (max-width: 760px) {
+    .photo-grid { grid-template-columns:repeat(5, 1fr); gap:6px; }
+  }
+
+  /* Chart inside a slide: explicit height plays nicely with Chart.js responsive */
+  .slide-chart-wrap { position:relative; height:360px; }
+  @media (max-width: 640px) {
+    .slide-chart-wrap { height:280px; }
+  }
+  /* Static image inside a slide — scales to fit remaining space, preserves aspect ratio */
+  .slide-img-wrap {
+    flex:1; display:flex; align-items:center; justify-content:center;
+    min-height:0; overflow:hidden;
+  }
+  .slide-img-wrap img {
+    width:100%; height:100%; object-fit:contain; display:block;
+  }
+  @media (max-width: 760px) {
+    .slide-img-wrap { min-height:220px; }
+  }
+
+  /* About tab paragraph spacing */
+  #view-about p { margin: 0 0 12px; }
+  #view-about h4 { margin-top: 22px; margin-bottom: 8px; }
+  #view-about ul, #view-about ol { margin: 0 0 12px; padding-left: 22px; }
+  #view-about li { margin-bottom: 6px; }
+
   .stats-row {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 12px; margin-bottom: 24px;
@@ -235,12 +341,12 @@
 <body>
 
 <header>
-  <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px;cursor:pointer" onclick="showView('about');window.scrollTo({top:0,behavior:'smooth'})">
+  <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px;cursor:pointer" onclick="showView('home');window.scrollTo({top:0,behavior:'smooth'})">
   <h1 id="siteSubtitle">Explore Coverage by The New York Times</h1>
 </header>
 
 <nav id="nav">
-  <button data-view="about" class="active">About</button>
+  <button data-view="home" class="active">Home</button>
   <button data-view="beats">Beats</button>
   <button data-view="tracker">Headlines</button>
   <button data-view="subjects">Subjects</button>
@@ -248,77 +354,139 @@
   <button data-view="authors">Reporters</button>
   <button data-view="states">U.S. States</button>
   <button data-view="world">World</button>
+  <button data-view="about">About</button>
 </nav>
 
 <div class="container">
   <div class="loading" id="loading">Loading data...</div>
 
+  <!-- HOME -->
+  <div class="view" id="view-home">
+    <div class="home-header">
+      <p class="home-disclaimer">This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank">NYT Archive API</a> and updated monthly. Errors in the API or in the function of the website could yield spurious conclusions, so users should independently verify any findings.</p>
+      <div class="stats-row" id="statsRow"></div>
+    </div>
+
+    <!-- Featured carousel -->
+    <div class="carousel">
+      <div class="carousel-tag">Insights</div>
+      <div class="carousel-track" id="homeCarousel">
+        <!-- SLIDE 1: 100 writers photo grid -->
+        <section class="slide">
+          <div class="slide-inner">
+            <h4 class="slide-title">The most prolific reporters in 2025</h4>
+            <p class="slide-caption">Just a hundred reporters bylined nearly 12 million words, 26% of the total newspaper.</p>
+            <div class="photo-grid" id="topWritersGrid"></div>
+            <p class="slide-more"><a onclick="showView('authors')">Explore the full reporters table →</a></p>
+          </div>
+        </section>
+        <!-- SLIDE 2: Presidents -->
+        <section class="slide">
+          <div class="slide-inner">
+            <h4 class="slide-title">A new kind of presidency</h4>
+            <p class="slide-caption">President Trump dominated <em>The New York Times</em> headlines like no previous president, even when he was not in office.</p>
+            <div class="slide-img-wrap">
+              <img src="images/carousel/presidents.jpg" alt="Headline frequency for Trump, Biden, Obama, Bush">
+            </div>
+            <p class="slide-more"><a onclick="showView('tracker')">Explore the headline tracker →</a></p>
+          </div>
+        </section>
+        <!-- SLIDE 3: Iowa -->
+        <section class="slide">
+          <div class="slide-inner">
+            <h4 class="slide-title">Cyclical coverage</h4>
+            <p class="slide-caption"><em>The New York Times</em> coverage of Iowa follows a tried and true cycle, driven by presidential primary politics.</p>
+            <div class="slide-img-wrap">
+              <img src="images/carousel/iowa.jpg" alt="Iowa articles per million residents per year">
+            </div>
+            <p class="slide-more"><a onclick="showView('states')">Explore U.S. states coverage →</a></p>
+          </div>
+        </section>
+        <!-- SLIDE 4: Global gaps -->
+        <section class="slide">
+          <div class="slide-inner">
+            <h4 class="slide-title">A global paper, albeit with blind spots</h4>
+            <p class="slide-caption">Conflict reliably draws <em>The New York Times</em>' attention, but large swaths of the globe rarely get covered.</p>
+            <div class="slide-img-wrap">
+              <img src="images/carousel/world.jpg" alt="World coverage map, articles per million residents per year">
+            </div>
+            <p class="slide-more"><a onclick="showView('world')">Explore world coverage →</a></p>
+          </div>
+        </section>
+        <!-- SLIDE 5: Articles & words per month -->
+        <section class="slide">
+          <div class="slide-inner">
+            <h4 class="slide-title">Articles and words per month</h4>
+            <p class="slide-caption">Monthly volume since 2000, showing long-run shifts in how much <em>The Times</em> publishes.</p>
+            <div class="slide-chart-wrap"><canvas id="chartMonthly"></canvas></div>
+          </div>
+        </section>
+        <!-- SLIDE 6: Articles, words, and average length (last decade) -->
+        <section class="slide" data-dl-canvas-only="true">
+          <div class="slide-inner">
+            <h4 class="slide-title">Articles, words, and average length (2016–25)</h4>
+            <p class="slide-caption">A closer look at the last decade, including how the average article length has shifted.</p>
+            <div class="slide-chart-wrap"><canvas id="chartDecade"></canvas></div>
+          </div>
+        </section>
+      </div>
+      <button class="cprev" onclick="scrollCarousel(-1)" aria-label="Previous">‹</button>
+      <button class="cnext" onclick="scrollCarousel(1)" aria-label="Next">›</button>
+      <div class="carousel-dots" id="carouselDots"></div>
+    </div>
+
+    <p class="home-footer">For methodology, data sources, and known API quirks, see the <a onclick="showView('about')">About tab →</a></p>
+  </div>
+
   <!-- ABOUT -->
   <div class="view" id="view-about">
-    <div class="stats-row" id="statsRow"></div>
-    <div style="display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap">
-      <div class="chart-box" style="flex:1;min-width:280px;margin-bottom:0">
-        <h3>Articles and Words per Month</h3>
-        <div style="position:relative;height:280px"><canvas id="chartMonthly"></canvas></div>
-      </div>
-      <div class="chart-box" style="flex:1;min-width:280px;margin-bottom:0" data-dl-canvas-only="true">
-        <h3>Articles, words, and average length (2016–25)</h3>
-        <div style="position:relative;height:280px"><canvas id="chartDecade"></canvas></div>
-      </div>
-    </div>
     <div class="chart-box" style="font-size:14px;line-height:1.7">
-      <p style="font-style:italic;color:#888;margin-bottom:12px">This is a prototype. The analysis may be distorted by errors in the code, and users should independently verify any findings.</p>
-      <p>This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank" style="color:#326891">NYT Archive API</a>. Data is updated monthly.</p>
-      <p style="margin-top:16px"><strong>Latest update (<span id="buildDateDisplay">—</span>):</strong> Author detail panels now show bio page link, staff/freelance classification, and role (reporter, editor, photographer, etc.) where known. Bio scrape complete: 1,053 confirmed staff, 78 freelance, roles classified across 1,027 authors with custom bio pages.</p>
+      <h4 style="margin-top:0">Data source</h4>
+      <p><em>The New York Times</em> Archive API indexes all document types published on nytimes.com — news, opinion, reviews, obituaries, and interactives — and this dashboard includes all of them.</p>
+      <p>That includes both standard articles and blog content, like those hosted at subdomains blogs.nytimes.com, dealbook.nytimes.com, and krugman.blogs.nytimes.com. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached. The posts from blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains.</p>
+      <p>Content from The Athletic is not available in the Archive API and is therefore absent, which is why Sports coverage appears to decline sharply after the NYT's 2022 acquisition of that publication.</p>
 
-      <h4 style="margin-top:16px;margin-bottom:4px">Article Count</h4>
-      <p>The API includes both standard articles and blog content — the latter hosted at <em>*.blogs.nytimes.com</em> subdomains and <em>dealbook.nytimes.com</em>. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached, and probably did not reflect newsroom hiring or traditional story assignments. DealBook began appearing in the API in 2006, and the collection of blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. The spike in the second half of 2009 and its abrupt end in November reflect a labeling change in the API — posts that had been filed under their parent sections (Sports, Arts, etc.) were temporarily assigned a "Blogs" section tag, inflating counts during that window. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains. As that wind-down progressed, writers moved to the main site and their articles shifted to regular nytimes.com URLs — appearing as a rise in non-blog counts between roughly 2013 and 2015 even as total output held steady; total article volume, not just the blog share, begins its genuine decline after blogs fully phase out around 2017.</p>
-      <p>Article counts in this dashboard are also affected by a URL-duplication problem in the API. Beginning around May 2006, the NYT introduced a new slug-based URL format alongside its old date-coded URLs, causing the API to index many articles twice — once under each URL. A similar issue affects blog content in 2009: blog posts and DealBook articles cross-posted to the main site were often indexed under two or three separate URLs simultaneously. To correct for this, this dashboard removes articles that share the same headline, publication date, and a closely matching word count (within 10%), retaining the shortest URL in each duplicate group. Approximately 62,000 duplicate entries were removed through this process, concentrated in 2006 and the 2008–2009 period of peak blog activity. A separate discontinuity is visible in January 2007, when non-blog counts drop by roughly 2,000 articles per month; analysis of the affected content suggests the API stopped consistently indexing short-form items — particularly letters to the editor and Metro section briefs — rather than any reduction in publishing. The median article word count in the data jumps from about 550 to 660 words at this breakpoint, consistent with short items being dropped from the index.</p>
+      <h4>Authors</h4>
+      <p>Author name variants are merged when they likely refer to the same person. For example, "Jonah E. Bromwich" and "Jonah Bromwich" are treated as one byline when first and last names match and middle names are compatible. Cases where the same reporter has many articles under both a shorter and a fuller form are reconciled manually after cross-checking beats, sections, and year ranges.</p>
+      <p>Institutional bylines — The Associated Press, The Editorial Board, Reuters, and similar non-person attributions — are excluded from author rankings, because they don't represent individual reporting output.</p>
+      <p>Staff versus freelance status and role (reporter, editor, photographer, critic, etc.) are drawn from each reporter's NYT bio page where available. For reporters who lack a custom bio page, no classification is given.</p>
 
-      <h4 style="margin-top:16px;margin-bottom:4px">Word counts and interactives</h4>
-      <p>Word counts reflect what the NYT API returns, which is the text word count of an article. A significant limitation: interactive and multimedia pieces — including data visualizations, photo essays, and scrollytelling features — are indexed with a word count of zero, even when they contain substantial reporting. Interactives make up roughly 10% of New York Times Magazine items in the API and a growing share of digital-native journalism. As a result, word-count statistics for sections with heavy interactive output (Magazine, Upshot, Visual Investigations) and for individual authors who shifted toward multimedia formats understate actual editorial output. Average word-count figures in this dashboard should be interpreted with that caveat in mind; the median line on the Compare Sections chart is less sensitive to these zeros than the average.</p>
+      <h4>Words</h4>
+      <p>The API includes a word count of each article, but has some anomalies. Interactive and multimedia pieces including data visualizations and photo essays are typically indexed with a word count of zero, even when they contain substantial reporting. Interactives make up roughly 10% of New York Times Magazine items in the API and a growing share of digital-native journalism. Word-count statistics for sections with heavy interactive output (Magazine, Upshot, Visual Investigations) and for individual authors who shifted toward multimedia formats therefore understate actual editorial output.</p>
 
-      <h4 style="margin-top:16px;margin-bottom:4px">Sections</h4>
-      <p>Each author is assigned a primary section based on where they have the most published articles, used to filter and sort the Reporters table. Author profiles also list all sections in which the author has published, reflecting the full range of their work. Primary section is a rough proxy for desk assignment and may not be accurate for authors who write regularly across multiple sections.</p>
+      <h4>Beats</h4>
+      <p>The beat topics shown on reporter profiles are derived from the NYT's own subject tags. When a reporter covers a subject twice as frequently (as a share of their overall coverage) as the newspaper as a whole, and has written a minimum of two articles about the subject, it is classified as a beat. Authors with few articles, or few articles carrying subject tags, may have no beats listed.</p>
 
-      <h4 style="margin-top:16px;margin-bottom:4px">Inferred reporters</h4>
-
-      <h4 style="margin-top:16px;margin-bottom:4px">Beat topics</h4>
-      <p>The topics shown on author profiles are derived from the NYT's own subject tags on each article. Topics are scored by how disproportionately an author covers them relative to the full corpus — a topic must appear at least twice as often in an author's work as the corpus-wide average to qualify. Authors with few articles or articles lacking subject tags may have no beats listed. Subject tags are assigned by the NYT, not by this dashboard.</p>
-
-      <h4 style="margin-top:16px;margin-bottom:4px">Author names</h4>
-      <p>Author name variants (e.g., "Jonah E. Bromwich" and "Jonah Bromwich") are merged when they share first and last names with compatible middle names. Cases where the same reporter appears under both a shorter and fuller byline form — each with many articles — are resolved manually after cross-checking beats, section, and year range. Institutional bylines (The Associated Press, The Editorial Board, Reuters, etc.) are excluded from author rankings.</p>
-
-      <h4 style="margin-top:16px;margin-bottom:4px">Geographic data</h4>
-      <p>Geographic data for 2001–2003 is unreliable. In the aftermath of September 11, the NYT's metadata system appears to have applied a Washington, D.C. geographic tag as a proxy for national-significance stories — stories that would not normally carry a geographic tag at all. D.C.'s share of World and U.S. section articles spiked from roughly 0.1% in 2000 to over 6% in 2001, then gradually returned to normal by 2003. The original metadata has been retained rather than corrected, as any automated fix would be speculative.</p>
-      <p>The States tab draws only from articles in the "U.S." section (the national desk). The World tab draws only from articles in the "World" section (the international desk). Coverage of these geographies that appears in other sections (Opinion, Business, etc.) is not included. Both tabs use the API's geographic keyword field; city-level tags (e.g., "Chicago (Ill)") are mapped to their parent states. Per-capita figures use 2025 population estimates.</p>
-      <p style="margin-top:8px">New York and New Jersey coverage primarily appears in the dedicated "New York" section rather than the national "U.S." section. The States tab defaults to U.S.-section data only; a checkbox at the top of the tab allows adding New York section coverage for NY and NJ (counting only articles with explicit geographic tags — untagged "New York" section articles are excluded).</p>
-
-      <h4 style="margin-top:16px;margin-bottom:4px">Section names</h4>
+      <h4>Sections</h4>
       <p>The NYT has renamed, merged, and discontinued sections over the years. To preserve thematic continuity, this dashboard applies the following merges:</p>
-      <ul style="margin-left:20px;margin-top:6px">
-        <li>"Week in Review" (discontinued 2014) → <strong>Sunday Review</strong></li>
+      <ul style="columns:2;column-gap:32px;list-style:disc inside;font-size:13px;line-height:1.6;padding-left:0">
+        <li>"Week in Review" → <strong>Sunday Review</strong></li>
         <li>"Fashion &amp; Style" / "Fashion" → <strong>Style</strong></li>
         <li>"Business Day" → <strong>Business</strong></li>
-        <li>"Guides" → <strong>Guide</strong> (name standardization)</li>
+        <li>"Guides" → <strong>Guide</strong></li>
         <li>"Book Review" → <strong>Books</strong></li>
         <li>"Gameplay" → <strong>Crosswords &amp; Games</strong></li>
-        <li>"en Español" → <strong>En español</strong></li>
-        <li>"Great Homes &amp; Destinations" (luxury real estate advertising supplement, 2002–2014) → <strong>Real Estate</strong></li>
-        <li>"At Home" (COVID-era home-life section that replaced Travel during the pandemic, 2020–2022) → <strong>Style</strong></li>
-        <li>"Critic's Choice" (arts picks feature) → <strong>Arts</strong></li>
+        <li>"Great Homes &amp; Destinations" → <strong>Real Estate</strong></li>
+        <li>"At Home" → <strong>Style</strong></li>
+        <li>"Critic's Choice" → <strong>Arts</strong></li>
       </ul>
-      <p style="margin-top:8px">Technical categories, product sections, branded-content labels, and small stubs (newsletter aggregators, discontinued apps, TV tie-ins, blogs without a clear section home) are excluded entirely from the Sections tab. This includes the "Archives" section (predominantly paid death notices, not reported content), "Booming" (a baby-boomer lifestyle blog, 2012–2014), "UrbanEye" (a NYC events newsletter), "Guide" (a going-out listings service), and newsletter and podcast aggregators.</p>
-      <p style="margin-top:8px">Sports coverage declined sharply after the NYT acquired The Athletic in 2022; Athletic content is not included in the Archive API.</p>
+      <p>Technical categories, product sections, branded-content labels, and small stubs — newsletter and podcast aggregators, discontinued apps, TV tie-ins, blogs without a clear section home — are excluded entirely from the Sections tab. This includes "Archives" (predominantly paid death notices), "Booming" (a 2012–2014 baby-boomer lifestyle blog), "UrbanEye" (a NYC events newsletter), and "Guide" (a going-out listings service).</p>
+      <p>Authors are assigned a primary section based on where they have published the most articles over their full career in the dataset; this is used to sort and filter the Reporters table. Author profiles also list every section in which the author has published, reflecting the full range of their work. Primary section is a rough proxy for desk assignment and may be inaccurate for reporters whose focus shifts across years.</p>
 
-      <h4 style="margin-top:16px;margin-bottom:4px">Other notes</h4>
-      <ul style="margin-left:20px">
-        <li>The current calendar year is excluded from trend charts to avoid incomplete data skewing results.</li>
-        <li>Word counts reflect what the API returns; some article types (interactives, briefings, live updates) may return 0 words.</li>
-        <li>Article counts include all document types returned by the API (news, opinion, reviews, obituaries, etc.).</li>
-        <li>In 2011–2015, the NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section — but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides that section tag and counts those articles under Obituaries, which is why the section trend shows a consistent series rather than a gap. The apparent 2005–2006 spike likely reflects when the desk became a consistently-tagged section in the API. The 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
-        <li>The "Movies" section shows an anomalous dip in 2005 — only ~60 articles, compared to 1,400–2,200 in other years. Film coverage that year appears to have been filed under "Arts" rather than "Movies" in the API's metadata. This dashboard estimates approximately 795 additional movie reviews that year by identifying Arts-section articles written by core movie reviewers (A.O. Scott, Manohla Dargis, Stephen Holden, and others who published 20+ film reviews in 2004 or 2006) that carry motion-pictures subject tags. These inferred articles are shown as a hatched bar in the Movies section detail chart.</li>
-        <li>Paul Krugman's unusually high article counts (peaking at 100–179 per month in 2009–2013) reflect his "The Conscience of a Liberal" blog, which ran at <em>krugman.blogs.nytimes.com</em> from 2007 to 2017 and published multiple posts per day.</li>
+      <h4>Geography</h4>
+      <p>Analysis of national coverage draws from articles in the "U.S." section and the "New York" section. Many articles in the latter section lack geographic tags, however, and are not included in the analysis. Locations internal to states (e.g., "Chicago") are mapped to their parent states.</p>
+      <p>Analysis of international coverage draws from articles in the "World" section. Articles with geographic tags that appear in other sections (Opinion, Business, etc.) are not included.</p>
+      <p>Population data for per-capita calculations come from the 2020 U.S. Census. Country populations come from the Natural Earth 110m Cultural Vectors dataset (the <em>POP_EST</em> field, which aggregates UN and World Bank figures).</p>
+
+      <h4>API anomalies</h4>
+      <p>Known quirks in the Archive API data, in chronological order. Where this dashboard applies a correction, it's noted explicitly.</p>
+      <ul>
+        <li><strong>2001–2003 — D.C. tag inflation.</strong> In the aftermath of September 11, the NYT's metadata system appears to have applied a Washington, D.C. geographic tag as a proxy for national-significance stories — stories that would not normally carry a geographic tag at all. D.C.'s share of World and U.S. section articles spiked from roughly 0.1% in 2000 to over 6% in 2001, then gradually returned to normal by 2003. The original metadata has been retained rather than corrected, as any automated fix would be speculative.</li>
+        <li><strong>2005 — Movies section dip.</strong> Only ~60 articles, compared to 1,400–2,200 in other years. Film coverage that year appears to have been filed under Arts rather than Movies in the API's metadata. This dashboard estimates approximately 795 additional movie reviews that year by identifying Arts-section articles written by core movie reviewers (A.O. Scott, Manohla Dargis, Stephen Holden, and others who published 20+ film reviews in 2004 or 2006) that carry motion-pictures subject tags. These inferred articles appear as a hatched bar in the Movies section detail chart.</li>
+        <li><strong>2006–2009 — URL duplication.</strong> Beginning around May 2006, the NYT introduced a slug-based URL format alongside its old date-coded URLs, causing the API to index many articles twice. Blog posts and DealBook articles cross-posted to the main site in 2008–2009 were also frequently indexed under two or three URLs simultaneously. This dashboard removes duplicates that share the same headline, publication date, and word count (within ±10%), keeping the shortest URL — about 62,000 entries in total, concentrated in 2006 and the 2008–2009 period of peak blog activity.</li>
+        <li><strong>January 2007 — short-item drop-off.</strong> Non-blog counts fall by roughly 2,000 articles per month at this point; analysis suggests the API stopped consistently indexing short-form items — particularly letters to the editor and Metro section briefs. The median article word count jumps from about 550 to 660 words at this breakpoint, consistent with short items being dropped from the index.</li>
+        <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
+        <li><strong>2011–2015 — obituary section tagging.</strong> The NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section, but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides the section tag and counts those articles under Obituaries, producing a continuous series rather than a gap. The apparent 2005–2006 spike likely reflects the desk first becoming a consistently-tagged section; the 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
       </ul>
     </div>
   </div>
@@ -841,7 +1009,7 @@ async function loadData() {
       else if (_rp?.section) { openSectionDetail(_rp.section); _pendingRestore = null; }
       // author/beats/tracker/subjects detail are deferred until their data loads
     } else {
-      showView('about');
+      showView('home');
     }
     setTimeout(addDownloadBtns, 200);
 
@@ -1042,6 +1210,24 @@ function openAuthor(name) {
   if (tl) tl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
+function closeAuthorPanel(containerId, chartId) {
+  const c = document.getElementById(containerId);
+  if (c) c.innerHTML = '';
+  destroyChart(chartId);
+  destroyChart(chartId + '_hist');
+  pendingTimelineRefresh = null;
+  // If we're on the reporters tab, clear the name filter so the full list returns.
+  if (containerId === 'authorTimeline') {
+    const sb = document.getElementById('authorSearch');
+    if (sb && sb.value) {
+      sb.value = '';
+      renderAuthors();
+      renderWordsDist();
+    }
+    _writeHash({ tab: 'authors' });
+  }
+}
+
 // --- Unique sections list ---
 function getUniqueSections() {
   // Only include sections with 10+ authors, excluding blocklisted sections
@@ -1130,6 +1316,57 @@ function initOverview() {
   });
 
   renderDecadeChart();
+  initHomeCarousel();
+}
+
+// --- HOME CAROUSEL ---
+function scrollCarousel(dir) {
+  const t = document.getElementById('homeCarousel');
+  if (!t) return;
+  t.scrollBy({ left: dir * t.clientWidth, behavior: 'smooth' });
+}
+
+function initHomeCarousel() {
+  const track = document.getElementById('homeCarousel');
+  if (!track) return;
+  const slides = track.querySelectorAll('.slide');
+  const dotsEl = document.getElementById('carouselDots');
+
+  if (dotsEl) {
+    dotsEl.innerHTML = '';
+    slides.forEach((_, i) => {
+      const b = document.createElement('button');
+      b.setAttribute('aria-label', `Slide ${i + 1}`);
+      if (i === 0) b.classList.add('active');
+      b.addEventListener('click', () => {
+        track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+      });
+      dotsEl.appendChild(b);
+    });
+    const updateDots = () => {
+      const idx = Math.round(track.scrollLeft / track.clientWidth);
+      dotsEl.querySelectorAll('button').forEach((b, i) => b.classList.toggle('active', i === idx));
+    };
+    let t;
+    track.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(updateDots, 60); });
+  }
+
+  // Populate the top-100 photo grid
+  const grid = document.getElementById('topWritersGrid');
+  if (grid && !grid.dataset.loaded) {
+    fetch('data/bio_photos/manifest.json').then(r => r.json()).then(m => {
+      const ranked = m.slice().sort((a, b) => a.rank - b.rank);
+      grid.innerHTML = ranked.map(e => {
+        const title = `${e.rank}. ${e.name}`;
+        if (e.filename) {
+          return `<div class="cell" title="${title}" onclick="openAuthor('${e.name.replace(/'/g, "\\'")}')"><img src="data/bio_photos/${e.filename}" alt="${e.name}" loading="lazy"></div>`;
+        }
+        return `<div class="cell missing" title="${title} (no photo)" onclick="openAuthor('${e.name.replace(/'/g, "\\'")}')"></div>`;
+      }).join('');
+      grid.dataset.loaded = '1';
+    }).catch(err => console.warn('bio photo manifest load failed', err));
+  }
+
 }
 
 // --- DECADE CHART: 2016–2025 annual articles + words + avg words per article ---
@@ -2706,7 +2943,7 @@ function showAuthorTimeline(name, opts = {}) {
   const container = document.getElementById(containerId);
   container.innerHTML = `
     <div class="author-timeline">
-      <button class="close-btn" onclick="document.getElementById('${containerId}').innerHTML='';destroyChart('${chartId}');destroyChart('${chartId}_hist');pendingTimelineRefresh=null">Close</button>
+      <button class="close-btn" onclick="closeAuthorPanel('${containerId}','${chartId}')">Close</button>
       <h3>${escapeHtml(name)}</h3>
       ${_classLine ? `<div class="timeline-meta" style="margin-bottom:2px">${_classLine}</div>` : ''}
       <div class="timeline-meta">
@@ -5703,7 +5940,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/22/26 10:08am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/23/26 9:50pm</span>
 </div>
 </body>
 </html>
