@@ -67,6 +67,7 @@
   .carousel-track {
     display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
     scroll-behavior: smooth; scrollbar-width: none;
+    align-items: flex-start; /* don't stretch slides to match tallest — each slide is its natural height */
   }
   .carousel-track::-webkit-scrollbar { display: none; }
   .slide {
@@ -74,11 +75,11 @@
   }
   .slide-inner {
     background:#fff; border:1px solid #e6e6e6; border-radius:6px;
-    padding:16px 20px 18px; min-height:500px;
+    padding:16px 20px 18px; min-height:460px;
     display:flex; flex-direction:column;
   }
   @media (max-width: 760px) {
-    .slide-inner { min-height:440px; }
+    .slide-inner { min-height:420px; }
   }
   .slide-title { margin:0 0 4px; font-size:16px; font-weight:600; color:#222; }
   .slide-caption { margin:0 0 12px; font-size:13px; color:#555; line-height:1.5; }
@@ -135,10 +136,11 @@
     .photo-grid { grid-template-columns:repeat(5, 1fr); gap:6px; }
   }
 
-  /* Chart inside a slide: explicit height plays nicely with Chart.js responsive */
-  .slide-chart-wrap { position:relative; height:360px; }
+  /* Chart inside a slide: flex:1 so the chart scales with available height;
+     min-height ensures the chart has room even when the slide is short. */
+  .slide-chart-wrap { position:relative; flex:1 1 auto; min-height:300px; width:100%; }
   @media (max-width: 640px) {
-    .slide-chart-wrap { height:280px; }
+    .slide-chart-wrap { min-height:240px; }
   }
   /* About tab paragraph spacing */
   #view-about p { margin: 0 0 12px; }
@@ -400,7 +402,7 @@
           <div class="slide-inner">
             <h4 class="slide-title">A global paper, albeit with blind spots</h4>
             <p class="slide-caption">Conflict reliably draws <em>The New York Times</em>' attention, but large swaths of the globe rarely get covered.</p>
-            <div id="carouselWorldMapSvg" class="carousel-world-map" style="position:relative;flex:1;min-height:0"></div>
+            <div id="carouselWorldMapSvg" class="carousel-world-map" style="position:relative"></div>
             <div id="carouselWorldMapLegend" style="font-size:10px;color:#777;margin-top:6px;line-height:1.6"></div>
             <p class="slide-more"><a onclick="showView('world')">Explore world coverage →</a></p>
           </div>
@@ -1382,14 +1384,16 @@ function initHomeCarousel() {
   renderCarouselIowa();
   renderCarouselWorldMap();
 
-  // Adapt track height to the current slide (eliminates empty space below short slides).
-  // slide-inner has min-height 500px desktop / 440px mobile, so short slides still look full;
-  // the photo-grid slide on mobile naturally grows taller and the track follows it.
+  // Adapt track height to the current slide's natural content height.
+  // Track flex has align-items:flex-start so slides don't stretch — slide.offsetHeight is natural.
   let heightTimer;
   const syncTrackHeight = () => {
     const idx = Math.round(track.scrollLeft / track.clientWidth);
     const cur = slides[idx];
-    if (cur) track.style.height = cur.offsetHeight + 'px';
+    if (!cur) return;
+    const inner = cur.firstElementChild;  // .slide-inner
+    const h = inner ? inner.offsetHeight : cur.offsetHeight;
+    track.style.height = h + 'px';
   };
   const syncSoon = () => { clearTimeout(heightTimer); heightTimer = setTimeout(syncTrackHeight, 80); };
   track.addEventListener('scroll', syncSoon);
@@ -1397,6 +1401,7 @@ function initHomeCarousel() {
   // Initial + after charts paint
   setTimeout(syncTrackHeight, 50);
   setTimeout(syncTrackHeight, 600);
+  setTimeout(syncTrackHeight, 1200);
 }
 
 // --- CAROUSEL: Presidents headline chart (live, from data/presidents.json) ---
@@ -1405,7 +1410,8 @@ function renderCarouselPresidents() {
   if (!canvas || canvas.dataset.rendered) return;
   canvas.dataset.rendered = '1';
   fetch('data/presidents.json').then(r => r.json()).then(p => {
-    const colors = { Trump: '#c44', Biden: '#44c', Obama: '#4a4', Bush: '#c84' };
+    // NOTE: 6-char hex required — hexFill slices (1,3),(3,5),(5,7) for RR/GG/BB
+    const colors = { Trump: '#cc4444', Biden: '#4466cc', Obama: '#44aa55', Bush: '#dd9944' };
     const hexFill = (hex, a) => {
       const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
       return `rgba(${r},${g},${b},${a})`;
@@ -1414,7 +1420,7 @@ function renderCarouselPresidents() {
       label: name,
       data: p[name],
       borderColor: colors[name],
-      backgroundColor: hexFill(colors[name], 0.15),
+      backgroundColor: hexFill(colors[name], 0.12),  // ~88% transparent, see-through
       fill: true,
       tension: 0.2,
       pointRadius: 0,
@@ -1471,10 +1477,9 @@ function renderCarouselIowa() {
   if (!dashboard?.us_state_coverage?.state_trends?.Iowa) return;
   canvas.dataset.rendered = '1';
   const ia = dashboard.us_state_coverage.state_trends.Iowa;
-  const pop = STATE_POP_M['Iowa'] || 3.2;
   const cutoffYear = String(new Date().getFullYear());
   const years = Object.keys(ia).filter(y => y !== cutoffYear).sort();
-  const perM = years.map(y => (ia[y] || 0) / pop);
+  const counts = years.map(y => ia[y] || 0);
   destroyChart('chartIowa');
   chartInstances['chartIowa'] = new Chart(canvas, {
     type: 'line',
@@ -1482,9 +1487,9 @@ function renderCarouselIowa() {
       labels: years,
       datasets: [{
         label: 'Iowa',
-        data: perM,
+        data: counts,
         borderColor: '#326891',
-        backgroundColor: 'rgba(50,104,145,0.15)',
+        backgroundColor: 'rgba(50,104,145,0.12)',
         fill: true,
         tension: 0.25,
         pointRadius: 2.5,
@@ -1497,14 +1502,14 @@ function renderCarouselIowa() {
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: { ticks: { font: { size: 10 } }, grid: { display: false } },
-        y: { beginAtZero: true, title: { display: true, text: 'Articles / million Iowans', font: { size: 11 } }, ticks: { font: { size: 10 } } },
+        y: { beginAtZero: true, title: { display: true, text: 'Articles/year', font: { size: 11 } }, ticks: { font: { size: 10 } } },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
             title: items => items[0].label,
-            label: ctx => `${ctx.parsed.y.toFixed(1)} articles/M (${ia[ctx.label]} total)`,
+            label: ctx => `${ctx.parsed.y.toLocaleString()} articles`,
           },
         },
       },
@@ -1556,18 +1561,18 @@ function _paintCarouselWorldMap(geo) {
   };
 
   const W = container.clientWidth || 800;
-  // Use the container's actual available height (flex:1 in slide-inner),
-  // capped at W/2 so a very wide slide doesn't stretch the map vertically.
-  const H = Math.max(180, Math.min(container.clientHeight || Math.round(W * 0.5), Math.round(W * 0.5)));
+  // Keep the map from getting taller than a typical laptop viewport.
+  // Natural Earth looks best at ~W/2 aspect; cap at 420px so it never dominates a short viewport.
+  const H = Math.max(180, Math.min(Math.round(W * 0.48), 420));
   container.innerHTML = '';
   const projection = d3.geoNaturalEarth1().fitSize([W, H], geo);
   const path = d3.geoPath().projection(projection);
   const svg = d3.select(container).append('svg').attr('width', W).attr('height', H).style('display','block');
   const tip = d3.select(container).append('div')
     .style('position','absolute').style('pointer-events','none')
-    .style('background','rgba(0,0,0,0.78)').style('color','#fff')
-    .style('padding','4px 8px').style('border-radius','4px')
-    .style('font-size','11px').style('display','none');
+    .style('background','rgba(0,0,0,0.82)').style('color','#fff')
+    .style('padding','6px 9px').style('border-radius','4px')
+    .style('font-size','11px').style('line-height','1.45').style('display','none');
   svg.selectAll('path').data(geo.features).join('path')
     .attr('d', path)
     .attr('fill', d => fillColor(d.properties.NAME))
@@ -1576,11 +1581,15 @@ function _paintCarouselWorldMap(geo) {
       const name = d.properties.NAME;
       const raw = countByGeo[name] || 0;
       const pc = valByGeo[name];
-      let label;
-      if (!raw) label = 'No data';
-      else if (pc != null) label = `${pc.toFixed(1)} articles/M/yr (${raw.toLocaleString()} total)`;
-      else label = `${raw.toLocaleString()} articles (no pop data)`;
-      tip.style('display','block').html(`<strong>${name}</strong>: ${label} · 2025`);
+      let body;
+      if (!raw) body = 'No data';
+      else {
+        const pcLine = pc != null
+          ? `${pc < 1 ? pc.toFixed(2) : pc.toFixed(1)} articles/million residents/year`
+          : 'No population data';
+        body = `${pcLine}<br>${raw.toLocaleString()} articles in 2025`;
+      }
+      tip.style('display','block').html(`<strong>${name}</strong><br>${body}`);
       d3.select(this).attr('stroke','#333').attr('stroke-width', 1);
     })
     .on('mousemove', function(event) {
@@ -6197,7 +6206,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/24/26 7:48am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/24/26 8:05am</span>
 </div>
 </body>
 </html>
