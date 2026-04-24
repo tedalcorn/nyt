@@ -110,13 +110,16 @@
     width:100%; margin:0 auto;
   }
   .photo-grid .cell {
-    aspect-ratio:1/1; border-radius:50%; overflow:hidden; background:#d4d4d4;
-    cursor:pointer;
+    aspect-ratio:1/1; border-radius:50%; background:#d4d4d4;
+    cursor:pointer; position:relative;
+    /* No overflow:hidden here — it clipped the hover tooltip.
+       The image is clipped to a circle via its own border-radius below. */
   }
-  .photo-grid .cell img { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-grid .cell img {
+    width:100%; height:100%; object-fit:cover; display:block;
+    border-radius:50%;
+  }
   .photo-grid .cell.missing { background:#cccccc; }
-  /* Tooltip on photo-grid hover/tap */
-  .photo-grid .cell { position:relative; }
   .photo-grid .cell:hover { z-index:4; }
   .photo-tooltip {
     position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%);
@@ -6216,7 +6219,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/24/26 8:11am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/24/26 8:16am</span>
 </div>
 </body>
 </html>
