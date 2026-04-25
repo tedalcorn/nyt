@@ -1435,31 +1435,22 @@ function initHomeCarousel() {
     track.addEventListener('scroll', () => { clearTimeout(t); t = setTimeout(updateDots, 60); });
   }
 
-  // Populate the top-100 photo grid with hover tooltips showing 2025 stats
+  // Populate the top-100 photo grid with hover tooltips showing 2025 stats.
+  // Stats live in their own file because dashboard.top_authors is capped at 50
+  // while the photo manifest has 100 entries.
   const grid = document.getElementById('topWritersGrid');
   if (grid && !grid.dataset.loaded) {
-    // Build a name → {articles2025, words2025} lookup from dashboard.top_authors
-    const stats = {};
-    if (dashboard && dashboard.top_authors) {
-      for (const a of dashboard.top_authors) {
-        let articles = 0;
-        if (a.monthly_counts) {
-          for (const [mo, ct] of Object.entries(a.monthly_counts)) {
-            if (mo.startsWith('2025-')) articles += ct;
-          }
-        }
-        const words = (a.annual_words && a.annual_words['2025']) || 0;
-        stats[a.name] = { articles, words };
-      }
-    }
     const esc = s => s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    fetch('data/bio_photos/manifest.json').then(r => r.json()).then(m => {
+    Promise.all([
+      fetch('data/bio_photos/manifest.json').then(r => r.json()),
+      fetch('data/photo_grid_stats.json').then(r => r.json()).catch(() => ({})),
+    ]).then(([m, stats]) => {
       const ranked = m.slice().sort((a, b) => a.rank - b.rank);
       grid.innerHTML = ranked.map(e => {
         const s = stats[e.name] || { articles: 0, words: 0 };
         const tip = `<div class="photo-tooltip"><div class="tt-name">${e.name}</div>` +
-                    `<div>${s.articles.toLocaleString()} articles in 2025</div>` +
-                    `<div>${s.words.toLocaleString()} words</div></div>`;
+                    `<div>${(s.articles||0).toLocaleString()} articles in 2025</div>` +
+                    `<div>${(s.words||0).toLocaleString()} words</div></div>`;
         const img = e.filename
           ? `<img src="data/bio_photos/${e.filename}" alt="${e.name}" loading="lazy">`
           : '';

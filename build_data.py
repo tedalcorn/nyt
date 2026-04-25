@@ -1905,6 +1905,25 @@ def build_dashboard_data(articles, authors):
     # Top 25 authors (by article count, 25+ articles)
     top_authors = [a for a in authors if a["article_count"] >= 25][:50]
 
+    # Photo grid (top-100) needs 2025 stats for every name in the manifest, but
+    # top_authors is capped at 50 — so emit a separate lookup for the grid.
+    try:
+        with open("data/bio_photos/manifest.json") as fh:
+            _manifest = json.load(fh)
+        _names = {e["name"] for e in _manifest}
+        _grid_stats = {}
+        for a in authors:
+            if a["name"] not in _names:
+                continue
+            arts_2025 = sum(c for mo, c in (a.get("monthly_counts") or {}).items() if mo.startswith("2025-"))
+            words_2025 = (a.get("annual_words") or {}).get("2025", 0)
+            _grid_stats[a["name"]] = {"articles": arts_2025, "words": words_2025}
+        with open("data/photo_grid_stats.json", "w") as fh:
+            json.dump(_grid_stats, fh, separators=(",", ":"))
+        print(f"  photo_grid_stats.json: {len(_grid_stats)}/{len(_names)} manifest names matched")
+    except FileNotFoundError:
+        pass
+
     # Top 25 wordiest (30+ articles, excluding Opinion/Magazine)
     excluded = {"Opinion", "Magazine", "T Magazine"}
     wordiest = [a for a in authors
