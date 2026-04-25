@@ -204,11 +204,12 @@
   }
 
   /* About: Data source layout — text + monthly chart side-by-side */
-  .about-data-source { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
-  .about-monthly-chart { position: sticky; top: 12px; }
-  @media (max-width: 768px) {
-    .about-data-source { grid-template-columns: 1fr; }
-    .about-monthly-chart { position: static; }
+  /* About → Data source: chart floats alongside the 2nd and 3rd paragraphs;
+     1st paragraph runs full width above the float. No sticky/scroll behavior. */
+  .about-data-source::after { content: ""; display: block; clear: both; }
+  .about-monthly-chart { float: right; width: 50%; max-width: 480px; margin: 0 0 12px 24px; }
+  @media (max-width: 720px) {
+    .about-monthly-chart { float: none; width: 100%; max-width: none; margin: 12px 0; }
   }
 
   /* Obituaries side-by-side charts (desktop) */
@@ -326,6 +327,12 @@
     /* Reporters table: hide less essential columns on mobile */
     .author-table th.mob-hide,
     .author-table td.mob-hide { display: none; }
+    /* Obituaries: tighten column padding on mobile so all visible columns fit */
+    #obitsTableContainer .author-table { font-size: 12.5px; }
+    #obitsTableContainer .author-table th,
+    #obitsTableContainer .author-table td { padding: 4px 5px !important; }
+    #obitsTableContainer .author-table td:first-child,
+    #obitsTableContainer .author-table th:first-child { padding-left: 2px !important; }
     /* Obituaries: charts stack on mobile */
     .obit-charts-row { grid-template-columns: 1fr !important; }
     /* Section popup: side-by-side charts stack on mobile */
@@ -365,7 +372,7 @@
 </header>
 
 <nav id="nav">
-  <button data-view="home" class="active">Home</button>
+  <button data-view="home" class="active" style="display:none">Home</button>
   <button data-view="beats">Beats</button>
   <button data-view="tracker">Headlines</button>
   <button data-view="subjects">Subjects</button>
@@ -460,15 +467,13 @@
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <h4 style="margin-top:0">Data source</h4>
       <div class="about-data-source">
-        <div>
-          <p><em>The New York Times</em> Archive API indexes all document types published on nytimes.com — news, opinion, reviews, obituaries, and interactives — and this dashboard includes all of them.</p>
-          <p>That includes both standard articles and blog content, like those hosted at subdomains blogs.nytimes.com, dealbook.nytimes.com, and krugman.blogs.nytimes.com. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached. The posts from blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains.</p>
-          <p>Content from The Athletic is not available in the Archive API and is therefore absent, which is why Sports coverage appears to decline sharply after the NYT's 2022 acquisition of that publication.</p>
-        </div>
+        <p><em>The New York Times</em> Archive API indexes all document types published on nytimes.com — news, opinion, reviews, obituaries, and interactives — and this dashboard includes all of them.</p>
         <div class="about-monthly-chart">
           <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles and words per month</div>
           <canvas id="chartMonthly" style="max-height:240px"></canvas>
         </div>
+        <p>That includes both standard articles and blog content, like those hosted at subdomains blogs.nytimes.com, dealbook.nytimes.com, and krugman.blogs.nytimes.com. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached. The posts from blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains.</p>
+        <p>Content from The Athletic is not available in the Archive API and is therefore absent, which is why Sports coverage appears to decline sharply after the NYT's 2022 acquisition of that publication.</p>
       </div>
 
       <h4>Authors</h4>
@@ -503,23 +508,24 @@
       <p>Analysis of international coverage draws from articles in the "World" section. Articles with geographic tags that appear in other sections (Opinion, Business, etc.) are not included.</p>
       <p>Population data for per-capita calculations come from the 2020 U.S. Census. Country populations come from the Natural Earth 110m Cultural Vectors dataset (the <em>POP_EST</em> field, which aggregates UN and World Bank figures).</p>
 
+      <h4>Obituaries</h4>
+      <p>A number of steps were taken to identify all obituaries. Records were included if the API tagged them <em>type_of_material</em> as Obituary (in any of its variants), filed them under the Obits desk or Obituaries section, or assigned them to the 9/11 Portraits of Grief series. Year-end roundups, paid memorial notices, and multi-subject features were excluded.</p>
+      <p>Obituaries that appear to have run at distinct URLs within a few days of each other were then merged into a single canonical entry.</p>
+      <p>Each obituary was parsed for name, age, gender, and profession from the headline and abstract, relying on honorifics (Mr./Mrs./Sir/Dame) and pronouns (he/his vs. she/her) the paper used. Special series including Overlooked No More (retroactive obituaries for historically overlooked figures), historical obituaries republished for special occasions like Women's History Month, and the 9/11 Portraits of Grief feature were also tagged.</p>
+      <p>The Portraits of Grief series ran from September 2001 through 2002 and ultimately included roughly 1,910 individual portraits of 9/11 victims. Only ~400 are individually URL-addressable in the Archive API; the remainder were either bundled into daily compilation articles or are not separately indexed, so this dashboard surfaces only the subset the API exposes as standalone records.</p>
+
       <h4>API anomalies</h4>
       <p>Known quirks in the Archive API data, in chronological order. Where this dashboard applies a correction, it's noted explicitly.</p>
       <ul>
         <li><strong>2001–2003 — D.C. tag inflation.</strong> In the aftermath of September 11, the NYT's metadata system appears to have applied a Washington, D.C. geographic tag as a proxy for national-significance stories — stories that would not normally carry a geographic tag at all. D.C.'s share of World and U.S. section articles spiked from roughly 0.1% in 2000 to over 6% in 2001, then gradually returned to normal by 2003. The original metadata has been retained rather than corrected, as any automated fix would be speculative.</li>
         <li><strong>2005 — Movies section dip.</strong> Only ~60 articles, compared to 1,400–2,200 in other years. Film coverage that year appears to have been filed under Arts rather than Movies in the API's metadata. This dashboard estimates approximately 795 additional movie reviews that year by identifying Arts-section articles written by core movie reviewers (A.O. Scott, Manohla Dargis, Stephen Holden, and others who published 20+ film reviews in 2004 or 2006) that carry motion-pictures subject tags. These inferred articles appear as a hatched bar in the Movies section detail chart.</li>
         <li><strong>2006–2009 — URL duplication.</strong> Beginning around May 2006, the NYT introduced a slug-based URL format alongside its old date-coded URLs, causing the API to index many articles twice. Blog posts and DealBook articles cross-posted to the main site in 2008–2009 were also frequently indexed under two or three URLs simultaneously. This dashboard removes duplicates that share the same headline, publication date, and word count (within ±10%), keeping the shortest URL — about 62,000 entries in total, concentrated in 2006 and the 2008–2009 period of peak blog activity.</li>
-        <li><strong>January 2007 — short-item drop-off.</strong> Non-blog counts fall by roughly 2,000 articles per month at this point; analysis suggests the API stopped consistently indexing short-form items — particularly letters to the editor and Metro section briefs. The median article word count jumps from about 550 to 660 words at this breakpoint, consistent with short items being dropped from the index.</li>
+        <li><strong>Pre-2007 — short-item indexing.</strong> Through January 2007 the API consistently indexed short-form items (letters to the editor, Metro briefs, calendar listings, bulleted business news), then abruptly stopped. Sections that ran heavy short-item programming show large pre-2007 spikes in the 0–400 word bins: Business 2000–2010 (47–62% of articles &lt;400 wc), New York 2000–2006 (~45%), Magazine 2000–2003 and 2011 (45–51%), Theater 2007–2010 (38–47%), Education 2010–2016 (58–66%), Automobiles 2007–2012 (39–54%), Your Money 2010–2013 (37–53%). Median article word count jumps from about 550 to 660 words at the January 2007 breakpoint, consistent with short items being dropped from the index after that point.</li>
+        <li><strong>2008–2010 — Arts blog burst.</strong> ArtsBeat and adjacent Arts-desk blogs were briefly indexed under <code>section_name = "Arts"</code>, producing a sharp 2008–2010 spike of sub-200-word entries (40% in 2009 vs. ~10% in adjacent years). Most are short blog posts linking out to other coverage. Same root cause as the 2009 blog-labeling shift, with a wider time window for Arts specifically.</li>
         <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
         <li><strong>2005 — Science section drop.</strong> Section "Science" falls from ~900 articles a year (2000–2003) to 159 in 2005, then rebounds to 839+ in 2006. The articles didn't disappear — the metadata transitioned. In 2003, all 904 Science Desk articles carried <code>section_name = "Science"</code>. By 2005, the same desk's output was being filed as "Health" (411 articles), "Opinion" (331), or left untagged, with only 102 still tagged "Science". A new "Health" section was being broken out at this point. The dashboard shows the unedited tag.</li>
         <li><strong>2001–2015 — obituary section tagging.</strong> Throughout this stretch the NYT filed most obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section. In 2001–2010 the desk relied on <em>type_of_material</em> "Obituary; Biography" (or "Obituary"); in 2011–2015 it switched to "Obituary (Obit)". This dashboard overrides the section tag for all four obit-tom variants and counts those articles under Obituaries, producing a continuous series rather than a gap. The 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
-        <li><strong>2001–2010 — "Obituary; Biography" tag.</strong> Through 2010 the API tagged most obituaries as <em>type_of_material = "Obituary; Biography"</em> (and occasionally "Biography; Obituary") rather than the cleaner "Obituary (Obit)" or "Obituary" labels used afterward. About 1,000–1,300 records per year carry the legacy compound tag in 2001–2005 alone. Earlier versions of this dashboard accepted only the modern tags and consequently undercounted those years by roughly 80%. The current build accepts all four variants.</li>
       </ul>
-
-      <h4>Obituaries</h4>
-      <p>A number of steps were taken to identify all obituaries. Records were included if the API tagged them <em>type_of_material</em> as Obituary (in any of its variants), filed them under the Obits desk or Obituaries section, or assigned them to the 9/11 Portraits of Grief series. Year-end roundups, paid memorial notices, and multi-subject features were excluded.</p>
-      <p>Obituaries that appear to have run at distinct URLs within a few days of each other were then merged into a single canonical entry.</p>
-      <p>Each obituary was parsed for name, age, gender, and profession from the headline and abstract, relying on honorifics (Mr./Mrs./Sir/Dame) and pronouns (he/his vs. she/her) the paper used. Special series including Overlooked No More (retroactive obituaries for historically overlooked figures), historical obituaries republished for special occasions like Women's History Month, and the 9/11 Portraits of Grief feature were also tagged.</p>
     </div>
   </div>
 
@@ -981,19 +987,103 @@ function downloadSectionChart(btn, canvasId) {
   const canvas = document.getElementById(canvasId || 'chartSectionDetail');
   if (!canvas) return;
   btn.textContent = '…';
-  const offscreen = document.createElement('canvas');
-  offscreen.width = canvas.width;
-  offscreen.height = canvas.height;
-  const ctx = offscreen.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
-  ctx.drawImage(canvas, 0, 0);
-  const a = document.createElement('a');
   const h3 = document.querySelector('#sectionDetailPanel h3');
-  const slug = h3 ? h3.textContent.trim().replace(/[^a-z0-9]+/gi, '_').toLowerCase() : 'section';
-  const suffix = canvasId === 'chartSectionHist' ? '_wordcounts' : '_trend';
+  const sectionName = h3 ? h3.textContent.trim() : 'Section';
+  const slug = sectionName.replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+  const isHist = canvasId === 'chartSectionHist';
+  const suffix = isHist ? '_wordcounts' : '_trend';
+
+  // Build chart title + caption
+  let title1, title2, legendItems = [];
+  if (isHist) {
+    const ctx = window._currentSectionHist;
+    const mode = ctx?.mode || 'all';
+    const n = ctx?.sec ? (ctx.sec.wc_hist || []).reduce((s,v)=>s+v,0) : 0;
+    title1 = `New York Times "${sectionName}" section — article word count distribution`;
+    title2 = mode === 'year'
+      ? `Lines = % of each year's articles per 200-word bin · n=${n.toLocaleString()} articles · Data from NYT Archive API`
+      : `Bars = articles per 200-word bin · Red dashed line marks the section average · n=${n.toLocaleString()} articles · Data from NYT Archive API`;
+    if (mode === 'year' && ctx) {
+      const byYear = ctx.sec.wc_hist_by_year || {};
+      const currentYear = String(new Date().getFullYear());
+      const years = Object.keys(byYear).filter(y => y !== currentYear && byYear[y].some(v => v > 0)).sort();
+      if (years.length >= 2) {
+        legendItems = [
+          { color: 'hsl(205,60%,80%)', label: years[0] },
+          { color: 'hsl(205,60%,20%)', label: years[years.length - 1] },
+        ];
+      }
+    } else {
+      legendItems = [
+        { color: 'rgba(50,104,145,0.65)', label: 'Articles' },
+        { color: 'rgba(180,50,50,0.7)', label: 'Section average' },
+      ];
+    }
+  } else {
+    const trend = (dashboard.section_trends && dashboard.section_trends[sectionName]) || [];
+    const yrs = trend.filter(d => d.count > 0).map(d => d.year);
+    const range = yrs.length ? `${yrs[0]}–${yrs[yrs.length-1]}` : '';
+    const total = trend.reduce((s,d) => s + (d.count || 0), 0);
+    title1 = `New York Times "${sectionName}" section — articles by year${range ? ', ' + range : ''}`;
+    title2 = `Bars = articles published in section per year · n=${total.toLocaleString()} articles · Data from NYT Archive API`;
+    legendItems = [{ color: 'rgba(50,104,145,0.7)', label: 'Articles' }];
+  }
+
+  // Render title bar above canvas + URL credit below
+  const W = canvas.width;
+  const H = canvas.height;
+  const TOP = 60, BOT = 40;
+  const out = document.createElement('canvas');
+  out.width = W;
+  out.height = TOP + H + BOT;
+  const c = out.getContext('2d');
+  c.fillStyle = '#fff';
+  c.fillRect(0, 0, out.width, out.height);
+
+  c.fillStyle = '#111';
+  c.font = 'bold 14px Arial,sans-serif';
+  c.fillText(title1, 12, 22);
+  c.fillStyle = '#666';
+  c.font = '11px Arial,sans-serif';
+  // Wrap title2 if long
+  const maxW = W - 24;
+  if (c.measureText(title2).width <= maxW) {
+    c.fillText(title2, 12, 42);
+  } else {
+    const parts = title2.split(' · ');
+    let line = parts[0], y = 42;
+    for (let i = 1; i < parts.length; i++) {
+      const next = line + ' · ' + parts[i];
+      if (c.measureText(next).width > maxW) { c.fillText(line, 12, y); line = parts[i]; y += 15; }
+      else line = next;
+    }
+    c.fillText(line, 12, y);
+  }
+
+  c.drawImage(canvas, 0, TOP);
+
+  // Legend below chart
+  let lx = 12, ly = TOP + H + 22;
+  legendItems.forEach(({ color, label }) => {
+    c.fillStyle = color;
+    c.fillRect(lx, ly - 10, 12, 12);
+    c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
+    c.strokeRect(lx, ly - 10, 12, 12);
+    c.fillStyle = '#333';
+    c.font = '10px Arial,sans-serif';
+    c.fillText(label, lx + 16, ly);
+    lx += 16 + c.measureText(label).width + 14;
+  });
+
+  c.font = '9px Arial,sans-serif';
+  c.fillStyle = '#aaa';
+  c.textAlign = 'right';
+  c.fillText('https://tedalcorn.github.io/nyt/', W - 8, TOP + H + BOT - 8);
+  c.textAlign = 'left';
+
+  const a = document.createElement('a');
   a.download = slug + suffix + '.jpg';
-  a.href = offscreen.toDataURL('image/jpeg', 0.92);
+  a.href = out.toDataURL('image/jpeg', 0.92);
   a.click();
   btn.textContent = '↓ JPG';
 }
@@ -6097,14 +6187,28 @@ function renderObitGenderChart() {
 }
 
 // Last-word-of-name; ignores trailing comma/period and handles smart quotes.
+// Single-token names (mononyms like "Cher", "Madonna", or names where the
+// title was already stripped leaving one token) place the lone token in Last
+// so sort behaves naturally and the dashboard doesn't show "Nhu Nhu".
+// Suffix tokens we strip when computing last/first for sort/display.
+// Covers Roman (II/III/IV/V), ordinal (2nd/3rd/4th/5th), and Jr./Sr.
+const _NAME_SUFFIX_RE = /^(?:jr|sr|ii|iii|iv|v|2nd|3rd|4th|5th)\.?$/i;
 function _lastName(n) {
   if (!n) return '';
-  const parts = n.replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
+  let parts = n.replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
+  // Drop trailing suffix tokens (Jr., 2nd, III) so "Uriah Jones 2nd" sorts under "Jones"
+  while (parts.length > 1 && _NAME_SUFFIX_RE.test(parts[parts.length - 1].replace(/[.,]+$/, ''))) {
+    parts.pop();
+  }
   return (parts[parts.length - 1] || '').toLowerCase().replace(/[.,]+$/, '');
 }
 function _firstName(n) {
   if (!n) return '';
-  const parts = n.replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
+  let parts = n.replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
+  while (parts.length > 1 && _NAME_SUFFIX_RE.test(parts[parts.length - 1].replace(/[.,]+$/, ''))) {
+    parts.pop();
+  }
+  if (parts.length < 2) return '';
   return (parts[0] || '').toLowerCase().replace(/[.,]+$/, '');
 }
 
@@ -6159,8 +6263,8 @@ function renderObitsTable() {
   const ind = c => _obitTableSort.col === c ? (_obitTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
     { k: 'date', label: 'Date' },
-    { k: 'firstName', label: 'First name' },
-    { k: 'lastName', label: 'Last name' },
+    { k: 'firstName', label: 'First' },
+    { k: 'lastName', label: 'Last' },
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
     { k: 'profession', label: 'Profession / Role', cls: 'mob-hide' },
@@ -6185,7 +6289,9 @@ function renderObitsTable() {
     // Re-capitalize for display from the original name
     const parts = (o.name || '').replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
     const dispLast  = parts.length ? parts[parts.length - 1].replace(/[.,]+$/, '') : '';
-    const dispFirst = parts.length > 1 ? parts.slice(0, -1).join(' ') : (parts[0] || '');
+    // Single-token names go in Last only — leave First blank rather than
+    // duplicating the same token in both columns.
+    const dispFirst = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
     const linkOpen  = url ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">` : '';
     const linkClose = url ? `</a>` : '';
     // Secondary URL: link if present, else blank
@@ -6945,7 +7051,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 6:38pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 8:30pm</span>
 </div>
 </body>
 </html>

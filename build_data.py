@@ -1921,11 +1921,18 @@ def build_dashboard_data(articles, authors):
             if a["name"] not in _names:
                 continue
             arts_2025 = sum(c for mo, c in (a.get("monthly_counts") or {}).items() if mo.startswith("2025-"))
-            words_2025 = (a.get("annual_words") or {}).get("2025", 0)
+            aw = a.get("annual_words") or {}
+            words_2025 = aw.get(2025, aw.get("2025", 0))
             _grid_stats[a["name"]] = {"articles": arts_2025, "words": words_2025}
         with open("data/photo_grid_stats.json", "w") as fh:
             json.dump(_grid_stats, fh, separators=(",", ":"))
-        print(f"  photo_grid_stats.json: {len(_grid_stats)}/{len(_names)} manifest names matched")
+        _nz = sum(1 for v in _grid_stats.values() if v.get("words", 0) > 0)
+        print(f"  photo_grid_stats.json: {len(_grid_stats)}/{len(_names)} manifest names matched, {_nz} with words>0")
+        if _grid_stats and _nz == 0:
+            raise RuntimeError(
+                "photo_grid_stats: all 0 words — likely an annual_words key-type mismatch "
+                "(in-memory keys are int, JSON keys are str). Don't ship this build."
+            )
     except FileNotFoundError:
         pass
 

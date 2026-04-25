@@ -83,8 +83,16 @@ RE_LEADING_CAPS = re.compile(
     r'(?:\s+(?:' + _NOT_VERB + _NAME_TOKEN + r'|' + _PARTICLE + r')){0,4})'
 )
 
-RE_AGE_DIES = re.compile(r'\b(?:Die[ds]?|Is\s+Dead|Dead)\s+at\s+(\d{2,3})\b', re.I)
-RE_AGE_COMMA_HEAD = re.compile(r',\s*(\d{2,3})\s*[,\b]')
+RE_AGE_DIES = re.compile(
+    # death-verb …optional short intervening phrase… "at NN"
+    r'\b(?:Die[ds]?|Is\s+Dead|Was\s+Dead|Dead|Killed|Slain|Murdered)\b'
+    r'(?:[^,;.\d]{1,40}?)?\s+at\s+(?:Age\s+|the\s+age\s+of\s+)?(\d{2,3})\b',
+    re.I,
+)
+# `[,\b]` was a bug — \b is BACKSPACE inside a character class, not a word
+# boundary. Replace with explicit terminators (comma, semicolon, whitespace,
+# end of string) so "Fenelon, 74; Memoirs Described…" matches.
+RE_AGE_COMMA_HEAD = re.compile(r',\s*(\d{2,3})\s*(?:[,;\s]|$)')
 RE_AGE_WAS = re.compile(r'\bwas\s+(\d{2,3})\b', re.I)
 
 # Common first names for gender fallback. Top-50 each, US 1940-2010 SSA.
@@ -209,7 +217,19 @@ RE_NON_OBIT_URL = re.compile(
     r'/deaths-in-\d{4}\.html|'           # year-end "deaths-in-2018.html"
     r'/mothers-day(?:[-./]|$)|'          # Mother's Day interactives
     r'/obituaries/archives(?:/|$)|'      # interactive root pages (Not Forgotten Jesse Owens)
-    r'/2018/obituaries/overlooked\.html'  # Overlooked root index page
+    r'/2018/obituaries/overlooked\.html|'  # Overlooked root index page
+    r'/projects/cp/obituaries/archives/|' # archive-feature pages (moon-neil-armstrong-nasa, july4-…)
+    r'\d{4}-deaths-obituaries|'           # year-end roundup ("Gone in 2025: A Yearlong Procession…")
+    r'/coronavirus-victims\b|'            # reader-input form, not an obit
+    r'/musicians-who-died|'               # year-end musician roundup
+    r'/what-they-left-behind|'            # multi-subject NYT Magazine feature
+    r'/dead-what-they-left-behind|'       # variant slug for the same feature
+    r'/\d+-women-who-changed|'            # group features ("5 Women Who Changed…")
+    r'/black-history-month-overlooked|'   # Overlooked index for Black History Month
+    r'/overlooked-obituary-grandmothers|' # Reader Center grandmothers feature
+    r'/overlooked-from-the-death-desk|'   # Death Desk meta article
+    r'/formacist-overlooked|'             # "Have an Idea?" reader-suggestion form
+    r'/overlooked-nominations'            # 2023 reader-suggestion form
     r')',
     re.I,
 )
@@ -225,6 +245,48 @@ NON_OBIT_URLS = {
     '/2007/02/05/obituaries/05ivins.html',           # Molly Ivins memorial
     '/2026/03/06/us/politics/eleanor-roosevelt-dead.html',  # republication ("Mrs. Roosevelt")
 }
+
+# Per-URL corrections for records the parsers can't recover programmatically:
+# - name: headline says "Brazilian Nun" instead of the subject's actual name
+# - gender: pronoun count is misleading (often when the subject's name appears
+#   in a way that triggers the wrong baby-name match, or the obit quotes a
+#   different-gender colleague heavily)
+# - age: republished obits whose source year predates 2000 (no raw-dump record
+#   to cross-reference) and whose abstract carries no age phrase
+OBIT_OVERRIDES = {
+    # Sister Inah Canabarro Lucas: headline reads "Brazilian Nun Who Was…"
+    '/2025/05/02/world/americas/inah-canabarro-lucas-oldest-person-dead.html': {
+        'name': 'Sister Inah Canabarro Lucas', 'profession': None,
+    },
+    # Leslie Edwards (dancer, Royal Ballet) — male; pronoun count in our extracts
+    # came out F (likely because the abstract referenced a female partner).
+    '/2001/02/12/arts/leslie-edwards-84-dancer-with-a-mime-s-touch.html': {
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Pre-2000 republications: cross-year lookup can't reach the original.
+    '/2026/02/17/world/europe/anna-akhmatova-dead.html':       {'age': 76},
+    '/2026/02/17/world/europe/fania-fenelon-dead.html':        {'age': 74},
+    '/2026/03/06/world/asia/jiang-qing-dead.html':             {'age': 77},
+    '/2026/03/06/world/americas/gabriela-mistral-dead.html':   {'age': 67},
+    # Other pre-2000 republications whose headlines lack a parseable age.
+    '/2026/03/06/business/media/nellie-bly-dead.html':         {'age': 57},
+    '/2026/03/06/obituaries/jane-addams-dead.html':            {'age': 74},
+    '/2026/03/06/world/asia/indira-gandhi-dead.html':          {'age': 67},
+    '/2026/03/06/movies/natalie-wood-dead.html':               {'age': 43},
+    '/2026/03/06/movies/marilyn-monroe-dead.html':             {'age': 36},
+    '/2026/03/06/sports/babe-zaharias-dead.html':              {'age': 45},
+    # Selena: headline is "Grammy-Winning Singer Selena Killed…" — parser
+    # captures "Grammy" as a name token. Real name + age from the obit body.
+    '/2026/03/06/arts/music/selena-dead.html': {
+        'name': 'Selena Quintanilla Pérez', 'age': 23,
+    },
+    # Queen Elizabeth the Queen Mother: headline says "Britain's Beloved 'Queen
+    # Mum,' A Symbol of Courage, Dies at 101" — birth name is Elizabeth Bowes-
+    # Lyon. Use the title-form name commonly used in her obituary tagline.
+    '/2002/03/31/world/britain-s-beloved-queen-mum-a-symbol-of-courage-dies-at-101.html': {
+        'name': 'Queen Elizabeth the Queen Mother', 'profession': None,
+    },
+}
 # 9/11 "Portraits of Grief" — published Dec 2001 - Sep 2002, ~1,800 articles.
 # Profile-style obits: headline is "Name: Tagline", desk='National / Portraits
 # of Grief', URL contains '/national/portraits/'. Standard parsers fail
@@ -237,7 +299,11 @@ RE_GROUP_HEADLINE = re.compile(
     r'^(?:Lesson of the Day|The Lives They Lived|Year in Review|'
     r'In a Political Year|In a Year of|Among Deaths in|Obituaries: Deaths in|'
     r'Notable Deaths|Notable Obits|Those We|'
-    r'In Remembrance|In Memoriam:)\b',
+    r'In Remembrance|In Memoriam:|'
+    # Year-end roundups: "Deaths in 2017: …", "Deaths of 2021: …",
+    # "Gone in 2025", "What They Left Behind"
+    r'Deaths (?:in|of) \d{4}\b|Gone in \d{4}\b|'
+    r'What They Left Behind)\b',
     re.I,
 )
 
@@ -255,7 +321,12 @@ def extract_name_from_slug(url):
     if not m: return None
     slug = m.group(1).lower()
     slug = re.sub(r'^\d+[-_]?', '', slug)               # drop leading "01" etc.
-    slug = re.sub(r'(?:[-_](?:dead|dies|obituary|obit))+$', '', slug)
+    slug = re.sub(r'(?:[-_](?:dead|dies|obituary|obit|overlooked))+$', '', slug)
+    # Strip leading series tokens — "/interactive/2018/obituaries/overlooked-
+    # diane-arbus.html" should yield "Diane Arbus", not "Overlooked Diane".
+    slug = re.sub(r'^(?:overlooked(?:-no-more)?|not-forgotten|portraits-of-grief|'
+                  r'in-memoriam|lives-they-lived|what-they-left-behind)[-_]+',
+                  '', slug)
     parts = [p for p in re.split(r'[-_]+', slug)
              if p and not p.isdigit() and len(p) > 1
              and p not in {'cnd', 'and', 'the', 'at', 'on', 'in', 'of', 'web', 'index'}]
@@ -433,6 +504,11 @@ def extract_profession(headline):
     role = re.sub(r'^(?:who|that|whose|of|with|by)\s+', '', role, flags=re.I).strip()
     role = clean_smart_quotes(role)
     role = role.rstrip('.,;:').strip()
+    # Strip leading article ("A "/"An "/"The ") — many headlines say
+    # "Sandy Berger, a Top National Security Aide, …" which yields a role
+    # of "a Top National Security Aide". The article is grammatical noise;
+    # drop it.
+    role = re.sub(r'^(?:[Aa]n?|[Tt]he)\s+', '', role)
     if not role or role.isdigit(): return None
     if len(role) < 3 or len(role) > 80: return None
     return role
@@ -446,6 +522,18 @@ def main():
     by_year = Counter()
     skipped_corr = 0
     skipped_non_obit = 0
+    # (year, normalized-headline) → (h, ab, snip, lead) for republication lookup.
+    # Republished obits ("From YYYY: …") often have an empty lead and an
+    # abstract rewritten without age. The original article in YYYY raw dump
+    # usually carries the age in headline ("Dies at 86") or lead ("She was 86").
+    src_index = {}
+
+    def _norm_headline(h):
+        if not h: return ''
+        s = RE_FROM_YEAR.sub('', h).lower()
+        s = re.sub(r'[\u2018\u2019\u201C\u201D"\']+', '', s)
+        s = re.sub(r'[^\w\s]', ' ', s)
+        return re.sub(r'\s+', ' ', s).strip()
 
     # Death-marker patterns that confirm a single-subject obit even when the
     # article was caught only via news_desk=Obits / section=Obituaries.
@@ -529,7 +617,11 @@ def main():
             # For republished obits, strip the boilerplate "This obituary was
             # originally published…" sentence so gender/age detection sees the
             # actual obit prose underneath.
-            republished = bool(RE_FROM_YEAR.match(h)) or bool(
+            # "Not Forgotten:" interactives (e.g. /interactive/2016/.../aaliyah.html)
+            # are retrospective republications of an existing obit and should
+            # merge onto the original via the cross-year same-name pass.
+            is_not_forgotten = bool(re.match(r'^\s*Not Forgotten\s*[:\u2014\u2013-]', h, re.I))
+            republished = bool(RE_FROM_YEAR.match(h)) or is_not_forgotten or bool(
                 re.search(r'(?:originally\s+published|being\s+republished)', lead, re.I)
             )
             lead_clean = RE_REPUB_BOILER.sub('', lead) if republished else lead
@@ -571,6 +663,65 @@ def main():
                 'url': url,
             })
             by_year[year] += 1
+
+            # Index every (non-republished) obit so republications can look it up.
+            if year and not republished:
+                norm = _norm_headline(h)
+                if norm:
+                    src_index[(year, norm)] = (h, ab, snip, lead)
+
+    # Republished-obit age recovery — when the API's republication record has
+    # no age (lead is empty, abstract is editorially rewritten), look up the
+    # original article in YYYY's raw dump and extract age there. Republished
+    # headlines are often a *prefix* of the original (e.g. "Hedy Lamarr,
+    # Sultry Star Who Reigned in Hollywood" vs the original "…in Hollywood
+    # Of 30's and 40's, Dies at 86"), so we fall back to a startswith match
+    # within the source year and ±1 neighbors.
+    n_repub_age_recovered = 0
+    _RE_FROM_YR_CAP = re.compile(r'^(?:From\s*[:\u2014\u2013-]?\s*)?From\s+(\d{4})', re.I)
+    src_by_year = {}
+    for (yr, nh), rec in src_index.items():
+        src_by_year.setdefault(yr, []).append((nh, rec))
+
+    def _find_orig(src_year, repub_norm):
+        if not repub_norm or len(repub_norm.split()) < 3:
+            return None
+        rec = src_index.get((src_year, repub_norm))
+        if rec: return rec
+        for adj in (0, -1, 1):
+            yr = str(int(src_year) + adj)
+            for nh, rec in src_by_year.get(yr, []):
+                if nh.startswith(repub_norm) or repub_norm.startswith(nh):
+                    return rec
+        return None
+
+    for o in all_obits:
+        if not o.get('republished') or o.get('age'):
+            continue
+        m_yr = _RE_FROM_YR_CAP.match(o.get('headline') or '')
+        if not m_yr:
+            continue
+        src_year = m_yr.group(1)
+        norm = _norm_headline(o.get('headline') or '')
+        rec = _find_orig(src_year, norm)
+        if not rec:
+            continue
+        h2, ab2, sn2, lp2 = rec
+        age2 = extract_age(h2, (ab2 or '') + ' ' + (sn2 or '') + ' ' + (lp2 or ''))
+        if age2:
+            o['age'] = age2
+            n_repub_age_recovered += 1
+    print(f"Republished-obit ages recovered via cross-year lookup: {n_repub_age_recovered}")
+
+    # Per-URL overrides for cases the parser can't get right programmatically.
+    n_overrides = 0
+    for o in all_obits:
+        ov = OBIT_OVERRIDES.get(o.get('url') or '')
+        if not ov: continue
+        for k, v in ov.items():
+            o[k] = v
+        n_overrides += 1
+    print(f"Per-URL overrides applied: {n_overrides}")
 
     # Merge same-name records published within ±10 days. The Times often runs
     # an initial obit and a follow-up profile within a week (Peter Gowland:
@@ -624,11 +775,40 @@ def main():
                 merged.append(primary)
                 n_merged += len(others)
     merged.extend(no_name_rows)
+    # Second-pass merge — republications years apart from their originals
+    # (Ruth Clement Bond: original 2005, republication 2026). The ±10-day
+    # cluster above can't catch them. For each republished obit with the
+    # same name as a non-republished obit, attach the republication as
+    # additional URL on the original and drop the republication record.
+    by_name2 = {}
+    for o in merged:
+        nm = o.get('name')
+        if nm: by_name2.setdefault(nm, []).append(o)
+    n_repub_merged = 0
+    drop_ids = set()
+    for nm, recs in by_name2.items():
+        if len(recs) < 2: continue
+        repubs = [r for r in recs if r.get('republished')]
+        origs  = [r for r in recs if not r.get('republished')]
+        if not repubs or not origs: continue
+        primary = sorted(origs, key=_rank)[0]
+        sec_urls = list(primary.get('secondary_urls') or [])
+        sec_dates = list(primary.get('secondary_dates') or [])
+        for r in repubs:
+            u = r.get('url'); d = r.get('date')
+            if u: sec_urls.append(u)
+            if d: sec_dates.append(d)
+            drop_ids.add(id(r))
+            n_repub_merged += 1
+        primary['secondary_urls'] = sec_urls
+        primary['secondary_dates'] = sec_dates
+    merged = [o for o in merged if id(o) not in drop_ids]
     n_total_before = len(all_obits)
     print(f"Skipped {skipped_corr:,} correction-notice records (paper-wide tom='Correction', "
           f"used by Corrections tab; not corrections to obits), {skipped_non_obit:,} non-obit "
           f"package/lesson articles; merged {n_merged:,} same-name near-duplicates "
-          f"(±10 days). {n_total_before:,} → {len(merged):,}")
+          f"(±10 days), {n_repub_merged:,} republications onto their originals. "
+          f"{n_total_before:,} → {len(merged):,}")
     all_obits = merged
     n_repub = sum(1 for o in all_obits if o.get('republished'))
     n_overl = sum(1 for o in all_obits if o.get('overlooked'))
