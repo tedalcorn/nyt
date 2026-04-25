@@ -1788,10 +1788,15 @@ def build_dashboard_data(articles, authors):
     # Section stats
     section_counts = Counter()
     section_words = defaultdict(int)
+    section_wc_hist = defaultdict(lambda: [0] * 21)   # 21 bins × 200 words, last = 4000+
     for art in articles:
         s = art["section"] or "(none)"
         section_counts[s] += 1
         section_words[s] += art["word_count"]
+        wc = art["word_count"] or 0
+        if wc > 0:
+            bin_idx = min(wc // 200, 20)
+            section_wc_hist[s][bin_idx] += 1
 
     sections = []
     for s, count in section_counts.most_common():
@@ -1800,19 +1805,22 @@ def build_dashboard_data(articles, authors):
             "count": count,
             "total_words": section_words[s],
             "avg_words": round(section_words[s] / count) if count else 0,
+            "wc_hist": section_wc_hist[s],
         })
 
     # Words per section over time (all sections)
     top_sections = [s["name"] for s in sections if s["name"] not in ("", "(none)")]
-    section_time = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0, "wc_list": []}))
+    section_time = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0, "wc_list": [], "wc_hist": [0] * 21}))
     for art in articles:
         s = art["section"]
         if s in top_sections:
             y = str(art["year"])
             section_time[s][y]["count"] += 1
             section_time[s][y]["words"] += art["word_count"]
-            if art["word_count"] > 0:
-                section_time[s][y]["wc_list"].append(art["word_count"])
+            wc = art["word_count"] or 0
+            if wc > 0:
+                section_time[s][y]["wc_list"].append(wc)
+                section_time[s][y]["wc_hist"][min(wc // 200, 20)] += 1
 
     # --- Inferred Movies for 2005: in that year the API filed movie reviews under "Arts"  ---
     # Identify "core movie reviewers" = authors with >=20 Movies articles in 2004 OR 2006.
@@ -1834,8 +1842,11 @@ def build_dashboard_data(articles, authors):
 
     section_trends = {}
     all_years = sorted(set(str(a["year"]) for a in articles))
+    # wc_hist_by_year: per-section dict of {year: [21 bins]} for the popup's year-layered line chart
+    section_wc_hist_by_year = {}
     for s in top_sections:
         trend = []
+        by_year = {}
         for y in all_years:
             d = section_time[s][y]
             avg = round(d["words"] / d["count"]) if d["count"] else 0
@@ -1847,7 +1858,49 @@ def build_dashboard_data(articles, authors):
             if s == "Movies" and y == "2005" and inferred_movies_2005 > 0:
                 entry["inferred_count"] = inferred_movies_2005
             trend.append(entry)
+            if sum(d["wc_hist"]) > 0:
+                by_year[y] = d["wc_hist"]
         section_trends[s] = trend
+        section_wc_hist_by_year[s] = by_year
+
+    # Attach wc_hist_by_year onto each section record
+    for sec in sections:
+        sec["wc_hist_by_year"] = section_wc_hist_by_year.get(sec["name"], {})
+
+    # Build an "All Sections" aggregate entry (placed first so UI can separate it)
+    all_wc_hist = [0] * 21
+    all_wc_hist_by_year = defaultdict(lambda: [0] * 21)
+    total_articles = 0
+    total_words_all = 0
+    for art in articles:
+        wc = art["word_count"] or 0
+        total_articles += 1
+        total_words_all += wc
+        if wc > 0:
+            b = min(wc // 200, 20)
+            all_wc_hist[b] += 1
+            all_wc_hist_by_year[str(art["year"])][b] += 1
+    all_sections_entry = {
+        "name": "All Sections",
+        "count": total_articles,
+        "total_words": total_words_all,
+        "avg_words": round(total_words_all / total_articles) if total_articles else 0,
+        "wc_hist": all_wc_hist,
+        "wc_hist_by_year": dict(all_wc_hist_by_year),
+        "is_aggregate": True,
+    }
+    # Build section_trend for All Sections (articles, avg, median per year)
+    all_trend = []
+    for y in all_years:
+        yr_articles = [a for a in articles if str(a["year"]) == y]
+        cnt = len(yr_articles)
+        wc_list = sorted(a["word_count"] for a in yr_articles if a["word_count"] > 0)
+        n = len(wc_list)
+        words = sum(a["word_count"] for a in yr_articles)
+        avg = round(words / cnt) if cnt else 0
+        median = round(wc_list[n // 2] if n % 2 else (wc_list[n // 2 - 1] + wc_list[n // 2]) / 2) if wc_list else 0
+        all_trend.append({"year": y, "count": cnt, "avg_words": avg, "median_words": median})
+    section_trends["All Sections"] = all_trend
 
     # Top 25 authors (by article count, 25+ articles)
     top_authors = [a for a in authors if a["article_count"] >= 25][:50]
@@ -2807,7 +2860,7 @@ def build_dashboard_data(articles, authors):
             "last_month": months_sorted[-1] if months_sorted else "",
         },
         "articles_per_month": articles_per_month,
-        "sections": sections,
+        "sections": [all_sections_entry] + sections,
         "section_trends": section_trends,
         "all_years": all_years,
         "top_authors": top_authors,

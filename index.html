@@ -356,6 +356,8 @@
   <button data-view="authors">Reporters</button>
   <button data-view="states">U.S. States</button>
   <button data-view="world">World</button>
+  <button data-view="obits">Obituaries</button>
+  <button data-view="corrections">Corrections</button>
   <button data-view="about">About</button>
 </nav>
 
@@ -694,6 +696,92 @@
         <input type="checkbox" id="includeNYSection" onchange="initStates();if(document.getElementById('stateMapBox').style.display!=='none')renderStateMap(stateYears)"> Include New York section coverage for NY, NJ &amp; CT
       </label>
       <div class="table-scroll-wrap"><div id="stateTableContainer"></div></div>
+    </div>
+  </div>
+
+  <!-- OBITUARIES -->
+  <div class="view" id="view-obits">
+    <div class="chart-box">
+      <h3>Obituaries</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">
+        Every Times obituary since 2001 — name, age, gender, and the role description from the headline. Parsed from the Archive API. Use the filters to explore who's been profiled.
+      </p>
+      <div id="obitsLoading" style="color:#888;padding:8px 0">Loading obituary data…</div>
+      <div id="obitsContent" style="display:none">
+        <!-- summary stats -->
+        <div id="obitsSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px"></div>
+
+        <!-- charts row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Age at death</div>
+            <canvas id="chartObitAge" style="max-height:180px"></canvas>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Gender split over time</div>
+            <canvas id="chartObitGender" style="max-height:180px"></canvas>
+          </div>
+        </div>
+
+        <!-- filters -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
+          <input type="text" id="obitSearch" placeholder="Filter by name, profession, or headline…" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
+          <select id="obitGenderFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
+            <option value="">All genders</option>
+            <option value="M">Male only</option>
+            <option value="F">Female only</option>
+            <option value="?">Gender not parsed</option>
+          </select>
+          <select id="obitYearFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
+            <option value="">All years</option>
+          </select>
+          <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
+        </div>
+        <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="obitsTableContainer"></div></div>
+
+        <p style="font-size:11px;color:#888;margin-top:14px;line-height:1.4">
+          <strong>Methodology.</strong> Records identified via NYT Archive API tags <code>type_of_material = "Obituary (Obit)"</code> or <code>news_desk = "Obits"</code>. Fields parsed from headline + abstract: <em>name</em> via comma split, <em>age</em> via "Dies at NN"/"Name, NN," patterns, <em>gender</em> via pronoun tally with first-name fallback, <em>profession</em> from the second-comma phrase. Cause of death rarely appears in headline/abstract and would require fetching article body. Coverage of fields: name 93%, age 95%, gender 85%, profession 75%.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CORRECTIONS -->
+  <div class="view" id="view-corrections">
+    <div class="chart-box">
+      <h3>Corrections</h3>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">
+        Every correction the Times printed in 2025, with the article it refers to. We scraped each daily corrections page (via Wayback), pulled out the individual blurbs, and matched them back to specific articles by date and topic overlap.
+      </p>
+      <div id="corrLoading" style="color:#888;padding:8px 0">Loading corrections data…</div>
+      <div id="corrContent" style="display:none">
+        <div id="corrSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Top sections corrected</div>
+            <canvas id="chartCorrSections" style="max-height:220px"></canvas>
+          </div>
+          <div>
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Top reporters with corrections</div>
+            <canvas id="chartCorrAuthors" style="max-height:220px"></canvas>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
+          <input type="text" id="corrSearch" placeholder="Filter by text, section, or reporter…" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
+          <select id="corrSectionFilter" onchange="renderCorrTable()" style="padding:5px 8px;font-size:13px">
+            <option value="">All sections</option>
+          </select>
+          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="corrMatchedOnly" onchange="renderCorrTable()"> matched only</label>
+          <span id="corrCount" style="color:#888;font-size:12px;margin-left:auto"></span>
+        </div>
+        <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="corrTableContainer"></div></div>
+
+        <p style="font-size:11px;color:#888;margin-top:14px;line-height:1.4">
+          <strong>Methodology.</strong> Each daily corrections page (e.g. <code>nytimes.com/2025/01/02/pageoneplus/corrections-jan-3-2025.html</code>) was fetched via the Wayback Machine (live site is bot-blocked). Individual corrections were pulled from the article body — they begin with phrases like "An article on Tuesday about…". Referenced article date is parsed from the correction's date phrase or relative day-of-week ("on Thursday"). Match to the actual article uses headline + slug + subject token overlap within ±3 days; we accept a match when ≥2 distinct content tokens align. <strong>Coverage:</strong> 152 of 190 corrections pages fetched (the rest hit Wayback rate-limit timeouts). <strong>Match rate:</strong> 88% of parsed corrections linked to a specific article. Only corrections with a clear "An article on…" lead are extracted; corrections referring to obituaries or photos may be skipped if their phrasing differs.
+        </p>
+      </div>
     </div>
   </div>
 
@@ -1951,11 +2039,23 @@ const SECTION_BLOCKLIST = new Set([
 function initSections() {
   // Populate section count selector (alphabetical, blocklist filtered)
   const trendSections = Object.keys(dashboard.section_trends)
-    .filter(s => !SECTION_BLOCKLIST.has(s))
+    .filter(s => !SECTION_BLOCKLIST.has(s) && s !== 'All Sections')
     .sort();
   const defaultSections = ['U.S.', 'World', 'Opinion', 'Arts', 'Science'];
 
   const countSelect = document.getElementById('sectionCountSelect');
+  // Add "All Sections" as the first option, visually separated by a divider
+  const allOpt = document.createElement('option');
+  allOpt.value = 'All Sections';
+  allOpt.textContent = 'All Sections';
+  allOpt.style.fontWeight = 'bold';
+  allOpt.style.borderBottom = '2px solid #ccc';
+  countSelect.appendChild(allOpt);
+  const divider = document.createElement('option');
+  divider.disabled = true;
+  divider.textContent = '──────────';
+  divider.style.color = '#ccc';
+  countSelect.appendChild(divider);
   trendSections.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s; opt.textContent = s;
@@ -2199,7 +2299,7 @@ function renderSectionsTable() {
 
   // Build section data with period active and totals
   const rows = dashboard.sections
-    .filter(s => s.name && !SECTION_BLOCKLIST.has(s.name))
+    .filter(s => s.name && !SECTION_BLOCKLIST.has(s.name) && !s.is_aggregate)
     .map(s => {
       const trend = dashboard.section_trends[s.name] || [];
       const activeYears = trend.filter(d => d.count > 0 && d.year !== currentYear).map(d => d.year).sort();
@@ -2329,11 +2429,15 @@ function openSectionDetail(sectionName) {
           ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): ~795 articles estimated from core reviewers' bylines — API gap year.</p>` : ''}
         </div>
         <div>
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Word count distribution</div>
-          <canvas id="chartSectionHist" style="max-height:180px;cursor:pointer"></canvas>
-          <div id="sectionHistNote" style="font-size:10px;color:#bbb;margin-top:2px">
-            ${articlesReady && !IS_MOBILE ? 'Loading…' : IS_MOBILE ? '' : 'Loading article data…'}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Word count distribution</div>
+            <div style="display:flex;gap:3px;font-size:10px">
+              <button id="histModeAll" onclick="setSectionHistMode('all')" style="padding:1px 7px;border:1px solid #ccc;border-radius:3px;background:#567;color:#fff;cursor:pointer">All years</button>
+              <button id="histModeYear" onclick="setSectionHistMode('year')" style="padding:1px 7px;border:1px solid #ccc;border-radius:3px;background:#fff;color:#444;cursor:pointer">By year</button>
+            </div>
           </div>
+          <canvas id="chartSectionHist" style="max-height:180px;cursor:pointer"></canvas>
+          <div id="sectionHistNote" style="font-size:10px;color:#bbb;margin-top:2px"></div>
         </div>
       </div>
       <div id="sectionDetailReporters" style="margin-top:12px"></div>
@@ -2406,19 +2510,46 @@ function openSectionDetail(sectionName) {
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   // Render word-count histogram immediately from precomputed wc_hist in dashboard.json
-  // (same pattern as reporter panel — no article loading required)
+  window._currentSectionHist = { sec, sectionName, avgWords, mode: 'all' };
+  renderSectionHistogram('all');
+
+  if (articlesReady) fillSectionArticleList(sectionName);
+}
+
+function setSectionHistMode(mode) {
+  if (!window._currentSectionHist) return;
+  window._currentSectionHist.mode = mode;
+  const allBtn = document.getElementById('histModeAll');
+  const yearBtn = document.getElementById('histModeYear');
+  if (allBtn && yearBtn) {
+    allBtn.style.background = mode === 'all' ? '#567' : '#fff';
+    allBtn.style.color = mode === 'all' ? '#fff' : '#444';
+    yearBtn.style.background = mode === 'year' ? '#567' : '#fff';
+    yearBtn.style.color = mode === 'year' ? '#fff' : '#444';
+  }
+  renderSectionHistogram(mode);
+}
+
+function renderSectionHistogram(mode) {
+  const ctx = window._currentSectionHist;
+  if (!ctx) return;
+  const { sec, sectionName, avgWords } = ctx;
   const wcHist = sec ? (sec.wc_hist || []) : [];
   const histTotal = wcHist.reduce((s,v)=>s+v,0);
   const histCanvas = document.getElementById('chartSectionHist');
   const histNote = document.getElementById('sectionHistNote');
-  if (histCanvas && histTotal > 0) {
-    const BIN = 200;
-    let lastBin = wcHist.length - 1;
-    while (lastBin > 0 && wcHist[lastBin] === 0) lastBin--;
+  if (!histCanvas || histTotal === 0) return;
+
+  const BIN = 200;
+  // Normalize display window across both modes — share lastBin based on aggregate
+  let lastBin = wcHist.length - 1;
+  while (lastBin > 0 && wcHist[lastBin] === 0) lastBin--;
+  const binLabels = wcHist.slice(0, lastBin + 1).map((_, i) => i === 20 ? '4k+' : String(i * BIN));
+  destroyChart('chartSectionHist');
+
+  if (mode === 'all') {
     const counts = wcHist.slice(0, lastBin + 1);
-    const binLabels = counts.map((_, i) => i === 20 ? '4k+' : String(i * BIN));
     const avgBinIdx = Math.min(Math.floor((avgWords || 0) / BIN), 20);
-    destroyChart('chartSectionHist');
     chartInstances['chartSectionHist'] = new Chart(histCanvas, {
       type: 'bar',
       data: {
@@ -2447,10 +2578,8 @@ function openSectionDetail(sectionName) {
           legend: { display: false },
           tooltip: { callbacks: {
             title: items => { const i=items[0].dataIndex; return i===20?'4000+ words':`${i*BIN}–${i*BIN+BIN} words`; },
-            label: ctx => {
-              if (ctx.datasetIndex!==0) return `avg ${avgWords} words`;
-              return `${ctx.parsed.y.toLocaleString()} articles (${((ctx.parsed.y/histTotal)*100).toFixed(1)}%)`;
-            }
+            label: c => c.datasetIndex!==0 ? `avg ${avgWords} words` :
+              `${c.parsed.y.toLocaleString()} articles (${((c.parsed.y/histTotal)*100).toFixed(1)}%)`
           }}
         },
         scales: {
@@ -2463,9 +2592,60 @@ function openSectionDetail(sectionName) {
     if (histNote) histNote.textContent = avgWords
       ? `avg ${avgWords.toLocaleString()} words · n=${histTotal.toLocaleString()}${articlesReady && !IS_MOBILE ? ' · click a bar to filter' : ''}`
       : '';
+    return;
   }
 
-  if (articlesReady) fillSectionArticleList(sectionName);
+  // mode === 'year': one line per year; oldest faint → newest dark (as % of year total)
+  const byYear = sec.wc_hist_by_year || {};
+  const years = Object.keys(byYear).filter(y => byYear[y].some(v => v > 0)).sort();
+  if (!years.length) { if (histNote) histNote.textContent = 'No per-year data'; return; }
+  const currentYear = String(new Date().getFullYear());
+  const displayYears = years.filter(y => y !== currentYear);  // exclude partial current year
+  const span = displayYears.length;
+  const datasets = displayYears.map((y, i) => {
+    const total = byYear[y].reduce((s,v)=>s+v,0);
+    const pct = byYear[y].slice(0, lastBin + 1).map(v => total > 0 ? 100 * v / total : 0);
+    // Fade from old (faint) to new (dark). Use HSL for perceptual uniformity.
+    const t = span > 1 ? i / (span - 1) : 1;
+    const alpha = 0.15 + 0.75 * t;
+    const lightness = 55 - 30 * t;
+    return {
+      label: y,
+      data: pct,
+      borderColor: `hsla(205, 50%, ${lightness}%, ${alpha})`,
+      borderWidth: 1 + 1 * t,
+      pointRadius: 0,
+      tension: 0.25,
+      fill: false,
+    };
+  });
+  chartInstances['chartSectionHist'] = new Chart(histCanvas, {
+    type: 'line',
+    data: { labels: binLabels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', axis: 'x', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          filter: item => item.parsed.y > 0.5,
+          callbacks: {
+            title: items => items[0].dataIndex===20?'4000+ words':`${items[0].dataIndex*BIN}–${items[0].dataIndex*BIN+BIN} words`,
+            label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:10 }, grid:{display:false} },
+        y: { beginAtZero:true, ticks:{font:{size:9}, callback: v => v + '%'} }
+      }
+    }
+  });
+  histCanvas.style.cursor = 'default';
+  if (histNote) histNote.innerHTML =
+    `<span style="color:hsl(205,50%,55%)">■</span> ${displayYears[0]} → ` +
+    `<span style="color:hsl(205,50%,25%)">■</span> ${displayYears[displayYears.length-1]} · ` +
+    `lines = % of each year's articles`;
 }
 
 function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal, avgWords) {
@@ -5647,6 +5827,388 @@ const subjectsObserver = new MutationObserver(() => {
   }
 });
 subjectsObserver.observe(document.getElementById('view-subjects'), { attributes: true });
+
+// Trigger obituaries tab when shown (lazy init — fetches its own data file)
+let obitsInitialized = false;
+let _obits = null;
+const obitsObserver = new MutationObserver(() => {
+  if (document.getElementById('view-obits').classList.contains('active') && !obitsInitialized) {
+    obitsInitialized = true;
+    initObits();
+  }
+});
+obitsObserver.observe(document.getElementById('view-obits'), { attributes: true });
+
+async function initObits() {
+  try {
+    const res = await fetch('data/obituaries.json');
+    _obits = await res.json();
+  } catch (e) {
+    document.getElementById('obitsLoading').textContent = 'Failed to load obituary data.';
+    return;
+  }
+  document.getElementById('obitsLoading').style.display = 'none';
+  document.getElementById('obitsContent').style.display = 'block';
+
+  // Year filter options
+  const years = Array.from(new Set(_obits.map(o => o.year).filter(Boolean))).sort();
+  const yfSel = document.getElementById('obitYearFilter');
+  years.forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y; opt.textContent = y;
+    yfSel.appendChild(opt);
+  });
+
+  // Summary cards
+  renderObitSummary();
+  renderObitAgeChart();
+  renderObitGenderChart();
+
+  document.getElementById('obitSearch').addEventListener('input', () => renderObitsTable());
+  renderObitsTable();
+}
+
+function renderObitSummary() {
+  const total = _obits.length;
+  const ages = _obits.map(o => o.age).filter(a => typeof a === 'number');
+  const meanAge = ages.length ? (ages.reduce((s,v)=>s+v,0) / ages.length) : 0;
+  const sortedAges = ages.slice().sort((a,b)=>a-b);
+  const medianAge = sortedAges.length ? sortedAges[Math.floor(sortedAges.length / 2)] : 0;
+  const m = _obits.filter(o => o.gender === 'M').length;
+  const f = _obits.filter(o => o.gender === 'F').length;
+  const knownGen = m + f;
+  const fPct = knownGen > 0 ? Math.round(100 * f / knownGen) : 0;
+  const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean))).sort();
+  const wrap = document.getElementById('obitsSummary');
+  const card = (label, value, sub) =>
+    `<div style="border:1px solid #eee;border-radius:6px;padding:10px 14px;background:#fafafa">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${label}</div>
+      <div style="font-size:22px;font-weight:600;color:#333">${value}</div>
+      ${sub ? `<div style="font-size:11px;color:#aaa;margin-top:2px">${sub}</div>` : ''}
+    </div>`;
+  wrap.innerHTML = card('Obituaries', total.toLocaleString(), `${yrs[0]}–${yrs[yrs.length-1]}`)
+    + card('Median age at death', medianAge ? medianAge + ' years' : '—', `mean ${meanAge.toFixed(1)}`)
+    + card('Female share', knownGen ? fPct + '%' : '—', `${f.toLocaleString()} of ${knownGen.toLocaleString()} where parsed`)
+    + card('Most-profiled year', yrs.length ? mostProfiledYear() : '—', '');
+}
+
+function mostProfiledYear() {
+  const ct = {};
+  _obits.forEach(o => { if (o.year) ct[o.year] = (ct[o.year]||0)+1; });
+  let best = '', bestN = 0;
+  for (const [y, n] of Object.entries(ct)) if (n > bestN) { best = y; bestN = n; }
+  return `${best} (${bestN.toLocaleString()})`;
+}
+
+function renderObitAgeChart() {
+  // Histogram of ages, 5-year bins
+  const ages = _obits.map(o => o.age).filter(a => typeof a === 'number' && a >= 20 && a <= 110);
+  const BIN = 5;
+  const bins = new Array(Math.ceil(110 / BIN)).fill(0);
+  ages.forEach(a => bins[Math.floor(a / BIN)]++);
+  // Trim leading empty bins (under age 20)
+  const startBin = Math.floor(20 / BIN);
+  const trimmed = bins.slice(startBin);
+  const labels = trimmed.map((_, i) => (startBin + i) * BIN);
+  // Split by gender for stacked breakdown
+  const mAges = _obits.filter(o => o.gender === 'M').map(o => o.age).filter(a => typeof a === 'number');
+  const fAges = _obits.filter(o => o.gender === 'F').map(o => o.age).filter(a => typeof a === 'number');
+  const mBins = new Array(bins.length).fill(0); mAges.forEach(a => { if (a>=20&&a<=110) mBins[Math.floor(a/BIN)]++; });
+  const fBins = new Array(bins.length).fill(0); fAges.forEach(a => { if (a>=20&&a<=110) fBins[Math.floor(a/BIN)]++; });
+  destroyChart('chartObitAge');
+  chartInstances['chartObitAge'] = new Chart(document.getElementById('chartObitAge'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Female', data: fBins.slice(startBin), backgroundColor: 'rgba(196,120,74,0.7)', stack: 'a' },
+        { label: 'Male',   data: mBins.slice(startBin), backgroundColor: 'rgba(74,124,139,0.7)', stack: 'a' },
+        { label: 'Unknown', data: trimmed.map((v,i) => v - (mBins.slice(startBin)[i]||0) - (fBins.slice(startBin)[i]||0)),
+          backgroundColor: 'rgba(180,180,180,0.5)', stack: 'a' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+        tooltip: { mode: 'index' }
+      },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 12 } },
+        y: { stacked: true, beginAtZero: true, ticks: { font: { size: 9 } } }
+      }
+    }
+  });
+}
+
+function renderObitGenderChart() {
+  // Female share by year
+  const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean))).sort();
+  const fPct = [], totals = [];
+  yrs.forEach(y => {
+    const oy = _obits.filter(o => o.year === y);
+    const m = oy.filter(o => o.gender === 'M').length;
+    const f = oy.filter(o => o.gender === 'F').length;
+    const known = m + f;
+    fPct.push(known > 0 ? 100 * f / known : null);
+    totals.push(oy.length);
+  });
+  destroyChart('chartObitGender');
+  chartInstances['chartObitGender'] = new Chart(document.getElementById('chartObitGender'), {
+    type: 'line',
+    data: {
+      labels: yrs,
+      datasets: [
+        { label: '% Female', data: fPct, borderColor: 'rgba(196,120,74,0.9)', backgroundColor: 'rgba(196,120,74,0.15)',
+          tension: 0.25, pointRadius: 2, fill: true, yAxisID: 'y' },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `${c.parsed.y?.toFixed(1) || '—'}% (n=${totals[c.dataIndex]?.toLocaleString()})` } }
+      },
+      scales: {
+        x: { ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
+        y: { beginAtZero: true, max: 50, ticks: { font: { size: 9 }, callback: v => v + '%' } }
+      }
+    }
+  });
+}
+
+let _obitTableSort = { col: 'date', asc: false };
+function renderObitsTable() {
+  if (!_obits) return;
+  const q = (document.getElementById('obitSearch').value || '').toLowerCase();
+  const gen = document.getElementById('obitGenderFilter').value;
+  const yr = document.getElementById('obitYearFilter').value;
+  let rows = _obits.filter(o => {
+    if (yr && o.year !== yr) return false;
+    if (gen) {
+      if (gen === '?' && o.gender) return false;
+      if (gen !== '?' && o.gender !== gen) return false;
+    }
+    if (q) {
+      const hay = ((o.name||'') + ' ' + (o.profession||'') + ' ' + (o.headline||'')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  rows.sort((a, b) => {
+    let va = a[_obitTableSort.col], vb = b[_obitTableSort.col];
+    if (va == null) va = '';
+    if (vb == null) vb = '';
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    if (va < vb) return _obitTableSort.asc ? -1 : 1;
+    if (va > vb) return _obitTableSort.asc ? 1 : -1;
+    return 0;
+  });
+  document.getElementById('obitsCount').textContent = `${rows.length.toLocaleString()} matching`;
+
+  const display = rows.slice(0, 500);
+  const ind = c => _obitTableSort.col === c ? (_obitTableSort.asc ? ' ▲' : ' ▼') : '';
+  const cols = [
+    { k: 'date', label: 'Date' },
+    { k: 'name', label: 'Name' },
+    { k: 'age', label: 'Age', cls: 'num' },
+    { k: 'gender', label: 'Gender' },
+    { k: 'profession', label: 'Profession / Role' },
+  ];
+  let html = '<table class="author-table"><thead><tr>';
+  cols.forEach(c => { html += `<th class="${c.cls||''}" data-sort="${c.k}">${c.label}${ind(c.k)}</th>`; });
+  html += '</tr></thead><tbody>';
+  display.forEach(o => {
+    const url = o.url || '';
+    const safeUrl = url.startsWith('/') ? 'https://www.nytimes.com' + url : url;
+    const nameCell = url
+      ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">${escapeHtml(o.name || '(unparsed)')}</a>`
+      : escapeHtml(o.name || '(unparsed)');
+    html += `<tr title="${escapeHtml(o.headline || '')}">
+      <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
+      <td>${nameCell}</td>
+      <td class="num">${o.age ?? ''}</td>
+      <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
+      <td>${escapeHtml(o.profession || '')}</td>
+    </tr>`;
+  });
+  if (rows.length > 500) {
+    html += `<tr><td colspan="5" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
+  }
+  html += '</tbody></table>';
+  const wrap = document.getElementById('obitsTableContainer');
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('th[data-sort]').forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const c = th.dataset.sort;
+      if (_obitTableSort.col === c) _obitTableSort.asc = !_obitTableSort.asc;
+      else { _obitTableSort.col = c; _obitTableSort.asc = (c !== 'date'); }
+      renderObitsTable();
+    });
+  });
+}
+
+// ── Corrections tab ──────────────────────────────────────────────────────────
+let corrInitialized = false;
+let _corr = null;
+let _corrSummary = null;
+const corrObserver = new MutationObserver(() => {
+  if (document.getElementById('view-corrections').classList.contains('active') && !corrInitialized) {
+    corrInitialized = true;
+    initCorrections();
+  }
+});
+corrObserver.observe(document.getElementById('view-corrections'), { attributes: true });
+
+async function initCorrections() {
+  try {
+    const [r1, r2] = await Promise.all([
+      fetch('data/corrections_matched.json').then(r => r.json()),
+      fetch('data/corrections_summary.json').then(r => r.json()),
+    ]);
+    _corr = r1;
+    _corrSummary = r2;
+  } catch (e) {
+    document.getElementById('corrLoading').textContent = 'Failed to load corrections data.';
+    return;
+  }
+  document.getElementById('corrLoading').style.display = 'none';
+  document.getElementById('corrContent').style.display = 'block';
+
+  // Section filter options from summary
+  const secSel = document.getElementById('corrSectionFilter');
+  _corrSummary.by_section.forEach(([s, n]) => {
+    const opt = document.createElement('option');
+    opt.value = s; opt.textContent = `${s} (${n})`;
+    secSel.appendChild(opt);
+  });
+
+  renderCorrSummary();
+  renderCorrSectionsChart();
+  renderCorrAuthorsChart();
+  document.getElementById('corrSearch').addEventListener('input', () => renderCorrTable());
+  renderCorrTable();
+}
+
+function renderCorrSummary() {
+  const total = _corrSummary.total;
+  const matched = _corrSummary.matched;
+  const matchPct = total ? Math.round(100 * matched / total) : 0;
+  // Pages = unique page_url
+  const uniqPages = new Set(_corr.map(c => c.page_url)).size;
+  // Top reporter
+  const topAuthor = _corrSummary.by_author && _corrSummary.by_author[0];
+  const wrap = document.getElementById('corrSummary');
+  const card = (label, value, sub) =>
+    `<div style="border:1px solid #eee;border-radius:6px;padding:10px 14px;background:#fafafa">
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${label}</div>
+      <div style="font-size:22px;font-weight:600;color:#333">${value}</div>
+      ${sub ? `<div style="font-size:11px;color:#aaa;margin-top:2px">${sub}</div>` : ''}
+    </div>`;
+  wrap.innerHTML =
+    card('Corrections (2025)', total.toLocaleString(), `${uniqPages} daily pages`)
+    + card('Matched to articles', matched.toLocaleString(), `${matchPct}% link rate`)
+    + card('Top corrected section', _corrSummary.by_section[0] ? _corrSummary.by_section[0][0] : '—', _corrSummary.by_section[0] ? `${_corrSummary.by_section[0][1]} corrections` : '')
+    + card('Most-corrected reporter', topAuthor ? topAuthor[0] : '—', topAuthor ? `${topAuthor[1]} corrections` : '');
+}
+
+function renderCorrSectionsChart() {
+  destroyChart('chartCorrSections');
+  const top = _corrSummary.by_section.slice(0, 12);
+  const ctx = document.getElementById('chartCorrSections').getContext('2d');
+  chartInstances['chartCorrSections'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top.map(d => d[0]),
+      datasets: [{ data: top.map(d => d[1]), backgroundColor: '#326891' }],
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 } }, beginAtZero: true },
+        y: { ticks: { font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+function renderCorrAuthorsChart() {
+  destroyChart('chartCorrAuthors');
+  const top = _corrSummary.by_author.slice(0, 12);
+  const ctx = document.getElementById('chartCorrAuthors').getContext('2d');
+  chartInstances['chartCorrAuthors'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: top.map(d => d[0]),
+      datasets: [{ data: top.map(d => d[1]), backgroundColor: '#a45a3c' }],
+    },
+    options: {
+      indexAxis: 'y',
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      onClick: (evt, els) => {
+        if (els.length) {
+          const name = top[els[0].index][0];
+          openAuthor(name);
+        }
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 } }, beginAtZero: true },
+        y: { ticks: { font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+function renderCorrTable() {
+  if (!_corr) return;
+  const q = (document.getElementById('corrSearch').value || '').toLowerCase();
+  const sec = document.getElementById('corrSectionFilter').value;
+  const matchedOnly = document.getElementById('corrMatchedOnly').checked;
+  let rows = _corr.filter(c => {
+    if (matchedOnly && !c.match_url) return false;
+    if (sec && c.match_section !== sec) return false;
+    if (q) {
+      const hay = ((c.text || '') + ' ' + (c.match_section || '') + ' ' + ((c.match_authors || []).join(' '))).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  // Sort by ref_date desc by default
+  rows.sort((a, b) => (b.ref_date || '').localeCompare(a.ref_date || ''));
+  document.getElementById('corrCount').textContent = `${rows.length.toLocaleString()} matching`;
+
+  const display = rows.slice(0, 500);
+  let html = '<table class="author-table"><thead><tr>'
+    + '<th>Date</th><th>Section</th><th>Reporter(s)</th><th>Article</th><th>Correction</th>'
+    + '</tr></thead><tbody>';
+  display.forEach(c => {
+    const refDate = c.ref_date || '<span style="color:#bbb">—</span>';
+    const sec = c.match_section || '<span style="color:#bbb">—</span>';
+    const authors = (c.match_authors || []).join(', ');
+    const articleCell = c.match_url
+      ? `<a href="https://www.nytimes.com${escapeHtml(c.match_url)}" target="_blank" style="color:#326891;text-decoration:none">view</a>`
+      : '<span style="color:#bbb">—</span>';
+    const correctionCell = c.page_url
+      ? `<a href="${escapeHtml(c.page_url)}" target="_blank" style="color:#666;text-decoration:none" title="${escapeHtml(c.text)}">${escapeHtml(c.text.slice(0, 200))}${c.text.length > 200 ? '…' : ''}</a>`
+      : escapeHtml(c.text.slice(0, 200));
+    html += `<tr>
+      <td style="color:#aaa;white-space:nowrap;font-size:12px">${escapeHtml(refDate)}</td>
+      <td style="font-size:12px">${escapeHtml(sec)}</td>
+      <td style="font-size:12px">${escapeHtml(authors)}</td>
+      <td style="font-size:12px">${articleCell}</td>
+      <td style="font-size:12px;max-width:560px">${correctionCell}</td>
+    </tr>`;
+  });
+  if (rows.length > 500) {
+    html += `<tr><td colspan="5" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
+  }
+  html += '</tbody></table>';
+  document.getElementById('corrTableContainer').innerHTML = html;
+}
 
 // ── Beats year-range dual slider ─────────────────────────────────────────────
 function initBeatYearSlider() {

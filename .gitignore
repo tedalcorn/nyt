@@ -1,6 +1,9 @@
 # Raw API data (large, regenerable from NYT API)
 data/raw/
 
+# Scrape caches (Wayback HTML, resumable)
+cache/
+
 # Python
 __pycache__/
 *.pyc
