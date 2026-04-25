@@ -319,6 +319,19 @@ OBIT_OVERRIDES = {
         'name': 'Queen Elizabeth the Queen Mother', 'profession': None,
     },
 }
+
+# Multi-subject obituaries: one URL covers two or more deaths (spouses,
+# siblings, co-victims). Emit one record per subject; all share the same URL
+# and date. The dict is keyed by URL; each value is a list of override dicts
+# applied on top of the parsed obit.
+OBIT_SPLITS = {
+    '/2003/01/17/us/2-archaeologists-robert-braidwood-95-and-his-wife-linda-braidwood-93-die.html': [
+        {'name': 'Robert J. Braidwood', 'age': 95, 'gender': 'M', 'gender_src': 'manual',
+         'profession': 'archaeologist'},
+        {'name': 'Linda S. Braidwood',  'age': 93, 'gender': 'F', 'gender_src': 'manual',
+         'profession': 'archaeologist'},
+    ],
+}
 # 9/11 "Portraits of Grief" — published Dec 2001 - Sep 2002, ~1,800 articles.
 # Profile-style obits: headline is "Name: Tagline", desk='National / Portraits
 # of Grief', URL contains '/national/portraits/'. Standard parsers fail
@@ -759,6 +772,29 @@ def main():
             o['display_name'] = ov.get('display_name') or ov['name']
         n_overrides += 1
     print(f"Per-URL overrides applied: {n_overrides}")
+
+    # Multi-subject splits: emit one record per named subject from a single
+    # article (e.g. /2003/01/17/.../2-archaeologists-robert-braidwood-95-and-
+    # his-wife-linda-braidwood-93-die.html → two records).
+    n_split_in = 0
+    n_split_out = 0
+    new_obits = []
+    for o in all_obits:
+        splits = OBIT_SPLITS.get(o.get('url') or '')
+        if not splits:
+            new_obits.append(o)
+            continue
+        n_split_in += 1
+        for s in splits:
+            r = dict(o)
+            for k, v in s.items():
+                r[k] = v
+            r['display_name'] = s.get('display_name') or s.get('name') or r.get('name')
+            new_obits.append(r)
+            n_split_out += 1
+    if n_split_in:
+        print(f"Multi-subject splits: {n_split_in} URLs → {n_split_out} records")
+    all_obits = new_obits
 
     # Merge same-name records published within ±10 days. The Times often runs
     # an initial obit and a follow-up profile within a week (Peter Gowland:
