@@ -6008,6 +6008,8 @@ function renderObitsTable() {
   const keyFor = (o, c) => {
     if (c === 'firstName') return _firstName(o.name);
     if (c === 'lastName')  return _lastName(o.name);
+    if (c === 'overlooked') return o.overlooked ? 1 : 0;
+    if (c === 'secondary')  return (o.secondary_urls || []).length;
     return o[c];
   };
   rows.sort((a, b) => {
@@ -6030,43 +6032,64 @@ function renderObitsTable() {
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
     { k: 'profession', label: 'Profession / Role' },
+    { k: 'overlooked', label: '"Overlooked"' },
+    { k: 'secondary', label: 'Follow-up' },
   ];
+  // gender confidence indicator → small marker
+  const _gsrcMark = src => src === 'first_name'
+    ? '<span title="Inferred from first name only — low confidence" style="color:#c08040;font-size:9px;margin-left:3px;cursor:help">⚠</span>'
+    : '';
   let html = '<table class="author-table"><thead><tr>';
   cols.forEach(c => { html += `<th class="${c.cls||''}" data-sort="${c.k}">${c.label}${ind(c.k)}</th>`; });
   html += '</tr></thead><tbody>';
   display.forEach(o => {
     const url = o.url || '';
     const safeUrl = url.startsWith('/') ? 'https://www.nytimes.com' + url : url;
-    const fn = _firstName(o.name);
-    const ln = _lastName(o.name);
     // Re-capitalize for display from the original name
     const parts = (o.name || '').replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
     const dispLast  = parts.length ? parts[parts.length - 1].replace(/[.,]+$/, '') : '';
     const dispFirst = parts.length > 1 ? parts.slice(0, -1).join(' ') : (parts[0] || '');
     const linkOpen  = url ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">` : '';
     const linkClose = url ? `</a>` : '';
-    const ovrBadge = o.overlooked ? ` <span style="font-size:10px;background:#f3e8d8;color:#7a5526;padding:1px 5px;border-radius:3px;margin-left:4px">Overlooked</span>` : '';
+    // Secondary URL: link if present, else blank
+    const secCell = (() => {
+      const urls = o.secondary_urls || [];
+      if (!urls.length) return '';
+      const dates = o.secondary_dates || [];
+      return urls.map((u, i) => {
+        const su = u && u.startsWith('/') ? 'https://www.nytimes.com' + u : u;
+        const lbl = dates[i] || 'link';
+        return `<a href="${escapeHtml(su || '')}" target="_blank" style="color:#326891;font-size:11px">${escapeHtml(lbl)}</a>`;
+      }).join(', ');
+    })();
+    const ovrCell = o.overlooked
+      ? `<span style="font-size:10px;background:#f3e8d8;color:#7a5526;padding:1px 5px;border-radius:3px">yes</span>`
+      : '';
     if (!o.name) {
       html += `<tr title="${escapeHtml(o.headline || '')}">
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
-        <td colspan="2" style="color:#bbb">${linkOpen}(unparsed)${linkClose}${ovrBadge}</td>
+        <td colspan="2" style="color:#bbb">${linkOpen}(unparsed)${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
-        <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
+        <td>${o.gender || '<span style="color:#bbb">·</span>'}${_gsrcMark(o.gender_src)}</td>
         <td>${escapeHtml(o.profession || '')}</td>
+        <td>${ovrCell}</td>
+        <td>${secCell}</td>
       </tr>`;
     } else {
       html += `<tr title="${escapeHtml(o.headline || '')}">
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
         <td>${linkOpen}${escapeHtml(dispFirst)}${linkClose}</td>
-        <td>${linkOpen}${escapeHtml(dispLast)}${linkClose}${ovrBadge}</td>
+        <td>${linkOpen}${escapeHtml(dispLast)}${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
-        <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
+        <td>${o.gender || '<span style="color:#bbb">·</span>'}${_gsrcMark(o.gender_src)}</td>
         <td>${escapeHtml(o.profession || '')}</td>
+        <td>${ovrCell}</td>
+        <td>${secCell}</td>
       </tr>`;
     }
   });
   if (rows.length > 500) {
-    html += `<tr><td colspan="6" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
+    html += `<tr><td colspan="8" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
   }
   html += '</tbody></table>';
   const wrap = document.getElementById('obitsTableContainer');

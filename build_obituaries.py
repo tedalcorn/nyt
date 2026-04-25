@@ -8,6 +8,17 @@ OUT_PATH = 'data/obituaries.json'
 # Name on left of first comma (also tolerates en-dash separator).
 RE_NAME_COMMA = re.compile(r'^([^,]+?),\s*[A-Za-z\d\u2018\u2019\u201C\u201D\u00C0-\u017F\'"]')
 RE_NAME_DASH = re.compile(r'^([A-Z][\w.\'\-\s]+?)\s*[\u2014\u2013-]\s*[A-Z]')
+# Headline contains "Dies at N" / "Is Dead at N" anywhere — pull the leading
+# 1-4 capitalized tokens as the name. Handles "Joe Moakley of Massachusetts
+# Dies at 74" (intervening "of …" clause) and "Derek Freeman Dies at 84".
+# Token whitelist excludes verb-form words that are also capitalized in
+# headlines (Is, Was, Dies, Dead, Has, Had).
+RE_HAS_DIES = re.compile(r'\b(?:Dies?|Is\s+Dead|Is\s+Dying)\s+at\s+\d', re.I)
+_NOT_VERB = r'(?!(?:Is|Was|Has|Had|Will|Are|Were|Dies?|Dead|Died|Dying)\b)'
+RE_LEADING_CAPS = re.compile(
+    r'^(' + _NOT_VERB + r'[A-Z][\w.\'\-\u00C0-\u017F]*'
+    r'(?:\s+' + _NOT_VERB + r'[A-Z][\w.\'\-\u00C0-\u017F]*){0,3})'
+)
 
 RE_AGE_DIES = re.compile(r'\b(?:Die[ds]?|Is\s+Dead|Dead)\s+at\s+(\d{2,3})\b', re.I)
 RE_AGE_COMMA_HEAD = re.compile(r',\s*(\d{2,3})\s*[,\b]')
@@ -81,6 +92,7 @@ TITLE_PREFIXES = (
     r'Mr\.?|Mrs\.?|Ms\.?|Mx\.?|Miss|'
     r'Madame|Madam|Monsieur|Mademoiselle|'
     r'Se(?:n|ñ)or|Se(?:n|ñ)ora|Se(?:n|ñ)orita|'
+    r'Sultan|Sultana|Emir|Sheikh|Sheik|'
     r'Saint|St\.?)'
 )
 RE_LEADING_TITLE = re.compile(r'^' + TITLE_PREFIXES + r'\s+', re.I)
@@ -100,15 +112,31 @@ def extract_name(headline):
     h = RE_LEADING_SERIES.sub('', h)
     # Strip leading "'Nickname': " prefixes
     h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
-    # Strip honorific titles (The Reverend, Sir, Dr., etc.)
+    # Strip honorific titles (The Reverend, Sir, Dr., Representative, etc.)
+    # Apply twice in case there are stacked titles ("Rep. Dr. ...").
+    h = RE_LEADING_TITLE.sub('', h)
     h = RE_LEADING_TITLE.sub('', h)
     m = RE_NAME_COMMA.match(h)
     if m:
         cand = m.group(1).strip()
+        # Reject if "Is Dead" / "Dies at" appears inside the candidate — that
+        # means the comma fell after the verb phrase, not after the name.
+        # ("D. Avramovic Is Dead at 81; Reform…" wraps name in candidate text)
+        if RE_HAS_DIES.search(cand):
+            cand = RE_HAS_DIES.split(cand)[0].strip().rstrip(',;:.')
+            cand = re.sub(r'\s+(?:Is|Has|Was)$', '', cand)
         # Reject obvious non-names
         if any(w in cand.lower() for w in (' was ', ' is ', ' has ', ' will ')): return None
-        if cand and 1 <= cand.count(' ') <= 6:
+        # Allow single-word names (Birendra, Cher, Madonna) up to 6-token compound names
+        if cand and 0 <= cand.count(' ') <= 6:
             return cand
+    # Headlines with "Dies at N" but no comma (or comma falls after verb):
+    # capture leading 1-4 capitalized tokens. Handles "Joe Moakley of
+    # Massachusetts Dies at 74", "Derek Freeman Dies at 84".
+    if RE_HAS_DIES.search(h):
+        m = RE_LEADING_CAPS.match(h)
+        if m:
+            return m.group(1).strip()
     m = RE_NAME_DASH.match(h)
     if m:
         return m.group(1).strip()
@@ -130,34 +158,37 @@ def extract_age(headline, abstract):
 
 
 def extract_gender(name, full_text):
-    # Honorific-based (very high signal): Mr./Mrs./Ms./Sir/Lord/etc.
+    """Return (gender, source) where source is one of:
+        'honorific' — Mr./Mrs./Sir/Dame/Lord/etc. in text (highest confidence)
+        'pronoun'   — he/she/his/her tally in text (high confidence)
+        'first_name' — match against US baby-name lists (lowest confidence;
+                       culture-specific and unreliable for non-Western names)
+        None         — could not determine
+    """
     if full_text:
-        t = ' ' + full_text + ' '  # case-sensitive — these are typically capitalized
-        # Count male/female honorifics
+        t = ' ' + full_text + ' '  # case-sensitive — honorifics are capitalized
         m_hon = (len(re.findall(r'\bMr\.?\s', t)) + len(re.findall(r'\bSir\s', t))
                  + len(re.findall(r'\b(?:Lord|Baron|Count|Duke|Prince|King|Emperor)\s', t)))
         f_hon = (len(re.findall(r'\bMrs\.?\s', t)) + len(re.findall(r'\bMs\.?\s', t))
                  + len(re.findall(r'\b(?:Dame|Lady|Baroness|Countess|Duchess|Princess|Queen|Empress|Madame|Madam)\s', t)))
-        if m_hon and not f_hon: return 'M'
-        if f_hon and not m_hon: return 'F'
-        # Pronoun tally
+        if m_hon and not f_hon: return ('M', 'honorific')
+        if f_hon and not m_hon: return ('F', 'honorific')
         tl = t.lower()
         he = tl.count(' he ') + tl.count(' his ') + tl.count(' him ')
         she = tl.count(' she ') + tl.count(' her ') + tl.count(' herself ')
-        # If only one direction has signal, accept on >=1 (catches short abstracts)
-        if he >= 1 and she == 0: return 'M'
-        if she >= 1 and he == 0: return 'F'
+        # Single-direction signal accepted at 1+ (catches short abstracts)
+        if he >= 1 and she == 0: return ('M', 'pronoun')
+        if she >= 1 and he == 0: return ('F', 'pronoun')
         # Both directions: require margin
-        if he >= 2 and he > she * 1.5: return 'M'
-        if she >= 2 and she > he * 1.5: return 'F'
-    # First-name fallback
+        if he >= 2 and he > she * 1.5: return ('M', 'pronoun')
+        if she >= 2 and she > he * 1.5: return ('F', 'pronoun')
+    # First-name fallback (US baby-name lists; flagged as low-confidence)
     if name:
         first = name.split()[0].rstrip(',.').strip()
-        # Strip nickname quotes
         first = re.sub(r'[\u2018\u2019\u201C\u201D\'"]', '', first)
-        if first in MALE_NAMES: return 'M'
-        if first in FEMALE_NAMES: return 'F'
-    return None
+        if first in MALE_NAMES: return ('M', 'first_name')
+        if first in FEMALE_NAMES: return ('F', 'first_name')
+    return (None, None)
 
 
 def extract_profession(headline):
@@ -219,7 +250,7 @@ def main():
             name = extract_name(h)
             age = extract_age(h, ab + ' ' + snip + ' ' + lead)
             prof = extract_profession(h)
-            gen = extract_gender(name, full)
+            gen, gen_src = extract_gender(name, full)
             overlooked = bool(re.match(r'^Overlooked No More\b', h, re.I))
 
             pub = d.get('pub_date', '')[:10]
@@ -232,6 +263,7 @@ def main():
                 'name': name,
                 'age': age,
                 'gender': gen,
+                'gender_src': gen_src,
                 'profession': prof,
                 'overlooked': overlooked,
                 'date': pub,
@@ -245,27 +277,62 @@ def main():
             })
             by_year[year] += 1
 
-    # Dedupe by (name, date): API often returns the same obit twice under
-    # different URL slugs and tom values (e.g. /business/24do.html and
-    # /business/yen-do-65-... on same date). Keep the entry whose tom is the
-    # most "canonical" obituary tag, and prefer the longer (slug-based) URL.
+    # Merge same-name records published within ±10 days. The Times often runs
+    # an initial obit and a follow-up profile within a week (Peter Gowland:
+    # 2010-04-01 and 2010-04-05). Keep the canonical entry as primary, but
+    # surface the secondary URL so the reader can see it.
+    from datetime import date as _date
     _PREF = {'Obituary (Obit)': 0, 'Obituary': 1, 'Obituary; Biography': 2}
     def _rank(o):
-        return (_PREF.get(o.get('tom') or '', 9), -len(o.get('url') or ''))
-    seen = {}
+        # Lower = preferred. tom rank, then length of headline (longer = more
+        # specific), then negated url length so the longer slug wins on ties.
+        return (_PREF.get(o.get('tom') or '', 9), -len(o.get('headline') or ''),
+                -len(o.get('url') or ''))
+    def _parse_date(s):
+        try: return _date(int(s[:4]), int(s[5:7]), int(s[8:10]))
+        except Exception: return None
+
+    # Group by name; within each group, cluster by date proximity.
+    by_name = {}
+    no_name_rows = []
     for o in all_obits:
-        key = (o.get('name'), o.get('date'))
-        # Don't dedupe rows with no parsed name (different events)
-        if not key[0]:
-            seen[id(o)] = o
+        if not o.get('name'):
+            no_name_rows.append(o)
             continue
-        prev = seen.get(key)
-        if prev is None or _rank(o) < _rank(prev):
-            seen[key] = o
-    deduped = list(seen.values())
-    n_dropped = len(all_obits) - len(deduped)
-    print(f"Skipped {skipped_corr:,} corrections; deduped {n_dropped:,} same-(name,date) entries")
-    all_obits = deduped
+        by_name.setdefault(o['name'], []).append(o)
+
+    merged = []
+    n_merged = 0
+    for name, recs in by_name.items():
+        recs_sorted = sorted(recs, key=lambda o: o.get('date') or '')
+        clusters = []
+        for r in recs_sorted:
+            d = _parse_date(r.get('date') or '')
+            if not clusters:
+                clusters.append([r])
+                continue
+            last = clusters[-1][-1]
+            d2 = _parse_date(last.get('date') or '')
+            if d and d2 and abs((d - d2).days) <= 10:
+                clusters[-1].append(r)
+            else:
+                clusters.append([r])
+        for cluster in clusters:
+            if len(cluster) == 1:
+                merged.append(cluster[0])
+            else:
+                # Pick canonical primary, attach secondary URLs from the rest
+                primary = sorted(cluster, key=_rank)[0]
+                others = [c for c in cluster if c is not primary]
+                primary['secondary_urls'] = [c.get('url') for c in others if c.get('url')]
+                primary['secondary_dates'] = [c.get('date') for c in others if c.get('date')]
+                merged.append(primary)
+                n_merged += len(others)
+    merged.extend(no_name_rows)
+    n_total_before = len(all_obits)
+    print(f"Skipped {skipped_corr:,} corrections; merged {n_merged:,} same-name "
+          f"near-duplicates (±10 days). {n_total_before:,} → {len(merged):,}")
+    all_obits = merged
 
     print(f"\nTotal obits: {len(all_obits):,}")
     print("By year:")
@@ -285,6 +352,12 @@ def main():
     print(f"  profession: {n_prof:,} ({100*n_prof/n:.0f}%)")
     print(f"\n  gender breakdown: M={sum(1 for o in all_obits if o['gender']=='M'):,} "
           f"F={sum(1 for o in all_obits if o['gender']=='F'):,}")
+    src_count = Counter(o.get('gender_src') for o in all_obits if o.get('gender'))
+    print(f"  gender by source:")
+    for s in ('honorific', 'pronoun', 'first_name'):
+        n = src_count.get(s, 0)
+        pct = 100 * n / max(1, sum(src_count.values()))
+        print(f"    {s:12s} {n:>6,}  ({pct:.1f}%)")
 
     with open(OUT_PATH, 'w') as f:
         json.dump(all_obits, f, separators=(',', ':'))
