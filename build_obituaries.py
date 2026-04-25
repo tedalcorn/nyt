@@ -330,6 +330,11 @@ OBIT_OVERRIDES = {
     '/2024/04/10/world/asia/akebono-taro-sumo-dead.html': {
         'name': 'Akebono Taro',
     },
+    # King Abdullah: profession parses as "Shrewd Force" from the headline
+    # tagline. He was the King of Saudi Arabia.
+    '/2015/01/23/world/middleeast/king-abdullah-who-nudged-saudi-arabia-forward-dies-at-90.html': {
+        'profession': 'King of Saudi Arabia',
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -534,7 +539,35 @@ def extract_gender(name, full_text):
                                           r'Sister|Nun|Abbess|Sultana)\s', t)))
         if m_hon and not f_hon: return ('M', 'honorific')
         if f_hon and not m_hon: return ('F', 'honorific')
-        tl = t.lower()
+        # Kinship signals — strong gender indicators when the subject is
+        # described AS a relation, or HAS a relation that pins their gender.
+        # "the father of …" / "his wife" / "widower" → male
+        # "the mother of …" / "her husband" / "widow" → female
+        # We require the relation to plausibly refer to the subject; the
+        # patterns are anchored to phrasings characteristic of obit prose.
+        tl_full = t.lower()
+        m_kin = (
+            len(re.findall(r'\b(?:was|is)\s+(?:a|the)\s+father\s+of\b', tl_full))
+            + len(re.findall(r'\b(?:the|a)\s+father\s+of\b', tl_full))
+            + len(re.findall(r'\bwidower\b', tl_full))
+            + len(re.findall(r'\bhis\s+(?:wife|widow|son|daughter|children|brother|sister)\b', tl_full))
+            + len(re.findall(r'\bsurvived\s+by\s+his\b', tl_full))
+        )
+        f_kin = (
+            len(re.findall(r'\b(?:was|is)\s+(?:a|the)\s+mother\s+of\b', tl_full))
+            + len(re.findall(r'\b(?:the|a)\s+mother\s+of\b', tl_full))
+            + len(re.findall(r'\bher\s+(?:husband|widower|son|daughter|children|brother|sister)\b', tl_full))
+            + len(re.findall(r'\bsurvived\s+by\s+her\b', tl_full))
+            # "widow" is risky — "his widow" describes a woman survivor of a
+            # male subject; "X is the widow of Y" describes the female subject.
+            # Only count "widow" when not preceded by "his" / "left a" / "his late".
+            + len(re.findall(r'(?<!his\s)(?<!left\s)(?<!a\s)(?<!the\s)\bwidow\s+of\b', tl_full))
+        )
+        if m_kin and not f_kin: return ('M', 'kinship')
+        if f_kin and not m_kin: return ('F', 'kinship')
+        if m_kin and m_kin > f_kin * 1.5: return ('M', 'kinship')
+        if f_kin and f_kin > m_kin * 1.5: return ('F', 'kinship')
+        tl = tl_full
         he = tl.count(' he ') + tl.count(' his ') + tl.count(' him ')
         she = tl.count(' she ') + tl.count(' her ') + tl.count(' herself ')
         # Single-direction signal accepted at 1+ (catches short abstracts)
@@ -735,6 +768,52 @@ def main():
                 norm = _norm_headline(h)
                 if norm:
                     src_index[(year, norm)] = (h, ab, snip, lead)
+
+    # Corpus-driven first-name → gender lookup. Build a map from first names
+    # we've classified with high confidence (honorific or pronoun) to their
+    # majority gender, then apply it to records still missing gender. The
+    # built-in SSA baby-name lists are tiny (162 / 254 names); leveraging the
+    # ~28k records we *did* classify catches names like Bob, Lucien, Salvatore,
+    # Naftali, Keizo that the SSA lists miss.
+    from collections import Counter as _Counter, defaultdict as _DD
+    _name_g = _DD(_Counter)
+    for o in all_obits:
+        g = o.get('gender')
+        src = o.get('gender_src')
+        # Only learn from high-confidence sources
+        if not g or src == 'first_name': continue
+        nm = o.get('name') or ''
+        parts = nm.split()
+        if not parts: continue
+        first = re.sub(r'[\u2018\u2019\u201C\u201D\'"]', '',
+                       parts[0].rstrip(',.').strip())
+        if len(first) < 2: continue
+        _name_g[first][g] += 1
+    # Names where one gender dominates (≥3 obits, ≥90% one direction)
+    _corpus_M = set()
+    _corpus_F = set()
+    for nm, c in _name_g.items():
+        total = sum(c.values())
+        if total < 3: continue
+        m = c.get('M', 0); f = c.get('F', 0)
+        if m >= 3 and m / total >= 0.90: _corpus_M.add(nm)
+        elif f >= 3 and f / total >= 0.90: _corpus_F.add(nm)
+    n_corpus_recovered = 0
+    for o in all_obits:
+        if o.get('gender'): continue
+        nm = o.get('name') or ''
+        parts = nm.split()
+        if not parts: continue
+        first = re.sub(r'[\u2018\u2019\u201C\u201D\'"]', '',
+                       parts[0].rstrip(',.').strip())
+        if first in _corpus_M:
+            o['gender'] = 'M'; o['gender_src'] = 'corpus_first_name'
+            n_corpus_recovered += 1
+        elif first in _corpus_F:
+            o['gender'] = 'F'; o['gender_src'] = 'corpus_first_name'
+            n_corpus_recovered += 1
+    print(f"Gender recovered via corpus first-name lookup ({len(_corpus_M)} M, "
+          f"{len(_corpus_F)} F names): {n_corpus_recovered}")
 
     # Republished-obit age recovery — when the API's republication record has
     # no age (lead is empty, abstract is editorially rewritten), look up the
