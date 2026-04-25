@@ -8,12 +8,15 @@ OUT_PATH = 'data/obituaries.json'
 # Name on left of first comma (also tolerates en-dash separator).
 RE_NAME_COMMA = re.compile(r'^([^,]+?),\s*[A-Za-z\d\u2018\u2019\u201C\u201D\u00C0-\u017F\'"]')
 RE_NAME_DASH = re.compile(r'^([A-Z][\w.\'\-\s]+?)\s*[\u2014\u2013-]\s*[A-Z]')
-# Headline contains "Dies at N" / "Is Dead at N" anywhere — pull the leading
-# 1-4 capitalized tokens as the name. Handles "Joe Moakley of Massachusetts
-# Dies at 74" (intervening "of …" clause) and "Derek Freeman Dies at 84".
+# Headline contains a death verb anywhere — pull the leading 1-4 capitalized
+# tokens as the name. Handles:
+#   - "Laurence Mancuso Dies; Founding Abbot Was 72" (semicolon, no age-after)
+#   - "Whitey Bulger Is Dead in Prison at 89" (intervening "in Prison")
+#   - "Joe Moakley of Massachusetts Dies at 74" (intervening "of …" clause)
+#   - "Derek Freeman Dies at 84"
 # Token whitelist excludes verb-form words that are also capitalized in
 # headlines (Is, Was, Dies, Dead, Has, Had).
-RE_HAS_DIES = re.compile(r'\b(?:Dies?|Is\s+Dead|Is\s+Dying)\s+at\s+\d', re.I)
+RE_HAS_DIES = re.compile(r'\b(?:Dies?|Is\s+Dead|Is\s+Dying|Was\s+Dead)\b', re.I)
 _NOT_VERB = r'(?!(?:Is|Was|Has|Had|Will|Are|Were|Dies?|Dead|Died|Dying|From|The)\b)'
 RE_LEADING_CAPS = re.compile(
     r'^(' + _NOT_VERB + r'[A-Z][\w.\'\-\u00C0-\u017F]*'
@@ -119,16 +122,27 @@ RE_REPUB_BOILER = re.compile(
     r'(?:republished|reissued)[^.]*?\.\s*',
     re.I,
 )
-# Year-end / memoriam roundup slugs that aren't single-subject obituaries
+# Year-end / memoriam roundup slugs that aren't single-subject obituaries.
+# Slideshows and videos are also dropped — many sit on the Obits desk but
+# carry no parseable name in the headline (e.g. "A Look at Hiro's Work").
 RE_NON_OBIT_URL = re.compile(
     r'(?:'
     r'obituaries-deaths-\d{4}|'         # year-end roundups: /obituaries-deaths-2023
     r'/learning/lesson-plans/|'          # NYT Learning lesson plans
+    r'/slideshow/|'                      # photo packages
+    r'/video/|'                          # video obits
     r'in-a-political-year-some-deaths|'  # 2024 Navalny package
     r'lives-they-lived'                  # NYT Magazine year-end issue
     r')',
     re.I,
 )
+# 9/11 "Portraits of Grief" — published Dec 2001 - Sep 2002, ~1,800 articles.
+# Profile-style obits: headline is "Name: Tagline", desk='National / Portraits
+# of Grief', URL contains '/national/portraits/'. Standard parsers fail
+# because they have no death verb in the headline.
+RE_PORTRAITS_URL = re.compile(r'/national/portraits/', re.I)
+RE_PORTRAITS_DESK = re.compile(r'Portraits of Grief', re.I)
+RE_PORTRAITS_HEADLINE = re.compile(r'^([A-Z][\w.\'\-\u00C0-\u017F]+(?:\s+[A-Z][\w.\'\-\u00C0-\u017F]+){0,4}):\s*\S')
 # Headlines that mark group / multi-subject / package pieces, not single obits
 RE_GROUP_HEADLINE = re.compile(
     r'^(?:Lesson of the Day|The Lives They Lived|Year in Review|'
@@ -137,10 +151,47 @@ RE_GROUP_HEADLINE = re.compile(
 )
 
 
-def extract_name(headline):
+def extract_name_from_slug(url):
+    """Extract a candidate name from URL slug as last-resort fallback.
+    /2021/06/08/sports/football/jim-fassel-giants-dead.html → "Jim Fassel"
+    /2022/08/12/us/anne-heche-brain-injury.html → "Anne Heche"
+    /2007/07/01/nyregion/01mancuso.html → None (single token, no first name)
+    Returns None if the slug yields fewer than 2 plausible name tokens.
+    """
+    if not url: return None
+    # Get terminal slug (path component before .html), drop leading date digits
+    m = re.search(r'/([a-z0-9][a-z0-9\-]+?)(?:\.html?)?$', url, re.I)
+    if not m: return None
+    slug = m.group(1).lower()
+    slug = re.sub(r'^\d+[-_]?', '', slug)               # drop leading "01" etc.
+    slug = re.sub(r'(?:[-_](?:dead|dies|obituary|obit))+$', '', slug)
+    parts = [p for p in re.split(r'[-_]+', slug)
+             if p and not p.isdigit() and len(p) > 1
+             and p not in {'cnd', 'and', 'the', 'at', 'on', 'in', 'of', 'web', 'index'}]
+    if len(parts) < 2: return None
+    # Take first 2-3 tokens as the name guess. Stop if we hit a token that
+    # looks like noise ("giants", "uruguay", "brain") — i.e., if a token
+    # doesn't look like a typical surname and we already have 2 tokens, stop.
+    name_parts = parts[:2]
+    if len(parts) >= 3 and len(parts[2]) >= 4 and parts[2][0].isalpha():
+        # Add third token only if it could plausibly be part of a name
+        # (e.g. middle names, titles). Heuristic: short third token unlikely.
+        # Conservative — don't add for now to avoid "Jim Fassel Giants".
+        pass
+    return ' '.join(p.capitalize() for p in name_parts)
+
+
+def extract_name(headline, url=None, is_portraits=False):
     if not headline: return None
     # Drop zero-width chars
     h = headline.replace('\u200b', '').replace('\ufeff', '').strip()
+    # Portraits of Grief: headline is "Name: Tagline" — colon-separated.
+    if is_portraits:
+        m = RE_PORTRAITS_HEADLINE.match(h)
+        if m:
+            cand = m.group(1).strip()
+            if 1 <= cand.count(' ') <= 4:
+                return cand
     # Strip "From YYYY:" republished-obit prefix (apply before series check
     # since some headlines stack "From 1992: Marlene Dietrich Is Dead")
     h = RE_FROM_YEAR.sub('', h)
@@ -293,17 +344,30 @@ def main():
             if tom == 'Correction':
                 skipped_corr += 1
                 continue
-            # Identify obits — accept either type tag or Obits desk OR Obituaries section
+            # Identify obits — accept either type tag or Obits desk OR Obituaries section.
+            # Also include the 9/11 "Portraits of Grief" series whose desk is
+            # "National / Portraits of Grief" and whose headlines have no death verb.
+            is_portraits = bool(
+                RE_PORTRAITS_DESK.search(news_desk)
+                or RE_PORTRAITS_URL.search(url)
+            )
             is_obit = (tom == 'Obituary (Obit)'
                        or tom == 'Obituary'
                        or news_desk == 'Obits'
-                       or section == 'Obituaries')
+                       or section == 'Obituaries'
+                       or is_portraits)
             if not is_obit:
+                continue
+            # Drop slideshows and videos — many sit on the Obits desk but carry
+            # no parseable subject in the headline.
+            if tom in ('Slideshow', 'Video', 'Audio'):
+                skipped_non_obit += 1
                 continue
 
             h = d.get('headline', {}).get('main', '') or ''
 
-            # Hard rejects: year-end roundups, lesson plans, multi-subject packages
+            # Hard rejects: year-end roundups, lesson plans, multi-subject packages,
+            # slideshows/videos by URL pattern
             if RE_NON_OBIT_URL.search(url) or RE_GROUP_HEADLINE.match(h):
                 skipped_non_obit += 1
                 continue
@@ -314,8 +378,10 @@ def main():
             #   - desk/section-only obits that aren't really obits (related
             #     articles riding the Obits desk byline)
             #   - tom-tagged appreciation pieces with no name in the headline
+            # Portraits of Grief bypass this gate — they're profile-style.
             looks_like_obit = bool(
-                RE_DEATH_HEADLINE.search(h)
+                is_portraits
+                or RE_DEATH_HEADLINE.search(h)
                 or RE_OBIT_URL_HINT.search(url)
                 or RE_LEADING_SERIES.match(h)
                 or RE_FROM_YEAR.match(h)
@@ -336,7 +402,12 @@ def main():
             lead_clean = RE_REPUB_BOILER.sub('', lead) if republished else lead
             full = ' '.join([ab, snip, lead_clean])
 
-            name = extract_name(h)
+            name = extract_name(h, url, is_portraits=is_portraits)
+            # Slug-based fallback for "essay-style" obit headlines that don't
+            # parse — Anne Heche, Jim Fassel, etc. Only when the URL slug
+            # itself reads like a name.
+            if not name:
+                name = extract_name_from_slug(url)
             age = extract_age(h, ab + ' ' + snip + ' ' + lead_clean)
             prof = extract_profession(h)
             gen, gen_src = extract_gender(name, full)
@@ -353,6 +424,7 @@ def main():
                 'profession': prof,
                 'overlooked': overlooked,
                 'republished': republished,
+                'portraits': is_portraits,
                 'date': pub,
                 'year': year,
                 'section': section,
@@ -417,13 +489,16 @@ def main():
                 n_merged += len(others)
     merged.extend(no_name_rows)
     n_total_before = len(all_obits)
-    print(f"Skipped {skipped_corr:,} corrections, {skipped_non_obit:,} non-obit "
+    print(f"Skipped {skipped_corr:,} correction-notice records (paper-wide tom='Correction', "
+          f"used by Corrections tab; not corrections to obits), {skipped_non_obit:,} non-obit "
           f"package/lesson articles; merged {n_merged:,} same-name near-duplicates "
           f"(±10 days). {n_total_before:,} → {len(merged):,}")
     all_obits = merged
     n_repub = sum(1 for o in all_obits if o.get('republished'))
     n_overl = sum(1 for o in all_obits if o.get('overlooked'))
-    print(f"  republished: {n_repub:,}   overlooked-no-more: {n_overl:,}")
+    n_port = sum(1 for o in all_obits if o.get('portraits'))
+    print(f"  republished: {n_repub:,}   overlooked-no-more: {n_overl:,}   "
+          f"portraits-of-grief: {n_port:,}")
 
     print(f"\nTotal obits: {len(all_obits):,}")
     print("By year:")
