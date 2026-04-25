@@ -783,6 +783,7 @@
         <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> Overlooked No More</label>
         <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished</label>
         <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief</label>
+        <span id="obitAgeChip" style="display:none;background:#fff3cd;border:1px solid #ffe69c;border-radius:12px;padding:2px 10px;font-size:12px;color:#664d03;cursor:pointer" onclick="clearObitAgeBand()" title="Click to clear"></span>
         <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
       </div>
       <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="obitsTableContainer"></div></div>
@@ -1092,16 +1093,84 @@ function downloadObitChart(canvasId, baseName, btn) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   btn.textContent = '…';
-  const offscreen = document.createElement('canvas');
-  offscreen.width = canvas.width;
-  offscreen.height = canvas.height;
-  const ctx = offscreen.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, offscreen.width, offscreen.height);
-  ctx.drawImage(canvas, 0, 0);
+
+  const total = (_obits || []).length;
+  const m = (_obits || []).filter(o => o.gender === 'M').length;
+  const f = (_obits || []).filter(o => o.gender === 'F').length;
+  const ages = (_obits || []).map(o => o.age).filter(a => typeof a === 'number' && a >= 20 && a <= 110);
+  const yrs = Array.from(new Set((_obits || []).map(o => o.year).filter(Boolean))).sort();
+  const range = yrs.length ? `${yrs[0]}–${yrs[yrs.length-1]}` : '';
+
+  let title1, title2, legendItems = [];
+  if (canvasId === 'chartObitAge') {
+    title1 = `New York Times obituaries — age at death${range ? ', ' + range : ''}`;
+    title2 = `Stacked bars = obituaries per 5-year age bin · n=${ages.length.toLocaleString()} where age is parsed · Data from NYT Archive API`;
+    legendItems = [
+      { color: 'rgba(196,120,74,0.7)', label: 'Female' },
+      { color: 'rgba(74,124,139,0.7)', label: 'Male' },
+    ];
+  } else if (canvasId === 'chartObitGender') {
+    const known = m + f;
+    title1 = `New York Times obituaries — female share over time${range ? ', ' + range : ''}`;
+    title2 = `Line = % female of obituaries with parsed gender per year (current year omitted) · n=${known.toLocaleString()} of ${total.toLocaleString()} · Data from NYT Archive API`;
+    legendItems = [{ color: 'rgba(196,120,74,0.9)', label: '% Female' }];
+  } else {
+    title1 = 'New York Times obituaries';
+    title2 = `n=${total.toLocaleString()} · Data from NYT Archive API`;
+  }
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const TOP = 60, BOT = 40;
+  const out = document.createElement('canvas');
+  out.width = W;
+  out.height = TOP + H + BOT;
+  const c = out.getContext('2d');
+  c.fillStyle = '#fff';
+  c.fillRect(0, 0, out.width, out.height);
+
+  c.fillStyle = '#111';
+  c.font = 'bold 14px Arial,sans-serif';
+  c.fillText(title1, 12, 22);
+  c.fillStyle = '#666';
+  c.font = '11px Arial,sans-serif';
+  const maxW = W - 24;
+  if (c.measureText(title2).width <= maxW) {
+    c.fillText(title2, 12, 42);
+  } else {
+    const parts = title2.split(' · ');
+    let line = parts[0], y = 42;
+    for (let i = 1; i < parts.length; i++) {
+      const next = line + ' · ' + parts[i];
+      if (c.measureText(next).width > maxW) { c.fillText(line, 12, y); line = parts[i]; y += 15; }
+      else line = next;
+    }
+    c.fillText(line, 12, y);
+  }
+
+  c.drawImage(canvas, 0, TOP);
+
+  let lx = 12, ly = TOP + H + 22;
+  legendItems.forEach(({ color, label }) => {
+    c.fillStyle = color;
+    c.fillRect(lx, ly - 10, 12, 12);
+    c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
+    c.strokeRect(lx, ly - 10, 12, 12);
+    c.fillStyle = '#333';
+    c.font = '10px Arial,sans-serif';
+    c.fillText(label, lx + 16, ly);
+    lx += 16 + c.measureText(label).width + 14;
+  });
+
+  c.font = '9px Arial,sans-serif';
+  c.fillStyle = '#aaa';
+  c.textAlign = 'right';
+  c.fillText('https://tedalcorn.github.io/nyt/', W - 8, TOP + H + BOT - 8);
+  c.textAlign = 'left';
+
   const a = document.createElement('a');
   a.download = baseName + '.jpg';
-  a.href = offscreen.toDataURL('image/jpeg', 0.92);
+  a.href = out.toDataURL('image/jpeg', 0.92);
   a.click();
   btn.textContent = '↓ JPG';
 }
@@ -6123,6 +6192,19 @@ function mostProfiledYear() {
   return `${best} (${bestN.toLocaleString()})`;
 }
 
+let _obitAgeBand = null; // [startInclusive, endExclusive] or null
+function clearObitAgeBand() { _obitAgeBand = null; renderObitsTable(); _refreshObitAgeChip(); }
+function _refreshObitAgeChip() {
+  const chip = document.getElementById('obitAgeChip');
+  if (!chip) return;
+  if (_obitAgeBand) {
+    chip.style.display = '';
+    chip.textContent = `Age ${_obitAgeBand[0]}–${_obitAgeBand[1]-1} ✕`;
+  } else {
+    chip.style.display = 'none';
+  }
+}
+
 function renderObitAgeChart() {
   // Histogram of ages, 5-year bins
   const ages = _obits.map(o => o.age).filter(a => typeof a === 'number' && a >= 20 && a <= 110);
@@ -6139,7 +6221,8 @@ function renderObitAgeChart() {
   const mBins = new Array(bins.length).fill(0); mAges.forEach(a => { if (a>=20&&a<=110) mBins[Math.floor(a/BIN)]++; });
   const fBins = new Array(bins.length).fill(0); fAges.forEach(a => { if (a>=20&&a<=110) fBins[Math.floor(a/BIN)]++; });
   destroyChart('chartObitAge');
-  chartInstances['chartObitAge'] = new Chart(document.getElementById('chartObitAge'), {
+  const canvasEl = document.getElementById('chartObitAge');
+  chartInstances['chartObitAge'] = new Chart(canvasEl, {
     type: 'bar',
     data: {
       labels,
@@ -6157,9 +6240,22 @@ function renderObitAgeChart() {
       scales: {
         x: { stacked: true, ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 12 } },
         y: { stacked: true, beginAtZero: true, ticks: { font: { size: 9 } } }
+      },
+      onClick: (evt) => {
+        const chart = chartInstances['chartObitAge'];
+        if (!chart) return;
+        // Click anywhere in the column — use scale to find the index
+        const xScale = chart.scales.x;
+        const idx = xScale.getValueForPixel(evt.x);
+        if (idx == null || idx < 0 || idx >= labels.length) return;
+        const lo = labels[idx];
+        _obitAgeBand = [lo, lo + BIN];
+        renderObitsTable();
+        _refreshObitAgeChip();
       }
     }
   });
+  canvasEl.style.cursor = 'pointer';
 }
 
 function renderObitGenderChart() {
@@ -6240,6 +6336,10 @@ function renderObitsTable() {
     if (onlyOvr && !o.overlooked) return false;
     if (onlyRep && !o.republished) return false;
     if (onlyPor && !o.portraits) return false;
+    if (_obitAgeBand) {
+      if (typeof o.age !== 'number') return false;
+      if (o.age < _obitAgeBand[0] || o.age >= _obitAgeBand[1]) return false;
+    }
     if (gen) {
       if (gen === '?' && o.gender) return false;
       if (gen !== '?' && o.gender !== gen) return false;
@@ -7061,7 +7161,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 11:30pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 11:42pm</span>
 </div>
 </body>
 </html>
