@@ -1842,9 +1842,12 @@ function _paintCarouselWorldMap(geo) {
   }
   const colors = ['#e8f2fa', '#c0d9ed', '#6baac8', '#2265a3', '#082d52'];
   const noDataColor = '#e8d5b7';
+  const usColor = '#bdbdbd';
   const thresh = [0.2, 1, 5, 20];
-  const labels = ['<0.2/M/yr', '0.2–1/M/yr', '1–5/M/yr', '5–20/M/yr', '20+/M/yr'];
+  const labels = ['<0.2/M', '0.2–1/M', '1–5/M', '5–20/M', '20+/M'];
+  const isUS = g => g === 'United States of America' || g === 'United States';
   const fillColor = g => {
+    if (isUS(g)) return usColor;
     const v = valByGeo[g];
     if (v == null || v === 0) return noDataColor;
     for (let i = 0; i < thresh.length; i++) if (v < thresh[i]) return colors[i];
@@ -1873,10 +1876,11 @@ function _paintCarouselWorldMap(geo) {
       const raw = countByGeo[name] || 0;
       const pc = valByGeo[name];
       let body;
-      if (!raw) body = 'No data';
+      if (isUS(name)) body = 'National coverage';
+      else if (!raw) body = '0 articles tagged';
       else {
         const pcLine = pc != null
-          ? `${pc < 1 ? pc.toFixed(2) : pc.toFixed(1)} articles/million residents/year`
+          ? `${pc < 1 ? pc.toFixed(2) : pc.toFixed(1)} articles/million residents`
           : 'No population data';
         body = `${pcLine}<br>${raw.toLocaleString()} articles in 2025`;
       }
@@ -1893,18 +1897,16 @@ function _paintCarouselWorldMap(geo) {
       d3.select(this).attr('stroke','#fff').attr('stroke-width', 0.4);
     });
 
-  // Legend
+  // Legend — tan first (0 articles tagged), then blue gradient
   const legend = document.getElementById('carouselWorldMapLegend');
   if (legend) {
+    const swatch = (c, lbl) =>
+      `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:7px">` +
+      `<span style="width:10px;height:10px;background:${c};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
+      `<span>${lbl}</span></span>`;
     legend.innerHTML = 'Articles/million residents in 2025: ' +
-      colors.map((c, i) =>
-        `<span style="display:inline-flex;align-items:center;gap:3px;margin-right:7px">` +
-        `<span style="width:10px;height:10px;background:${c};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
-        `<span>${labels[i]}</span></span>`
-      ).join('') +
-      `<span style="display:inline-flex;align-items:center;gap:3px">` +
-      `<span style="width:10px;height:10px;background:${noDataColor};display:inline-block;border:1px solid #bbb;border-radius:2px"></span>` +
-      `<span>No data</span></span>`;
+      swatch(noDataColor, '0 articles tagged') +
+      colors.map((c, i) => swatch(c, labels[i])).join('');
   }
 
   // Re-paint on resize so projection refits
@@ -6231,7 +6233,7 @@ function renderObitsTable() {
       if (gen !== '?' && o.gender !== gen) return false;
     }
     if (q) {
-      const hay = ((o.name||'') + ' ' + (o.profession||'') + ' ' + (o.headline||'')).toLowerCase();
+      const hay = ((o.display_name||'') + ' ' + (o.name||'') + ' ' + (o.profession||'') + ' ' + (o.headline||'')).toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -6263,8 +6265,7 @@ function renderObitsTable() {
   const ind = c => _obitTableSort.col === c ? (_obitTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
     { k: 'date', label: 'Date' },
-    { k: 'firstName', label: 'First' },
-    { k: 'lastName', label: 'Last' },
+    { k: 'lastName', label: 'Name' },
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
     { k: 'profession', label: 'Profession / Role', cls: 'mob-hide' },
@@ -6286,12 +6287,10 @@ function renderObitsTable() {
   display.forEach(o => {
     const url = o.url || '';
     const safeUrl = url.startsWith('/') ? 'https://www.nytimes.com' + url : url;
-    // Re-capitalize for display from the original name
-    const parts = (o.name || '').replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
-    const dispLast  = parts.length ? parts[parts.length - 1].replace(/[.,]+$/, '') : '';
-    // Single-token names go in Last only — leave First blank rather than
-    // duplicating the same token in both columns.
-    const dispFirst = parts.length > 1 ? parts.slice(0, -1).join(' ') : '';
+    // Single Name column — show display_name (includes title like "Sister André")
+    // when present, otherwise fall back to parsed name. Sort still uses
+    // _lastName(o.name) so titles don't push records to "S" / "D" / etc.
+    const fullName = (o.display_name || o.name || '').replace(/[\u2018\u2019\u201C\u201D]/g, '').trim();
     const linkOpen  = url ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">` : '';
     const linkClose = url ? `</a>` : '';
     // Secondary URL: link if present, else blank
@@ -6309,7 +6308,7 @@ function renderObitsTable() {
     if (!o.name) {
       html += `<tr title="${escapeHtml(o.headline || '')}">
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(fmtDate(o.date))}</td>
-        <td colspan="2" style="color:#bbb">${linkOpen}(unparsed)${linkClose}</td>
+        <td style="color:#bbb">${linkOpen}(unparsed)${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
         <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
         <td class="mob-hide">${escapeHtml(o.profession || '')}</td>
@@ -6319,8 +6318,7 @@ function renderObitsTable() {
     } else {
       html += `<tr title="${escapeHtml(o.headline || '')}">
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(fmtDate(o.date))}</td>
-        <td>${linkOpen}${escapeHtml(dispFirst)}${linkClose}</td>
-        <td>${linkOpen}${escapeHtml(dispLast)}${linkClose}</td>
+        <td>${linkOpen}${escapeHtml(fullName)}${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
         <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
         <td class="mob-hide">${escapeHtml(o.profession || '')}</td>
@@ -7051,7 +7049,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 8:30pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 9:10pm</span>
 </div>
 </body>
 </html>

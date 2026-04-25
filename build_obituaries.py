@@ -168,6 +168,38 @@ TITLE_PREFIXES = (
     r'Saint|St\.?)'
 )
 RE_LEADING_TITLE = re.compile(r'^' + TITLE_PREFIXES + r'\s+', re.I)
+# Same as RE_LEADING_TITLE but with a capture group so we can recover the
+# title prefix for display_name (e.g. "Sister Andre" instead of "Andre").
+RE_LEADING_TITLE_CAP = re.compile(r'^(' + TITLE_PREFIXES + r')\s+', re.I)
+
+
+def make_display_name(headline, name):
+    """Return name with any leading honorific/title from the headline preserved.
+    Sister André → 'Sister André'; Sir Patrick Stewart → 'Sir Patrick Stewart'.
+    Suffixes (Jr., 2nd, 3rd) are already inside `name` and don't need recovery.
+    """
+    if not name or not headline:
+        return name
+    h = headline.replace('\u200b', '').replace('\ufeff', '').strip()
+    h = RE_FROM_YEAR.sub('', h)
+    h = RE_LEADING_SERIES.sub('', h)
+    h = RE_LEADING_DEATH_PREFIX.sub('', h)
+    h = re.sub(r'\s*\([^)]*\)', '', h)
+    titles = []
+    # Apply iteratively to catch stacked titles ("Sir Dr. ...").
+    for _ in range(3):
+        m = RE_LEADING_TITLE_CAP.match(h)
+        if not m:
+            break
+        titles.append(re.sub(r'\s+', ' ', m.group(1).strip()))
+        h = h[m.end():]
+    if not titles:
+        return name
+    title_str = ' '.join(titles)
+    # Don't double-prefix if the parsed name already starts with the title.
+    if name.lower().startswith(title_str.lower()):
+        return name
+    return f'{title_str} {name}'
 # "What They Left Behind:" is a recurring NYT Magazine end-of-year series
 RE_LEADING_SERIES = re.compile(
     r'^(?:Overlooked No More|What They Left Behind|The Lives They Lived|Lives They Lived|'
@@ -644,8 +676,10 @@ def main():
             pub = d.get('pub_date', '')[:10]
             year = pub[:4] if pub else ''
 
+            display_name = make_display_name(h, name) if name else name
             all_obits.append({
                 'name': name,
+                'display_name': display_name,
                 'age': age,
                 'gender': gen,
                 'gender_src': gen_src,
@@ -720,6 +754,9 @@ def main():
         if not ov: continue
         for k, v in ov.items():
             o[k] = v
+        # If the override touched name, regenerate display_name so it tracks.
+        if 'name' in ov:
+            o['display_name'] = ov.get('display_name') or ov['name']
         n_overrides += 1
     print(f"Per-URL overrides applied: {n_overrides}")
 
