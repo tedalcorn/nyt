@@ -496,17 +496,18 @@
         <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
         <li><strong>2005 — Science section drop.</strong> Section "Science" falls from ~900 articles a year (2000–2003) to 159 in 2005, then rebounds to 839+ in 2006. The articles didn't disappear — the metadata transitioned. In 2003, all 904 Science Desk articles carried <code>section_name = "Science"</code>. By 2005, the same desk's output was being filed as "Health" (411 articles), "Opinion" (331), or left untagged, with only 102 still tagged "Science". A new "Health" section was being broken out at this point. The dashboard shows the unedited tag.</li>
         <li><strong>2011–2015 — obituary section tagging.</strong> The NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section, but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides the section tag and counts those articles under Obituaries, producing a continuous series rather than a gap. The apparent 2005–2006 spike likely reflects the desk first becoming a consistently-tagged section; the 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
+        <li><strong>2001–2010 — "Obituary; Biography" tag.</strong> Through 2010 the API tagged most obituaries as <em>type_of_material = "Obituary; Biography"</em> (and occasionally "Biography; Obituary") rather than the cleaner "Obituary (Obit)" or "Obituary" labels used afterward. About 1,000–1,300 records per year carry the legacy compound tag in 2001–2005 alone. Earlier versions of this dashboard accepted only the modern tags and consequently undercounted those years by roughly 80%. The current build accepts all four variants.</li>
       </ul>
 
       <h4>Draft sections</h4>
       <p>Two tabs in this dashboard are still in development. Methodology notes for each:</p>
 
       <h5 style="margin-bottom:6px;color:#444">Obituaries</h5>
-      <p style="font-size:13px;color:#555"><strong>Inclusion.</strong> Records identified via NYT Archive API tags <code>type_of_material = "Obituary (Obit)"</code>, <code>news_desk = "Obits"</code> or <code>"National / Portraits of Grief"</code>, or <code>section_name = "Obituaries"</code>. Records flagged as corrections, slideshows, videos, or audio are excluded. Each candidate must also carry a death-marker in the headline ("Dies at N", "Is Dead", a comma-age "Name, 84,"), an obit-style URL slug, a known series prefix, or be part of the 9/11 Portraits of Grief series; this drops essay-style appreciations and related articles riding the Obits desk. Year-end roundups, NYT Learning lesson plans, and multi-subject packages are excluded by URL pattern.</p>
+      <p style="font-size:13px;color:#555"><strong>Inclusion.</strong> Records identified via NYT Archive API tags <code>type_of_material</code> in {Obituary (Obit), Obituary, Obituary; Biography, Biography; Obituary}, <code>news_desk = "Obits"</code> or <code>"National / Portraits of Grief"</code>, or <code>section_name = "Obituaries"</code>. (The "Obituary; Biography" tag dominated 2001–2005 and ran intermittently through 2010.) Records flagged as corrections, slideshows, videos, or audio are excluded. Each candidate must also carry a death-marker in the headline ("Dies at N", "Is Dead", a comma-age "Name, 84,"), an obit-style URL slug, a known series prefix, or be part of the 9/11 Portraits of Grief series; this drops essay-style appreciations and related articles riding the Obits desk. Year-end roundups, NYT Learning lesson plans, and multi-subject packages are excluded by URL pattern.</p>
       <p style="font-size:13px;color:#555"><strong>Deduplication.</strong> The API often returns the same obit under multiple URL slugs and the desk sometimes runs follow-up profiles within a few days. Records sharing a name within a ±10 day window are merged into a single canonical entry; the additional URLs surface in the "URL(s)" column. The canonical record is preferred in this order: <em>Obituary (Obit)</em>, <em>Obituary</em>, anything else; ties broken by longer headline.</p>
       <p style="font-size:13px;color:#555"><strong>Fields parsed from headline + abstract.</strong> <em>Name</em> — comma split, with leading honorifics ("The Reverend", "Sir", "Representative", "Sultan", "King") stripped, parentheticals stripped (so "Barry Humphries (Dame Edna to You) Is Dead" parses as Barry Humphries), and series prefixes ("Overlooked No More:", "From 1992:") peeled off. When the headline parse fails (essay-style, "Anne Heche, Actress Known for '90s Film Roles, Dies at 53"-style follow-ups, etc.), a fallback extracts the name from the URL slug; cluster merge then absorbs these into their primary obit's URL list when a primary exists within ±10 days. <em>Age</em> — "Dies at N", "Name, N,", or "was N" patterns. <em>Gender</em> — three layered methods, tagged in the data: <strong>honorific</strong> (Mr./Mrs./Sir/Dame, with Mr./Mrs.+Capital prioritized over bare Dame to avoid stage-name confusion); <strong>pronoun</strong> (he/his/him vs. she/her tally); <strong>first_name</strong> (US baby-name lists, low confidence — flagged in the table with ⚠). <em>Profession</em> — the role phrase that follows the second comma. Cause of death rarely appears in headline/abstract and would require fetching article body.</p>
       <p style="font-size:13px;color:#555"><strong>Series flags.</strong> "Overlooked No More" (245 records) — retroactive obituaries for historically overlooked figures (begun 2018-03-08, International Women's Day). "Republished" (68 records) — old obituaries re-run as packages (e.g. Women's History Month uses headline prefix "From 1992:"). Distinct from Overlooked because the original obit ran at the time of death; the dashboard shows the republish date. "9/11 Portraits of Grief" (385 records) — the National desk's brief profiles of victims of the September 11 attacks, published Dec 2001–Sep 2002 with the atypical headline format "Name: Tagline". The role-tagline isn't a profession, so profession is intentionally left blank for these.</p>
-      <p style="font-size:13px;color:#555"><strong>Coverage of fields (n=24,141 after filtering)</strong>: name 100%, age 96%, gender 99% (43.3% honorific, 55.6% pronoun, 1.1% first-name fallback), profession 77%. About 14 records remain unparsed — almost all are short follow-up notices whose URL slug doesn't match a primary obit.</p>
+      <p style="font-size:13px;color:#555"><strong>Coverage of fields (n=29,363 after filtering)</strong>: name 100%, age 97%, gender 99% (36.6% honorific, 62.2% pronoun, 1.2% first-name fallback), profession 67%. About 14 records remain unparsed — almost all are short follow-up notices whose URL slug doesn't match a primary obit.</p>
 
       <h5 style="margin-bottom:6px;color:#444;margin-top:14px">Corrections</h5>
       <p style="font-size:13px;color:#555">Each daily corrections page (e.g. <code>nytimes.com/2025/01/02/pageoneplus/corrections-jan-3-2025.html</code>) was fetched via the Wayback Machine (live site is bot-blocked). Individual corrections were pulled from the article body — they begin with phrases like "An article on Tuesday about…". Referenced article date is parsed from the correction's date phrase or relative day-of-week ("on Thursday"). Match to the actual article uses headline + slug + subject token overlap within ±3 days; we accept a match when ≥2 distinct content tokens align. <strong>Coverage so far:</strong> 164 of 190 corrections pages fetched for 2025 (the rest hit Wayback rate-limit timeouts or have no snapshot). <strong>Match rate:</strong> 87% of parsed corrections linked to a specific article. Currently only 2025 is loaded — earlier years pending a re-scrape via authenticated session. Only corrections with a clear "An article on…" lead are extracted; corrections referring to obituaries or photos may be skipped if their phrasing differs.</p>
@@ -6010,8 +6011,6 @@ function renderObitAgeChart() {
       datasets: [
         { label: 'Female', data: fBins.slice(startBin), backgroundColor: 'rgba(196,120,74,0.7)', stack: 'a' },
         { label: 'Male',   data: mBins.slice(startBin), backgroundColor: 'rgba(74,124,139,0.7)', stack: 'a' },
-        { label: 'Unknown', data: trimmed.map((v,i) => v - (mBins.slice(startBin)[i]||0) - (fBins.slice(startBin)[i]||0)),
-          backgroundColor: 'rgba(180,180,180,0.5)', stack: 'a' },
       ]
     },
     options: {
@@ -6112,9 +6111,13 @@ function renderObitsTable() {
   };
   rows.sort((a, b) => {
     let va = keyFor(a, _obitTableSort.col), vb = keyFor(b, _obitTableSort.col);
-    if (va == null) va = '';
-    if (vb == null) vb = '';
-    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    // Push nulls to the bottom regardless of sort direction
+    const aNull = va == null || va === '';
+    const bNull = vb == null || vb === '';
+    if (aNull && bNull) return 0;
+    if (aNull) return 1;
+    if (bNull) return -1;
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb == null ? '' : String(vb)).toLowerCase(); }
     if (va < vb) return _obitTableSort.asc ? -1 : 1;
     if (va > vb) return _obitTableSort.asc ? 1 : -1;
     return 0;
@@ -6906,7 +6909,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 3:43pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 4:05pm</span>
 </div>
 </body>
 </html>

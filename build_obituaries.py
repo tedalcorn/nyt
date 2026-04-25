@@ -25,9 +25,17 @@ RE_NAME_AGE_NO_COMMA = re.compile(
 # the death verb. Captured group 1 = the name. Headline must start with a
 # tagline-style word ("A", "An", "The") or contain a tell-tale function word.
 RE_TAGLINE_NAME = re.compile(
-    r'^(?:A|An|The)\s+[^,]+?,\s*'
+    r'^(?:A|An|The)\s+[^,]+?,\s*'                                        # "A Man of Many Words, …"
     r'([A-Z][\w.\'\-\u00C0-\u017F]+(?:\s+(?:[A-Z][\w.\'\-\u00C0-\u017F]+|[a-z]{2,3}-?[A-Z]?[\w.\'\-\u00C0-\u017F]*))*?)'
-    r'\s+(?:Dies?|Is\s+Dead|Was\s+Dead|Died|Has\s+Died|Led|Was)\b',
+    r'[,\s]+(?:Dies?|Is\s+Dead|Was\s+Dead|Died|Has\s+Died|Led|Was)\b',
+)
+# Generic tagline opener: a phrase with a function word before the name. Requires
+# a comma separator before the death verb so we don't grab group-of-name
+# constructions ("Mary Travers of Peter, Paul and Mary Dies at 72").
+RE_TAGLINE_NAME_GENERIC = re.compile(
+    r'^[A-Z][^,]*?\s(?:of|for|with|in|on|at|to|from|by)\s[^,]*?,\s*'
+    r'([A-Z][\w.\'\-\u00C0-\u017F]+(?:\s+(?:[A-Z][\w.\'\-\u00C0-\u017F]+|[a-z]{2,3}-?[A-Z]?[\w.\'\-\u00C0-\u017F]*))*?)'
+    r',\s*(?:Dies?|Is\s+Dead|Was\s+Dead|Died|Has\s+Died|Led|Was)\b',
 )
 # Function words that disqualify a comma-name candidate from being a real name
 # (taglines like "A Man of Many Words" contain them; real names don't).
@@ -167,6 +175,8 @@ RE_NON_OBIT_URL = re.compile(
     r'/learning/lesson-plans/|'          # NYT Learning lesson plans
     r'/slideshow/|'                      # photo packages
     r'/video/|'                          # video obits
+    r'\.mp3(?:\?|$)|'                    # audio obits
+    r'/podcasts\.nytimes\.com/|'         # podcast hosts (joygolden mp3 etc.)
     r'in-a-political-year-some-deaths|'  # 2024 Navalny package
     r'lives-they-lived|'                 # NYT Magazine year-end issue
     r'article-\d+-no-title|'             # API placeholder records ("Article 2002… No Title")
@@ -176,10 +186,28 @@ RE_NON_OBIT_URL = re.compile(
     r'notable-deaths(?:-|\.html)|'        # year-end Notable Deaths interactives & 2024 promo
     r'notable-women-deaths|'              # 2026 "100 Years of Women Who Changed History"
     r'people-died-coronavirus|'          # 2020 "Those We've Lost" interactive
-    r'martin-luther-king-day-black-leaders'  # 2016 MLK Day feature, not single obit
+    r'martin-luther-king-day-black-leaders|'  # 2016 MLK Day feature, not single obit
+    r'/document-[A-Za-z]+-Speech|'       # interactive documents (Goodwin speech)
+    r'/\d{4}-(?:covid-)?deaths\.html|'   # year-end "2020-deaths.html", "2020-covid-deaths.html"
+    r'/deaths-in-\d{4}\.html|'           # year-end "deaths-in-2018.html"
+    r'/mothers-day(?:[-./]|$)|'          # Mother's Day interactives
+    r'/obituaries/archives(?:/|$)|'      # interactive root pages (Not Forgotten Jesse Owens)
+    r'/2018/obituaries/overlooked\.html'  # Overlooked root index page
     r')',
     re.I,
 )
+# Specific URL blocklist — paid memorial notices and one-off republications that
+# look like obits but aren't editorial obits. Indexed under tom=Obituary.
+# Store path-only URLs (matching how build normalizes web_url before checking).
+NON_OBIT_URLS = {
+    '/2006/09/16/obituaries/16feuer.html',           # Cynthia Feuer memorial
+    '/2006/09/17/obituaries/17stapleton.html',       # Maureen Stapleton memorial
+    '/2007/02/09/us/09smith.html',                   # Anna Nicole Smith news / Robert Altman memorial
+    '/2007/03/02/obituaries/02ertegun.html',         # Ahmet Ertegun memorial
+    '/2007/04/16/obituaries/16schlesinger.html',     # Arthur Schlesinger memorial
+    '/2007/02/05/obituaries/05ivins.html',           # Molly Ivins memorial
+    '/2026/03/06/us/politics/eleanor-roosevelt-dead.html',  # republication ("Mrs. Roosevelt")
+}
 # 9/11 "Portraits of Grief" — published Dec 2001 - Sep 2002, ~1,800 articles.
 # Profile-style obits: headline is "Name: Tagline", desk='National / Portraits
 # of Grief', URL contains '/national/portraits/'. Standard parsers fail
@@ -257,7 +285,7 @@ def extract_name(headline, url=None, is_portraits=False):
     h = RE_LEADING_TITLE.sub('', h)
     # Tagline-then-name: "A Man of Many Words, David Shulman Dies at 91" →
     # the part before the comma is descriptive; the real name follows.
-    m = RE_TAGLINE_NAME.match(h)
+    m = RE_TAGLINE_NAME.match(h) or RE_TAGLINE_NAME_GENERIC.match(h)
     if m:
         cand = m.group(1).strip()
         if cand and 0 <= cand.count(' ') <= 5:
@@ -281,10 +309,13 @@ def extract_name(headline, url=None, is_portraits=False):
         # Reject if it looks like a tagline (function words like "of", "with").
         # Real names don't contain " of " or " with ", except for the
         # particles we whitelist as part of names ("of" never is one).
-        if RE_HAS_FUNC_WORD.search(cand): return None
-        # Allow single-word names (Birendra, Cher, Madonna) up to 6-token compound names
-        if cand and 0 <= cand.count(' ') <= 6:
-            return cand
+        # If the candidate looks like a tagline (contains "of"/"with"/etc.), DON'T
+        # return None — fall through to the leading-caps fallback so cases like
+        # "Mary Travers of Peter, Paul and Mary Dies at 72" can still parse.
+        if not RE_HAS_FUNC_WORD.search(cand):
+            # Allow single-word names (Birendra, Cher, Madonna) up to 6-token compound names
+            if cand and 0 <= cand.count(' ') <= 6:
+                return cand
     # Headlines with "Dies at N" but no comma (or comma falls after verb):
     # capture leading 1-4 capitalized tokens. Handles "Joe Moakley of
     # Massachusetts Dies at 74", "Derek Freeman Dies at 84".
@@ -424,6 +455,8 @@ def main():
             )
             is_obit = (tom == 'Obituary (Obit)'
                        or tom == 'Obituary'
+                       or tom == 'Obituary; Biography'
+                       or tom == 'Biography; Obituary'
                        or news_desk == 'Obits'
                        or section == 'Obituaries'
                        or is_portraits)
@@ -439,7 +472,7 @@ def main():
 
             # Hard rejects: year-end roundups, lesson plans, multi-subject packages,
             # slideshows/videos by URL pattern
-            if RE_NON_OBIT_URL.search(url) or RE_GROUP_HEADLINE.match(h):
+            if RE_NON_OBIT_URL.search(url) or RE_GROUP_HEADLINE.match(h) or url in NON_OBIT_URLS:
                 skipped_non_obit += 1
                 continue
             # Even when tom='Obituary (Obit)' the article may be an essay-style
