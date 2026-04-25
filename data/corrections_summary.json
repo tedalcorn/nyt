@@ -1,45 +1,45 @@
 {
-  "total": 528,
-  "matched": 462,
+  "total": 569,
+  "matched": 497,
   "by_section": [
     [
       "U.S.",
-      101
+      106
     ],
     [
       "World",
-      91
+      96
     ],
     [
       "Arts",
-      54
+      59
     ],
     [
       "Obituaries",
-      49
+      58
     ],
     [
       "New York",
-      37
+      39
     ],
     [
       "Business",
-      32
-    ],
-    [
-      "Movies",
-      14
-    ],
-    [
-      "Climate",
-      14
+      35
     ],
     [
       "Health",
-      14
+      16
+    ],
+    [
+      "Climate",
+      15
     ],
     [
       "Opinion",
+      15
+    ],
+    [
+      "Movies",
       14
     ],
     [
@@ -48,7 +48,7 @@
     ],
     [
       "Theater",
-      6
+      7
     ],
     [
       "Times Insider",
@@ -83,11 +83,11 @@
       2
     ],
     [
-      "Sports",
-      1
+      "The Learning Network",
+      2
     ],
     [
-      "The Learning Network",
+      "Sports",
       1
     ],
     [
@@ -125,6 +125,10 @@
       5
     ],
     [
+      "Robert D. McFadden",
+      5
+    ],
+    [
       "Alissa Wilkinson",
       4
     ],
@@ -138,6 +142,10 @@
     ],
     [
       "Anita Gates",
+      4
+    ],
+    [
+      "Annie Karni",
       4
     ],
     [
@@ -169,7 +177,15 @@
       4
     ],
     [
+      "Lisa Friedman",
+      4
+    ],
+    [
       "John Eligon",
+      4
+    ],
+    [
+      "Clay Risen",
       4
     ],
     [
@@ -185,11 +201,23 @@
       4
     ],
     [
+      "Brad Plumer",
+      4
+    ],
+    [
+      "Brooks Barnes",
+      4
+    ],
+    [
       "Amelia Nierenberg",
       4
     ],
     [
       "Jonah Engel Bromwich",
+      4
+    ],
+    [
+      "Pooja Salhotra",
       4
     ],
     [
@@ -202,10 +230,6 @@
     ],
     [
       "David E. Sanger",
-      3
-    ],
-    [
-      "Annie Karni",
       3
     ],
     [
@@ -229,6 +253,10 @@
       3
     ],
     [
+      "Adam Nossiter",
+      3
+    ],
+    [
       "Harold Goldberg",
       3
     ],
@@ -241,19 +269,11 @@
       3
     ],
     [
-      "Lisa Friedman",
-      3
-    ],
-    [
-      "Clay Risen",
-      3
-    ],
-    [
       "Devlin Barrett",
       3
     ],
     [
-      "Robert D. McFadden",
+      "Sam Roberts",
       3
     ],
     [
@@ -273,32 +293,12 @@
       3
     ],
     [
-      "Brad Plumer",
+      "Jer\u00e9 Longman",
       3
     ],
     [
-      "Brooks Barnes",
+      "Lydia DePillis",
       3
-    ],
-    [
-      "Lynsey Chutel",
-      3
-    ],
-    [
-      "Isabel Kershner",
-      3
-    ],
-    [
-      "Jason Bailey",
-      2
-    ],
-    [
-      "James Poniewozik",
-      2
-    ],
-    [
-      "Zachary Woolfe",
-      2
     ]
   ]
 }
