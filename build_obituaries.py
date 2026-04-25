@@ -132,7 +132,9 @@ RE_NON_OBIT_URL = re.compile(
     r'/slideshow/|'                      # photo packages
     r'/video/|'                          # video obits
     r'in-a-political-year-some-deaths|'  # 2024 Navalny package
-    r'lives-they-lived'                  # NYT Magazine year-end issue
+    r'lives-they-lived|'                 # NYT Magazine year-end issue
+    r'article-\d+-no-title|'             # API placeholder records ("Article 2002… No Title")
+    r'us-repeats-north-korea-stance'     # 2003 misclassified national-section article
     r')',
     re.I,
 )
@@ -146,7 +148,8 @@ RE_PORTRAITS_HEADLINE = re.compile(r'^([A-Z][\w.\'\-\u00C0-\u017F]+(?:\s+[A-Z][\
 # Headlines that mark group / multi-subject / package pieces, not single obits
 RE_GROUP_HEADLINE = re.compile(
     r'^(?:Lesson of the Day|The Lives They Lived|Year in Review|'
-    r'In a Political Year|Obituaries: Deaths in)\b',
+    r'In a Political Year|Obituaries: Deaths in|Notable Deaths|Notable Obits|'
+    r'In Remembrance|In Memoriam:)\b',
     re.I,
 )
 
@@ -409,7 +412,10 @@ def main():
             if not name:
                 name = extract_name_from_slug(url)
             age = extract_age(h, ab + ' ' + snip + ' ' + lead_clean)
-            prof = extract_profession(h)
+            # Portraits of Grief headlines are "Name: Tagline" — the tagline is
+            # an evocative one-liner ("A Cousin's Funny Antics"), not a role.
+            # Skip profession parsing rather than emit garbage.
+            prof = None if is_portraits else extract_profession(h)
             gen, gen_src = extract_gender(name, full)
             overlooked = bool(re.match(r'^Overlooked No More\b', h, re.I))
 

@@ -412,6 +412,15 @@
             <p class="slide-more"><a onclick="showView('world')">Explore world coverage →</a></p>
           </div>
         </section>
+        <!-- SLIDE: Obits gender split -->
+        <section class="slide">
+          <div class="slide-inner">
+            <h4 class="slide-title">An enduring gender divide</h4>
+            <p class="slide-caption"><em>The New York Times</em> has made an effort to elevate more women in its obituary notices, but even in recent years men have outnumbered women in obituaries two to one.</p>
+            <div class="slide-chart-wrap"><canvas id="chartCarouselObitGender"></canvas></div>
+            <p class="slide-more"><a onclick="showView('obits')">Explore the obituaries →</a></p>
+          </div>
+        </section>
         <!-- SLIDE 5: Articles & words per month -->
         <section class="slide">
           <div class="slide-inner">
@@ -496,12 +505,12 @@
       <p style="font-size:13px;color:#555"><strong>Inclusion.</strong> Records identified via NYT Archive API tags <code>type_of_material = "Obituary (Obit)"</code>, <code>news_desk = "Obits"</code> or <code>"National / Portraits of Grief"</code>, or <code>section_name = "Obituaries"</code>. Records flagged as corrections, slideshows, videos, or audio are excluded. Each candidate must also carry a death-marker in the headline ("Dies at N", "Is Dead", a comma-age "Name, 84,"), an obit-style URL slug, a known series prefix, or be part of the 9/11 Portraits of Grief series; this drops essay-style appreciations and related articles riding the Obits desk. Year-end roundups, NYT Learning lesson plans, and multi-subject packages are excluded by URL pattern.</p>
       <p style="font-size:13px;color:#555"><strong>Deduplication.</strong> The API often returns the same obit under multiple URL slugs and the desk sometimes runs follow-up profiles within a few days. Records sharing a name within a ±10 day window are merged into a single canonical entry; the additional URLs surface in the "URL(s)" column. The canonical record is preferred in this order: <em>Obituary (Obit)</em>, <em>Obituary</em>, anything else; ties broken by longer headline.</p>
       <p style="font-size:13px;color:#555"><strong>Fields parsed from headline + abstract.</strong> <em>Name</em> — comma split, with leading honorifics ("The Reverend", "Sir", "Representative", "Sultan", "King") stripped, parentheticals stripped (so "Barry Humphries (Dame Edna to You) Is Dead" parses as Barry Humphries), and series prefixes ("Overlooked No More:", "From 1992:") peeled off. When the headline parse fails (essay-style, "Anne Heche, Actress Known for '90s Film Roles, Dies at 53"-style follow-ups, etc.), a fallback extracts the name from the URL slug; cluster merge then absorbs these into their primary obit's URL list when a primary exists within ±10 days. <em>Age</em> — "Dies at N", "Name, N,", or "was N" patterns. <em>Gender</em> — three layered methods, tagged in the data: <strong>honorific</strong> (Mr./Mrs./Sir/Dame, with Mr./Mrs.+Capital prioritized over bare Dame to avoid stage-name confusion); <strong>pronoun</strong> (he/his/him vs. she/her tally); <strong>first_name</strong> (US baby-name lists, low confidence — flagged in the table with ⚠). <em>Profession</em> — the role phrase that follows the second comma. Cause of death rarely appears in headline/abstract and would require fetching article body.</p>
-      <p style="font-size:13px;color:#555"><strong>Series flags.</strong> "Overlooked no more" (245 records) — retroactive obituaries for historically overlooked figures (begun 2018-03-08, International Women's Day). "Republished" (68 records) — old obituaries re-run as packages (e.g. Women's History Month uses headline prefix "From 1992:"). Distinct from Overlooked because the original obit ran at the time of death; the dashboard shows the republish date. "9/11 Portraits of Grief" (390 records) — the National desk's brief profiles of victims of the September 11 attacks, published Dec 2001–Sep 2002 with the atypical headline format "Name: Tagline".</p>
-      <p style="font-size:13px;color:#555"><strong>Coverage of fields (n=24,177 after filtering)</strong>: name 99.9%, age 96%, gender 98% (43.5% honorific, 55.5% pronoun, 1.0% first-name fallback), profession 77%. About 16 records remain unparsed — almost all are short follow-up notices whose URL slug doesn't match a primary obit.</p>
+      <p style="font-size:13px;color:#555"><strong>Series flags.</strong> "Overlooked No More" (245 records) — retroactive obituaries for historically overlooked figures (begun 2018-03-08, International Women's Day). "Republished" (68 records) — old obituaries re-run as packages (e.g. Women's History Month uses headline prefix "From 1992:"). Distinct from Overlooked because the original obit ran at the time of death; the dashboard shows the republish date. "9/11 Portraits of Grief" (385 records) — the National desk's brief profiles of victims of the September 11 attacks, published Dec 2001–Sep 2002 with the atypical headline format "Name: Tagline". The role-tagline isn't a profession, so profession is intentionally left blank for these.</p>
+      <p style="font-size:13px;color:#555"><strong>Coverage of fields (n=24,147 after filtering)</strong>: name 100%, age 96%, gender 99% (43.3% honorific, 55.6% pronoun, 1.1% first-name fallback), profession 77%. About 13 records remain unparsed — almost all are short follow-up notices whose URL slug doesn't match a primary obit.</p>
 
       <h5 style="margin-bottom:6px;color:#444;margin-top:14px">Corrections</h5>
       <p style="font-size:13px;color:#555">Each daily corrections page (e.g. <code>nytimes.com/2025/01/02/pageoneplus/corrections-jan-3-2025.html</code>) was fetched via the Wayback Machine (live site is bot-blocked). Individual corrections were pulled from the article body — they begin with phrases like "An article on Tuesday about…". Referenced article date is parsed from the correction's date phrase or relative day-of-week ("on Thursday"). Match to the actual article uses headline + slug + subject token overlap within ±3 days; we accept a match when ≥2 distinct content tokens align. <strong>Coverage so far:</strong> 164 of 190 corrections pages fetched for 2025 (the rest hit Wayback rate-limit timeouts or have no snapshot). <strong>Match rate:</strong> 87% of parsed corrections linked to a specific article. Currently only 2025 is loaded — earlier years pending a re-scrape via authenticated session. Only corrections with a clear "An article on…" lead are extracted; corrections referring to obituaries or photos may be skipped if their phrasing differs.</p>
-      <p style="font-size:13px;color:#555"><strong>Untagged corrections — known undercount.</strong> A diagnostic across all 315 monthly Archive API dumps (2000–2026) found 5,037 articles with <code>section_name = "Corrections"</code> but <code>type_of_material ≠ "Correction"</code> — concentrated in 2013–2016 (2,253 articles, peak 686 in 2014) and 2023–2025 (1,511 articles). 2,932 of these are tagged as "News" tom and likely represent real corrections classified into the wrong bucket; 2,020 are "Quote" tom (correction-text excerpts). An additional 1,091 paper-wide Editors' Notes serve a similar but distinct function (retracting or contextualizing whole stories). The corrections universe shown here is therefore roughly 13% smaller than reality. Backfill pending re-scrape.</p>
+      <p style="font-size:13px;color:#555"><strong>Untagged corrections — known undercount.</strong> A diagnostic across all 315 monthly Archive API dumps (2000–2026) found two veins of correction-like articles with <code>type_of_material ≠ "Correction"</code>: (1) <strong>5,037 articles with <code>section_name = "Corrections"</code></strong>, concentrated in 2013–2016 (2,253 articles, peak 686 in 2014) and 2023–2025 (1,511 articles); 2,932 of these are tom="News" (real corrections in the wrong bucket), 2,020 are tom="Quote" (correction-text excerpts); and (2) <strong>906 articles whose headline is literally "A Correction", "Correction", or "Corrections"</strong>, mostly 2000–2011, mostly at <code>/pageoneplus/corrections.html</code> (daily corrections-page roundups indexed as News). A handful of these are stand-alone correction-of-an-obit articles (e.g. <code>/2003/12/04/arts/theater/a-correction.html</code>). An additional 1,091 paper-wide Editors' Notes serve a similar but distinct function (retracting or contextualizing whole stories). The corrections universe shown here is roughly 13% smaller than reality. Backfill pending re-scrape via authenticated session.</p>
     </div>
   </div>
 
@@ -756,9 +765,9 @@
           <select id="obitYearFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
             <option value="">All years</option>
           </select>
-          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> "Overlooked No More" only</label>
-          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished only</label>
-          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief only</label>
+          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> Overlooked No More</label>
+          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished</label>
+          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief</label>
           <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
         </div>
         <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="obitsTableContainer"></div></div>
@@ -1499,10 +1508,11 @@ function initHomeCarousel() {
     }).catch(err => console.warn('bio photo manifest load failed', err));
   }
 
-  // Kick off the three dynamic carousel charts (fire-and-forget; each guards its own readiness)
+  // Kick off the dynamic carousel charts (fire-and-forget; each guards its own readiness)
   renderCarouselPresidents();
   renderCarouselIowa();
   renderCarouselWorldMap();
+  renderCarouselObitGender();
 
   // Adapt track height to the current slide's natural content height.
   // Track flex has align-items:flex-start so slides don't stretch — slide.offsetHeight is natural.
@@ -1521,7 +1531,7 @@ function initHomeCarousel() {
   // sometimes hides parent width changes from it; an explicit .resize() forces the refit.)
   const onResize = () => {
     syncSoon();
-    ['chartPresidents', 'chartIowa'].forEach(id => {
+    ['chartPresidents', 'chartIowa', 'chartCarouselObitGender'].forEach(id => {
       const ch = chartInstances[id];
       if (ch) ch.resize();
     });
@@ -1645,6 +1655,57 @@ function renderCarouselIowa() {
       },
     },
   });
+}
+
+// --- CAROUSEL: Obits gender split — male/female counts per year (drops current year) ---
+function renderCarouselObitGender() {
+  const canvas = document.getElementById('chartCarouselObitGender');
+  if (!canvas || canvas.dataset.rendered) return;
+  canvas.dataset.rendered = '1';
+  fetch('data/obituaries.json').then(r => r.json()).then(obs => {
+    const cutoffYr = String(new Date().getFullYear());
+    const yrs = Array.from(new Set(obs.map(o => o.year).filter(Boolean)))
+      .filter(y => y !== cutoffYr).sort();
+    const mCounts = [], fCounts = [];
+    yrs.forEach(y => {
+      const oy = obs.filter(o => o.year === y);
+      mCounts.push(oy.filter(o => o.gender === 'M').length);
+      fCounts.push(oy.filter(o => o.gender === 'F').length);
+    });
+    destroyChart('chartCarouselObitGender');
+    chartInstances['chartCarouselObitGender'] = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: yrs,
+        datasets: [
+          { label: 'Female', data: fCounts, backgroundColor: 'rgba(196,120,74,0.85)', stack: 'a' },
+          { label: 'Male',   data: mCounts, backgroundColor: 'rgba(74,124,139,0.85)', stack: 'a' },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { stacked: true, ticks: { font: { size: 10 }, autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
+          y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Obituaries/year', font: { size: 11 } }, ticks: { font: { size: 10 } } },
+        },
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              footer: items => {
+                const i = items[0].dataIndex;
+                const tot = mCounts[i] + fCounts[i];
+                if (!tot) return '';
+                const pctF = Math.round(100 * fCounts[i] / tot);
+                return `${tot.toLocaleString()} total — ${pctF}% female`;
+              },
+            },
+          },
+        },
+      },
+    });
+  }).catch(err => console.warn('Carousel obit-gender chart failed', err));
 }
 
 // --- CAROUSEL: World map — reuses the world tab's geo + palette logic, fixed to 2025 ---
@@ -5968,8 +6029,10 @@ function renderObitAgeChart() {
 }
 
 function renderObitGenderChart() {
-  // Female share by year
-  const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean))).sort();
+  // Female share by year — drop the current year (incomplete + biased high)
+  const cutoffYr = String(new Date().getFullYear());
+  const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean)))
+    .filter(y => y !== cutoffYr).sort();
   const fPct = [], totals = [];
   yrs.forEach(y => {
     const oy = _obits.filter(o => o.year === y);
@@ -6043,8 +6106,7 @@ function renderObitsTable() {
   const keyFor = (o, c) => {
     if (c === 'firstName') return _firstName(o.name);
     if (c === 'lastName')  return _lastName(o.name);
-    if (c === 'overlooked') return o.overlooked ? 1 : 0;
-    if (c === 'republished') return o.republished ? 1 : 0;
+    if (c === 'review')     return o.gender_src === 'first_name' ? 1 : 0;
     if (c === 'secondary')  return (o.secondary_urls || []).length;
     return o[c];
   };
@@ -6068,13 +6130,12 @@ function renderObitsTable() {
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
     { k: 'profession', label: 'Profession / Role' },
-    { k: 'overlooked', label: 'Overlooked no more' },
-    { k: 'republished', label: 'Republished' },
-    { k: 'secondary', label: 'URL(s)' },
+    { k: 'review', label: 'Review' },
+    { k: 'secondary', label: 'Addl. URL(s)' },
   ];
-  // gender confidence indicator → small marker
-  const _gsrcMark = src => src === 'first_name'
-    ? '<span title="Inferred from first name only — low confidence" style="color:#c08040;font-size:9px;margin-left:3px;cursor:help">⚠</span>'
+  // gender confidence indicator → small marker (used in Review column)
+  const _reviewCell = src => src === 'first_name'
+    ? '<span title="Gender inferred from first name only — low confidence" style="color:#c08040;font-size:11px">⚠</span>'
     : '';
   let html = '<table class="author-table"><thead><tr>';
   cols.forEach(c => { html += `<th class="${c.cls||''}" data-sort="${c.k}">${c.label}${ind(c.k)}</th>`; });
@@ -6099,21 +6160,15 @@ function renderObitsTable() {
         return `<a href="${escapeHtml(su || '')}" target="_blank" style="color:#326891;font-size:11px">${escapeHtml(lbl)}</a>`;
       }).join(', ');
     })();
-    const ovrCell = o.overlooked
-      ? `<span style="font-size:10px;background:#f3e8d8;color:#7a5526;padding:1px 5px;border-radius:3px">yes</span>`
-      : '';
-    const repCell = o.republished
-      ? `<span style="font-size:10px;background:#e8eef3;color:#3a5a7a;padding:1px 5px;border-radius:3px">yes</span>`
-      : '';
+    const reviewCell = _reviewCell(o.gender_src);
     if (!o.name) {
       html += `<tr title="${escapeHtml(o.headline || '')}">
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
         <td colspan="2" style="color:#bbb">${linkOpen}(unparsed)${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
-        <td>${o.gender || '<span style="color:#bbb">·</span>'}${_gsrcMark(o.gender_src)}</td>
+        <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
         <td>${escapeHtml(o.profession || '')}</td>
-        <td>${ovrCell}</td>
-        <td>${repCell}</td>
+        <td>${reviewCell}</td>
         <td>${secCell}</td>
       </tr>`;
     } else {
@@ -6122,16 +6177,15 @@ function renderObitsTable() {
         <td>${linkOpen}${escapeHtml(dispFirst)}${linkClose}</td>
         <td>${linkOpen}${escapeHtml(dispLast)}${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
-        <td>${o.gender || '<span style="color:#bbb">·</span>'}${_gsrcMark(o.gender_src)}</td>
+        <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
         <td>${escapeHtml(o.profession || '')}</td>
-        <td>${ovrCell}</td>
-        <td>${repCell}</td>
+        <td>${reviewCell}</td>
         <td>${secCell}</td>
       </tr>`;
     }
   });
   if (rows.length > 500) {
-    html += `<tr><td colspan="9" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
+    html += `<tr><td colspan="8" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
   }
   html += '</tbody></table>';
   const wrap = document.getElementById('obitsTableContainer');
@@ -6144,7 +6198,7 @@ function renderObitsTable() {
       else {
         _obitTableSort.col = c;
         // Booleans + date default to descending (true/recent first); other text/numeric default to ascending
-        const descByDefault = (c === 'date' || c === 'overlooked' || c === 'republished' || c === 'secondary' || c === 'age');
+        const descByDefault = (c === 'date' || c === 'review' || c === 'secondary' || c === 'age');
         _obitTableSort.asc = !descByDefault;
       }
       renderObitsTable();
@@ -6852,7 +6906,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 3:18pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 3:34pm</span>
 </div>
 </body>
 </html>
