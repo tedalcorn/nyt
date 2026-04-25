@@ -487,6 +487,15 @@
         <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
         <li><strong>2011–2015 — obituary section tagging.</strong> The NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section, but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides the section tag and counts those articles under Obituaries, producing a continuous series rather than a gap. The apparent 2005–2006 spike likely reflects the desk first becoming a consistently-tagged section; the 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
       </ul>
+
+      <h4>Draft sections</h4>
+      <p>Two tabs in this dashboard are still in development. Methodology notes for each:</p>
+
+      <h5 style="margin-bottom:6px;color:#444">Obituaries</h5>
+      <p style="font-size:13px;color:#555">Records identified via NYT Archive API tags <code>type_of_material = "Obituary (Obit)"</code> or <code>news_desk = "Obits"</code> or <code>section_name = "Obituaries"</code>. Records flagged as corrections are excluded (those live in the Corrections tab). Duplicate entries — the API often returns the same obit under two URL slugs on the same date — are deduplicated by (name, publication date), keeping the canonical <em>Obituary (Obit)</em> entry. Fields parsed from headline + abstract: <em>name</em> via comma split (with leading honorifics like "The Reverend" or "Sir" stripped, and series prefixes like "Overlooked No More:" peeled off); <em>age</em> via "Dies at NN"/"Name, NN," patterns; <em>gender</em> via honorifics (Mr./Mrs./Dame/Lord) plus pronoun tally with first-name fallback; <em>profession</em> from the second-comma phrase. Cause of death rarely appears in headline/abstract and would require fetching article body. Coverage of fields after improvements: name 93%, age 96%, gender 98%, profession 77%. The <em>Overlooked No More</em> series (retroactive obituaries for historically overlooked figures, mostly women) is tagged on each row and exposed via a checkbox filter.</p>
+
+      <h5 style="margin-bottom:6px;color:#444;margin-top:14px">Corrections</h5>
+      <p style="font-size:13px;color:#555">Each daily corrections page (e.g. <code>nytimes.com/2025/01/02/pageoneplus/corrections-jan-3-2025.html</code>) was fetched via the Wayback Machine (live site is bot-blocked). Individual corrections were pulled from the article body — they begin with phrases like "An article on Tuesday about…". Referenced article date is parsed from the correction's date phrase or relative day-of-week ("on Thursday"). Match to the actual article uses headline + slug + subject token overlap within ±3 days; we accept a match when ≥2 distinct content tokens align. <strong>Coverage so far:</strong> 164 of 190 corrections pages fetched for 2025 (the rest hit Wayback rate-limit timeouts or have no snapshot). <strong>Match rate:</strong> 87% of parsed corrections linked to a specific article. Currently only 2025 is loaded — earlier years pending a re-scrape via authenticated session. Only corrections with a clear "An article on…" lead are extracted; corrections referring to obituaries or photos may be skipped if their phrasing differs.</p>
     </div>
   </div>
 
@@ -704,7 +713,7 @@
     <div class="chart-box">
       <h3>Obituaries</h3>
       <p style="font-size:13px;color:#666;margin-bottom:10px">
-        Every Times obituary since 2001 — name, age, gender, and the role description from the headline. Parsed from the Archive API. Use the filters to explore who's been profiled.
+        Every Times obituary since 2001 — name, age, gender, and role description, parsed from the Archive API. Click any column header to sort; the "Overlooked No More" filter isolates retroactive obituaries for historically overlooked figures.
       </p>
       <div id="obitsLoading" style="color:#888;padding:8px 0">Loading obituary data…</div>
       <div id="obitsContent" style="display:none">
@@ -735,12 +744,13 @@
           <select id="obitYearFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
             <option value="">All years</option>
           </select>
+          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> "Overlooked No More" only</label>
           <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
         </div>
         <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="obitsTableContainer"></div></div>
 
-        <p style="font-size:11px;color:#888;margin-top:14px;line-height:1.4">
-          <strong>Methodology.</strong> Records identified via NYT Archive API tags <code>type_of_material = "Obituary (Obit)"</code> or <code>news_desk = "Obits"</code>. Fields parsed from headline + abstract: <em>name</em> via comma split, <em>age</em> via "Dies at NN"/"Name, NN," patterns, <em>gender</em> via pronoun tally with first-name fallback, <em>profession</em> from the second-comma phrase. Cause of death rarely appears in headline/abstract and would require fetching article body. Coverage of fields: name 93%, age 95%, gender 85%, profession 75%.
+        <p style="font-size:11px;color:#888;margin-top:10px">
+          Methodology in <a href="#" onclick="document.querySelector('[data-view=&quot;about&quot;]').click();return false;" style="color:#326891">About → Draft sections</a>.
         </p>
       </div>
     </div>
@@ -757,15 +767,9 @@
       <div id="corrContent" style="display:none">
         <div id="corrSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px"></div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
-          <div>
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Top sections corrected</div>
-            <canvas id="chartCorrSections" style="max-height:220px"></canvas>
-          </div>
-          <div>
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Top reporters with corrections</div>
-            <canvas id="chartCorrAuthors" style="max-height:220px"></canvas>
-          </div>
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Top sections corrected</div>
+          <canvas id="chartCorrSections" style="max-height:260px"></canvas>
         </div>
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
@@ -778,8 +782,8 @@
         </div>
         <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="corrTableContainer"></div></div>
 
-        <p style="font-size:11px;color:#888;margin-top:14px;line-height:1.4">
-          <strong>Methodology.</strong> Each daily corrections page (e.g. <code>nytimes.com/2025/01/02/pageoneplus/corrections-jan-3-2025.html</code>) was fetched via the Wayback Machine (live site is bot-blocked). Individual corrections were pulled from the article body — they begin with phrases like "An article on Tuesday about…". Referenced article date is parsed from the correction's date phrase or relative day-of-week ("on Thursday"). Match to the actual article uses headline + slug + subject token overlap within ±3 days; we accept a match when ≥2 distinct content tokens align. <strong>Coverage:</strong> 152 of 190 corrections pages fetched (the rest hit Wayback rate-limit timeouts). <strong>Match rate:</strong> 88% of parsed corrections linked to a specific article. Only corrections with a clear "An article on…" lead are extracted; corrections referring to obituaries or photos may be skipped if their phrasing differs.
+        <p style="font-size:11px;color:#888;margin-top:10px">
+          Methodology in <a href="#" onclick="document.querySelector('[data-view=&quot;about&quot;]').click();return false;" style="color:#326891">About → Draft sections</a>.
         </p>
       </div>
     </div>
@@ -5968,14 +5972,28 @@ function renderObitGenderChart() {
   });
 }
 
+// Last-word-of-name; ignores trailing comma/period and handles smart quotes.
+function _lastName(n) {
+  if (!n) return '';
+  const parts = n.replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
+  return (parts[parts.length - 1] || '').toLowerCase().replace(/[.,]+$/, '');
+}
+function _firstName(n) {
+  if (!n) return '';
+  const parts = n.replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
+  return (parts[0] || '').toLowerCase().replace(/[.,]+$/, '');
+}
+
 let _obitTableSort = { col: 'date', asc: false };
 function renderObitsTable() {
   if (!_obits) return;
   const q = (document.getElementById('obitSearch').value || '').toLowerCase();
   const gen = document.getElementById('obitGenderFilter').value;
   const yr = document.getElementById('obitYearFilter').value;
+  const onlyOvr = document.getElementById('obitOverlookedOnly').checked;
   let rows = _obits.filter(o => {
     if (yr && o.year !== yr) return false;
+    if (onlyOvr && !o.overlooked) return false;
     if (gen) {
       if (gen === '?' && o.gender) return false;
       if (gen !== '?' && o.gender !== gen) return false;
@@ -5986,8 +6004,14 @@ function renderObitsTable() {
     }
     return true;
   });
+  // Sort key — special-case first/last name pseudo-columns
+  const keyFor = (o, c) => {
+    if (c === 'firstName') return _firstName(o.name);
+    if (c === 'lastName')  return _lastName(o.name);
+    return o[c];
+  };
   rows.sort((a, b) => {
-    let va = a[_obitTableSort.col], vb = b[_obitTableSort.col];
+    let va = keyFor(a, _obitTableSort.col), vb = keyFor(b, _obitTableSort.col);
     if (va == null) va = '';
     if (vb == null) vb = '';
     if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
@@ -6000,8 +6024,9 @@ function renderObitsTable() {
   const display = rows.slice(0, 500);
   const ind = c => _obitTableSort.col === c ? (_obitTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
-    { k: 'date', label: 'Date' },
-    { k: 'name', label: 'Name' },
+    { k: 'date', label: 'Publication date' },
+    { k: 'firstName', label: 'First name' },
+    { k: 'lastName', label: 'Last name' },
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
     { k: 'profession', label: 'Profession / Role' },
@@ -6012,19 +6037,36 @@ function renderObitsTable() {
   display.forEach(o => {
     const url = o.url || '';
     const safeUrl = url.startsWith('/') ? 'https://www.nytimes.com' + url : url;
-    const nameCell = url
-      ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">${escapeHtml(o.name || '(unparsed)')}</a>`
-      : escapeHtml(o.name || '(unparsed)');
-    html += `<tr title="${escapeHtml(o.headline || '')}">
-      <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
-      <td>${nameCell}</td>
-      <td class="num">${o.age ?? ''}</td>
-      <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
-      <td>${escapeHtml(o.profession || '')}</td>
-    </tr>`;
+    const fn = _firstName(o.name);
+    const ln = _lastName(o.name);
+    // Re-capitalize for display from the original name
+    const parts = (o.name || '').replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
+    const dispLast  = parts.length ? parts[parts.length - 1].replace(/[.,]+$/, '') : '';
+    const dispFirst = parts.length > 1 ? parts.slice(0, -1).join(' ') : (parts[0] || '');
+    const linkOpen  = url ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">` : '';
+    const linkClose = url ? `</a>` : '';
+    const ovrBadge = o.overlooked ? ` <span style="font-size:10px;background:#f3e8d8;color:#7a5526;padding:1px 5px;border-radius:3px;margin-left:4px">Overlooked</span>` : '';
+    if (!o.name) {
+      html += `<tr title="${escapeHtml(o.headline || '')}">
+        <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
+        <td colspan="2" style="color:#bbb">${linkOpen}(unparsed)${linkClose}${ovrBadge}</td>
+        <td class="num">${o.age ?? ''}</td>
+        <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
+        <td>${escapeHtml(o.profession || '')}</td>
+      </tr>`;
+    } else {
+      html += `<tr title="${escapeHtml(o.headline || '')}">
+        <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
+        <td>${linkOpen}${escapeHtml(dispFirst)}${linkClose}</td>
+        <td>${linkOpen}${escapeHtml(dispLast)}${linkClose}${ovrBadge}</td>
+        <td class="num">${o.age ?? ''}</td>
+        <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
+        <td>${escapeHtml(o.profession || '')}</td>
+      </tr>`;
+    }
   });
   if (rows.length > 500) {
-    html += `<tr><td colspan="5" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
+    html += `<tr><td colspan="6" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
   }
   html += '</tbody></table>';
   const wrap = document.getElementById('obitsTableContainer');
@@ -6077,7 +6119,6 @@ async function initCorrections() {
 
   renderCorrSummary();
   renderCorrSectionsChart();
-  renderCorrAuthorsChart();
   document.getElementById('corrSearch').addEventListener('input', () => renderCorrTable());
   renderCorrTable();
 }
@@ -6088,8 +6129,6 @@ function renderCorrSummary() {
   const matchPct = total ? Math.round(100 * matched / total) : 0;
   // Pages = unique page_url
   const uniqPages = new Set(_corr.map(c => c.page_url)).size;
-  // Top reporter
-  const topAuthor = _corrSummary.by_author && _corrSummary.by_author[0];
   const wrap = document.getElementById('corrSummary');
   const card = (label, value, sub) =>
     `<div style="border:1px solid #eee;border-radius:6px;padding:10px 14px;background:#fafafa">
@@ -6100,8 +6139,7 @@ function renderCorrSummary() {
   wrap.innerHTML =
     card('Corrections (2025)', total.toLocaleString(), `${uniqPages} daily pages`)
     + card('Matched to articles', matched.toLocaleString(), `${matchPct}% link rate`)
-    + card('Top corrected section', _corrSummary.by_section[0] ? _corrSummary.by_section[0][0] : '—', _corrSummary.by_section[0] ? `${_corrSummary.by_section[0][1]} corrections` : '')
-    + card('Most-corrected reporter', topAuthor ? topAuthor[0] : '—', topAuthor ? `${topAuthor[1]} corrections` : '');
+    + card('Top corrected section', _corrSummary.by_section[0] ? _corrSummary.by_section[0][0] : '—', _corrSummary.by_section[0] ? `${_corrSummary.by_section[0][1]} corrections` : '');
 }
 
 function renderCorrSectionsChart() {
@@ -6118,34 +6156,6 @@ function renderCorrSectionsChart() {
       indexAxis: 'y',
       maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { size: 10 } }, beginAtZero: true },
-        y: { ticks: { font: { size: 10 } } },
-      },
-    },
-  });
-}
-
-function renderCorrAuthorsChart() {
-  destroyChart('chartCorrAuthors');
-  const top = _corrSummary.by_author.slice(0, 12);
-  const ctx = document.getElementById('chartCorrAuthors').getContext('2d');
-  chartInstances['chartCorrAuthors'] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: top.map(d => d[0]),
-      datasets: [{ data: top.map(d => d[1]), backgroundColor: '#a45a3c' }],
-    },
-    options: {
-      indexAxis: 'y',
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      onClick: (evt, els) => {
-        if (els.length) {
-          const name = top[els[0].index][0];
-          openAuthor(name);
-        }
-      },
       scales: {
         x: { ticks: { font: { size: 10 } }, beginAtZero: true },
         y: { ticks: { font: { size: 10 } } },

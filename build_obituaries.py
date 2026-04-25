@@ -66,11 +66,42 @@ def clean_smart_quotes(s):
     return re.sub(r'[\u2018\u2019\u201C\u201D\'"]+', '', s).strip()
 
 
+# Honorifics / titles to peel off the start of the name.
+# Long-form first (so "The Reverend" matches before "Rev"); each entry includes
+# trailing dot variants. Strips these before the name itself.
+TITLE_PREFIXES = (
+    r'(?:The\s+)?(?:Reverend|Rev\.?|Rev|Father|Fr\.?|Pastor|Bishop|Cardinal|'
+    r'Sister|Brother|Mother|Rabbi|Imam|Sheikh|Sheik|Sri|Mahatma|'
+    r'Sir|Dame|Lord|Lady|Baron|Baroness|Count|Countess|Duke|Duchess|'
+    r'Prince|Princess|King|Queen|Emperor|Empress|'
+    r'Dr\.?|Doctor|Professor|Prof\.?|Justice|Judge|Senator|Sen\.?|'
+    r'Representative|Rep\.?|Governor|Gov\.?|Mayor|President|'
+    r'General|Gen\.?|Colonel|Col\.?|Major|Maj\.?|Captain|Capt\.?|'
+    r'Lieutenant|Lt\.?|Admiral|Adm\.?|Commander|Cmdr\.?|Sergeant|Sgt\.?|'
+    r'Mr\.?|Mrs\.?|Ms\.?|Mx\.?|Miss|'
+    r'Madame|Madam|Monsieur|Mademoiselle|'
+    r'Se(?:n|ñ)or|Se(?:n|ñ)ora|Se(?:n|ñ)orita|'
+    r'Saint|St\.?)'
+)
+RE_LEADING_TITLE = re.compile(r'^' + TITLE_PREFIXES + r'\s+', re.I)
+# "What They Left Behind:" is a recurring NYT Magazine end-of-year series
+RE_LEADING_SERIES = re.compile(
+    r'^(?:Overlooked No More|What They Left Behind|The Lives They Lived|Lives They Lived|'
+    r'A Life Lived|Living On|In Memoriam)\s*[:\u2014\u2013-]\s*',
+    re.I,
+)
+
+
 def extract_name(headline):
     if not headline: return None
-    h = re.sub(r'^Overlooked No More:\s*', '', headline, flags=re.I)
+    # Drop zero-width chars
+    h = headline.replace('\u200b', '').replace('\ufeff', '').strip()
+    # Strip recurring series prefixes (Overlooked No More, etc.)
+    h = RE_LEADING_SERIES.sub('', h)
     # Strip leading "'Nickname': " prefixes
     h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
+    # Strip honorific titles (The Reverend, Sir, Dr., etc.)
+    h = RE_LEADING_TITLE.sub('', h)
     m = RE_NAME_COMMA.match(h)
     if m:
         cand = m.group(1).strip()
@@ -99,11 +130,24 @@ def extract_age(headline, abstract):
 
 
 def extract_gender(name, full_text):
-    # Pronoun-based first
+    # Honorific-based (very high signal): Mr./Mrs./Ms./Sir/Lord/etc.
     if full_text:
-        t = ' ' + full_text.lower() + ' '
-        he = t.count(' he ') + t.count(' his ') + t.count(' him ')
-        she = t.count(' she ') + t.count(' her ') + t.count(' herself ')
+        t = ' ' + full_text + ' '  # case-sensitive — these are typically capitalized
+        # Count male/female honorifics
+        m_hon = (len(re.findall(r'\bMr\.?\s', t)) + len(re.findall(r'\bSir\s', t))
+                 + len(re.findall(r'\b(?:Lord|Baron|Count|Duke|Prince|King|Emperor)\s', t)))
+        f_hon = (len(re.findall(r'\bMrs\.?\s', t)) + len(re.findall(r'\bMs\.?\s', t))
+                 + len(re.findall(r'\b(?:Dame|Lady|Baroness|Countess|Duchess|Princess|Queen|Empress|Madame|Madam)\s', t)))
+        if m_hon and not f_hon: return 'M'
+        if f_hon and not m_hon: return 'F'
+        # Pronoun tally
+        tl = t.lower()
+        he = tl.count(' he ') + tl.count(' his ') + tl.count(' him ')
+        she = tl.count(' she ') + tl.count(' her ') + tl.count(' herself ')
+        # If only one direction has signal, accept on >=1 (catches short abstracts)
+        if he >= 1 and she == 0: return 'M'
+        if she >= 1 and he == 0: return 'F'
+        # Both directions: require margin
         if he >= 2 and he > she * 1.5: return 'M'
         if she >= 2 and she > he * 1.5: return 'F'
     # First-name fallback
@@ -141,7 +185,7 @@ def main():
 
     all_obits = []
     by_year = Counter()
-    skipped = 0
+    skipped_corr = 0
 
     for f in files:
         with open(f) as fh:
@@ -153,6 +197,12 @@ def main():
             tom = d.get('type_of_material', '') or ''
             news_desk = d.get('news_desk', '') or ''
             section = d.get('section_name', '') or ''
+            # Skip corrections — they have a dedicated Corrections tab and
+            # aren't actual obituaries. Common in 2008-2010 ("For The Record"
+            # daily obit corrections column).
+            if tom == 'Correction':
+                skipped_corr += 1
+                continue
             # Identify obits — accept either type tag or Obits desk OR Obituaries section
             is_obit = (tom == 'Obituary (Obit)'
                        or tom == 'Obituary'
@@ -170,6 +220,7 @@ def main():
             age = extract_age(h, ab + ' ' + snip + ' ' + lead)
             prof = extract_profession(h)
             gen = extract_gender(name, full)
+            overlooked = bool(re.match(r'^Overlooked No More\b', h, re.I))
 
             pub = d.get('pub_date', '')[:10]
             year = pub[:4] if pub else ''
@@ -182,6 +233,7 @@ def main():
                 'age': age,
                 'gender': gen,
                 'profession': prof,
+                'overlooked': overlooked,
                 'date': pub,
                 'year': year,
                 'section': section,
@@ -192,6 +244,28 @@ def main():
                 'url': url,
             })
             by_year[year] += 1
+
+    # Dedupe by (name, date): API often returns the same obit twice under
+    # different URL slugs and tom values (e.g. /business/24do.html and
+    # /business/yen-do-65-... on same date). Keep the entry whose tom is the
+    # most "canonical" obituary tag, and prefer the longer (slug-based) URL.
+    _PREF = {'Obituary (Obit)': 0, 'Obituary': 1, 'Obituary; Biography': 2}
+    def _rank(o):
+        return (_PREF.get(o.get('tom') or '', 9), -len(o.get('url') or ''))
+    seen = {}
+    for o in all_obits:
+        key = (o.get('name'), o.get('date'))
+        # Don't dedupe rows with no parsed name (different events)
+        if not key[0]:
+            seen[id(o)] = o
+            continue
+        prev = seen.get(key)
+        if prev is None or _rank(o) < _rank(prev):
+            seen[key] = o
+    deduped = list(seen.values())
+    n_dropped = len(all_obits) - len(deduped)
+    print(f"Skipped {skipped_corr:,} corrections; deduped {n_dropped:,} same-(name,date) entries")
+    all_obits = deduped
 
     print(f"\nTotal obits: {len(all_obits):,}")
     print("By year:")
