@@ -276,6 +276,21 @@ NON_OBIT_URLS = {
     '/2007/04/16/obituaries/16schlesinger.html',     # Arthur Schlesinger memorial
     '/2007/02/05/obituaries/05ivins.html',           # Molly Ivins memorial
     '/2026/03/06/us/politics/eleanor-roosevelt-dead.html',  # republication ("Mrs. Roosevelt")
+    # 2026-04-25 manual review (xlsx) — interactive list packages, not obits
+    '/2016/12/12/obituaries/most-read-obituaries.html',
+    '/2019/07/05/obituaries/apollo-11-moon-obituaries.html',
+    '/interactive/2016/01/13/obituaries/breaking-bread-petraeus.html',
+    '/interactive/2016/01/13/obituaries/newton-obits.html',
+    '/interactive/2016/01/13/obituaries/russert-obits.html',
+    '/interactive/2016/01/13/obituaries/stonewall-pine-delarverie-obits.html',
+    '/interactive/2016/01/13/obituaries/summer-obits.html',
+    '/interactive/2016/01/13/obituaries/zaharias-obits.html',
+    '/interactive/2016/06/30/obituaries/july4-copy.html',
+    '/interactive/2016/06/30/obituaries/moon-landing.html',
+    '/interactive/2016/07/22/obituaries/cassius-clay.html',
+    '/interactive/2016/07/22/obituaries/nf-farewell.html',
+    '/interactive/2016/08/14/obituaries/india-hp.html',
+    '/interactive/2021/03/25/obituaries/womens-history-month-obituaries.html',
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -335,6 +350,45 @@ OBIT_OVERRIDES = {
     '/2015/01/23/world/middleeast/king-abdullah-who-nudged-saudi-arabia-forward-dies-at-90.html': {
         'profession': 'King of Saudi Arabia',
     },
+    # Cardinal John O'Connor: 2000 headline is all-caps ("CARDINAL O'CONNOR…"),
+    # so name parses as just "O'CONNOR" and display_name is "CARDINAL O'CONNOR".
+    # Abstract uses the proper "Cardinal John O'Connor".
+    '/2000/05/04/nyregion/death-of-a-cardinal-cardinal-o-connor-80-dies-forceful-voice-for-vatican.html': {
+        'name': "Cardinal John O'Connor", 'profession': 'Archbishop of New York',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # ---- 2026-04-25 manual review (xlsx) — gender + name/role/age corrections ----
+    '/2000/05/15/world/keizo-obuchi-premier-who-brought-stability-japan-s-economy-faltered-dies-62.html': {'gender': 'M', 'gender_src': 'manual', 'profession': 'Japanese Prime Minister'},
+    '/2001/04/23/arts/giuseppe-sinopoli-intense-physical-conductor-dies-54-after-collapsing-onstage.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2002/04/29/world/aleksandr-lebed-52-dies-midwife-of-russian-democracy.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2002/11/18/theater/crash-kills-william-marrie-33-a-lead-dancer-in-movin-out.html': {'gender': 'M', 'gender_src': 'manual', 'name': 'William Marrié'},
+    '/2003/02/13/nyregion/neville-colman-pathologist-and-dna-expert-dies-at-57.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2003/08/12/sports/herb-brooks-66-dies-in-auto-accident-coached-us-olympians-to-miracle-on-ice.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2004/01/15/obituaries/olivia-goldsmith-who-wrote-comic-first-wives-club-dies-at-54.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2004/02/29/nyregion/lady-fiennes-muse-of-a-british-explorer-is-dead-at-56.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2004/03/20/business/sherman-lewis-67-financier-who-was-executive-at-lehman.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2004/05/03/us/aj-naparstek-65-public-housing-expert.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2004/08/17/nyregion/kermit-s-champa-64-author-and-distinguished-art-historian.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2004/12/01/arts/design/ed-paschke-painter-65-dies-pop-artist-with-dark-vision.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2004/12/05/nyregion/obituaries/lucien-hold-early-champion-of-top-comics-is-dead-at-57.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2004/12/12/sports/obituaries/f-darrin-perry-39-dies-designed-espn-magazine.html': {'gender': 'M', 'gender_src': 'manual', 'profession': "Lead Dancer in 'Movin' Out'"},
+    '/2005/01/14/business/media/jay-schulberg-dies-at-65-creator-of-milk-campaign.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2005/10/03/theater/newsandfeatures/august-wilson-theaters-poet-of-black-america-is.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2006/05/23/world/23lee.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2006/07/04/world/americas/04lewites.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2006/08/24/business/24do.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2006/10/01/education/30wakeman.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2008/09/19/world/europe/19dagueneau.html': {'gender': 'M', 'gender_src': 'manual', 'name': 'Didier Dagueneau'},
+    '/2013/03/24/world/europe/boris-a-berezovsky-a-putin-critic-dies-at-67.html': {'gender': 'M', 'gender_src': 'manual', 'name': 'Boris A. Berezovsky', 'profession': 'Russian Oligarch'},
+    '/2016/07/29/obituaries/matilda-rapaport-extreme-skier.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2020/04/23/obituaries/ketty-herawati-sultana-coronavirus-dead.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2020/04/28/health/mel-baggs-dead.html': {'gender': 'X', 'gender_src': 'manual'},
+    '/2020/11/24/obituaries/honestie-hodges-dead-coronavirus.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2020/12/18/us/benny-napoleon-dead.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2021/05/01/obituaries/manisha-jadhav-dead-coronavirus.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2024/12/04/style/rohit-bal-dead.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2025/03/07/arts/music/dwayne-wiggins-dead.html': {'gender': 'M', 'gender_src': 'manual', 'name': "D'Wayne Wiggins"},
+    '/2025/11/24/science/gramma-galapagos-tortoise-san-diego-zoo-dies.html': {'gender': 'F', 'gender_src': 'manual', 'age': 141},
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -347,6 +401,31 @@ OBIT_SPLITS = {
          'profession': 'archaeologist'},
         {'name': 'Linda S. Braidwood',  'age': 93, 'gender': 'F', 'gender_src': 'manual',
          'profession': 'archaeologist'},
+    ],
+    # ---- 2026-04-25 manual review (xlsx) — multi-subject obituaries ----
+    '/2018/04/11/obituaries/overlooked-lin-huiyin-and-liang-sicheng.html': [
+        {'name': 'Lin Huiyin', 'age': 51, 'gender': 'F', 'gender_src': 'manual'},
+        {'name': 'Liang Sicheng', 'age': 70, 'gender': 'M', 'gender_src': 'manual'},
+    ],
+    '/2018/06/08/obituaries/gremina-and-ugarov-russia-teatr-doc-die.html': [
+        {'name': 'Mikhail Ugarov', 'age': 62, 'gender': 'M', 'gender_src': 'manual'},
+        {'name': 'Elena Gremina', 'age': 61, 'gender': 'F', 'gender_src': 'manual'},
+    ],
+    '/2020/05/18/obituaries/cleon-and-leon-boyd-dead-coronavirus.html': [
+        {'name': 'Cleon Boyd', 'age': 64, 'gender': 'M', 'gender_src': 'manual'},
+        {'name': 'Leon Boyd', 'age': 64, 'gender': 'M', 'gender_src': 'manual'},
+    ],
+    '/2020/12/21/obituaries/rosendo-rogelio-mendoza-dead.html': [
+        {'name': 'Rosendo Mendoza', 'age': 56, 'gender': 'M', 'gender_src': 'manual'},
+        {'name': 'Rogelio Mendoza', 'age': 56, 'gender': 'M', 'gender_src': 'manual'},
+    ],
+    '/2022/04/03/arts/music/mighty-diamonds-dead.html': [
+        {'name': 'Tabby Diamond', 'age': 66, 'gender': 'M', 'gender_src': 'manual'},
+        {'name': 'Bunny Diamond', 'age': 70, 'gender': 'M', 'gender_src': 'manual'},
+    ],
+    '/2022/10/14/obituaries/katharine-briggs-and-isabel-myers-overlooked.html': [
+        {'name': 'Katharine Briggs', 'age': 93, 'gender': 'F', 'gender_src': 'manual'},
+        {'name': 'Isabel Myers', 'age': 82, 'gender': 'F', 'gender_src': 'manual'},
     ],
 }
 # 9/11 "Portraits of Grief" — published Dec 2001 - Sep 2002, ~1,800 articles.
@@ -521,6 +600,11 @@ def extract_gender(name, full_text):
     """
     if full_text:
         t = ' ' + full_text + ' '  # case-sensitive — honorifics are capitalized
+        # Mx. — non-binary honorific (rarely used in NYT obits, but unambiguous
+        # when present). Mx. + capitalized name token. Beats Mr./Mrs./Ms. since
+        # those don't apply.
+        x_strong = len(re.findall(r'\bMx\.?\s+[A-Z]', t))
+        if x_strong: return ('X', 'honorific')
         # Strong honorific: title immediately followed by a capitalized name token.
         # More reliable than bare "Dame" (which appears in stage names like Dame
         # Edna) or bare "Sir/Lord" (titles for someone other than the subject).

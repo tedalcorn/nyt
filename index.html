@@ -775,6 +775,7 @@
           <option value="">All genders</option>
           <option value="M">Male only</option>
           <option value="F">Female only</option>
+          <option value="X">Non-binary only</option>
           <option value="?">Gender not parsed</option>
         </select>
         <select id="obitYearFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
@@ -6402,7 +6403,10 @@ function renderObitsTable() {
     // Single Name column — show display_name (includes title like "Sister André")
     // when present, otherwise fall back to parsed name. Sort still uses
     // _lastName(o.name) so titles don't push records to "S" / "D" / etc.
-    const fullName = (o.display_name || o.name || '').replace(/[\u2018\u2019\u201C\u201D]/g, '').trim();
+    const fullName = (o.display_name || o.name || '')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .trim();
     const linkOpen  = url ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">` : '';
     const linkClose = url ? `</a>` : '';
     // Secondary URL: link if present, else blank
@@ -7161,7 +7165,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 11:42pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 11:45pm</span>
 </div>
 </body>
 </html>
