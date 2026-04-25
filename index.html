@@ -1548,7 +1548,14 @@ function initOverview() {
 function scrollCarousel(dir) {
   const t = document.getElementById('homeCarousel');
   if (!t) return;
-  t.scrollBy({ left: dir * t.clientWidth, behavior: 'smooth' });
+  const w = t.clientWidth;
+  const idx = Math.round(t.scrollLeft / w);
+  const last = t.querySelectorAll('.slide').length - 1;
+  let target = idx + dir;
+  // Wrap: past last → first, before first → last.
+  if (target > last) target = 0;
+  else if (target < 0) target = last;
+  t.scrollTo({ left: target * w, behavior: 'smooth' });
 }
 
 function initHomeCarousel() {
@@ -1846,8 +1853,9 @@ function _paintCarouselWorldMap(geo) {
   const thresh = [0.2, 1, 5, 20];
   const labels = ['<0.2/M', '0.2–1/M', '1–5/M', '5–20/M', '20+/M'];
   const isUS = g => g === 'United States of America' || g === 'United States';
+  const isAntarctica = g => g === 'Antarctica' || g === 'Fr. S. Antarctic Lands';
   const fillColor = g => {
-    if (isUS(g)) return usColor;
+    if (isUS(g) || isAntarctica(g)) return usColor;
     const v = valByGeo[g];
     if (v == null || v === 0) return noDataColor;
     for (let i = 0; i < thresh.length; i++) if (v < thresh[i]) return colors[i];
@@ -4708,6 +4716,7 @@ function renderWorldMap(years) {
   const noDataColor = '#e8d5b7';
   const usColor = '#bdbdbd';
   const isUS = g => g === 'United States of America' || g === 'United States';
+  const isAntarctica = g => g === 'Antarctica' || g === 'Fr. S. Antarctic Lands';
   let binThresholds, binLabels;
   if (perCapita) {
     // Fixed per-capita bins (articles/million/year) — consistent regardless of year range
@@ -4720,7 +4729,7 @@ function renderWorldMap(years) {
   }
 
   function fillColor(geoName) {
-    if (isUS(geoName)) return usColor;
+    if (isUS(geoName) || isAntarctica(geoName)) return usColor;
     const v = valByGeo[geoName];
     if (v == null || v === 0) return noDataColor;
     for (let i = 0; i < binThresholds.length; i++) {
@@ -7052,7 +7061,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 8:42pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 11:30pm</span>
 </div>
 </body>
 </html>
