@@ -485,6 +485,7 @@
         <li><strong>2006–2009 — URL duplication.</strong> Beginning around May 2006, the NYT introduced a slug-based URL format alongside its old date-coded URLs, causing the API to index many articles twice. Blog posts and DealBook articles cross-posted to the main site in 2008–2009 were also frequently indexed under two or three URLs simultaneously. This dashboard removes duplicates that share the same headline, publication date, and word count (within ±10%), keeping the shortest URL — about 62,000 entries in total, concentrated in 2006 and the 2008–2009 period of peak blog activity.</li>
         <li><strong>January 2007 — short-item drop-off.</strong> Non-blog counts fall by roughly 2,000 articles per month at this point; analysis suggests the API stopped consistently indexing short-form items — particularly letters to the editor and Metro section briefs. The median article word count jumps from about 550 to 660 words at this breakpoint, consistent with short items being dropped from the index.</li>
         <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
+        <li><strong>2005 — Science section drop.</strong> Section "Science" falls from ~900 articles a year (2000–2003) to 159 in 2005, then rebounds to 839+ in 2006. The articles didn't disappear — the metadata transitioned. In 2003, all 904 Science Desk articles carried <code>section_name = "Science"</code>. By 2005, the same desk's output was being filed as "Health" (411 articles), "Opinion" (331), or left untagged, with only 102 still tagged "Science". A new "Health" section was being broken out at this point. The dashboard shows the unedited tag.</li>
         <li><strong>2011–2015 — obituary section tagging.</strong> The NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section, but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides the section tag and counts those articles under Obituaries, producing a continuous series rather than a gap. The apparent 2005–2006 spike likely reflects the desk first becoming a consistently-tagged section; the 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
       </ul>
 
@@ -492,10 +493,15 @@
       <p>Two tabs in this dashboard are still in development. Methodology notes for each:</p>
 
       <h5 style="margin-bottom:6px;color:#444">Obituaries</h5>
-      <p style="font-size:13px;color:#555">Records identified via NYT Archive API tags <code>type_of_material = "Obituary (Obit)"</code> or <code>news_desk = "Obits"</code> or <code>section_name = "Obituaries"</code>. Records flagged as corrections are excluded (those live in the Corrections tab). Duplicate entries — the API often returns the same obit under two URL slugs on the same date — are deduplicated by (name, publication date), keeping the canonical <em>Obituary (Obit)</em> entry. Fields parsed from headline + abstract: <em>name</em> via comma split (with leading honorifics like "The Reverend" or "Sir" stripped, and series prefixes like "Overlooked No More:" peeled off); <em>age</em> via "Dies at NN"/"Name, NN," patterns; <em>gender</em> via honorifics (Mr./Mrs./Dame/Lord) plus pronoun tally with first-name fallback; <em>profession</em> from the second-comma phrase. Cause of death rarely appears in headline/abstract and would require fetching article body. Coverage of fields after improvements: name 93%, age 96%, gender 98%, profession 77%. The <em>Overlooked No More</em> series (retroactive obituaries for historically overlooked figures, mostly women) is tagged on each row and exposed via a checkbox filter.</p>
+      <p style="font-size:13px;color:#555"><strong>Inclusion.</strong> Records identified via NYT Archive API tags <code>type_of_material = "Obituary (Obit)"</code>, <code>news_desk = "Obits"</code>, or <code>section_name = "Obituaries"</code>. Records flagged as corrections are excluded (those live in the Corrections tab). Each candidate must also carry a death-marker in the headline ("Dies at N", "Is Dead", a comma-age "Name, 84,"), an obit-style URL slug, or a known series prefix; this drops essay-style appreciations and related articles riding the Obits desk. Year-end roundups, NYT Learning lesson plans, and multi-subject packages are excluded by URL pattern.</p>
+      <p style="font-size:13px;color:#555"><strong>Deduplication.</strong> The API often returns the same obit under multiple URL slugs and the desk sometimes runs follow-up profiles within a few days. Records sharing a name within a ±10 day window are merged into a single canonical entry; the additional URLs surface in the "URL(s)" column. The canonical record is preferred in this order: <em>Obituary (Obit)</em>, <em>Obituary</em>, anything else; ties broken by longer headline.</p>
+      <p style="font-size:13px;color:#555"><strong>Fields parsed from headline + abstract.</strong> <em>Name</em> — comma split, with leading honorifics ("The Reverend", "Sir", "Representative", "Sultan", "King") stripped, parentheticals stripped (so "Barry Humphries (Dame Edna to You) Is Dead" parses as Barry Humphries), and series prefixes ("Overlooked No More:", "From 1992:") peeled off. <em>Age</em> — "Dies at N", "Name, N,", or "was N" patterns. <em>Gender</em> — three layered methods, tagged in the data: <strong>honorific</strong> (Mr./Mrs./Sir/Dame, with Mr./Mrs.+Capital prioritized over bare Dame to avoid stage-name confusion); <strong>pronoun</strong> (he/his/him vs. she/her tally); <strong>first_name</strong> (US baby-name lists, low confidence — flagged in the table with ⚠). <em>Profession</em> — the role phrase that follows the second comma. Cause of death rarely appears in headline/abstract and would require fetching article body.</p>
+      <p style="font-size:13px;color:#555"><strong>Series flags.</strong> "Overlooked no more" — retroactive obituaries for historically overlooked figures (begun 2018-03-08, International Women's Day). "Republished" — old obituaries re-run as packages (e.g. Women's History Month uses headline prefix "From 1992:"). Distinct from Overlooked because the original obit ran at the time of death; the dashboard shows the republish date.</p>
+      <p style="font-size:13px;color:#555"><strong>Coverage of fields (n=24,006 after filtering)</strong>: name 98%, age 96%, gender 98% (43.5% honorific, 55.5% pronoun, 1.0% first-name fallback), profession 77%.</p>
 
       <h5 style="margin-bottom:6px;color:#444;margin-top:14px">Corrections</h5>
       <p style="font-size:13px;color:#555">Each daily corrections page (e.g. <code>nytimes.com/2025/01/02/pageoneplus/corrections-jan-3-2025.html</code>) was fetched via the Wayback Machine (live site is bot-blocked). Individual corrections were pulled from the article body — they begin with phrases like "An article on Tuesday about…". Referenced article date is parsed from the correction's date phrase or relative day-of-week ("on Thursday"). Match to the actual article uses headline + slug + subject token overlap within ±3 days; we accept a match when ≥2 distinct content tokens align. <strong>Coverage so far:</strong> 164 of 190 corrections pages fetched for 2025 (the rest hit Wayback rate-limit timeouts or have no snapshot). <strong>Match rate:</strong> 87% of parsed corrections linked to a specific article. Currently only 2025 is loaded — earlier years pending a re-scrape via authenticated session. Only corrections with a clear "An article on…" lead are extracted; corrections referring to obituaries or photos may be skipped if their phrasing differs.</p>
+      <p style="font-size:13px;color:#555"><strong>Untagged corrections — known undercount.</strong> A diagnostic across all 315 monthly Archive API dumps (2000–2026) found 5,037 articles with <code>section_name = "Corrections"</code> but <code>type_of_material ≠ "Correction"</code> — concentrated in 2013–2016 (2,253 articles, peak 686 in 2014) and 2023–2025 (1,511 articles). 2,932 of these are tagged as "News" tom and likely represent real corrections classified into the wrong bucket; 2,020 are "Quote" tom (correction-text excerpts). An additional 1,091 paper-wide Editors' Notes serve a similar but distinct function (retracting or contextualizing whole stories). The corrections universe shown here is therefore roughly 13% smaller than reality. Backfill pending re-scrape.</p>
     </div>
   </div>
 
@@ -1449,7 +1455,13 @@ function initHomeCarousel() {
       fetch('data/bio_photos/manifest.json').then(r => r.json()),
       fetch('data/photo_grid_stats.json').then(r => r.json()).catch(() => ({})),
     ]).then(([m, stats]) => {
-      const ranked = m.slice().sort((a, b) => a.rank - b.rank);
+      // Sort by 2025 word count desc, falling back to manifest rank for ties / missing stats
+      const ranked = m.slice().sort((a, b) => {
+        const wa = (stats[a.name] || {}).words || 0;
+        const wb = (stats[b.name] || {}).words || 0;
+        if (wb !== wa) return wb - wa;
+        return (a.rank || 999) - (b.rank || 999);
+      });
       grid.innerHTML = ranked.map(e => {
         const s = stats[e.name] || { articles: 0, words: 0 };
         const tip = `<div class="photo-tooltip"><div class="tt-name">${e.name}</div>` +
@@ -2619,16 +2631,13 @@ function renderSectionHistogram(mode) {
     data: { labels: binLabels, datasets },
     options: {
       responsive: true,
-      interaction: { mode: 'index', axis: 'x', intersect: false },
+      animation: false,
+      // Disable hover tooltips entirely — with 25 yearly lines, the cross-line
+      // tooltip stack froze the page on every mouse move.
+      events: [],
       plugins: {
         legend: { display: false },
-        tooltip: {
-          filter: item => item.parsed.y > 0.5,
-          callbacks: {
-            title: items => items[0].dataIndex===20?'4000+ words':`${items[0].dataIndex*BIN}–${items[0].dataIndex*BIN+BIN} words`,
-            label: c => `${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`
-          }
-        }
+        tooltip: { enabled: false },
       },
       scales: {
         x: { ticks: { font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:10 }, grid:{display:false} },
@@ -6009,6 +6018,7 @@ function renderObitsTable() {
     if (c === 'firstName') return _firstName(o.name);
     if (c === 'lastName')  return _lastName(o.name);
     if (c === 'overlooked') return o.overlooked ? 1 : 0;
+    if (c === 'republished') return o.republished ? 1 : 0;
     if (c === 'secondary')  return (o.secondary_urls || []).length;
     return o[c];
   };
@@ -6032,8 +6042,9 @@ function renderObitsTable() {
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
     { k: 'profession', label: 'Profession / Role' },
-    { k: 'overlooked', label: '"Overlooked"' },
-    { k: 'secondary', label: 'Follow-up' },
+    { k: 'overlooked', label: 'Overlooked no more' },
+    { k: 'republished', label: 'Republished' },
+    { k: 'secondary', label: 'URL(s)' },
   ];
   // gender confidence indicator → small marker
   const _gsrcMark = src => src === 'first_name'
@@ -6065,6 +6076,9 @@ function renderObitsTable() {
     const ovrCell = o.overlooked
       ? `<span style="font-size:10px;background:#f3e8d8;color:#7a5526;padding:1px 5px;border-radius:3px">yes</span>`
       : '';
+    const repCell = o.republished
+      ? `<span style="font-size:10px;background:#e8eef3;color:#3a5a7a;padding:1px 5px;border-radius:3px">yes</span>`
+      : '';
     if (!o.name) {
       html += `<tr title="${escapeHtml(o.headline || '')}">
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
@@ -6073,6 +6087,7 @@ function renderObitsTable() {
         <td>${o.gender || '<span style="color:#bbb">·</span>'}${_gsrcMark(o.gender_src)}</td>
         <td>${escapeHtml(o.profession || '')}</td>
         <td>${ovrCell}</td>
+        <td>${repCell}</td>
         <td>${secCell}</td>
       </tr>`;
     } else {
@@ -6084,12 +6099,13 @@ function renderObitsTable() {
         <td>${o.gender || '<span style="color:#bbb">·</span>'}${_gsrcMark(o.gender_src)}</td>
         <td>${escapeHtml(o.profession || '')}</td>
         <td>${ovrCell}</td>
+        <td>${repCell}</td>
         <td>${secCell}</td>
       </tr>`;
     }
   });
   if (rows.length > 500) {
-    html += `<tr><td colspan="8" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
+    html += `<tr><td colspan="9" style="text-align:center;color:#888;font-size:11px;padding:8px">Showing first 500 of ${rows.length.toLocaleString()} — refine filters to see more.</td></tr>`;
   }
   html += '</tbody></table>';
   const wrap = document.getElementById('obitsTableContainer');

@@ -14,7 +14,7 @@ RE_NAME_DASH = re.compile(r'^([A-Z][\w.\'\-\s]+?)\s*[\u2014\u2013-]\s*[A-Z]')
 # Token whitelist excludes verb-form words that are also capitalized in
 # headlines (Is, Was, Dies, Dead, Has, Had).
 RE_HAS_DIES = re.compile(r'\b(?:Dies?|Is\s+Dead|Is\s+Dying)\s+at\s+\d', re.I)
-_NOT_VERB = r'(?!(?:Is|Was|Has|Had|Will|Are|Were|Dies?|Dead|Died|Dying)\b)'
+_NOT_VERB = r'(?!(?:Is|Was|Has|Had|Will|Are|Were|Dies?|Dead|Died|Dying|From|The)\b)'
 RE_LEADING_CAPS = re.compile(
     r'^(' + _NOT_VERB + r'[A-Z][\w.\'\-\u00C0-\u017F]*'
     r'(?:\s+' + _NOT_VERB + r'[A-Z][\w.\'\-\u00C0-\u017F]*){0,3})'
@@ -102,14 +102,53 @@ RE_LEADING_SERIES = re.compile(
     r'A Life Lived|Living On|In Memoriam)\s*[:\u2014\u2013-]\s*',
     re.I,
 )
+# "From 1992: …" — Times republishes old obits as packages (e.g., Women's
+# History Month). Distinct from Overlooked No More (which is *new* coverage of
+# someone never covered). Strip the prefix so the original headline can parse.
+# Also tolerates a stacked "From From 1992:" / "From: From 1992:" the desk
+# sometimes lets through.
+RE_FROM_YEAR = re.compile(
+    r'^(?:From(?:\s*[:\u2014\u2013-]\s*|\s+))?From\s+\d{4}\s*[:\u2014\u2013-]\s*|'
+    r'^From\s+\d{4}\s*[:\u2014\u2013-]\s*',
+    re.I,
+)
+# Republished-obit boilerplate that prepends the lead paragraph. We strip it
+# before pronoun/honorific scanning so gender detection sees the actual prose.
+RE_REPUB_BOILER = re.compile(
+    r'This\s+obituary\s+was\s+originally\s+published\s+on[^.]+\.[^.]*?'
+    r'(?:republished|reissued)[^.]*?\.\s*',
+    re.I,
+)
+# Year-end / memoriam roundup slugs that aren't single-subject obituaries
+RE_NON_OBIT_URL = re.compile(
+    r'(?:'
+    r'obituaries-deaths-\d{4}|'         # year-end roundups: /obituaries-deaths-2023
+    r'/learning/lesson-plans/|'          # NYT Learning lesson plans
+    r'in-a-political-year-some-deaths|'  # 2024 Navalny package
+    r'lives-they-lived'                  # NYT Magazine year-end issue
+    r')',
+    re.I,
+)
+# Headlines that mark group / multi-subject / package pieces, not single obits
+RE_GROUP_HEADLINE = re.compile(
+    r'^(?:Lesson of the Day|The Lives They Lived|Year in Review|'
+    r'In a Political Year|Obituaries: Deaths in)\b',
+    re.I,
+)
 
 
 def extract_name(headline):
     if not headline: return None
     # Drop zero-width chars
     h = headline.replace('\u200b', '').replace('\ufeff', '').strip()
+    # Strip "From YYYY:" republished-obit prefix (apply before series check
+    # since some headlines stack "From 1992: Marlene Dietrich Is Dead")
+    h = RE_FROM_YEAR.sub('', h)
     # Strip recurring series prefixes (Overlooked No More, etc.)
     h = RE_LEADING_SERIES.sub('', h)
+    # Strip parentheticals — "Barry Humphries (Dame Edna to You, Possums) Is
+    # Dead at 89" should parse as "Barry Humphries Is Dead at 89".
+    h = re.sub(r'\s*\([^)]*\)', '', h)
     # Strip leading "'Nickname': " prefixes
     h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
     # Strip honorific titles (The Reverend, Sir, Dr., Representative, etc.)
@@ -167,10 +206,17 @@ def extract_gender(name, full_text):
     """
     if full_text:
         t = ' ' + full_text + ' '  # case-sensitive — honorifics are capitalized
-        m_hon = (len(re.findall(r'\bMr\.?\s', t)) + len(re.findall(r'\bSir\s', t))
+        # Strong honorific: title immediately followed by a capitalized name token.
+        # More reliable than bare "Dame" (which appears in stage names like Dame
+        # Edna) or bare "Sir/Lord" (titles for someone other than the subject).
+        m_strong = len(re.findall(r'\bMr\.?\s+[A-Z]', t))
+        f_strong = (len(re.findall(r'\bMrs\.?\s+[A-Z]', t))
+                    + len(re.findall(r'\bMs\.?\s+[A-Z]', t)))
+        if m_strong and m_strong > f_strong: return ('M', 'honorific')
+        if f_strong and f_strong > m_strong: return ('F', 'honorific')
+        m_hon = (m_strong + len(re.findall(r'\bSir\s', t))
                  + len(re.findall(r'\b(?:Lord|Baron|Count|Duke|Prince|King|Emperor)\s', t)))
-        f_hon = (len(re.findall(r'\bMrs\.?\s', t)) + len(re.findall(r'\bMs\.?\s', t))
-                 + len(re.findall(r'\b(?:Dame|Lady|Baroness|Countess|Duchess|Princess|Queen|Empress|Madame|Madam)\s', t)))
+        f_hon = (f_strong + len(re.findall(r'\b(?:Dame|Lady|Baroness|Countess|Duchess|Princess|Queen|Empress|Madame|Madam)\s', t)))
         if m_hon and not f_hon: return ('M', 'honorific')
         if f_hon and not m_hon: return ('F', 'honorific')
         tl = t.lower()
@@ -217,6 +263,16 @@ def main():
     all_obits = []
     by_year = Counter()
     skipped_corr = 0
+    skipped_non_obit = 0
+
+    # Death-marker patterns that confirm a single-subject obit even when the
+    # article was caught only via news_desk=Obits / section=Obituaries.
+    RE_DEATH_HEADLINE = re.compile(
+        r'\b(?:Dies?\s+at\s+\d|Is\s+Dead\s+at\s+\d|Dead\s+at\s+\d|Dies?|Is\s+Dead|'
+        r'Dead\b|,\s*\d{2,3}\s*,)',
+        re.I,
+    )
+    RE_OBIT_URL_HINT = re.compile(r'-(?:dead|dies|obituary)\b|/obituaries/', re.I)
 
     for f in files:
         with open(f) as fh:
@@ -228,6 +284,9 @@ def main():
             tom = d.get('type_of_material', '') or ''
             news_desk = d.get('news_desk', '') or ''
             section = d.get('section_name', '') or ''
+            url = d.get('web_url', '')
+            if url.startswith('https://www.nytimes.com'):
+                url = url.replace('https://www.nytimes.com', '')
             # Skip corrections — they have a dedicated Corrections tab and
             # aren't actual obituaries. Common in 2008-2010 ("For The Record"
             # daily obit corrections column).
@@ -241,23 +300,50 @@ def main():
                        or section == 'Obituaries')
             if not is_obit:
                 continue
+
             h = d.get('headline', {}).get('main', '') or ''
+
+            # Hard rejects: year-end roundups, lesson plans, multi-subject packages
+            if RE_NON_OBIT_URL.search(url) or RE_GROUP_HEADLINE.match(h):
+                skipped_non_obit += 1
+                continue
+            # Even when tom='Obituary (Obit)' the article may be an essay-style
+            # appreciation that lacks a name in the headline (Pepe Mujica,
+            # Jimmy Cliff). Require a death-marker, obit-style URL slug, or a
+            # known series prefix — otherwise drop. This catches both:
+            #   - desk/section-only obits that aren't really obits (related
+            #     articles riding the Obits desk byline)
+            #   - tom-tagged appreciation pieces with no name in the headline
+            looks_like_obit = bool(
+                RE_DEATH_HEADLINE.search(h)
+                or RE_OBIT_URL_HINT.search(url)
+                or RE_LEADING_SERIES.match(h)
+                or RE_FROM_YEAR.match(h)
+            )
+            if not looks_like_obit:
+                skipped_non_obit += 1
+                continue
+
             ab = d.get('abstract', '') or ''
             snip = d.get('snippet', '') or ''
             lead = d.get('lead_paragraph', '') or ''
-            full = ' '.join([ab, snip, lead])
+            # For republished obits, strip the boilerplate "This obituary was
+            # originally published…" sentence so gender/age detection sees the
+            # actual obit prose underneath.
+            republished = bool(RE_FROM_YEAR.match(h)) or bool(
+                re.search(r'(?:originally\s+published|being\s+republished)', lead, re.I)
+            )
+            lead_clean = RE_REPUB_BOILER.sub('', lead) if republished else lead
+            full = ' '.join([ab, snip, lead_clean])
 
             name = extract_name(h)
-            age = extract_age(h, ab + ' ' + snip + ' ' + lead)
+            age = extract_age(h, ab + ' ' + snip + ' ' + lead_clean)
             prof = extract_profession(h)
             gen, gen_src = extract_gender(name, full)
             overlooked = bool(re.match(r'^Overlooked No More\b', h, re.I))
 
             pub = d.get('pub_date', '')[:10]
             year = pub[:4] if pub else ''
-            url = d.get('web_url', '')
-            if url.startswith('https://www.nytimes.com'):
-                url = url.replace('https://www.nytimes.com', '')
 
             all_obits.append({
                 'name': name,
@@ -266,6 +352,7 @@ def main():
                 'gender_src': gen_src,
                 'profession': prof,
                 'overlooked': overlooked,
+                'republished': republished,
                 'date': pub,
                 'year': year,
                 'section': section,
@@ -330,9 +417,13 @@ def main():
                 n_merged += len(others)
     merged.extend(no_name_rows)
     n_total_before = len(all_obits)
-    print(f"Skipped {skipped_corr:,} corrections; merged {n_merged:,} same-name "
-          f"near-duplicates (±10 days). {n_total_before:,} → {len(merged):,}")
+    print(f"Skipped {skipped_corr:,} corrections, {skipped_non_obit:,} non-obit "
+          f"package/lesson articles; merged {n_merged:,} same-name near-duplicates "
+          f"(±10 days). {n_total_before:,} → {len(merged):,}")
     all_obits = merged
+    n_repub = sum(1 for o in all_obits if o.get('republished'))
+    n_overl = sum(1 for o in all_obits if o.get('overlooked'))
+    print(f"  republished: {n_repub:,}   overlooked-no-more: {n_overl:,}")
 
     print(f"\nTotal obits: {len(all_obits):,}")
     print("By year:")
