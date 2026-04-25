@@ -318,6 +318,18 @@ OBIT_OVERRIDES = {
     '/2002/03/31/world/britain-s-beloved-queen-mum-a-symbol-of-courage-dies-at-101.html': {
         'name': 'Queen Elizabeth the Queen Mother', 'profession': None,
     },
+    # Aaron Swartz: headline starts "Internet Activist, a Creator of RSS, Is
+    # Dead at 26" — the name is in the URL slug only.
+    '/2013/01/13/technology/aaron-swartz-internet-activist-dies-at-26.html': {
+        'name': 'Aaron Swartz', 'profession': 'Internet Activist',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Akebono Taro: headline reads "Akebono, First Foreign-Born Sumo Grand
+    # Champion, Dies at 54" — parser captures only the ring name; slug carries
+    # the full Japanese name "akebono-taro".
+    '/2024/04/10/world/asia/akebono-taro-sumo-dead.html': {
+        'name': 'Akebono Taro',
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -513,8 +525,13 @@ def extract_gender(name, full_text):
         if m_strong and m_strong > f_strong: return ('M', 'honorific')
         if f_strong and f_strong > m_strong: return ('F', 'honorific')
         m_hon = (m_strong + len(re.findall(r'\bSir\s', t))
-                 + len(re.findall(r'\b(?:Lord|Baron|Count|Duke|Prince|King|Emperor)\s', t)))
-        f_hon = (f_strong + len(re.findall(r'\b(?:Dame|Lady|Baroness|Countess|Duchess|Princess|Queen|Empress|Madame|Madam)\s', t)))
+                 + len(re.findall(r'\b(?:Lord|Baron|Count|Duke|Prince|King|Emperor|'
+                                  r'Rabbi|Bishop|Cardinal|Pope|Father|Brother|Friar|'
+                                  r'Reverend|Monsignor|Imam|Sheikh|Sheik|Sultan|Tsar|'
+                                  r'Czar|Maharaja|Shah|Patriarch)\s', t)))
+        f_hon = (f_strong + len(re.findall(r'\b(?:Dame|Lady|Baroness|Countess|Duchess|'
+                                          r'Princess|Queen|Empress|Madame|Madam|'
+                                          r'Sister|Nun|Abbess|Sultana)\s', t)))
         if m_hon and not f_hon: return ('M', 'honorific')
         if f_hon and not m_hon: return ('F', 'honorific')
         tl = t.lower()
@@ -670,7 +687,9 @@ def main():
                 re.search(r'(?:originally\s+published|being\s+republished)', lead, re.I)
             )
             lead_clean = RE_REPUB_BOILER.sub('', lead) if republished else lead
-            full = ' '.join([ab, snip, lead_clean])
+            # Include the headline in gender-extraction text — captures pronouns
+            # and honorifics from headlines like "A Guy Just Like Him".
+            full = ' '.join([h, ab, snip, lead_clean])
 
             name = extract_name(h, url, is_portraits=is_portraits)
             # Slug-based fallback for "essay-style" obit headlines that don't
