@@ -8,6 +8,30 @@ OUT_PATH = 'data/obituaries.json'
 # Name on left of first comma (also tolerates en-dash separator).
 RE_NAME_COMMA = re.compile(r'^([^,]+?),\s*[A-Za-z\d\u2018\u2019\u201C\u201D\u00C0-\u017F\'"]')
 RE_NAME_DASH = re.compile(r'^([A-Z][\w.\'\-\s]+?)\s*[\u2014\u2013-]\s*[A-Z]')
+# Strip leading death-marker prefix when the comma fell after the verb phrase
+# rather than after the name. E.g. "Killed at 71, Ayman al-Zawahri Led a Life…"
+RE_LEADING_DEATH_PREFIX = re.compile(
+    r'^(?:Killed|Murdered|Slain|Assassinated|Dead|Dies?|Dying|Found\s+Dead)'
+    r'\s+(?:at\s+\d{1,3}|in\s+\w+|on\s+\w+|by\s+\w+),\s*',
+    re.I,
+)
+# "Eben Pyne 89, Who…" — name then space-separated age (no comma between).
+# Insert the missing comma so the standard RE_NAME_COMMA picks up the name.
+RE_NAME_AGE_NO_COMMA = re.compile(
+    r'^([A-Z][\w.\'\-\u00C0-\u017F]+(?:\s+(?:[A-Z][\w.\'\-\u00C0-\u017F]+|[a-z]{1,3}))*)\s+(\d{2,3}),\s'
+)
+# Tagline-then-name: "A Man of Many Words, David Shulman Dies at 91". The
+# pre-comma phrase is descriptive; the actual name is between the comma and
+# the death verb. Captured group 1 = the name. Headline must start with a
+# tagline-style word ("A", "An", "The") or contain a tell-tale function word.
+RE_TAGLINE_NAME = re.compile(
+    r'^(?:A|An|The)\s+[^,]+?,\s*'
+    r'([A-Z][\w.\'\-\u00C0-\u017F]+(?:\s+(?:[A-Z][\w.\'\-\u00C0-\u017F]+|[a-z]{2,3}-?[A-Z]?[\w.\'\-\u00C0-\u017F]*))*?)'
+    r'\s+(?:Dies?|Is\s+Dead|Was\s+Dead|Died|Has\s+Died|Led|Was)\b',
+)
+# Function words that disqualify a comma-name candidate from being a real name
+# (taglines like "A Man of Many Words" contain them; real names don't).
+RE_HAS_FUNC_WORD = re.compile(r'\s(?:of|for|with|in|on|by|from|to|at|the|that)\s', re.I)
 # Headline contains a death verb anywhere — pull the leading 1-4 capitalized
 # tokens as the name. Handles:
 #   - "Laurence Mancuso Dies; Founding Abbot Was 72" (semicolon, no age-after)
@@ -17,10 +41,22 @@ RE_NAME_DASH = re.compile(r'^([A-Z][\w.\'\-\s]+?)\s*[\u2014\u2013-]\s*[A-Z]')
 # Token whitelist excludes verb-form words that are also capitalized in
 # headlines (Is, Was, Dies, Dead, Has, Had).
 RE_HAS_DIES = re.compile(r'\b(?:Dies?|Is\s+Dead|Is\s+Dying|Was\s+Dead)\b', re.I)
-_NOT_VERB = r'(?!(?:Is|Was|Has|Had|Will|Are|Were|Dies?|Dead|Died|Dying|From|The)\b)'
+_NOT_VERB = (r'(?!(?:Is|Was|Has|Had|Will|Are|Were|Dies?|Dead|Died|Dying|From|The|'
+             r'Led|Made|Built|Founded|Wrote|Helped|Played|Knew|Spoke|Came|Went|'
+             r'Of|For|With|And|But|Or|At|On|In|To|Who|That|Whose|Which)\b)')
+# A "name token" is either:
+#   - capitalized + word chars (David, O'Brien, Cartier-Bresson, Schlöndorff)
+#   - a lowercase particle followed by hyphen + capital (al-Zawahri, bin-Laden)
+#   - lowercase particles inside a name (von, de, van, der, du, della) — only
+#     accepted as continuation tokens, not as the leading token.
+_NAME_TOKEN = (
+    r'(?:[A-Z][\w.\'\-\u00C0-\u017F]*'
+    r'|(?:al|bin|el|abu)-[A-Z][\w.\'\-\u00C0-\u017F]*)'
+)
+_PARTICLE = r'(?:von|van|de|der|den|du|della|delle|di|da|do|dos|el|la|le|al|bin|abu|ten|ter)'
 RE_LEADING_CAPS = re.compile(
-    r'^(' + _NOT_VERB + r'[A-Z][\w.\'\-\u00C0-\u017F]*'
-    r'(?:\s+' + _NOT_VERB + r'[A-Z][\w.\'\-\u00C0-\u017F]*){0,3})'
+    r'^(' + _NOT_VERB + _NAME_TOKEN +
+    r'(?:\s+(?:' + _NOT_VERB + _NAME_TOKEN + r'|' + _PARTICLE + r')){0,4})'
 )
 
 RE_AGE_DIES = re.compile(r'\b(?:Die[ds]?|Is\s+Dead|Dead)\s+at\s+(\d{2,3})\b', re.I)
@@ -102,7 +138,7 @@ RE_LEADING_TITLE = re.compile(r'^' + TITLE_PREFIXES + r'\s+', re.I)
 # "What They Left Behind:" is a recurring NYT Magazine end-of-year series
 RE_LEADING_SERIES = re.compile(
     r'^(?:Overlooked No More|What They Left Behind|The Lives They Lived|Lives They Lived|'
-    r'A Life Lived|Living On|In Memoriam)\s*[:\u2014\u2013-]\s*',
+    r'A Life Lived|Living On|In Memoriam|Not Forgotten)\s*[:\u2014\u2013-]\s*',
     re.I,
 )
 # "From 1992: …" — Times republishes old obits as packages (e.g., Women's
@@ -134,7 +170,13 @@ RE_NON_OBIT_URL = re.compile(
     r'in-a-political-year-some-deaths|'  # 2024 Navalny package
     r'lives-they-lived|'                 # NYT Magazine year-end issue
     r'article-\d+-no-title|'             # API placeholder records ("Article 2002… No Title")
-    r'us-repeats-north-korea-stance'     # 2003 misclassified national-section article
+    r'us-repeats-north-korea-stance|'    # 2003 misclassified national-section article
+    r'among-deaths-in-\d{4}|'            # year-end "Among Deaths in 2016, a Heavy Toll…"
+    r'in-a-year-of-notable-deaths|'      # year-end "In a Year of Notable Deaths…"
+    r'notable-deaths(?:-|\.html)|'        # year-end Notable Deaths interactives & 2024 promo
+    r'notable-women-deaths|'              # 2026 "100 Years of Women Who Changed History"
+    r'people-died-coronavirus|'          # 2020 "Those We've Lost" interactive
+    r'martin-luther-king-day-black-leaders'  # 2016 MLK Day feature, not single obit
     r')',
     re.I,
 )
@@ -148,7 +190,8 @@ RE_PORTRAITS_HEADLINE = re.compile(r'^([A-Z][\w.\'\-\u00C0-\u017F]+(?:\s+[A-Z][\
 # Headlines that mark group / multi-subject / package pieces, not single obits
 RE_GROUP_HEADLINE = re.compile(
     r'^(?:Lesson of the Day|The Lives They Lived|Year in Review|'
-    r'In a Political Year|Obituaries: Deaths in|Notable Deaths|Notable Obits|'
+    r'In a Political Year|In a Year of|Among Deaths in|Obituaries: Deaths in|'
+    r'Notable Deaths|Notable Obits|Those We|'
     r'In Remembrance|In Memoriam:)\b',
     re.I,
 )
@@ -198,8 +241,11 @@ def extract_name(headline, url=None, is_portraits=False):
     # Strip "From YYYY:" republished-obit prefix (apply before series check
     # since some headlines stack "From 1992: Marlene Dietrich Is Dead")
     h = RE_FROM_YEAR.sub('', h)
-    # Strip recurring series prefixes (Overlooked No More, etc.)
+    # Strip recurring series prefixes (Overlooked No More, Not Forgotten, etc.)
     h = RE_LEADING_SERIES.sub('', h)
+    # Strip "Killed at 71," / "Dead at 89," prefixes that put the verb phrase
+    # in front of the name. ("Killed at 71, Ayman al-Zawahri Led a Life…")
+    h = RE_LEADING_DEATH_PREFIX.sub('', h)
     # Strip parentheticals — "Barry Humphries (Dame Edna to You, Possums) Is
     # Dead at 89" should parse as "Barry Humphries Is Dead at 89".
     h = re.sub(r'\s*\([^)]*\)', '', h)
@@ -209,6 +255,18 @@ def extract_name(headline, url=None, is_portraits=False):
     # Apply twice in case there are stacked titles ("Rep. Dr. ...").
     h = RE_LEADING_TITLE.sub('', h)
     h = RE_LEADING_TITLE.sub('', h)
+    # Tagline-then-name: "A Man of Many Words, David Shulman Dies at 91" →
+    # the part before the comma is descriptive; the real name follows.
+    m = RE_TAGLINE_NAME.match(h)
+    if m:
+        cand = m.group(1).strip()
+        if cand and 0 <= cand.count(' ') <= 5:
+            return cand
+    # "Eben Pyne 89, Who Helped…" — name then space-separated age. Insert the
+    # missing comma so the standard parser sees "Eben Pyne, 89, Who Helped…".
+    m = RE_NAME_AGE_NO_COMMA.match(h)
+    if m:
+        h = h.replace(m.group(0), f'{m.group(1)}, {m.group(2)}, ', 1)
     m = RE_NAME_COMMA.match(h)
     if m:
         cand = m.group(1).strip()
@@ -220,6 +278,10 @@ def extract_name(headline, url=None, is_portraits=False):
             cand = re.sub(r'\s+(?:Is|Has|Was)$', '', cand)
         # Reject obvious non-names
         if any(w in cand.lower() for w in (' was ', ' is ', ' has ', ' will ')): return None
+        # Reject if it looks like a tagline (function words like "of", "with").
+        # Real names don't contain " of " or " with ", except for the
+        # particles we whitelist as part of names ("of" never is one).
+        if RE_HAS_FUNC_WORD.search(cand): return None
         # Allow single-word names (Birendra, Cher, Madonna) up to 6-token compound names
         if cand and 0 <= cand.count(' ') <= 6:
             return cand
@@ -227,6 +289,12 @@ def extract_name(headline, url=None, is_portraits=False):
     # capture leading 1-4 capitalized tokens. Handles "Joe Moakley of
     # Massachusetts Dies at 74", "Derek Freeman Dies at 84".
     if RE_HAS_DIES.search(h):
+        m = RE_LEADING_CAPS.match(h)
+        if m:
+            return m.group(1).strip()
+    # Last resort: the headline still has a "Led/Was/Made" verb pointing to a
+    # name (handles "Ayman al-Zawahri Led a Life…" after the prefix strip).
+    if re.search(r'\b(?:Led|Was|Made|Built|Founded|Wrote|Helped|Played)\b', h):
         m = RE_LEADING_CAPS.match(h)
         if m:
             return m.group(1).strip()
