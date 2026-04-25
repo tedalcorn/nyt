@@ -40,6 +40,22 @@ RE_TAGLINE_NAME_GENERIC = re.compile(
 # Function words that disqualify a comma-name candidate from being a real name
 # (taglines like "A Man of Many Words" contain them; real names don't).
 RE_HAS_FUNC_WORD = re.compile(r'\s(?:of|for|with|in|on|by|from|to|at|the|that)\s', re.I)
+
+# Common nouns/verbs that betray a descriptive phrase rather than a person's name.
+# A real name almost never contains these tokens; if extract_name returns a
+# candidate containing one, it's almost certainly a tagline-as-name artifact.
+DESCRIPTIVE_TOKENS = {
+    'force', 'career', 'life', 'lives', 'hall', 'fame', 'reign', 'novelist',
+    'leader', 'wrestler', 'patron', 'founder', 'pioneer', 'champion',
+    'legend', 'hero', 'icon', 'star', 'death', 'novel', 'song', 'art',
+    'made', 'helped', 'wrote', 'founded', 'led', 'died', 'killed',
+    'who', 'whose', 'whom', 'what', 'where', 'when', 'why',
+    'former', 'late', 'old', 'young', 'famous', 'notable',
+}
+def looks_descriptive(name):
+    if not name: return False
+    toks = name.lower().split()
+    return any(t.strip(".,;:") in DESCRIPTIVE_TOKENS for t in toks)
 # Headline contains a death verb anywhere — pull the leading 1-4 capitalized
 # tokens as the name. Handles:
 #   - "Laurence Mancuso Dies; Founding Abbot Was 72" (semicolon, no age-after)
@@ -128,12 +144,13 @@ def clean_smart_quotes(s):
 # Long-form first (so "The Reverend" matches before "Rev"); each entry includes
 # trailing dot variants. Strips these before the name itself.
 TITLE_PREFIXES = (
+    r'(?:Former|Ex-|Ex|Late|State|Vice|Brig\.?|Episcopal|Roman\s+Catholic|Catholic|Anglican|Methodist|Baptist)?\s*'
     r'(?:The\s+)?(?:Reverend|Rev\.?|Rev|Father|Fr\.?|Pastor|Bishop|Cardinal|'
     r'Sister|Brother|Mother|Rabbi|Imam|Sheikh|Sheik|Sri|Mahatma|'
     r'Sir|Dame|Lord|Lady|Baron|Baroness|Count|Countess|Duke|Duchess|'
     r'Prince|Princess|King|Queen|Emperor|Empress|'
     r'Dr\.?|Doctor|Professor|Prof\.?|Justice|Judge|Senator|Sen\.?|'
-    r'Representative|Rep\.?|Governor|Gov\.?|Mayor|President|'
+    r'Representative|Rep\.?|Governor|Gov\.?|Mayor|President|Chief|'
     r'General|Gen\.?|Colonel|Col\.?|Major|Maj\.?|Captain|Capt\.?|'
     r'Lieutenant|Lt\.?|Admiral|Adm\.?|Commander|Cmdr\.?|Sergeant|Sgt\.?|'
     r'Mr\.?|Mrs\.?|Ms\.?|Mx\.?|Miss|'
@@ -277,6 +294,12 @@ def extract_name(headline, url=None, is_portraits=False):
     # Strip parentheticals — "Barry Humphries (Dame Edna to You, Possums) Is
     # Dead at 89" should parse as "Barry Humphries Is Dead at 89".
     h = re.sub(r'\s*\([^)]*\)', '', h)
+    # Strip "; description" or " -- description" trailing modifiers
+    # ("Bertina Carter Hunter; Arts Patron" → "Bertina Carter Hunter")
+    h = re.sub(r'\s*[;\u2014\u2013]\s.*$|\s+--\s.*$', '', h)
+    # Strip leading "Long May He Reign:" / "In Loving Memory:" descriptive
+    # prefixes that put a phrase before the name and a colon after.
+    h = re.sub(r'^[A-Z][^,:]{5,80}:\s+(?=[A-Z])', '', h)
     # Strip leading "'Nickname': " prefixes
     h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
     # Strip honorific titles (The Reverend, Sir, Dr., Representative, etc.)
@@ -288,7 +311,7 @@ def extract_name(headline, url=None, is_portraits=False):
     m = RE_TAGLINE_NAME.match(h) or RE_TAGLINE_NAME_GENERIC.match(h)
     if m:
         cand = m.group(1).strip()
-        if cand and 0 <= cand.count(' ') <= 5:
+        if cand and 0 <= cand.count(' ') <= 5 and not looks_descriptive(cand):
             return cand
     # "Eben Pyne 89, Who Helped…" — name then space-separated age. Insert the
     # missing comma so the standard parser sees "Eben Pyne, 89, Who Helped…".
@@ -314,7 +337,7 @@ def extract_name(headline, url=None, is_portraits=False):
         # "Mary Travers of Peter, Paul and Mary Dies at 72" can still parse.
         if not RE_HAS_FUNC_WORD.search(cand):
             # Allow single-word names (Birendra, Cher, Madonna) up to 6-token compound names
-            if cand and 0 <= cand.count(' ') <= 6:
+            if cand and 0 <= cand.count(' ') <= 6 and not looks_descriptive(cand):
                 return cand
     # Headlines with "Dies at N" but no comma (or comma falls after verb):
     # capture leading 1-4 capitalized tokens. Handles "Joe Moakley of
@@ -322,16 +345,22 @@ def extract_name(headline, url=None, is_portraits=False):
     if RE_HAS_DIES.search(h):
         m = RE_LEADING_CAPS.match(h)
         if m:
-            return m.group(1).strip()
+            cand = m.group(1).strip()
+            if not looks_descriptive(cand):
+                return cand
     # Last resort: the headline still has a "Led/Was/Made" verb pointing to a
     # name (handles "Ayman al-Zawahri Led a Life…" after the prefix strip).
     if re.search(r'\b(?:Led|Was|Made|Built|Founded|Wrote|Helped|Played)\b', h):
         m = RE_LEADING_CAPS.match(h)
         if m:
-            return m.group(1).strip()
+            cand = m.group(1).strip()
+            if not looks_descriptive(cand):
+                return cand
     m = RE_NAME_DASH.match(h)
     if m:
-        return m.group(1).strip()
+        cand = m.group(1).strip()
+        if not looks_descriptive(cand):
+            return cand
     return None
 
 

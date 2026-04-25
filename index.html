@@ -203,6 +203,19 @@
     background: #326891; cursor: pointer; border: 2px solid #fff; border: none;
   }
 
+  /* About: Data source layout — text + monthly chart side-by-side */
+  .about-data-source { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .about-monthly-chart { position: sticky; top: 12px; }
+  @media (max-width: 768px) {
+    .about-data-source { grid-template-columns: 1fr; }
+    .about-monthly-chart { position: static; }
+  }
+
+  /* Obituaries side-by-side charts (desktop) */
+  .obit-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  /* Section popup side-by-side charts (desktop) */
+  .section-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
   /* Authors table */
   .author-table { width: 100%; border-collapse: collapse; font-size: 14px; }
   .author-table th {
@@ -313,6 +326,10 @@
     /* Reporters table: hide less essential columns on mobile */
     .author-table th.mob-hide,
     .author-table td.mob-hide { display: none; }
+    /* Obituaries: charts stack on mobile */
+    .obit-charts-row { grid-template-columns: 1fr !important; }
+    /* Section popup: side-by-side charts stack on mobile */
+    .section-charts-row { grid-template-columns: 1fr !important; }
     /* All tables: horizontal scroll if needed */
     .table-scroll-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
     /* Sections table: hide sparkline and avg-words on mobile to save horizontal space */
@@ -357,7 +374,7 @@
   <button data-view="states">U.S. States</button>
   <button data-view="world">World</button>
   <button data-view="obits">Obituaries</button>
-  <button data-view="corrections">Corrections</button>
+  <button data-view="corrections" style="display:none">Corrections</button>
   <button data-view="about">About</button>
 </nav>
 
@@ -421,19 +438,11 @@
             <p class="slide-more"><a onclick="showView('obits')">Explore the obituaries →</a></p>
           </div>
         </section>
-        <!-- SLIDE 5: Articles & words per month -->
-        <section class="slide">
-          <div class="slide-inner">
-            <h4 class="slide-title">Articles and words per month</h4>
-            <p class="slide-caption">Monthly volume since 2000, showing long-run shifts in how much <em>The Times</em> publishes.</p>
-            <div class="slide-chart-wrap"><canvas id="chartMonthly"></canvas></div>
-          </div>
-        </section>
-        <!-- SLIDE 6: Articles, words, and average length (last decade) -->
+        <!-- SLIDE: Articles, words, and average length (last decade) -->
         <section class="slide" data-dl-canvas-only="true">
           <div class="slide-inner">
-            <h4 class="slide-title">Articles, words, and average length (2016–25)</h4>
-            <p class="slide-caption">A closer look at the last decade, including how the average article length has shifted.</p>
+            <h4 class="slide-title">Fewer, longer articles</h4>
+            <p class="slide-caption">Over the last decade, the number of articles published by <em>The New York Times</em> has diminished and the average word count per article has increased.</p>
             <div class="slide-chart-wrap"><canvas id="chartDecade"></canvas></div>
           </div>
         </section>
@@ -450,9 +459,17 @@
   <div class="view" id="view-about">
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <h4 style="margin-top:0">Data source</h4>
-      <p><em>The New York Times</em> Archive API indexes all document types published on nytimes.com — news, opinion, reviews, obituaries, and interactives — and this dashboard includes all of them.</p>
-      <p>That includes both standard articles and blog content, like those hosted at subdomains blogs.nytimes.com, dealbook.nytimes.com, and krugman.blogs.nytimes.com. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached. The posts from blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains.</p>
-      <p>Content from The Athletic is not available in the Archive API and is therefore absent, which is why Sports coverage appears to decline sharply after the NYT's 2022 acquisition of that publication.</p>
+      <div class="about-data-source">
+        <div>
+          <p><em>The New York Times</em> Archive API indexes all document types published on nytimes.com — news, opinion, reviews, obituaries, and interactives — and this dashboard includes all of them.</p>
+          <p>That includes both standard articles and blog content, like those hosted at subdomains blogs.nytimes.com, dealbook.nytimes.com, and krugman.blogs.nytimes.com. Blog posts were typically much shorter (averaging 100–460 words vs. 600–900 for non-blog articles), published in higher volume, often without an author name attached. The posts from blogs (ArtsBeat, CityRoom, The Caucus, The Lede, Economix, Bits, Wheels, Fifth Down, Straight Sets, and more) peaked at nearly 56% of all indexed articles in 2009. Blog indexing then declined steadily as the NYT wound down its blog properties between 2013 and 2018; by 2019, essentially no content is published at blog subdomains.</p>
+          <p>Content from The Athletic is not available in the Archive API and is therefore absent, which is why Sports coverage appears to decline sharply after the NYT's 2022 acquisition of that publication.</p>
+        </div>
+        <div class="about-monthly-chart">
+          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles and words per month</div>
+          <canvas id="chartMonthly" style="max-height:240px"></canvas>
+        </div>
+      </div>
 
       <h4>Authors</h4>
       <p>Author name variants are merged when they likely refer to the same person. For example, "Jonah E. Bromwich" and "Jonah Bromwich" are treated as one byline when first and last names match and middle names are compatible. Cases where the same reporter has many articles under both a shorter and a fuller form are reconciled manually after cross-checking beats, sections, and year ranges.</p>
@@ -495,23 +512,14 @@
         <li><strong>January 2007 — short-item drop-off.</strong> Non-blog counts fall by roughly 2,000 articles per month at this point; analysis suggests the API stopped consistently indexing short-form items — particularly letters to the editor and Metro section briefs. The median article word count jumps from about 550 to 660 words at this breakpoint, consistent with short items being dropped from the index.</li>
         <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
         <li><strong>2005 — Science section drop.</strong> Section "Science" falls from ~900 articles a year (2000–2003) to 159 in 2005, then rebounds to 839+ in 2006. The articles didn't disappear — the metadata transitioned. In 2003, all 904 Science Desk articles carried <code>section_name = "Science"</code>. By 2005, the same desk's output was being filed as "Health" (411 articles), "Opinion" (331), or left untagged, with only 102 still tagged "Science". A new "Health" section was being broken out at this point. The dashboard shows the unedited tag.</li>
-        <li><strong>2011–2015 — obituary section tagging.</strong> The NYT filed obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section, but continued using the <em>type_of_material</em> flag "Obituary (Obit)". This dashboard overrides the section tag and counts those articles under Obituaries, producing a continuous series rather than a gap. The apparent 2005–2006 spike likely reflects the desk first becoming a consistently-tagged section; the 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
+        <li><strong>2001–2015 — obituary section tagging.</strong> Throughout this stretch the NYT filed most obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section. In 2001–2010 the desk relied on <em>type_of_material</em> "Obituary; Biography" (or "Obituary"); in 2011–2015 it switched to "Obituary (Obit)". This dashboard overrides the section tag for all four obit-tom variants and counts those articles under Obituaries, producing a continuous series rather than a gap. The 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
         <li><strong>2001–2010 — "Obituary; Biography" tag.</strong> Through 2010 the API tagged most obituaries as <em>type_of_material = "Obituary; Biography"</em> (and occasionally "Biography; Obituary") rather than the cleaner "Obituary (Obit)" or "Obituary" labels used afterward. About 1,000–1,300 records per year carry the legacy compound tag in 2001–2005 alone. Earlier versions of this dashboard accepted only the modern tags and consequently undercounted those years by roughly 80%. The current build accepts all four variants.</li>
       </ul>
 
-      <h4>Draft sections</h4>
-      <p>Two tabs in this dashboard are still in development. Methodology notes for each:</p>
-
-      <h5 style="margin-bottom:6px;color:#444">Obituaries</h5>
-      <p style="font-size:13px;color:#555"><strong>Inclusion.</strong> Records identified via NYT Archive API tags <code>type_of_material</code> in {Obituary (Obit), Obituary, Obituary; Biography, Biography; Obituary}, <code>news_desk = "Obits"</code> or <code>"National / Portraits of Grief"</code>, or <code>section_name = "Obituaries"</code>. (The "Obituary; Biography" tag dominated 2001–2005 and ran intermittently through 2010.) Records flagged as corrections, slideshows, videos, or audio are excluded. Each candidate must also carry a death-marker in the headline ("Dies at N", "Is Dead", a comma-age "Name, 84,"), an obit-style URL slug, a known series prefix, or be part of the 9/11 Portraits of Grief series; this drops essay-style appreciations and related articles riding the Obits desk. Year-end roundups, NYT Learning lesson plans, and multi-subject packages are excluded by URL pattern.</p>
-      <p style="font-size:13px;color:#555"><strong>Deduplication.</strong> The API often returns the same obit under multiple URL slugs and the desk sometimes runs follow-up profiles within a few days. Records sharing a name within a ±10 day window are merged into a single canonical entry; the additional URLs surface in the "URL(s)" column. The canonical record is preferred in this order: <em>Obituary (Obit)</em>, <em>Obituary</em>, anything else; ties broken by longer headline.</p>
-      <p style="font-size:13px;color:#555"><strong>Fields parsed from headline + abstract.</strong> <em>Name</em> — comma split, with leading honorifics ("The Reverend", "Sir", "Representative", "Sultan", "King") stripped, parentheticals stripped (so "Barry Humphries (Dame Edna to You) Is Dead" parses as Barry Humphries), and series prefixes ("Overlooked No More:", "From 1992:") peeled off. When the headline parse fails (essay-style, "Anne Heche, Actress Known for '90s Film Roles, Dies at 53"-style follow-ups, etc.), a fallback extracts the name from the URL slug; cluster merge then absorbs these into their primary obit's URL list when a primary exists within ±10 days. <em>Age</em> — "Dies at N", "Name, N,", or "was N" patterns. <em>Gender</em> — three layered methods, tagged in the data: <strong>honorific</strong> (Mr./Mrs./Sir/Dame, with Mr./Mrs.+Capital prioritized over bare Dame to avoid stage-name confusion); <strong>pronoun</strong> (he/his/him vs. she/her tally); <strong>first_name</strong> (US baby-name lists, low confidence — flagged in the table with ⚠). <em>Profession</em> — the role phrase that follows the second comma. Cause of death rarely appears in headline/abstract and would require fetching article body.</p>
-      <p style="font-size:13px;color:#555"><strong>Series flags.</strong> "Overlooked No More" (245 records) — retroactive obituaries for historically overlooked figures (begun 2018-03-08, International Women's Day). "Republished" (68 records) — old obituaries re-run as packages (e.g. Women's History Month uses headline prefix "From 1992:"). Distinct from Overlooked because the original obit ran at the time of death; the dashboard shows the republish date. "9/11 Portraits of Grief" (385 records) — the National desk's brief profiles of victims of the September 11 attacks, published Dec 2001–Sep 2002 with the atypical headline format "Name: Tagline". The role-tagline isn't a profession, so profession is intentionally left blank for these.</p>
-      <p style="font-size:13px;color:#555"><strong>Coverage of fields (n=29,363 after filtering)</strong>: name 100%, age 97%, gender 99% (36.6% honorific, 62.2% pronoun, 1.2% first-name fallback), profession 67%. About 14 records remain unparsed — almost all are short follow-up notices whose URL slug doesn't match a primary obit.</p>
-
-      <h5 style="margin-bottom:6px;color:#444;margin-top:14px">Corrections</h5>
-      <p style="font-size:13px;color:#555">Each daily corrections page (e.g. <code>nytimes.com/2025/01/02/pageoneplus/corrections-jan-3-2025.html</code>) was fetched via the Wayback Machine (live site is bot-blocked). Individual corrections were pulled from the article body — they begin with phrases like "An article on Tuesday about…". Referenced article date is parsed from the correction's date phrase or relative day-of-week ("on Thursday"). Match to the actual article uses headline + slug + subject token overlap within ±3 days; we accept a match when ≥2 distinct content tokens align. <strong>Coverage so far:</strong> 164 of 190 corrections pages fetched for 2025 (the rest hit Wayback rate-limit timeouts or have no snapshot). <strong>Match rate:</strong> 87% of parsed corrections linked to a specific article. Currently only 2025 is loaded — earlier years pending a re-scrape via authenticated session. Only corrections with a clear "An article on…" lead are extracted; corrections referring to obituaries or photos may be skipped if their phrasing differs.</p>
-      <p style="font-size:13px;color:#555"><strong>Untagged corrections — known undercount.</strong> A diagnostic across all 315 monthly Archive API dumps (2000–2026) found two veins of correction-like articles with <code>type_of_material ≠ "Correction"</code>: (1) <strong>5,037 articles with <code>section_name = "Corrections"</code></strong>, concentrated in 2013–2016 (2,253 articles, peak 686 in 2014) and 2023–2025 (1,511 articles); 2,932 of these are tom="News" (real corrections in the wrong bucket), 2,020 are tom="Quote" (correction-text excerpts); and (2) <strong>906 articles whose headline is literally "A Correction", "Correction", or "Corrections"</strong>, mostly 2000–2011, mostly at <code>/pageoneplus/corrections.html</code> (daily corrections-page roundups indexed as News). A handful of these are stand-alone correction-of-an-obit articles (e.g. <code>/2003/12/04/arts/theater/a-correction.html</code>). An additional 1,091 paper-wide Editors' Notes serve a similar but distinct function (retracting or contextualizing whole stories). The corrections universe shown here is roughly 13% smaller than reality. Backfill pending re-scrape via authenticated session.</p>
+      <h4>Obituaries</h4>
+      <p>A number of steps were taken to identify all obituaries. Records were included if the API tagged them <em>type_of_material</em> as Obituary (in any of its variants), filed them under the Obits desk or Obituaries section, or assigned them to the 9/11 Portraits of Grief series. Year-end roundups, paid memorial notices, and multi-subject features were excluded.</p>
+      <p>Obituaries that appear to have run at distinct URLs within a few days of each other were then merged into a single canonical entry.</p>
+      <p>Each obituary was parsed for name, age, gender, and profession from the headline and abstract, relying on honorifics (Mr./Mrs./Sir/Dame) and pronouns (he/his vs. she/her) the paper used. Special series including Overlooked No More (retroactive obituaries for historically overlooked figures), historical obituaries republished for special occasions like Women's History Month, and the 9/11 Portraits of Grief feature were also tagged.</p>
     </div>
   </div>
 
@@ -599,9 +607,10 @@
 
   <!-- SECTIONS -->
   <div class="view" id="view-sections">
-    <div class="chart-box" data-dl-canvas-only="true">
+    <div class="chart-box" id="sectionCompareBox" style="display:none" data-dl-canvas-only="true">
+      <button class="close-btn" onclick="toggleSectionCompare()" style="float:right;margin-top:-4px">Close</button>
       <h3>Compare Sections</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Major editorial sections; some renamed or merged sections are combined. See the About tab for details.</p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">Major editorial sections; some renamed or merged sections are combined.</p>
       <div style="margin-bottom:8px">
         <input type="text" id="sectionSearch" placeholder="Type to filter sections…" oninput="filterSectionSelect()" style="width:100%;box-sizing:border-box;padding:5px 8px;font-size:13px;border:1px solid #ccc;border-radius:4px;margin-bottom:6px;font-family:inherit">
         <select id="sectionCountSelect" multiple style="width:100%;min-height:160px;font-size:13px"></select>
@@ -617,6 +626,9 @@
     <div class="chart-box">
       <h3>Coverage by Section</h3>
       <div id="sectionDetailPanel" style="display:none;margin-bottom:16px"></div>
+      <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button id="toggleSectionCompareBtn" onclick="toggleSectionCompare()" style="font-size:13px;padding:5px 12px;border:1px solid #ccc;border-radius:4px;background:#f5f5f5;cursor:pointer;font-family:inherit">Compare section coverage over time</button>
+      </div>
       <div class="table-scroll-wrap"><div id="sectionTableContainer"></div></div>
     </div>
     <div class="chart-box" id="featuresBox">
@@ -726,53 +738,48 @@
 
   <!-- OBITUARIES -->
   <div class="view" id="view-obits">
-    <div class="chart-box">
-      <h3>Obituaries</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">
-        Every Times obituary since 2001 — name, age, gender, and role description, parsed from the Archive API. Click any column header to sort; the "Overlooked No More" filter isolates retroactive obituaries for historically overlooked figures.
-      </p>
-      <div id="obitsLoading" style="color:#888;padding:8px 0">Loading obituary data…</div>
-      <div id="obitsContent" style="display:none">
-        <!-- summary stats -->
-        <div id="obitsSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px"></div>
-
-        <!-- charts row -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Age at death</div>
-              <button onclick="downloadObitChart('chartObitAge', 'obit-age-at-death', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
-            </div>
-            <canvas id="chartObitAge" style="max-height:180px"></canvas>
+    <h3 style="font-size:16px;margin-bottom:4px">Obituaries</h3>
+    <p style="font-size:13px;color:#666;margin-bottom:14px">
+      Every Times obituary since 2001, with name, age, gender, and role parsed from the API.
+    </p>
+    <div id="obitsLoading" style="color:#888;padding:8px 0">Loading obituary data…</div>
+    <div id="obitsContent" style="display:none">
+      <!-- charts row -->
+      <div class="obit-charts-row">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Age at death</div>
+            <button onclick="downloadObitChart('chartObitAge', 'obit-age-at-death', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Gender split over time</div>
-              <button onclick="downloadObitChart('chartObitGender', 'obit-gender-over-time', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
-            </div>
-            <canvas id="chartObitGender" style="max-height:180px"></canvas>
+          <canvas id="chartObitAge" style="max-height:180px"></canvas>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Gender split over time</div>
+            <button onclick="downloadObitChart('chartObitGender', 'obit-gender-over-time', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
+          <canvas id="chartObitGender" style="max-height:180px"></canvas>
         </div>
-
-        <!-- filters -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
-          <input type="text" id="obitSearch" placeholder="Filter by name, profession, or headline…" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
-          <select id="obitGenderFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
-            <option value="">All genders</option>
-            <option value="M">Male only</option>
-            <option value="F">Female only</option>
-            <option value="?">Gender not parsed</option>
-          </select>
-          <select id="obitYearFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
-            <option value="">All years</option>
-          </select>
-          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> Overlooked No More</label>
-          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished</label>
-          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief</label>
-          <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
-        </div>
-        <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="obitsTableContainer"></div></div>
       </div>
+
+      <!-- filters -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
+        <input type="text" id="obitSearch" placeholder="Filter by name, profession, or headline…" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
+        <select id="obitGenderFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
+          <option value="">All genders</option>
+          <option value="M">Male only</option>
+          <option value="F">Female only</option>
+          <option value="?">Gender not parsed</option>
+        </select>
+        <select id="obitYearFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
+          <option value="">All years</option>
+        </select>
+        <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> Overlooked No More</label>
+        <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished</label>
+        <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief</label>
+        <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
+      </div>
+      <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="obitsTableContainer"></div></div>
     </div>
   </div>
 
@@ -970,8 +977,8 @@ function addDownloadBtns() {
 // Wire up to dynamically-created chart-boxes (author profiles, beat detail, etc.)
 new MutationObserver(addDownloadBtns).observe(document.body, { childList: true, subtree: true });
 
-function downloadSectionChart(btn) {
-  const canvas = document.getElementById('chartSectionDetail');
+function downloadSectionChart(btn, canvasId) {
+  const canvas = document.getElementById(canvasId || 'chartSectionDetail');
   if (!canvas) return;
   btn.textContent = '…';
   const offscreen = document.createElement('canvas');
@@ -983,7 +990,9 @@ function downloadSectionChart(btn) {
   ctx.drawImage(canvas, 0, 0);
   const a = document.createElement('a');
   const h3 = document.querySelector('#sectionDetailPanel h3');
-  a.download = (h3 ? h3.textContent.trim().replace(/[^a-z0-9]+/gi, '_').toLowerCase() : 'section') + '_trend.jpg';
+  const slug = h3 ? h3.textContent.trim().replace(/[^a-z0-9]+/gi, '_').toLowerCase() : 'section';
+  const suffix = canvasId === 'chartSectionHist' ? '_wordcounts' : '_trend';
+  a.download = slug + suffix + '.jpg';
   a.href = offscreen.toDataURL('image/jpeg', 0.92);
   a.click();
   btn.textContent = '↓ JPG';
@@ -2132,10 +2141,8 @@ function initSections() {
   const trendSections = Object.keys(dashboard.section_trends)
     .filter(s => !SECTION_BLOCKLIST.has(s) && s !== 'All Sections')
     .sort();
-  const defaultSections = ['U.S.', 'World', 'Opinion', 'Arts', 'Science'];
 
   const countSelect = document.getElementById('sectionCountSelect');
-  // Add "All Sections" as the first option, visually separated by a divider
   const allOpt = document.createElement('option');
   allOpt.value = 'All Sections';
   allOpt.textContent = 'All Sections';
@@ -2150,11 +2157,9 @@ function initSections() {
   trendSections.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s; opt.textContent = s;
-    if (defaultSections.includes(s)) opt.selected = true;
     countSelect.appendChild(opt);
   });
   countSelect.addEventListener('change', renderSectionCountTrend);
-  renderSectionCountTrend();
 
   renderSectionsTable();
   renderFeatures();
@@ -2510,7 +2515,7 @@ function openSectionDetail(sectionName) {
       <button class="close-btn" onclick="document.getElementById('sectionDetailPanel').style.display='none';destroyChart('chartSectionDetail');destroyChart('chartSectionHist')">Close</button>
       <h3>${escapeHtml(sectionName)}</h3>
       <div class="timeline-meta">${total.toLocaleString()} articles · ${yearRange}${avgWords ? ` · ${avgWords.toLocaleString()} avg words` : ''}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px">
+      <div class="section-charts-row" style="margin-top:10px">
         <div>
           <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
           <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
@@ -2528,7 +2533,10 @@ function openSectionDetail(sectionName) {
             </div>
           </div>
           <canvas id="chartSectionHist" style="max-height:180px;cursor:pointer"></canvas>
-          <div id="sectionHistNote" style="font-size:10px;color:#bbb;margin-top:2px"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;gap:6px">
+            <div id="sectionHistNote" style="font-size:10px;color:#bbb;flex:1"></div>
+            <button onclick="downloadSectionChart(this,'chartSectionHist')" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666;flex-shrink:0">↓ JPG</button>
+          </div>
         </div>
       </div>
       <div id="sectionDetailReporters" style="margin-top:12px"></div>
@@ -2635,7 +2643,7 @@ function renderSectionHistogram(mode) {
   // Normalize display window across both modes — share lastBin based on aggregate
   let lastBin = wcHist.length - 1;
   while (lastBin > 0 && wcHist[lastBin] === 0) lastBin--;
-  const binLabels = wcHist.slice(0, lastBin + 1).map((_, i) => i === 20 ? '4k+' : String(i * BIN));
+  const binLabels = wcHist.slice(0, lastBin + 1).map((_, i) => i === lastBin ? `${i * BIN}+` : String(i * BIN));
   destroyChart('chartSectionHist');
 
   if (mode === 'all') {
@@ -2674,7 +2682,15 @@ function renderSectionHistogram(mode) {
           }}
         },
         scales: {
-          x: { ticks: { font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:10 }, grid:{display:false} },
+          x: { ticks: {
+                 font:{size:9}, maxRotation:0, autoSkip:false,
+                 callback: function(_, i, ticks) {
+                   const last = ticks.length - 1;
+                   const step = IS_MOBILE ? Math.ceil(ticks.length / 5) : Math.ceil(ticks.length / 10);
+                   if (i === 0 || i === last || i % step === 0) return this.getLabelForValue(i);
+                   return '';
+                 }
+               }, grid:{display:false} },
           y: { beginAtZero:true, ticks:{font:{size:9}} }
         }
       }
@@ -2696,14 +2712,14 @@ function renderSectionHistogram(mode) {
   const datasets = displayYears.map((y, i) => {
     const total = byYear[y].reduce((s,v)=>s+v,0);
     const pct = byYear[y].slice(0, lastBin + 1).map(v => total > 0 ? 100 * v / total : 0);
-    // Fade from old (faint) to new (dark). Use HSL for perceptual uniformity.
+    // Fade from old (very pale) to new (dark) — broad contrast across blue spectrum.
     const t = span > 1 ? i / (span - 1) : 1;
-    const alpha = 0.15 + 0.75 * t;
-    const lightness = 55 - 30 * t;
+    const alpha = 0.25 + 0.65 * t;
+    const lightness = 80 - 60 * t;
     return {
       label: y,
       data: pct,
-      borderColor: `hsla(205, 50%, ${lightness}%, ${alpha})`,
+      borderColor: `hsla(205, 60%, ${lightness}%, ${alpha})`,
       borderWidth: 1 + 1 * t,
       pointRadius: 0,
       tension: 0.25,
@@ -2724,15 +2740,23 @@ function renderSectionHistogram(mode) {
         tooltip: { enabled: false },
       },
       scales: {
-        x: { ticks: { font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:10 }, grid:{display:false} },
+        x: { ticks: {
+               font:{size:9}, maxRotation:0, autoSkip:false,
+               callback: function(_, i, ticks) {
+                 const last = ticks.length - 1;
+                 const step = IS_MOBILE ? Math.ceil(ticks.length / 5) : Math.ceil(ticks.length / 10);
+                 if (i === 0 || i === last || i % step === 0) return this.getLabelForValue(i);
+                 return '';
+               }
+             }, grid:{display:false} },
         y: { beginAtZero:true, ticks:{font:{size:9}, callback: v => v + '%'} }
       }
     }
   });
   histCanvas.style.cursor = 'default';
   if (histNote) histNote.innerHTML =
-    `<span style="color:hsl(205,50%,55%)">■</span> ${displayYears[0]} → ` +
-    `<span style="color:hsl(205,50%,25%)">■</span> ${displayYears[displayYears.length-1]} · ` +
+    `<span style="color:hsl(205,60%,80%)">■</span> ${displayYears[0]} → ` +
+    `<span style="color:hsl(205,60%,20%)">■</span> ${displayYears[displayYears.length-1]} · ` +
     `lines = % of each year's articles`;
 }
 
@@ -2808,6 +2832,15 @@ const trendColors = [
 ];
 
 let sectionMetric = 'articles';
+
+function toggleSectionCompare() {
+  const box = document.getElementById('sectionCompareBox');
+  const btn = document.getElementById('toggleSectionCompareBtn');
+  const visible = box.style.display !== 'none';
+  box.style.display = visible ? 'none' : '';
+  btn.textContent = visible ? 'Compare section coverage over time' : 'Hide chart';
+  if (!visible) { renderSectionCountTrend(); addDownloadBtns(); }
+}
 
 function filterSectionSelect() {
   const q = (document.getElementById('sectionSearch').value || '').toLowerCase();
@@ -5947,8 +5980,6 @@ async function initObits() {
     yfSel.appendChild(opt);
   });
 
-  // Summary cards
-  renderObitSummary();
   renderObitAgeChart();
   renderObitGenderChart();
 
@@ -6127,15 +6158,20 @@ function renderObitsTable() {
   const display = rows.slice(0, 500);
   const ind = c => _obitTableSort.col === c ? (_obitTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
-    { k: 'date', label: 'Publication date' },
+    { k: 'date', label: 'Date' },
     { k: 'firstName', label: 'First name' },
     { k: 'lastName', label: 'Last name' },
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
-    { k: 'profession', label: 'Profession / Role' },
-    { k: 'review', label: 'Review' },
-    { k: 'secondary', label: 'Addl. URL(s)' },
+    { k: 'profession', label: 'Profession / Role', cls: 'mob-hide' },
+    { k: 'review', label: 'Review', cls: 'mob-hide' },
+    { k: 'secondary', label: 'Addl. URL(s)', cls: 'mob-hide' },
   ];
+  const fmtDate = s => {
+    if (!s) return '';
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : s;
+  };
   // gender confidence indicator → small marker (used in Review column)
   const _reviewCell = src => src === 'first_name'
     ? '<span title="Gender inferred from first name only — low confidence" style="color:#c08040;font-size:11px">⚠</span>'
@@ -6166,24 +6202,24 @@ function renderObitsTable() {
     const reviewCell = _reviewCell(o.gender_src);
     if (!o.name) {
       html += `<tr title="${escapeHtml(o.headline || '')}">
-        <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
+        <td style="color:#aaa;white-space:nowrap">${escapeHtml(fmtDate(o.date))}</td>
         <td colspan="2" style="color:#bbb">${linkOpen}(unparsed)${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
         <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
-        <td>${escapeHtml(o.profession || '')}</td>
-        <td>${reviewCell}</td>
-        <td>${secCell}</td>
+        <td class="mob-hide">${escapeHtml(o.profession || '')}</td>
+        <td class="mob-hide">${reviewCell}</td>
+        <td class="mob-hide">${secCell}</td>
       </tr>`;
     } else {
       html += `<tr title="${escapeHtml(o.headline || '')}">
-        <td style="color:#aaa;white-space:nowrap">${escapeHtml(o.date || '')}</td>
+        <td style="color:#aaa;white-space:nowrap">${escapeHtml(fmtDate(o.date))}</td>
         <td>${linkOpen}${escapeHtml(dispFirst)}${linkClose}</td>
         <td>${linkOpen}${escapeHtml(dispLast)}${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
         <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
-        <td>${escapeHtml(o.profession || '')}</td>
-        <td>${reviewCell}</td>
-        <td>${secCell}</td>
+        <td class="mob-hide">${escapeHtml(o.profession || '')}</td>
+        <td class="mob-hide">${reviewCell}</td>
+        <td class="mob-hide">${secCell}</td>
       </tr>`;
     }
   });
@@ -6909,7 +6945,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 4:05pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 6:38pm</span>
 </div>
 </body>
 </html>

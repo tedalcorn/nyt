@@ -358,10 +358,15 @@ def process_articles(raw_articles):
         }
         section = SECTION_MERGES.get(section, section)
 
-        # Override section for obituaries that were filed under subject sections
-        # (2011-2015: NYT tagged type_of_material='Obituary (Obit)' but put
-        #  articles in Arts/Sports/Business/etc. rather than 'Obituaries')
-        if mat == "Obituary (Obit)" and section != "Obituaries":
+        # Override section for obituaries filed under subject sections.
+        # 2001-2010: tom was usually "Obituary; Biography" (or "Obituary"/
+        # "Biography; Obituary") but section was Arts/Sports/Business/etc.
+        # 2011-2015: tom was "Obituary (Obit)" but again section was a subject.
+        # Accept all four obit-tom variants and the Obits desk so the Obituaries
+        # section trend reflects all obituary articles, not just the few
+        # tagged section_name='Obituaries'.
+        if (mat in {"Obituary (Obit)", "Obituary", "Obituary; Biography", "Biography; Obituary"}
+                and section != "Obituaries"):
             section = "Obituaries"
         news_desk = doc.get("news_desk", "") or ""
         doc_type = doc.get("document_type", "") or ""
