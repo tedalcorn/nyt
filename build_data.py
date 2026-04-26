@@ -1762,6 +1762,716 @@ def deduplicate_articles(articles):
     return result, n_dupes
 
 
+# Normalize sub-national tags (cities, provinces, regions) to parent country.
+# Rules:
+#   - City (Country) → Country
+#   - Province/State/Region (Country) → Country
+#   - ALL-CAPS country names → canonical form
+#   - UK sub-nations (England, Scotland, Wales, N. Ireland) → Great Britain
+#   - Contested territories kept as-is: Gaza Strip, West Bank, Taiwan, Hong Kong,
+#     Tibet, Kashmir, Kosovo, Nagorno-Karabakh, South Ossetia, Abkhazia, Crimea, etc.
+#   - Transnational geographies kept as-is: Red Sea, Himalayas, Amazon, etc.
+LOCATION_NORMALIZE = {
+    # ── Great Britain / UK sub-nations ────────────────────────────────
+    "London (England)":           "Great Britain",
+    "LONDON (ENG)":               "Great Britain",
+    "England":                    "Great Britain",
+    "Scotland":                   "Great Britain",
+    "Wales":                      "Great Britain",
+    "Northern Ireland":           "Great Britain",
+    "Manchester (England)":       "Great Britain",
+    "Birmingham (England)":       "Great Britain",
+    "Liverpool (England)":        "Great Britain",
+    "Glasgow (Scotland)":         "Great Britain",
+    "Lockerbie (Scotland)":       "Great Britain",
+    "Belfast (Northern Ireland)": "Great Britain",
+    "Edinburgh (Scotland)":       "Great Britain",
+    "Bristol (England)":          "Great Britain",
+    "Oxford (England)":           "Great Britain",
+    "Cambridge (England)":        "Great Britain",
+    # ── France ────────────────────────────────────────────────────────
+    "Paris (France)":             "France",
+    "Nice (France)":              "France",
+    "Marseille (France)":         "France",
+    "Calais (France)":            "France",
+    "Toulouse (France)":          "France",
+    "Normandy (France)":          "France",
+    "Lyon (France)":              "France",
+    "Bordeaux (France)":          "France",
+    # ── Germany ───────────────────────────────────────────────────────
+    "Berlin (Germany)":           "Germany",
+    "Munich (Germany)":           "Germany",
+    "Hamburg (Germany)":          "Germany",
+    "Frankfurt (Germany)":        "Germany",
+    "Bavaria (Germany)":          "Germany",
+    "Cologne (Germany)":          "Germany",
+    "East Germany":               "Germany",
+    # ── Russia ────────────────────────────────────────────────────────
+    "Moscow (Russia)":            "Russia",
+    "St Petersburg (Russia)":     "Russia",
+    "Chechnya (Russia)":          "Russia",
+    "Kursk (Russia)":             "Russia",
+    "Sochi (Russia)":             "Russia",
+    "Dagestan (Russia)":          "Russia",
+    "Siberia":                    "Russia",
+    "GROZNY (CHECHNYA)":          "Russia",
+    "Ingushetia (Russian Republic)": "Russia",
+    "Caucasus (Russia)":          "Russia",
+    # ── Ukraine ───────────────────────────────────────────────────────
+    "Kyiv (Ukraine)":             "Ukraine",
+    "Crimea (Ukraine)":           "Ukraine",
+    "Donetsk (Ukraine)":          "Ukraine",
+    "Mariupol (Ukraine)":         "Ukraine",
+    "Zaporizhzhia (Ukraine)":     "Ukraine",
+    "Luhansk (Ukraine)":          "Ukraine",
+    "Bakhmut (Ukraine)":          "Ukraine",
+    "Odessa (Ukraine)":           "Ukraine",
+    "Lviv (Ukraine)":             "Ukraine",
+    "Slovyansk (Ukraine)":        "Ukraine",
+    "Avdiivka (Ukraine)":         "Ukraine",
+    "Pokrovsk (Ukraine)":         "Ukraine",
+    "Bucha (Ukraine)":            "Ukraine",
+    "Dnipro River (Ukraine)":     "Ukraine",
+    "Chernobyl (Ukraine)":        "Ukraine",
+    "Kharkiv (Ukraine)":          "Ukraine",
+    "Kherson (Ukraine)":          "Ukraine",
+    # ── China ─────────────────────────────────────────────────────────
+    "Beijing (China)":            "China",
+    "Shanghai (China)":           "China",
+    "Xinjiang (China)":           "China",
+    "Sichuan Province (China)":   "China",
+    "Wuhan (China)":              "China",
+    "Guangzhou (China)":          "China",
+    "Shenzhen (China)":           "China",
+    "Chongqing (China)":          "China",
+    "Chengdu (China)":            "China",
+    "Urumqi (China)":             "China",
+    "Tianjin (China)":            "China",
+    "Hubei Province (China)":     "China",
+    "Henan Province (China)":     "China",
+    "Hainan Island (China)":      "China",
+    "Zhejiang Province (China)":  "China",
+    "Fujian Province (China)":    "China",
+    "Yunnan Province (China)":    "China",
+    "Nanjing (China)":            "China",
+    "Guangdong Province (China)": "China",
+    "Kashgar (China)":            "China",
+    "Kunming (China)":            "China",
+    # ── India ─────────────────────────────────────────────────────────
+    "New Delhi (India)":          "India",
+    "Mumbai (India)":             "India",
+    "Bangalore (India)":          "India",
+    "Kashmir and Jammu (India)":  "India",
+    "Kolkata (India)":            "India",
+    "Chennai (India)":            "India",
+    "Hyderabad (India)":          "India",
+    "West Bengal (India)":        "India",
+    "Tamil Nadu (India)":         "India",
+    "Bihar (India)":              "India",
+    "Rajasthan (India)":          "India",
+    "Kerala (India)":             "India",
+    "Karnataka (India)":          "India",
+    "Assam State (India)":        "India",
+    "Andhra Pradesh (India)":     "India",
+    "Maharashtra (India)":        "India",
+    "Goa (India)":                "India",
+    "Haryana (India)":            "India",
+    "Varanasi (India)":           "India",
+    "Jaipur (India)":             "India",
+    "AHMEDABAD (INDIA)":          "India",
+    "Uttar Pradesh (India)":      "India",
+    # ── Pakistan ──────────────────────────────────────────────────────
+    "Islamabad (Pakistan)":       "Pakistan",
+    "Peshawar (Pakistan)":        "Pakistan",
+    "Lahore (Pakistan)":          "Pakistan",
+    "Waziristan (Pakistan)":      "Pakistan",
+    "Baluchistan (Pakistan)":     "Pakistan",
+    "Swat (Pakistan)":            "Pakistan",
+    "Punjab (Pakistan)":          "Pakistan",
+    "Quetta (Pakistan)":          "Pakistan",
+    "Karachi (Pakistan)":         "Pakistan",
+    "Federally Administered Tribal Areas (Pakistan)": "Pakistan",
+    # ── Iraq ──────────────────────────────────────────────────────────
+    "Baghdad (Iraq)":             "Iraq",
+    "Basra (Iraq)":               "Iraq",
+    "Kirkuk (Iraq)":              "Iraq",
+    "Karbala (Iraq)":             "Iraq",
+    "Ramadi (Iraq)":              "Iraq",
+    "Tikrit (Iraq)":              "Iraq",
+    "Mosul (Iraq)":               "Iraq",
+    "Erbil (Iraq)":               "Iraq",
+    "Sadr City (Iraq)":           "Iraq",
+    "Nasiriya (Iraq)":            "Iraq",
+    "ANBAR PROVINCE (IRAQ)":      "Iraq",
+    "Falluja (Iraq)":             "Iraq",
+    "Haditha (Iraq)":             "Iraq",
+    # ── Syria ─────────────────────────────────────────────────────────
+    "Damascus (Syria)":           "Syria",
+    "Homs (Syria)":               "Syria",
+    "Idlib (Syria)":              "Syria",
+    "Raqqa (Syria)":              "Syria",
+    "Aleppo (Syria)":             "Syria",
+    "Kobani (Syria)":             "Syria",
+    "Hama (Syria)":               "Syria",
+    "Palmyra (Syria)":            "Syria",
+    "Deir al-Zour (Syria)":       "Syria",
+    # ── Afghanistan ───────────────────────────────────────────────────
+    "Kabul (Afghanistan)":        "Afghanistan",
+    "Kandahar (Afghanistan)":     "Afghanistan",
+    "Jalalabad (Afghanistan)":    "Afghanistan",
+    "Mazar-i-Sharif (Afghanistan)": "Afghanistan",
+    "Herat (Afghanistan)":        "Afghanistan",
+    "Tora Bora (Afghanistan)":    "Afghanistan",
+    "Marja (Afghanistan)":        "Afghanistan",
+    "AFGHANISTAN":                "Afghanistan",
+    # ── Israel / West Bank / Gaza ─────────────────────────────────────
+    "Jerusalem (Israel)":         "Israel",
+    "Tel Aviv (Israel)":          "Israel",
+    "Haifa (Israel)":             "Israel",
+    "JERUSALEM":                  "Israel",
+    "Bethlehem (West Bank)":      "West Bank",
+    "Nablus (West Bank)":         "West Bank",
+    "JENIN (WEST BANK)":          "West Bank",
+    "Jenin (West Bank)":          "West Bank",
+    "Hebron (West Bank)":         "West Bank",
+    "Tulkarm (West Bank)":        "West Bank",
+    "Ramallah (West Bank)":       "West Bank",
+    "Gaza City (Gaza Strip)":     "Gaza Strip",
+    "Khan Younis (Gaza Strip)":   "Gaza Strip",
+    "Rafah (Gaza Strip)":         "Gaza Strip",
+    "GAZA":                       "Gaza Strip",
+    # ── Lebanon ───────────────────────────────────────────────────────
+    "Beirut (Lebanon)":           "Lebanon",
+    # ── Egypt ─────────────────────────────────────────────────────────
+    "Cairo":                      "Egypt",
+    "Cairo (Egypt)":              "Egypt",
+    "Sinai Peninsula (Egypt)":    "Egypt",
+    "Tahrir Square (Cairo)":      "Egypt",
+    # ── Turkey ────────────────────────────────────────────────────────
+    "Istanbul (Turkey)":          "Turkey",
+    "ANKARA (TURKEY)":            "Turkey",
+    # ── Iran ──────────────────────────────────────────────────────────
+    "Tehran (Iran)":              "Iran",
+    # ── Saudi Arabia ──────────────────────────────────────────────────
+    "Mecca (Saudi Arabia)":       "Saudi Arabia",
+    "Riyadh (Saudi Arabia)":      "Saudi Arabia",
+    "Medina (Saudi Arabia)":      "Saudi Arabia",
+    # ── UAE ───────────────────────────────────────────────────────────
+    "Dubai (United Arab Emirates)": "United Arab Emirates",
+    "Abu Dhabi (United Arab Emirates)": "United Arab Emirates",
+    # ── Yemen ─────────────────────────────────────────────────────────
+    "Sana (Yemen)":               "Yemen",
+    "ADEN (YEMEN)":               "Yemen",
+    # ── Sudan ─────────────────────────────────────────────────────────
+    "Khartoum (Sudan)":           "Sudan",
+    "Darfur (Sudan)":             "Sudan",
+    "DARFUR PROVINCE (SUDAN)":    "Sudan",
+    # ── Libya ─────────────────────────────────────────────────────────
+    "Tripoli (Libya)":            "Libya",
+    "Benghazi (Libya)":           "Libya",
+    "Misurata (Libya)":           "Libya",
+    # ── Ethiopia ──────────────────────────────────────────────────────
+    "Tigray (Ethiopia)":          "Ethiopia",
+    "ADDIS ABABA (ETHIOPIA)":     "Ethiopia",
+    # ── Nigeria ───────────────────────────────────────────────────────
+    "Lagos (Nigeria)":            "Nigeria",
+    # ── South Africa ──────────────────────────────────────────────────
+    "Johannesburg (South Africa)":"South Africa",
+    "Cape Town (South Africa)":   "South Africa",
+    "Pretoria (South Africa)":    "South Africa",
+    # ── Congo ─────────────────────────────────────────────────────────
+    "CONGO":                      "Democratic Republic of Congo",
+    # ── Kenya ─────────────────────────────────────────────────────────
+    "Mombasa (Kenya)":            "Kenya",
+    "Nairobi (Kenya)":            "Kenya",
+    # ── Japan ─────────────────────────────────────────────────────────
+    "Tokyo (Japan)":              "Japan",
+    "Hiroshima (Japan)":          "Japan",
+    "Osaka (Japan)":              "Japan",
+    "Okinawa and Other Ryukyu Islands (Japan)": "Japan",
+    # ── South Korea ───────────────────────────────────────────────────
+    "Seoul (South Korea)":        "South Korea",
+    "Panmunjom (South Korea)":    "South Korea",
+    # ── North Korea ───────────────────────────────────────────────────
+    "Pyongyang (North Korea)":    "North Korea",
+    # ── Vietnam ───────────────────────────────────────────────────────
+    "Hanoi (Vietnam)":            "Vietnam",
+    "Ho Chi Minh City (Vietnam)": "Vietnam",
+    # ── Myanmar ───────────────────────────────────────────────────────
+    "Yangon (Myanmar)":           "Myanmar",
+    "Rakhine State (Myanmar)":    "Myanmar",
+    # ── Malaysia ──────────────────────────────────────────────────────
+    "Kuala Lumpur (Malaysia)":    "Malaysia",
+    # ── Philippines ───────────────────────────────────────────────────
+    "Mindanao (Philippines)":     "Philippines",
+    "Tacloban (Philippines)":     "Philippines",
+    # ── Indonesia ─────────────────────────────────────────────────────
+    "ACEH PROVINCE (INDONESIA)":  "Indonesia",
+    "Java (Indonesia)":           "Indonesia",
+    # ── Bangladesh ────────────────────────────────────────────────────
+    "Dhaka (Bangladesh)":         "Bangladesh",
+    # ── Nepal ─────────────────────────────────────────────────────────
+    "Katmandu (Nepal)":           "Nepal",
+    # ── Sri Lanka ─────────────────────────────────────────────────────
+    "Colombo (Sri Lanka)":        "Sri Lanka",
+    # ── Australia ─────────────────────────────────────────────────────
+    "New South Wales (Australia)":"Australia",
+    "Queensland (Australia)":     "Australia",
+    "Victoria (Australia)":       "Australia",
+    "Canberra (Australia)":       "Australia",
+    "Bondi Beach (Sydney, Australia)": "Australia",
+    "Great Barrier Reef (Australia)": "Australia",
+    # ── New Zealand ───────────────────────────────────────────────────
+    "Christchurch (New Zealand)": "New Zealand",
+    "Auckland (New Zealand)":     "New Zealand",
+    # ── Canada ────────────────────────────────────────────────────────
+    "Montreal (Quebec)":          "Canada",
+    "Ottawa (Ontario)":           "Canada",
+    "Vancouver (British Columbia)": "Canada",
+    "Toronto (Ontario)":          "Canada",
+    "ALBERTA (CANADA)":           "Canada",
+    "Saskatchewan (Canada)":      "Canada",
+    # ── Mexico ────────────────────────────────────────────────────────
+    "Mexico City (Mexico)":       "Mexico",
+    "Tijuana (Mexico)":           "Mexico",
+    "Ciudad Juarez (Mexico)":     "Mexico",
+    "Oaxaca (Mexico)":            "Mexico",
+    "Chiapas (Mexico)":           "Mexico",
+    "Guerrero (Mexico)":          "Mexico",
+    "Baja California (Mexico)":   "Mexico",
+    # ── Argentina ─────────────────────────────────────────────────────
+    "ARGENTINA":                  "Argentina",
+    "Buenos Aires (Argentina)":   "Argentina",
+    # ── Brazil ────────────────────────────────────────────────────────
+    "Sao Paulo (Brazil)":         "Brazil",
+    # ── Colombia ──────────────────────────────────────────────────────
+    "Bogota (Colombia)":          "Colombia",
+    # ── Peru ──────────────────────────────────────────────────────────
+    "Lima (Peru)":                "Peru",
+    # ── Cuba ──────────────────────────────────────────────────────────
+    "Havana (Cuba)":              "Cuba",
+    # ── Haiti ─────────────────────────────────────────────────────────
+    "Port-au-Prince (Haiti)":     "Haiti",
+    # ── Dominican Republic ────────────────────────────────────────────
+    # (standalone, keep)
+    # ── Serbia ────────────────────────────────────────────────────────
+    "Belgrade (Serbia)":          "Serbia",
+    "KOSOVO (SERBIA)":            "Kosovo",
+    # ── Hungary ───────────────────────────────────────────────────────
+    "Budapest (Hungary)":         "Hungary",
+    # ── Czech Republic ────────────────────────────────────────────────
+    "Prague (Czech Republic)":    "Czech Republic",
+    # ── Poland ────────────────────────────────────────────────────────
+    "Warsaw (Poland)":            "Poland",
+    # ── Romania ───────────────────────────────────────────────────────
+    "Bucharest (Romania)":        "Romania",
+    # ── Austria ───────────────────────────────────────────────────────
+    "Vienna (Austria)":           "Austria",
+    # ── Belgium ───────────────────────────────────────────────────────
+    "Brussels (Belgium)":         "Belgium",
+    "AMSTERDAM (NETHERLANDS)":    "Netherlands",
+    # ── Spain ─────────────────────────────────────────────────────────
+    "Barcelona (Spain)":          "Spain",
+    "Madrid (Spain)":             "Spain",
+    "Valencia (Spain)":           "Spain",
+    # ── Italy ─────────────────────────────────────────────────────────
+    "Rome (Italy)":               "Italy",
+    "Venice (Italy)":             "Italy",
+    "Milan (Italy)":              "Italy",
+    "Sicily (Italy)":             "Italy",
+    "Naples (Italy)":             "Italy",
+    "Florence (Italy)":           "Italy",
+    "Genoa (Italy)":              "Italy",
+    "Tuscany (Italy)":            "Italy",
+    # ── Sweden ────────────────────────────────────────────────────────
+    "Stockholm (Sweden)":         "Sweden",
+    # ── Norway ────────────────────────────────────────────────────────
+    "Oslo (Norway)":              "Norway",
+    # ── Denmark ───────────────────────────────────────────────────────
+    "Copenhagen (Denmark)":       "Denmark",
+    # ── Ireland ───────────────────────────────────────────────────────
+    "Dublin (Ireland)":           "Ireland",
+    # ── Switzerland ───────────────────────────────────────────────────
+    "Geneva (Switzerland)":       "Switzerland",
+    "Davos (Switzerland)":        "Switzerland",
+    "Zurich (Switzerland)":       "Switzerland",
+    # ── Georgia ───────────────────────────────────────────────────────
+    "Georgia (Georgian Republic)":"Georgia",
+    "South Ossetia (Georgian Republic)": "Georgia",
+    "ABKHAZIA (GEORGIAN REPUBLIC)": "Georgia",
+    # ── Jordan ────────────────────────────────────────────────────────
+    "AMMAN (JORDAN)":             "Jordan",
+    # ── Qatar ─────────────────────────────────────────────────────────
+    "Doha (Qatar)":               "Qatar",
+    # ── Belarus ───────────────────────────────────────────────────────
+    "Minsk (Belarus)":            "Belarus",
+    # ── Ukraine (Russia)  ─────────────────────────────────────────────
+    # ── Liberia ───────────────────────────────────────────────────────
+    "Monrovia (Liberia)":         "Liberia",
+    # ── Vietnam ───────────────────────────────────────────────────────
+    # ── Senegal ───────────────────────────────────────────────────────
+    "Dakar (Senegal)":            "Senegal",
+    # ── Zimbabwe ──────────────────────────────────────────────────────
+    "Harare (Zimbabwe)":          "Zimbabwe",
+    # ── Bosnia ────────────────────────────────────────────────────────
+    "SREBRENICA (BOSNIA)":        "Bosnia and Herzegovina",
+    # ── Macedonia ─────────────────────────────────────────────────────
+    "MACEDONIA (FORMER YUGOSLAV REPUBLIC)": "Macedonia",
+    # ── ALL-CAPS country name fixes ───────────────────────────────────
+    "AFRICA":                     "Africa",
+    "ALGERIA":                    "Algeria",
+    "ARMENIA":                    "Armenia",
+    "ANGOLA":                     "Angola",
+    "ALBANIA":                    "Albania",
+    "WASHINGTON":                 "United States",
+    "USSR (Former Soviet Union)": "Russia",
+    "Yugoslavia":                 "Serbia",
+    # ── US cities (World section articles mentioning US places) ───────
+    "Los Angeles (Calif)":        "United States",
+    "Chicago (Ill)":              "United States",
+    "Miami (Fla)":                "United States",
+    "Boston (Mass)":              "United States",
+    "California":                 "United States",
+    "Texas":                      "United States",
+    "Florida":                    "United States",
+    "New Jersey":                 "United States",
+    "New York State":             "United States",
+    "Manhattan (NYC)":            "United States",
+    "New York City":              "United States",
+    "Washington (DC)":            "United States",
+    # ── Extra fixes not caught by programmatic rule ────────────────────
+    "ALEPPO (SYRIA)":             "Syria",
+    "Congo (Formerly Zaire)":     "Democratic Republic of Congo",
+    "KASHMIR AND JAMMU":          "Kashmir",
+    "SERBIA AND MONTENEGRO":      "Serbia",
+    "Tiananmen Square (Beijing)": "China",
+    "Guantanamo Bay Naval Base (Cuba)": "Cuba",
+    "Kosovo (Serbia)":            "Kosovo",
+    "DUBAI":                      "United Arab Emirates",
+    "Soviet Union":               "Russia",
+    # ── Standalone US states → United States ──────────────────────────
+    "Alabama": "United States", "Alaska": "United States",
+    "Arizona": "United States", "Arkansas": "United States",
+    "Colorado": "United States", "Connecticut": "United States",
+    "Delaware": "United States", "Hawaii": "United States",
+    "Idaho": "United States", "Illinois": "United States",
+    "Indiana": "United States", "Iowa": "United States",
+    "Kansas": "United States", "Kentucky": "United States",
+    "Louisiana": "United States", "Maryland": "United States",
+    "Massachusetts": "United States", "Michigan": "United States",
+    "Minnesota": "United States", "Mississippi": "United States",
+    "Missouri": "United States", "Montana": "United States",
+    "Nebraska": "United States", "New Hampshire": "United States",
+    "New Mexico": "United States", "North Carolina": "United States",
+    "Ohio": "United States", "Oklahoma": "United States",
+    "Oregon": "United States", "Pennsylvania": "United States",
+    "South Carolina": "United States", "Tennessee": "United States",
+    "Utah": "United States", "Vermont": "United States",
+    "Virginia": "United States", "West Virginia": "United States",
+    "Wisconsin": "United States", "Wyoming": "United States",
+    "Washington (State)": "United States",
+    # ── US cities with state abbreviations not caught by PARENT_MAP ───
+    "Atlanta (Ga)": "United States", "Ellabell (Ga)": "United States",
+    "Austin (Tex)": "United States", "Dallas (Tex)": "United States",
+    "Houston (Tex)": "United States", "Fort Hood (Tex)": "United States",
+    "El Paso (Tex)": "United States",
+    "Cleveland (Ohio)": "United States",
+    "Detroit (Mich)": "United States", "Dearborn (Mich)": "United States",
+    "Minneapolis (Minn)": "United States",
+    "Ferguson (Mo)": "United States",
+    "Las Vegas (Nev)": "United States",
+    "New Orleans (La)": "United States",
+    "Philadelphia (Pa)": "United States", "Pittsburgh (Pa)": "United States",
+    "Charlottesville (Va)": "United States",
+    "Seattle (Wash)": "United States",
+    "Joint Base Lewis-McChord (Wash)": "United States",
+    "Salt Lake City (Utah)": "United States",
+    "Newark (NJ)": "United States", "Long Island (NY)": "United States",
+    "Baltimore (Md)": "United States", "Annapolis (MD)": "United States",
+    "ANNAPOLIS (MD)": "United States", "CAMP DAVID (MD)": "United States",
+    "Shanksville (PA)": "United States",
+    "Marine Corps Base Camp Lejeune (SC)": "United States",
+    "Pearl Harbor (Hawaii)": "United States",
+    "Honolulu (Hawaii)": "United States",
+    "Northeastern States (US)": "United States",
+    "Southern States (US)": "United States",
+    "Ambassador Bridge": "United States",
+    "Central Park (Manhattan, NY)": "United States",
+    "ALCATRAZ (SAN FRANCISCO)": "United States",
+    # ── Standalone world cities → country ─────────────────────────────
+    "Beijing": "China", "BEIJING": "China",
+    "Moscow": "Russia", "MOSCOW": "Russia",
+    "Berlin": "Germany", "BERLIN": "Germany",
+    "Paris": "France",
+    "Rome": "Italy", "ROME": "Italy",
+    "London": "Great Britain", "LONDON": "Great Britain",
+    "TEL AVIV": "Israel",
+    "BAGHDAD": "Iraq",
+    "Geneva": "Switzerland",
+    "Belgrade": "Serbia", "BELGRADE": "Serbia",
+    "OKINAWA": "Japan", "OKINAWA AND OTHER RYUKYU ISLANDS": "Japan",
+    "SICILY": "Italy",
+    "HONG KONG (CHINA)": "Hong Kong",
+    "AMERICAN SAMOA": "United States",
+    # ── Country name variants / outdated names ─────────────────────────
+    "Burma": "Myanmar", "BURMA": "Myanmar",
+    "Britain": "Great Britain",
+    "The United States": "United States",
+    "America": "United States",
+    "Rhodesia": "Zimbabwe",
+    "Republic of Biafra": "Nigeria",
+    "Yugoslavia": "Serbia",
+    "EUROPEAN UNION": "Europe",
+    "Macao": "Macau",
+    "Swaziland": "Eswatini",
+    "Czechoslovakia": "Czech Republic",
+    "CZECHOSLOVAKIA (PRE-1993)": "Czech Republic",
+    # ── Too-granular places → parent country ──────────────────────────
+    "Red Square (Moscow)": "Russia",
+    "Western Wall (Jerusalem)": "Israel",
+    "Champs-Elysees (Paris)": "France",
+    "11th Arrondissement (Paris, France)": "France",
+    "Pont des Arts Bridge (Paris, France)": "France",
+    "Morandi Bridge (Genoa, Italy)": "Italy",
+    "Taksim Square (Istanbul, Turkey)": "Turkey",
+    "Great Wall of China": "China",
+    "Grindavik (Iceland)": "Iceland",
+    "Eyjafjallajokull Volcano (Iceland)": "Iceland",
+    "Kerch Strait Bridge": "Russia",
+    "Negev Desert": "Israel",
+    "Sinai Peninsula": "Egypt",
+    "Suez Canal": "Egypt",
+    "Tiran Island": "Egypt",
+    "Sanafir Island": "Egypt",
+    "Inner Mongolia": "China",
+    "Panama Canal and Canal Zone": "Panama",
+    "Panama City (Panama)": "Panama",
+    # ── Territories/dependencies → parent country ──────────────────────
+    "French Guiana": "France",
+    "Guadeloupe": "France",
+    "New Caledonia": "France",
+    "Reunion Island": "France",
+    "Tahiti": "France",
+    "Corsica": "France",
+    "Mayotte (Comoro Islands)": "France",  # Mayotte is French, not Comorian
+    "French Alps": "France",
+    "Guam": "United States",
+    "Virgin Islands (US)": "United States",
+    "Virgin Islands (Great Britain)": "Great Britain",
+    "Anguilla": "Great Britain",
+    "Bermuda": "Great Britain",
+    "Cayman Islands": "Great Britain",
+    "Channel Islands": "Great Britain",
+    "Falkland Islands": "Great Britain",
+    "Gibraltar": "Great Britain",
+    "Isle of Man": "Great Britain",
+    "Northern Ireland (United Kingdom)": "Great Britain",
+    "LONDONDERRY (NORTHERN IRELAND)": "Great Britain",
+    "PORTADOWN (NORTHERN IRELAND)": "Great Britain",
+    "Aruba": "Netherlands",
+    "Curacao": "Netherlands",
+    "Greenland": "Denmark",
+    "Faroe Islands": "Denmark",
+    "Canary Islands": "Spain",
+    "Azores Islands": "Portugal",
+    "Andaman Islands": "India",
+    "Galapagos Islands": "Ecuador",
+    "Easter Island": "Chile",
+    "Grand Bahama Island": "Bahamas",
+    "Bahama Islands": "Bahamas",
+    "ABACO ISLANDS (BAHAMAS)": "Bahamas",
+    # ── Cities needing explicit entries ────────────────────────────────
+    "Halifax (Nova Scotia)": "Canada",
+    "MONTREAL (CANADA)": "Canada",
+    "ONTARIO PROVINCE (CANADA)": "Canada",
+    "Humboldt (Saskatchewan)": "Canada",
+    "Hobart (Tasmania)": "Australia",
+    "Kowloon (Hong Kong)": "Hong Kong",
+    "Yuen Long (Hong Kong)": "Hong Kong",
+    "HONG KONG (CHINA)": "Hong Kong",
+    "Jamaica (West Indies)": "Jamaica",
+    "Kinshasa (Democratic Republic of Congo)": "Democratic Republic of Congo",
+    "Stepanakert (Nagorno-Karabakh Republic)": "Nagorno-Karabakh",
+    "SARAJEVO (BOSNIA)": "Bosnia and Herzegovina",
+    "BOSNIA": "Bosnia and Herzegovina",
+    "Chechnya": "Russia",
+    "CONGO REPUBLIC": "Republic of Congo",
+    "Democratic Federation of Rojava-North Syria": "Syria",
+    "Republic of North Macedonia": "North Macedonia",
+    "TETOVO (MACEDONIA)": "North Macedonia",
+    "Kurile Islands": "Russia",
+    "SAKHALIN ISLAND": "Russia",
+    # Remaining city→country entries whose parents need explicit mapping
+    "Dili (East Timor)": "East Timor",
+    "Bangui (Central African Republic)": "Central African Republic",
+    "Nuuk (Greenland)": "Denmark",
+    "St Martin (Caribbean)": "Caribbean Area",
+    "Brixton (London, England)": "Great Britain",
+    "Sevnica (Slovenia)": "Slovenia",
+    "Yellowknife (Northwest Territories)": "Canada",
+}
+
+# Programmatic rule: any "Name (Parent)" where Parent maps to a known country.
+# Applied AFTER the explicit dict, as a fallback for the thousands of remaining
+# sub-national tags (cities, provinces, regions) following this pattern.
+PARENT_MAP = {
+    "India": "India", "China": "China", "Ukraine": "Ukraine", "Russia": "Russia",
+    "Iraq": "Iraq", "Syria": "Syria", "Afghanistan": "Afghanistan",
+    "Pakistan": "Pakistan", "Israel": "Israel", "West Bank": "West Bank",
+    "Gaza Strip": "Gaza Strip", "Turkey": "Turkey", "Iran": "Iran",
+    "Saudi Arabia": "Saudi Arabia", "Egypt": "Egypt", "Lebanon": "Lebanon",
+    "Jordan": "Jordan", "Nigeria": "Nigeria", "South Africa": "South Africa",
+    "Kenya": "Kenya", "Somalia": "Somalia", "Libya": "Libya", "Sudan": "Sudan",
+    "Ethiopia": "Ethiopia", "Venezuela": "Venezuela", "Colombia": "Colombia",
+    "Mexico": "Mexico", "Brazil": "Brazil", "Argentina": "Argentina",
+    "Peru": "Peru", "Cuba": "Cuba", "Haiti": "Haiti", "Indonesia": "Indonesia",
+    "Philippines": "Philippines", "Myanmar": "Myanmar", "Malaysia": "Malaysia",
+    "Vietnam": "Vietnam", "Bangladesh": "Bangladesh", "Nepal": "Nepal",
+    "Sri Lanka": "Sri Lanka", "Australia": "Australia",
+    "New Zealand": "New Zealand", "Canada": "Canada", "Thailand": "Thailand",
+    "Netherlands": "Netherlands", "Belgium": "Belgium", "Spain": "Spain",
+    "Italy": "Italy", "France": "France", "Germany": "Germany",
+    "England": "Great Britain", "Scotland": "Great Britain",
+    "Wales": "Great Britain", "Northern Ireland": "Great Britain",
+    "Greece": "Greece", "Serbia": "Serbia", "Hungary": "Hungary",
+    "Czech Republic": "Czech Republic", "Poland": "Poland",
+    "Romania": "Romania", "Austria": "Austria", "Switzerland": "Switzerland",
+    "Sweden": "Sweden", "Norway": "Norway", "Denmark": "Denmark",
+    "Ireland": "Ireland", "Georgian Republic": "Georgia", "Georgia": "Georgia",
+    "Qatar": "Qatar", "Belarus": "Belarus", "Taiwan": "Taiwan",
+    "North Korea": "North Korea", "South Korea": "South Korea", "Japan": "Japan",
+    "Yemen": "Yemen", "Morocco": "Morocco", "Algeria": "Algeria",
+    "Tunisia": "Tunisia", "Zimbabwe": "Zimbabwe", "Uganda": "Uganda",
+    "Rwanda": "Rwanda", "Liberia": "Liberia", "Papua New Guinea": "Papua New Guinea",
+    "Angola": "Angola", "Mozambique": "Mozambique", "Tanzania": "Tanzania",
+    "Ghana": "Ghana", "Senegal": "Senegal", "Cameroon": "Cameroon",
+    "Ivory Coast": "Ivory Coast", "Mali": "Mali", "Niger": "Niger",
+    "Burkina Faso": "Burkina Faso", "Malawi": "Malawi", "Zambia": "Zambia",
+    "Madagascar": "Madagascar", "Eritrea": "Eritrea", "Djibouti": "Djibouti",
+    "Bosnia and Herzegovina": "Bosnia and Herzegovina",
+    "Kosovo": "Kosovo", "Macedonia": "Macedonia", "Montenegro": "Montenegro",
+    "Kazakhstan": "Kazakhstan", "Uzbekistan": "Uzbekistan",
+    "Kyrgyzstan": "Kyrgyzstan", "Tajikistan": "Tajikistan",
+    "Turkmenistan": "Turkmenistan", "Azerbaijan": "Azerbaijan",
+    "Armenia": "Armenia", "Moldova": "Moldova",
+    "United Arab Emirates": "United Arab Emirates",
+    "Oman": "Oman", "Kuwait": "Kuwait", "Bahrain": "Bahrain",
+    "Singapore": "Singapore", "Cambodia": "Cambodia", "Laos": "Laos",
+    "Congo, Democratic Republic of": "Democratic Republic of Congo",
+    "Democratic Republic of the Congo": "Democratic Republic of Congo",
+    "Beijing": "China",   # e.g. "Tiananmen Square (Beijing)"
+    "NYC": "United States",
+    # All US state abbreviations (catch any remaining "City (Abbr)" patterns)
+    "Ala": "United States", "Alaska": "United States",
+    "Ariz": "United States", "Ark": "United States",
+    "Calif": "United States", "Colo": "United States",
+    "Conn": "United States", "Del": "United States",
+    "Fla": "United States", "Ga": "United States",
+    "Hawaii": "United States", "Idaho": "United States",
+    "Ill": "United States", "Ind": "United States",
+    "Iowa": "United States", "Kan": "United States",
+    "Ky": "United States", "La": "United States",
+    "Me": "United States", "Md": "United States",
+    "Mass": "United States", "Mich": "United States",
+    "Minn": "United States", "Miss": "United States",
+    "Mo": "United States", "Mont": "United States",
+    "Neb": "United States", "Nev": "United States",
+    "NH": "United States", "NJ": "United States",
+    "NM": "United States", "NY": "United States",
+    "NC": "United States", "ND": "United States",
+    "Ohio": "United States", "Okla": "United States",
+    "Ore": "United States", "Pa": "United States",
+    "RI": "United States", "SC": "United States",
+    "SD": "United States", "Tenn": "United States",
+    "Tex": "United States", "Utah": "United States",
+    "Vt": "United States", "Va": "United States",
+    "Wash": "United States", "WVa": "United States",
+    "Wis": "United States", "Wyo": "United States",
+    "Texas": "United States",
+    "Ontario": "Canada", "Quebec": "Canada", "British Columbia": "Canada",
+    "Alberta": "Canada", "Manitoba": "Canada", "Newfoundland": "Canada",
+    "Nova Scotia": "Canada", "Saskatchewan": "Canada", "Yukon": "Canada",
+    "Northwest Territories": "Canada",
+    # UK abbreviations used in old all-caps tags
+    "Eng": "Great Britain", "England": "Great Britain",
+    "Ger": "Germany", "Germany": "Germany",
+    "Mex": "Mexico",
+    "Gaza": "Gaza Strip",
+    "Indian State": "India",
+    "West Indies": "Caribbean Area",
+    "Congo": "Democratic Republic of Congo",
+    "Bahamas": "Bahamas",
+    "Tasmania": "Australia",
+    "United Kingdom": "Great Britain",
+    "Greenland": "Denmark",
+    "Caribbean": "Caribbean Area",
+    # Countries missing from original PARENT_MAP
+    "Portugal": "Portugal", "Paraguay": "Paraguay", "Bolivia": "Bolivia",
+    "Croatia": "Croatia", "Slovenia": "Slovenia", "Slovakia": "Slovakia",
+    "Latvia": "Latvia", "Estonia": "Estonia", "Lithuania": "Lithuania",
+    "Albania": "Albania", "Bulgaria": "Bulgaria", "Finland": "Finland",
+    "Iceland": "Iceland", "Uruguay": "Uruguay", "Chile": "Chile",
+    "Ecuador": "Ecuador", "Guatemala": "Guatemala", "Honduras": "Honduras",
+    "Nicaragua": "Nicaragua", "Dominican Republic": "Dominican Republic",
+    "Burundi": "Burundi", "Sierra Leone": "Sierra Leone", "Guyana": "Guyana",
+    "Solomon Islands": "Solomon Islands", "Jamaica": "Jamaica",
+    "South Sudan": "South Sudan", "Chad": "Chad",
+    "East Timor": "East Timor", "Timor-Leste": "East Timor",
+    "Central African Republic": "Central African Republic",
+    # Kashmir/Tibet — contested territories, map cities to territory name
+    "Kashmir": "Kashmir", "Jammu and Kashmir": "Kashmir",
+    "Kashmir and Jammu": "Kashmir",
+    "Tibet": "Tibet",
+    # Misc
+    "London, England": "Great Britain",
+    "South China Sea": "South China Sea",  # keep Scarborough Shoal → South China Sea
+}
+
+# Entries that cannot be meaningfully mapped to a country/territory and
+# should be dropped entirely from the world locations list.
+DROP_LOCS = {
+    "VIETNAM WAR",          # not a place
+    "Korean",               # malformed tag (not the country)
+    "Silk Road (Ancient Trade Route)",  # historical concept
+    "Channel Tunnel",       # infrastructure
+    "Mont Blanc",           # mountain
+    "Mount Everest",        # mountain
+    "K2 (Himalayas)",       # mountain
+    "ELBE (RIVER)",         # river, too granular
+}
+
+import re as _re
+# Greedy prefix + [^)]+ capture so "City (Sub) (Country)" extracts "Country" not "Sub) (Country"
+_paren_re = _re.compile(r'^.+\(([^)]+)\)$')
+
+def _normalize_loc(loc):
+    if loc in DROP_LOCS:
+        return None
+    # Direct lookup
+    if loc in LOCATION_NORMALIZE:
+        return LOCATION_NORMALIZE[loc]
+    # Title-cased lookup (handles ALL-CAPS legacy tags like "NORTH KOREA")
+    loc_title = loc.title()
+    if loc != loc_title and loc_title in LOCATION_NORMALIZE:
+        return LOCATION_NORMALIZE[loc_title]
+    # Parenthetical pattern: "City (Parent)" or "City (Sub) (Country)"
+    m = _paren_re.match(loc)
+    if m:
+        parent = m.group(1).strip()
+        # Try both original case and title case (ALL-CAPS parent tags)
+        for pk in (parent, parent.title()):
+            if pk in PARENT_MAP:
+                return PARENT_MAP[pk]
+    # Title-case if still entirely ALL-CAPS (handles remaining unknown all-caps tags)
+    if loc == loc.upper() and len(loc) > 2 and any(c.isalpha() for c in loc):
+        return loc_title
+    # Catch remaining DRC name variants (e.g. "Congo, The Democratic Republic of the")
+    loc_lower = loc.lower()
+    if 'democratic' in loc_lower and 'congo' in loc_lower:
+        return "Democratic Republic of Congo"
+    return loc
+
+
 def build_dashboard_data(articles, authors):
     """Pre-compute dashboard statistics."""
     # Articles per month — with blog/non-blog split
@@ -1946,714 +2656,7 @@ def build_dashboard_data(articles, authors):
     # --- World coverage: glocations by year ---
     # Merge city-level tags into their parent country, and fix all-caps names.
     # Contested/ambiguous geographies (Gaza Strip, West Bank, Taiwan, Hong Kong, etc.) are left as-is.
-    # Normalize sub-national tags (cities, provinces, regions) to parent country.
-    # Rules:
-    #   - City (Country) → Country
-    #   - Province/State/Region (Country) → Country
-    #   - ALL-CAPS country names → canonical form
-    #   - UK sub-nations (England, Scotland, Wales, N. Ireland) → Great Britain
-    #   - Contested territories kept as-is: Gaza Strip, West Bank, Taiwan, Hong Kong,
-    #     Tibet, Kashmir, Kosovo, Nagorno-Karabakh, South Ossetia, Abkhazia, Crimea, etc.
-    #   - Transnational geographies kept as-is: Red Sea, Himalayas, Amazon, etc.
-    LOCATION_NORMALIZE = {
-        # ── Great Britain / UK sub-nations ────────────────────────────────
-        "London (England)":           "Great Britain",
-        "LONDON (ENG)":               "Great Britain",
-        "England":                    "Great Britain",
-        "Scotland":                   "Great Britain",
-        "Wales":                      "Great Britain",
-        "Northern Ireland":           "Great Britain",
-        "Manchester (England)":       "Great Britain",
-        "Birmingham (England)":       "Great Britain",
-        "Liverpool (England)":        "Great Britain",
-        "Glasgow (Scotland)":         "Great Britain",
-        "Lockerbie (Scotland)":       "Great Britain",
-        "Belfast (Northern Ireland)": "Great Britain",
-        "Edinburgh (Scotland)":       "Great Britain",
-        "Bristol (England)":          "Great Britain",
-        "Oxford (England)":           "Great Britain",
-        "Cambridge (England)":        "Great Britain",
-        # ── France ────────────────────────────────────────────────────────
-        "Paris (France)":             "France",
-        "Nice (France)":              "France",
-        "Marseille (France)":         "France",
-        "Calais (France)":            "France",
-        "Toulouse (France)":          "France",
-        "Normandy (France)":          "France",
-        "Lyon (France)":              "France",
-        "Bordeaux (France)":          "France",
-        # ── Germany ───────────────────────────────────────────────────────
-        "Berlin (Germany)":           "Germany",
-        "Munich (Germany)":           "Germany",
-        "Hamburg (Germany)":          "Germany",
-        "Frankfurt (Germany)":        "Germany",
-        "Bavaria (Germany)":          "Germany",
-        "Cologne (Germany)":          "Germany",
-        "East Germany":               "Germany",
-        # ── Russia ────────────────────────────────────────────────────────
-        "Moscow (Russia)":            "Russia",
-        "St Petersburg (Russia)":     "Russia",
-        "Chechnya (Russia)":          "Russia",
-        "Kursk (Russia)":             "Russia",
-        "Sochi (Russia)":             "Russia",
-        "Dagestan (Russia)":          "Russia",
-        "Siberia":                    "Russia",
-        "GROZNY (CHECHNYA)":          "Russia",
-        "Ingushetia (Russian Republic)": "Russia",
-        "Caucasus (Russia)":          "Russia",
-        # ── Ukraine ───────────────────────────────────────────────────────
-        "Kyiv (Ukraine)":             "Ukraine",
-        "Crimea (Ukraine)":           "Ukraine",
-        "Donetsk (Ukraine)":          "Ukraine",
-        "Mariupol (Ukraine)":         "Ukraine",
-        "Zaporizhzhia (Ukraine)":     "Ukraine",
-        "Luhansk (Ukraine)":          "Ukraine",
-        "Bakhmut (Ukraine)":          "Ukraine",
-        "Odessa (Ukraine)":           "Ukraine",
-        "Lviv (Ukraine)":             "Ukraine",
-        "Slovyansk (Ukraine)":        "Ukraine",
-        "Avdiivka (Ukraine)":         "Ukraine",
-        "Pokrovsk (Ukraine)":         "Ukraine",
-        "Bucha (Ukraine)":            "Ukraine",
-        "Dnipro River (Ukraine)":     "Ukraine",
-        "Chernobyl (Ukraine)":        "Ukraine",
-        "Kharkiv (Ukraine)":          "Ukraine",
-        "Kherson (Ukraine)":          "Ukraine",
-        # ── China ─────────────────────────────────────────────────────────
-        "Beijing (China)":            "China",
-        "Shanghai (China)":           "China",
-        "Xinjiang (China)":           "China",
-        "Sichuan Province (China)":   "China",
-        "Wuhan (China)":              "China",
-        "Guangzhou (China)":          "China",
-        "Shenzhen (China)":           "China",
-        "Chongqing (China)":          "China",
-        "Chengdu (China)":            "China",
-        "Urumqi (China)":             "China",
-        "Tianjin (China)":            "China",
-        "Hubei Province (China)":     "China",
-        "Henan Province (China)":     "China",
-        "Hainan Island (China)":      "China",
-        "Zhejiang Province (China)":  "China",
-        "Fujian Province (China)":    "China",
-        "Yunnan Province (China)":    "China",
-        "Nanjing (China)":            "China",
-        "Guangdong Province (China)": "China",
-        "Kashgar (China)":            "China",
-        "Kunming (China)":            "China",
-        # ── India ─────────────────────────────────────────────────────────
-        "New Delhi (India)":          "India",
-        "Mumbai (India)":             "India",
-        "Bangalore (India)":          "India",
-        "Kashmir and Jammu (India)":  "India",
-        "Kolkata (India)":            "India",
-        "Chennai (India)":            "India",
-        "Hyderabad (India)":          "India",
-        "West Bengal (India)":        "India",
-        "Tamil Nadu (India)":         "India",
-        "Bihar (India)":              "India",
-        "Rajasthan (India)":          "India",
-        "Kerala (India)":             "India",
-        "Karnataka (India)":          "India",
-        "Assam State (India)":        "India",
-        "Andhra Pradesh (India)":     "India",
-        "Maharashtra (India)":        "India",
-        "Goa (India)":                "India",
-        "Haryana (India)":            "India",
-        "Varanasi (India)":           "India",
-        "Jaipur (India)":             "India",
-        "AHMEDABAD (INDIA)":          "India",
-        "Uttar Pradesh (India)":      "India",
-        # ── Pakistan ──────────────────────────────────────────────────────
-        "Islamabad (Pakistan)":       "Pakistan",
-        "Peshawar (Pakistan)":        "Pakistan",
-        "Lahore (Pakistan)":          "Pakistan",
-        "Waziristan (Pakistan)":      "Pakistan",
-        "Baluchistan (Pakistan)":     "Pakistan",
-        "Swat (Pakistan)":            "Pakistan",
-        "Punjab (Pakistan)":          "Pakistan",
-        "Quetta (Pakistan)":          "Pakistan",
-        "Karachi (Pakistan)":         "Pakistan",
-        "Federally Administered Tribal Areas (Pakistan)": "Pakistan",
-        # ── Iraq ──────────────────────────────────────────────────────────
-        "Baghdad (Iraq)":             "Iraq",
-        "Basra (Iraq)":               "Iraq",
-        "Kirkuk (Iraq)":              "Iraq",
-        "Karbala (Iraq)":             "Iraq",
-        "Ramadi (Iraq)":              "Iraq",
-        "Tikrit (Iraq)":              "Iraq",
-        "Mosul (Iraq)":               "Iraq",
-        "Erbil (Iraq)":               "Iraq",
-        "Sadr City (Iraq)":           "Iraq",
-        "Nasiriya (Iraq)":            "Iraq",
-        "ANBAR PROVINCE (IRAQ)":      "Iraq",
-        "Falluja (Iraq)":             "Iraq",
-        "Haditha (Iraq)":             "Iraq",
-        # ── Syria ─────────────────────────────────────────────────────────
-        "Damascus (Syria)":           "Syria",
-        "Homs (Syria)":               "Syria",
-        "Idlib (Syria)":              "Syria",
-        "Raqqa (Syria)":              "Syria",
-        "Aleppo (Syria)":             "Syria",
-        "Kobani (Syria)":             "Syria",
-        "Hama (Syria)":               "Syria",
-        "Palmyra (Syria)":            "Syria",
-        "Deir al-Zour (Syria)":       "Syria",
-        # ── Afghanistan ───────────────────────────────────────────────────
-        "Kabul (Afghanistan)":        "Afghanistan",
-        "Kandahar (Afghanistan)":     "Afghanistan",
-        "Jalalabad (Afghanistan)":    "Afghanistan",
-        "Mazar-i-Sharif (Afghanistan)": "Afghanistan",
-        "Herat (Afghanistan)":        "Afghanistan",
-        "Tora Bora (Afghanistan)":    "Afghanistan",
-        "Marja (Afghanistan)":        "Afghanistan",
-        "AFGHANISTAN":                "Afghanistan",
-        # ── Israel / West Bank / Gaza ─────────────────────────────────────
-        "Jerusalem (Israel)":         "Israel",
-        "Tel Aviv (Israel)":          "Israel",
-        "Haifa (Israel)":             "Israel",
-        "JERUSALEM":                  "Israel",
-        "Bethlehem (West Bank)":      "West Bank",
-        "Nablus (West Bank)":         "West Bank",
-        "JENIN (WEST BANK)":          "West Bank",
-        "Jenin (West Bank)":          "West Bank",
-        "Hebron (West Bank)":         "West Bank",
-        "Tulkarm (West Bank)":        "West Bank",
-        "Ramallah (West Bank)":       "West Bank",
-        "Gaza City (Gaza Strip)":     "Gaza Strip",
-        "Khan Younis (Gaza Strip)":   "Gaza Strip",
-        "Rafah (Gaza Strip)":         "Gaza Strip",
-        "GAZA":                       "Gaza Strip",
-        # ── Lebanon ───────────────────────────────────────────────────────
-        "Beirut (Lebanon)":           "Lebanon",
-        # ── Egypt ─────────────────────────────────────────────────────────
-        "Cairo":                      "Egypt",
-        "Cairo (Egypt)":              "Egypt",
-        "Sinai Peninsula (Egypt)":    "Egypt",
-        "Tahrir Square (Cairo)":      "Egypt",
-        # ── Turkey ────────────────────────────────────────────────────────
-        "Istanbul (Turkey)":          "Turkey",
-        "ANKARA (TURKEY)":            "Turkey",
-        # ── Iran ──────────────────────────────────────────────────────────
-        "Tehran (Iran)":              "Iran",
-        # ── Saudi Arabia ──────────────────────────────────────────────────
-        "Mecca (Saudi Arabia)":       "Saudi Arabia",
-        "Riyadh (Saudi Arabia)":      "Saudi Arabia",
-        "Medina (Saudi Arabia)":      "Saudi Arabia",
-        # ── UAE ───────────────────────────────────────────────────────────
-        "Dubai (United Arab Emirates)": "United Arab Emirates",
-        "Abu Dhabi (United Arab Emirates)": "United Arab Emirates",
-        # ── Yemen ─────────────────────────────────────────────────────────
-        "Sana (Yemen)":               "Yemen",
-        "ADEN (YEMEN)":               "Yemen",
-        # ── Sudan ─────────────────────────────────────────────────────────
-        "Khartoum (Sudan)":           "Sudan",
-        "Darfur (Sudan)":             "Sudan",
-        "DARFUR PROVINCE (SUDAN)":    "Sudan",
-        # ── Libya ─────────────────────────────────────────────────────────
-        "Tripoli (Libya)":            "Libya",
-        "Benghazi (Libya)":           "Libya",
-        "Misurata (Libya)":           "Libya",
-        # ── Ethiopia ──────────────────────────────────────────────────────
-        "Tigray (Ethiopia)":          "Ethiopia",
-        "ADDIS ABABA (ETHIOPIA)":     "Ethiopia",
-        # ── Nigeria ───────────────────────────────────────────────────────
-        "Lagos (Nigeria)":            "Nigeria",
-        # ── South Africa ──────────────────────────────────────────────────
-        "Johannesburg (South Africa)":"South Africa",
-        "Cape Town (South Africa)":   "South Africa",
-        "Pretoria (South Africa)":    "South Africa",
-        # ── Congo ─────────────────────────────────────────────────────────
-        "CONGO":                      "Democratic Republic of Congo",
-        # ── Kenya ─────────────────────────────────────────────────────────
-        "Mombasa (Kenya)":            "Kenya",
-        "Nairobi (Kenya)":            "Kenya",
-        # ── Japan ─────────────────────────────────────────────────────────
-        "Tokyo (Japan)":              "Japan",
-        "Hiroshima (Japan)":          "Japan",
-        "Osaka (Japan)":              "Japan",
-        "Okinawa and Other Ryukyu Islands (Japan)": "Japan",
-        # ── South Korea ───────────────────────────────────────────────────
-        "Seoul (South Korea)":        "South Korea",
-        "Panmunjom (South Korea)":    "South Korea",
-        # ── North Korea ───────────────────────────────────────────────────
-        "Pyongyang (North Korea)":    "North Korea",
-        # ── Vietnam ───────────────────────────────────────────────────────
-        "Hanoi (Vietnam)":            "Vietnam",
-        "Ho Chi Minh City (Vietnam)": "Vietnam",
-        # ── Myanmar ───────────────────────────────────────────────────────
-        "Yangon (Myanmar)":           "Myanmar",
-        "Rakhine State (Myanmar)":    "Myanmar",
-        # ── Malaysia ──────────────────────────────────────────────────────
-        "Kuala Lumpur (Malaysia)":    "Malaysia",
-        # ── Philippines ───────────────────────────────────────────────────
-        "Mindanao (Philippines)":     "Philippines",
-        "Tacloban (Philippines)":     "Philippines",
-        # ── Indonesia ─────────────────────────────────────────────────────
-        "ACEH PROVINCE (INDONESIA)":  "Indonesia",
-        "Java (Indonesia)":           "Indonesia",
-        # ── Bangladesh ────────────────────────────────────────────────────
-        "Dhaka (Bangladesh)":         "Bangladesh",
-        # ── Nepal ─────────────────────────────────────────────────────────
-        "Katmandu (Nepal)":           "Nepal",
-        # ── Sri Lanka ─────────────────────────────────────────────────────
-        "Colombo (Sri Lanka)":        "Sri Lanka",
-        # ── Australia ─────────────────────────────────────────────────────
-        "New South Wales (Australia)":"Australia",
-        "Queensland (Australia)":     "Australia",
-        "Victoria (Australia)":       "Australia",
-        "Canberra (Australia)":       "Australia",
-        "Bondi Beach (Sydney, Australia)": "Australia",
-        "Great Barrier Reef (Australia)": "Australia",
-        # ── New Zealand ───────────────────────────────────────────────────
-        "Christchurch (New Zealand)": "New Zealand",
-        "Auckland (New Zealand)":     "New Zealand",
-        # ── Canada ────────────────────────────────────────────────────────
-        "Montreal (Quebec)":          "Canada",
-        "Ottawa (Ontario)":           "Canada",
-        "Vancouver (British Columbia)": "Canada",
-        "Toronto (Ontario)":          "Canada",
-        "ALBERTA (CANADA)":           "Canada",
-        "Saskatchewan (Canada)":      "Canada",
-        # ── Mexico ────────────────────────────────────────────────────────
-        "Mexico City (Mexico)":       "Mexico",
-        "Tijuana (Mexico)":           "Mexico",
-        "Ciudad Juarez (Mexico)":     "Mexico",
-        "Oaxaca (Mexico)":            "Mexico",
-        "Chiapas (Mexico)":           "Mexico",
-        "Guerrero (Mexico)":          "Mexico",
-        "Baja California (Mexico)":   "Mexico",
-        # ── Argentina ─────────────────────────────────────────────────────
-        "ARGENTINA":                  "Argentina",
-        "Buenos Aires (Argentina)":   "Argentina",
-        # ── Brazil ────────────────────────────────────────────────────────
-        "Sao Paulo (Brazil)":         "Brazil",
-        # ── Colombia ──────────────────────────────────────────────────────
-        "Bogota (Colombia)":          "Colombia",
-        # ── Peru ──────────────────────────────────────────────────────────
-        "Lima (Peru)":                "Peru",
-        # ── Cuba ──────────────────────────────────────────────────────────
-        "Havana (Cuba)":              "Cuba",
-        # ── Haiti ─────────────────────────────────────────────────────────
-        "Port-au-Prince (Haiti)":     "Haiti",
-        # ── Dominican Republic ────────────────────────────────────────────
-        # (standalone, keep)
-        # ── Serbia ────────────────────────────────────────────────────────
-        "Belgrade (Serbia)":          "Serbia",
-        "KOSOVO (SERBIA)":            "Kosovo",
-        # ── Hungary ───────────────────────────────────────────────────────
-        "Budapest (Hungary)":         "Hungary",
-        # ── Czech Republic ────────────────────────────────────────────────
-        "Prague (Czech Republic)":    "Czech Republic",
-        # ── Poland ────────────────────────────────────────────────────────
-        "Warsaw (Poland)":            "Poland",
-        # ── Romania ───────────────────────────────────────────────────────
-        "Bucharest (Romania)":        "Romania",
-        # ── Austria ───────────────────────────────────────────────────────
-        "Vienna (Austria)":           "Austria",
-        # ── Belgium ───────────────────────────────────────────────────────
-        "Brussels (Belgium)":         "Belgium",
-        "AMSTERDAM (NETHERLANDS)":    "Netherlands",
-        # ── Spain ─────────────────────────────────────────────────────────
-        "Barcelona (Spain)":          "Spain",
-        "Madrid (Spain)":             "Spain",
-        "Valencia (Spain)":           "Spain",
-        # ── Italy ─────────────────────────────────────────────────────────
-        "Rome (Italy)":               "Italy",
-        "Venice (Italy)":             "Italy",
-        "Milan (Italy)":              "Italy",
-        "Sicily (Italy)":             "Italy",
-        "Naples (Italy)":             "Italy",
-        "Florence (Italy)":           "Italy",
-        "Genoa (Italy)":              "Italy",
-        "Tuscany (Italy)":            "Italy",
-        # ── Sweden ────────────────────────────────────────────────────────
-        "Stockholm (Sweden)":         "Sweden",
-        # ── Norway ────────────────────────────────────────────────────────
-        "Oslo (Norway)":              "Norway",
-        # ── Denmark ───────────────────────────────────────────────────────
-        "Copenhagen (Denmark)":       "Denmark",
-        # ── Ireland ───────────────────────────────────────────────────────
-        "Dublin (Ireland)":           "Ireland",
-        # ── Switzerland ───────────────────────────────────────────────────
-        "Geneva (Switzerland)":       "Switzerland",
-        "Davos (Switzerland)":        "Switzerland",
-        "Zurich (Switzerland)":       "Switzerland",
-        # ── Georgia ───────────────────────────────────────────────────────
-        "Georgia (Georgian Republic)":"Georgia",
-        "South Ossetia (Georgian Republic)": "Georgia",
-        "ABKHAZIA (GEORGIAN REPUBLIC)": "Georgia",
-        # ── Jordan ────────────────────────────────────────────────────────
-        "AMMAN (JORDAN)":             "Jordan",
-        # ── Qatar ─────────────────────────────────────────────────────────
-        "Doha (Qatar)":               "Qatar",
-        # ── Belarus ───────────────────────────────────────────────────────
-        "Minsk (Belarus)":            "Belarus",
-        # ── Ukraine (Russia)  ─────────────────────────────────────────────
-        # ── Liberia ───────────────────────────────────────────────────────
-        "Monrovia (Liberia)":         "Liberia",
-        # ── Vietnam ───────────────────────────────────────────────────────
-        # ── Senegal ───────────────────────────────────────────────────────
-        "Dakar (Senegal)":            "Senegal",
-        # ── Zimbabwe ──────────────────────────────────────────────────────
-        "Harare (Zimbabwe)":          "Zimbabwe",
-        # ── Bosnia ────────────────────────────────────────────────────────
-        "SREBRENICA (BOSNIA)":        "Bosnia and Herzegovina",
-        # ── Macedonia ─────────────────────────────────────────────────────
-        "MACEDONIA (FORMER YUGOSLAV REPUBLIC)": "Macedonia",
-        # ── ALL-CAPS country name fixes ───────────────────────────────────
-        "AFRICA":                     "Africa",
-        "ALGERIA":                    "Algeria",
-        "ARMENIA":                    "Armenia",
-        "ANGOLA":                     "Angola",
-        "ALBANIA":                    "Albania",
-        "WASHINGTON":                 "United States",
-        "USSR (Former Soviet Union)": "Russia",
-        "Yugoslavia":                 "Serbia",
-        # ── US cities (World section articles mentioning US places) ───────
-        "Los Angeles (Calif)":        "United States",
-        "Chicago (Ill)":              "United States",
-        "Miami (Fla)":                "United States",
-        "Boston (Mass)":              "United States",
-        "California":                 "United States",
-        "Texas":                      "United States",
-        "Florida":                    "United States",
-        "New Jersey":                 "United States",
-        "New York State":             "United States",
-        "Manhattan (NYC)":            "United States",
-        "New York City":              "United States",
-        "Washington (DC)":            "United States",
-        # ── Extra fixes not caught by programmatic rule ────────────────────
-        "ALEPPO (SYRIA)":             "Syria",
-        "Congo (Formerly Zaire)":     "Democratic Republic of Congo",
-        "KASHMIR AND JAMMU":          "Kashmir",
-        "SERBIA AND MONTENEGRO":      "Serbia",
-        "Tiananmen Square (Beijing)": "China",
-        "Guantanamo Bay Naval Base (Cuba)": "Cuba",
-        "Kosovo (Serbia)":            "Kosovo",
-        "DUBAI":                      "United Arab Emirates",
-        "Soviet Union":               "Russia",
-        # ── Standalone US states → United States ──────────────────────────
-        "Alabama": "United States", "Alaska": "United States",
-        "Arizona": "United States", "Arkansas": "United States",
-        "Colorado": "United States", "Connecticut": "United States",
-        "Delaware": "United States", "Hawaii": "United States",
-        "Idaho": "United States", "Illinois": "United States",
-        "Indiana": "United States", "Iowa": "United States",
-        "Kansas": "United States", "Kentucky": "United States",
-        "Louisiana": "United States", "Maryland": "United States",
-        "Massachusetts": "United States", "Michigan": "United States",
-        "Minnesota": "United States", "Mississippi": "United States",
-        "Missouri": "United States", "Montana": "United States",
-        "Nebraska": "United States", "New Hampshire": "United States",
-        "New Mexico": "United States", "North Carolina": "United States",
-        "Ohio": "United States", "Oklahoma": "United States",
-        "Oregon": "United States", "Pennsylvania": "United States",
-        "South Carolina": "United States", "Tennessee": "United States",
-        "Utah": "United States", "Vermont": "United States",
-        "Virginia": "United States", "West Virginia": "United States",
-        "Wisconsin": "United States", "Wyoming": "United States",
-        "Washington (State)": "United States",
-        # ── US cities with state abbreviations not caught by PARENT_MAP ───
-        "Atlanta (Ga)": "United States", "Ellabell (Ga)": "United States",
-        "Austin (Tex)": "United States", "Dallas (Tex)": "United States",
-        "Houston (Tex)": "United States", "Fort Hood (Tex)": "United States",
-        "El Paso (Tex)": "United States",
-        "Cleveland (Ohio)": "United States",
-        "Detroit (Mich)": "United States", "Dearborn (Mich)": "United States",
-        "Minneapolis (Minn)": "United States",
-        "Ferguson (Mo)": "United States",
-        "Las Vegas (Nev)": "United States",
-        "New Orleans (La)": "United States",
-        "Philadelphia (Pa)": "United States", "Pittsburgh (Pa)": "United States",
-        "Charlottesville (Va)": "United States",
-        "Seattle (Wash)": "United States",
-        "Joint Base Lewis-McChord (Wash)": "United States",
-        "Salt Lake City (Utah)": "United States",
-        "Newark (NJ)": "United States", "Long Island (NY)": "United States",
-        "Baltimore (Md)": "United States", "Annapolis (MD)": "United States",
-        "ANNAPOLIS (MD)": "United States", "CAMP DAVID (MD)": "United States",
-        "Shanksville (PA)": "United States",
-        "Marine Corps Base Camp Lejeune (SC)": "United States",
-        "Pearl Harbor (Hawaii)": "United States",
-        "Honolulu (Hawaii)": "United States",
-        "Northeastern States (US)": "United States",
-        "Southern States (US)": "United States",
-        "Ambassador Bridge": "United States",
-        "Central Park (Manhattan, NY)": "United States",
-        "ALCATRAZ (SAN FRANCISCO)": "United States",
-        # ── Standalone world cities → country ─────────────────────────────
-        "Beijing": "China", "BEIJING": "China",
-        "Moscow": "Russia", "MOSCOW": "Russia",
-        "Berlin": "Germany", "BERLIN": "Germany",
-        "Paris": "France",
-        "Rome": "Italy", "ROME": "Italy",
-        "London": "Great Britain", "LONDON": "Great Britain",
-        "TEL AVIV": "Israel",
-        "BAGHDAD": "Iraq",
-        "Geneva": "Switzerland",
-        "Belgrade": "Serbia", "BELGRADE": "Serbia",
-        "OKINAWA": "Japan", "OKINAWA AND OTHER RYUKYU ISLANDS": "Japan",
-        "SICILY": "Italy",
-        "HONG KONG (CHINA)": "Hong Kong",
-        "AMERICAN SAMOA": "United States",
-        # ── Country name variants / outdated names ─────────────────────────
-        "Burma": "Myanmar", "BURMA": "Myanmar",
-        "Britain": "Great Britain",
-        "The United States": "United States",
-        "America": "United States",
-        "Rhodesia": "Zimbabwe",
-        "Republic of Biafra": "Nigeria",
-        "Yugoslavia": "Serbia",
-        "EUROPEAN UNION": "Europe",
-        "Macao": "Macau",
-        "Swaziland": "Eswatini",
-        "Czechoslovakia": "Czech Republic",
-        "CZECHOSLOVAKIA (PRE-1993)": "Czech Republic",
-        # ── Too-granular places → parent country ──────────────────────────
-        "Red Square (Moscow)": "Russia",
-        "Western Wall (Jerusalem)": "Israel",
-        "Champs-Elysees (Paris)": "France",
-        "11th Arrondissement (Paris, France)": "France",
-        "Pont des Arts Bridge (Paris, France)": "France",
-        "Morandi Bridge (Genoa, Italy)": "Italy",
-        "Taksim Square (Istanbul, Turkey)": "Turkey",
-        "Great Wall of China": "China",
-        "Grindavik (Iceland)": "Iceland",
-        "Eyjafjallajokull Volcano (Iceland)": "Iceland",
-        "Kerch Strait Bridge": "Russia",
-        "Negev Desert": "Israel",
-        "Sinai Peninsula": "Egypt",
-        "Suez Canal": "Egypt",
-        "Tiran Island": "Egypt",
-        "Sanafir Island": "Egypt",
-        "Inner Mongolia": "China",
-        "Panama Canal and Canal Zone": "Panama",
-        "Panama City (Panama)": "Panama",
-        # ── Territories/dependencies → parent country ──────────────────────
-        "French Guiana": "France",
-        "Guadeloupe": "France",
-        "New Caledonia": "France",
-        "Reunion Island": "France",
-        "Tahiti": "France",
-        "Corsica": "France",
-        "Mayotte (Comoro Islands)": "France",  # Mayotte is French, not Comorian
-        "French Alps": "France",
-        "Guam": "United States",
-        "Virgin Islands (US)": "United States",
-        "Virgin Islands (Great Britain)": "Great Britain",
-        "Anguilla": "Great Britain",
-        "Bermuda": "Great Britain",
-        "Cayman Islands": "Great Britain",
-        "Channel Islands": "Great Britain",
-        "Falkland Islands": "Great Britain",
-        "Gibraltar": "Great Britain",
-        "Isle of Man": "Great Britain",
-        "Northern Ireland (United Kingdom)": "Great Britain",
-        "LONDONDERRY (NORTHERN IRELAND)": "Great Britain",
-        "PORTADOWN (NORTHERN IRELAND)": "Great Britain",
-        "Aruba": "Netherlands",
-        "Curacao": "Netherlands",
-        "Greenland": "Denmark",
-        "Faroe Islands": "Denmark",
-        "Canary Islands": "Spain",
-        "Azores Islands": "Portugal",
-        "Andaman Islands": "India",
-        "Galapagos Islands": "Ecuador",
-        "Easter Island": "Chile",
-        "Grand Bahama Island": "Bahamas",
-        "Bahama Islands": "Bahamas",
-        "ABACO ISLANDS (BAHAMAS)": "Bahamas",
-        # ── Cities needing explicit entries ────────────────────────────────
-        "Halifax (Nova Scotia)": "Canada",
-        "MONTREAL (CANADA)": "Canada",
-        "ONTARIO PROVINCE (CANADA)": "Canada",
-        "Humboldt (Saskatchewan)": "Canada",
-        "Hobart (Tasmania)": "Australia",
-        "Kowloon (Hong Kong)": "Hong Kong",
-        "Yuen Long (Hong Kong)": "Hong Kong",
-        "HONG KONG (CHINA)": "Hong Kong",
-        "Jamaica (West Indies)": "Jamaica",
-        "Kinshasa (Democratic Republic of Congo)": "Democratic Republic of Congo",
-        "Stepanakert (Nagorno-Karabakh Republic)": "Nagorno-Karabakh",
-        "SARAJEVO (BOSNIA)": "Bosnia and Herzegovina",
-        "BOSNIA": "Bosnia and Herzegovina",
-        "Chechnya": "Russia",
-        "CONGO REPUBLIC": "Republic of Congo",
-        "Democratic Federation of Rojava-North Syria": "Syria",
-        "Republic of North Macedonia": "North Macedonia",
-        "TETOVO (MACEDONIA)": "North Macedonia",
-        "Kurile Islands": "Russia",
-        "SAKHALIN ISLAND": "Russia",
-        # Remaining city→country entries whose parents need explicit mapping
-        "Dili (East Timor)": "East Timor",
-        "Bangui (Central African Republic)": "Central African Republic",
-        "Nuuk (Greenland)": "Denmark",
-        "St Martin (Caribbean)": "Caribbean Area",
-        "Brixton (London, England)": "Great Britain",
-        "Sevnica (Slovenia)": "Slovenia",
-        "Yellowknife (Northwest Territories)": "Canada",
-    }
-
-    # Programmatic rule: any "Name (Parent)" where Parent maps to a known country.
-    # Applied AFTER the explicit dict, as a fallback for the thousands of remaining
-    # sub-national tags (cities, provinces, regions) following this pattern.
-    PARENT_MAP = {
-        "India": "India", "China": "China", "Ukraine": "Ukraine", "Russia": "Russia",
-        "Iraq": "Iraq", "Syria": "Syria", "Afghanistan": "Afghanistan",
-        "Pakistan": "Pakistan", "Israel": "Israel", "West Bank": "West Bank",
-        "Gaza Strip": "Gaza Strip", "Turkey": "Turkey", "Iran": "Iran",
-        "Saudi Arabia": "Saudi Arabia", "Egypt": "Egypt", "Lebanon": "Lebanon",
-        "Jordan": "Jordan", "Nigeria": "Nigeria", "South Africa": "South Africa",
-        "Kenya": "Kenya", "Somalia": "Somalia", "Libya": "Libya", "Sudan": "Sudan",
-        "Ethiopia": "Ethiopia", "Venezuela": "Venezuela", "Colombia": "Colombia",
-        "Mexico": "Mexico", "Brazil": "Brazil", "Argentina": "Argentina",
-        "Peru": "Peru", "Cuba": "Cuba", "Haiti": "Haiti", "Indonesia": "Indonesia",
-        "Philippines": "Philippines", "Myanmar": "Myanmar", "Malaysia": "Malaysia",
-        "Vietnam": "Vietnam", "Bangladesh": "Bangladesh", "Nepal": "Nepal",
-        "Sri Lanka": "Sri Lanka", "Australia": "Australia",
-        "New Zealand": "New Zealand", "Canada": "Canada", "Thailand": "Thailand",
-        "Netherlands": "Netherlands", "Belgium": "Belgium", "Spain": "Spain",
-        "Italy": "Italy", "France": "France", "Germany": "Germany",
-        "England": "Great Britain", "Scotland": "Great Britain",
-        "Wales": "Great Britain", "Northern Ireland": "Great Britain",
-        "Greece": "Greece", "Serbia": "Serbia", "Hungary": "Hungary",
-        "Czech Republic": "Czech Republic", "Poland": "Poland",
-        "Romania": "Romania", "Austria": "Austria", "Switzerland": "Switzerland",
-        "Sweden": "Sweden", "Norway": "Norway", "Denmark": "Denmark",
-        "Ireland": "Ireland", "Georgian Republic": "Georgia", "Georgia": "Georgia",
-        "Qatar": "Qatar", "Belarus": "Belarus", "Taiwan": "Taiwan",
-        "North Korea": "North Korea", "South Korea": "South Korea", "Japan": "Japan",
-        "Yemen": "Yemen", "Morocco": "Morocco", "Algeria": "Algeria",
-        "Tunisia": "Tunisia", "Zimbabwe": "Zimbabwe", "Uganda": "Uganda",
-        "Rwanda": "Rwanda", "Liberia": "Liberia", "Papua New Guinea": "Papua New Guinea",
-        "Angola": "Angola", "Mozambique": "Mozambique", "Tanzania": "Tanzania",
-        "Ghana": "Ghana", "Senegal": "Senegal", "Cameroon": "Cameroon",
-        "Ivory Coast": "Ivory Coast", "Mali": "Mali", "Niger": "Niger",
-        "Burkina Faso": "Burkina Faso", "Malawi": "Malawi", "Zambia": "Zambia",
-        "Madagascar": "Madagascar", "Eritrea": "Eritrea", "Djibouti": "Djibouti",
-        "Bosnia and Herzegovina": "Bosnia and Herzegovina",
-        "Kosovo": "Kosovo", "Macedonia": "Macedonia", "Montenegro": "Montenegro",
-        "Kazakhstan": "Kazakhstan", "Uzbekistan": "Uzbekistan",
-        "Kyrgyzstan": "Kyrgyzstan", "Tajikistan": "Tajikistan",
-        "Turkmenistan": "Turkmenistan", "Azerbaijan": "Azerbaijan",
-        "Armenia": "Armenia", "Moldova": "Moldova",
-        "United Arab Emirates": "United Arab Emirates",
-        "Oman": "Oman", "Kuwait": "Kuwait", "Bahrain": "Bahrain",
-        "Singapore": "Singapore", "Cambodia": "Cambodia", "Laos": "Laos",
-        "Congo, Democratic Republic of": "Democratic Republic of Congo",
-        "Democratic Republic of the Congo": "Democratic Republic of Congo",
-        "Beijing": "China",   # e.g. "Tiananmen Square (Beijing)"
-        "NYC": "United States",
-        # All US state abbreviations (catch any remaining "City (Abbr)" patterns)
-        "Ala": "United States", "Alaska": "United States",
-        "Ariz": "United States", "Ark": "United States",
-        "Calif": "United States", "Colo": "United States",
-        "Conn": "United States", "Del": "United States",
-        "Fla": "United States", "Ga": "United States",
-        "Hawaii": "United States", "Idaho": "United States",
-        "Ill": "United States", "Ind": "United States",
-        "Iowa": "United States", "Kan": "United States",
-        "Ky": "United States", "La": "United States",
-        "Me": "United States", "Md": "United States",
-        "Mass": "United States", "Mich": "United States",
-        "Minn": "United States", "Miss": "United States",
-        "Mo": "United States", "Mont": "United States",
-        "Neb": "United States", "Nev": "United States",
-        "NH": "United States", "NJ": "United States",
-        "NM": "United States", "NY": "United States",
-        "NC": "United States", "ND": "United States",
-        "Ohio": "United States", "Okla": "United States",
-        "Ore": "United States", "Pa": "United States",
-        "RI": "United States", "SC": "United States",
-        "SD": "United States", "Tenn": "United States",
-        "Tex": "United States", "Utah": "United States",
-        "Vt": "United States", "Va": "United States",
-        "Wash": "United States", "WVa": "United States",
-        "Wis": "United States", "Wyo": "United States",
-        "Texas": "United States",
-        "Ontario": "Canada", "Quebec": "Canada", "British Columbia": "Canada",
-        "Alberta": "Canada", "Manitoba": "Canada", "Newfoundland": "Canada",
-        "Nova Scotia": "Canada", "Saskatchewan": "Canada", "Yukon": "Canada",
-        "Northwest Territories": "Canada",
-        # UK abbreviations used in old all-caps tags
-        "Eng": "Great Britain", "England": "Great Britain",
-        "Ger": "Germany", "Germany": "Germany",
-        "Mex": "Mexico",
-        "Gaza": "Gaza Strip",
-        "Indian State": "India",
-        "West Indies": "Caribbean Area",
-        "Congo": "Democratic Republic of Congo",
-        "Bahamas": "Bahamas",
-        "Tasmania": "Australia",
-        "United Kingdom": "Great Britain",
-        "Greenland": "Denmark",
-        "Caribbean": "Caribbean Area",
-        # Countries missing from original PARENT_MAP
-        "Portugal": "Portugal", "Paraguay": "Paraguay", "Bolivia": "Bolivia",
-        "Croatia": "Croatia", "Slovenia": "Slovenia", "Slovakia": "Slovakia",
-        "Latvia": "Latvia", "Estonia": "Estonia", "Lithuania": "Lithuania",
-        "Albania": "Albania", "Bulgaria": "Bulgaria", "Finland": "Finland",
-        "Iceland": "Iceland", "Uruguay": "Uruguay", "Chile": "Chile",
-        "Ecuador": "Ecuador", "Guatemala": "Guatemala", "Honduras": "Honduras",
-        "Nicaragua": "Nicaragua", "Dominican Republic": "Dominican Republic",
-        "Burundi": "Burundi", "Sierra Leone": "Sierra Leone", "Guyana": "Guyana",
-        "Solomon Islands": "Solomon Islands", "Jamaica": "Jamaica",
-        "South Sudan": "South Sudan", "Chad": "Chad",
-        "East Timor": "East Timor", "Timor-Leste": "East Timor",
-        "Central African Republic": "Central African Republic",
-        # Kashmir/Tibet — contested territories, map cities to territory name
-        "Kashmir": "Kashmir", "Jammu and Kashmir": "Kashmir",
-        "Kashmir and Jammu": "Kashmir",
-        "Tibet": "Tibet",
-        # Misc
-        "London, England": "Great Britain",
-        "South China Sea": "South China Sea",  # keep Scarborough Shoal → South China Sea
-    }
-
-    # Entries that cannot be meaningfully mapped to a country/territory and
-    # should be dropped entirely from the world locations list.
-    DROP_LOCS = {
-        "VIETNAM WAR",          # not a place
-        "Korean",               # malformed tag (not the country)
-        "Silk Road (Ancient Trade Route)",  # historical concept
-        "Channel Tunnel",       # infrastructure
-        "Mont Blanc",           # mountain
-        "Mount Everest",        # mountain
-        "K2 (Himalayas)",       # mountain
-        "ELBE (RIVER)",         # river, too granular
-    }
-
-    import re as _re
-    # Greedy prefix + [^)]+ capture so "City (Sub) (Country)" extracts "Country" not "Sub) (Country"
-    _paren_re = _re.compile(r'^.+\(([^)]+)\)$')
-
-    def _normalize_loc(loc):
-        if loc in DROP_LOCS:
-            return None
-        # Direct lookup
-        if loc in LOCATION_NORMALIZE:
-            return LOCATION_NORMALIZE[loc]
-        # Title-cased lookup (handles ALL-CAPS legacy tags like "NORTH KOREA")
-        loc_title = loc.title()
-        if loc != loc_title and loc_title in LOCATION_NORMALIZE:
-            return LOCATION_NORMALIZE[loc_title]
-        # Parenthetical pattern: "City (Parent)" or "City (Sub) (Country)"
-        m = _paren_re.match(loc)
-        if m:
-            parent = m.group(1).strip()
-            # Try both original case and title case (ALL-CAPS parent tags)
-            for pk in (parent, parent.title()):
-                if pk in PARENT_MAP:
-                    return PARENT_MAP[pk]
-        # Title-case if still entirely ALL-CAPS (handles remaining unknown all-caps tags)
-        if loc == loc.upper() and len(loc) > 2 and any(c.isalpha() for c in loc):
-            return loc_title
-        # Catch remaining DRC name variants (e.g. "Congo, The Democratic Republic of the")
-        loc_lower = loc.lower()
-        if 'democratic' in loc_lower and 'congo' in loc_lower:
-            return "Democratic Republic of Congo"
-        return loc
+    # Location normalization is module-scope (see _normalize_loc above).
 
     # Countries where blog inflation was significant — pre-compute blog/non-blog split
     BLOG_SPLIT_COUNTRIES = {"India", "China", "Hong Kong"}

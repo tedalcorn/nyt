@@ -233,6 +233,14 @@
   .author-table td.author-name { cursor: pointer; color: #326891; }
   .author-table td.author-name:hover { text-decoration: underline; }
 
+  /* Corrections-specific column widths: narrow Reporter, give Correction more room */
+  .corrections-table { table-layout: auto; }
+  .corrections-table th { cursor: default; }
+  .corrections-table th[onclick] { cursor: pointer; }
+  .corrections-table .corr-reporters { max-width: 130px; min-width: 90px; white-space: normal; word-break: break-word; }
+  .corrections-table .corr-article    { max-width: 220px; word-break: break-word; }
+  .corrections-table .corr-text       { max-width: 620px; }
+
   /* Author timeline */
   .author-timeline {
     background: #fff; border: 1px solid #ddd; border-radius: 6px;
@@ -520,7 +528,7 @@
         <li><strong>2001–2003 — D.C. tag inflation.</strong> In the aftermath of September 11, the NYT's metadata system appears to have applied a Washington, D.C. geographic tag as a proxy for national-significance stories — stories that would not normally carry a geographic tag at all. D.C.'s share of World and U.S. section articles spiked from roughly 0.1% in 2000 to over 6% in 2001, then gradually returned to normal by 2003. The original metadata has been retained rather than corrected, as any automated fix would be speculative.</li>
         <li><strong>2005 — Movies section dip.</strong> Only ~60 articles, compared to 1,400–2,200 in other years. Film coverage that year appears to have been filed under Arts rather than Movies in the API's metadata. This dashboard estimates approximately 795 additional movie reviews that year by identifying Arts-section articles written by core movie reviewers (A.O. Scott, Manohla Dargis, Stephen Holden, and others who published 20+ film reviews in 2004 or 2006) that carry motion-pictures subject tags. These inferred articles appear as a hatched bar in the Movies section detail chart.</li>
         <li><strong>2006–2009 — URL duplication.</strong> Beginning around May 2006, the NYT introduced a slug-based URL format alongside its old date-coded URLs, causing the API to index many articles twice. Blog posts and DealBook articles cross-posted to the main site in 2008–2009 were also frequently indexed under two or three URLs simultaneously. This dashboard removes duplicates that share the same headline, publication date, and word count (within ±10%), keeping the shortest URL — about 62,000 entries in total, concentrated in 2006 and the 2008–2009 period of peak blog activity.</li>
-        <li><strong>Pre-2007 — short-item indexing.</strong> Through January 2007 the API consistently indexed short-form items (letters to the editor, Metro briefs, calendar listings, bulleted business news), then abruptly stopped. Sections that ran heavy short-item programming show large pre-2007 spikes in the 0–400 word bins: Business 2000–2010 (47–62% of articles &lt;400 wc), New York 2000–2006 (~45%), Magazine 2000–2003 and 2011 (45–51%), Theater 2007–2010 (38–47%), Education 2010–2016 (58–66%), Automobiles 2007–2012 (39–54%), Your Money 2010–2013 (37–53%). Median article word count jumps from about 550 to 660 words at the January 2007 breakpoint, consistent with short items being dropped from the index after that point.</li>
+        <li><strong>2007 — short-item indexing.</strong> Particularly prior to 2007, but in some cases after, the API indexed short-form items (letters to the editor, Metro briefs, calendar listings, bulleted business news), then abruptly stopped. During earlier eras, many sections had a large share of 0–400 word articles: Business 2000–2010 (47–62%); New York 2000–2006 (~45%); Magazine 2000–2003 and 2011 (45–51%); Theater 2007–2010 (38–47%); Education 2010–2016 (58–66%); Automobiles 2007–2012 (39–54%); Your Money 2010–2013 (37–53%). Median article word count jumps from about 550 to 660 words at the January 2007 breakpoint, consistent with many short items being dropped from the index after that point.</li>
         <li><strong>2008–2010 — Arts blog burst.</strong> ArtsBeat and adjacent Arts-desk blogs were briefly indexed under <code>section_name = "Arts"</code>, producing a sharp 2008–2010 spike of sub-200-word entries (40% in 2009 vs. ~10% in adjacent years). Most are short blog posts linking out to other coverage. Same root cause as the 2009 blog-labeling shift, with a wider time window for Arts specifically.</li>
         <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
         <li><strong>2005 — Science section drop.</strong> Section "Science" falls from ~900 articles a year (2000–2003) to 159 in 2005, then rebounds to 839+ in 2006. The articles didn't disappear — the metadata transitioned. In 2003, all 904 Science Desk articles carried <code>section_name = "Science"</code>. By 2005, the same desk's output was being filed as "Health" (411 articles), "Opinion" (331), or left untagged, with only 102 still tagged "Science". A new "Health" section was being broken out at this point. The dashboard shows the unedited tag.</li>
@@ -795,31 +803,24 @@
   <div class="view" id="view-corrections">
     <div class="chart-box">
       <h3>Corrections</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">
-        Every correction the Times printed in 2025, with the article it refers to. We scraped each daily corrections page (via Wayback), pulled out the individual blurbs, and matched them back to specific articles by date and topic overlap.
+      <p id="corrSubtitle" style="font-size:13px;color:#666;margin-bottom:10px">
+        Every correction the Times printed in 2025, linked to the underlying article.
       </p>
       <div id="corrLoading" style="color:#888;padding:8px 0">Loading corrections data…</div>
       <div id="corrContent" style="display:none">
-        <div id="corrSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:14px"></div>
-
-        <div style="margin-bottom:14px">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Top sections corrected</div>
-          <canvas id="chartCorrSections" style="max-height:260px"></canvas>
-        </div>
-
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
           <input type="text" id="corrSearch" placeholder="Filter by text, section, or reporter…" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
           <select id="corrSectionFilter" onchange="renderCorrTable()" style="padding:5px 8px;font-size:13px">
             <option value="">All sections</option>
           </select>
-          <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="corrMatchedOnly" onchange="renderCorrTable()"> matched only</label>
+          <span id="corrMatchFilter" data-value="all" style="display:inline-flex;border:1px solid #ccc;border-radius:3px;overflow:hidden;font-size:11px;vertical-align:middle">
+            <button type="button" data-val="all"       onclick="_setCorrMatch('all')"       style="padding:3px 10px;border:none;border-right:1px solid #ccc;cursor:pointer;font-family:inherit">All</button>
+            <button type="button" data-val="matched"   onclick="_setCorrMatch('matched')"   style="padding:3px 10px;border:none;border-right:1px solid #ccc;cursor:pointer;font-family:inherit">Matched</button>
+            <button type="button" data-val="unmatched" onclick="_setCorrMatch('unmatched')" style="padding:3px 10px;border:none;cursor:pointer;font-family:inherit">Unmatched</button>
+          </span>
           <span id="corrCount" style="color:#888;font-size:12px;margin-left:auto"></span>
         </div>
         <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="corrTableContainer"></div></div>
-
-        <p style="font-size:11px;color:#888;margin-top:10px">
-          Methodology in <a href="#" onclick="document.querySelector('[data-view=&quot;about&quot;]').click();return false;" style="color:#326891">About → Draft sections</a>.
-        </p>
       </div>
     </div>
   </div>
@@ -1098,23 +1099,26 @@ function downloadObitChart(canvasId, baseName, btn) {
   const total = (_obits || []).length;
   const m = (_obits || []).filter(o => o.gender === 'M').length;
   const f = (_obits || []).filter(o => o.gender === 'F').length;
-  const ages = (_obits || []).map(o => o.age).filter(a => typeof a === 'number' && a >= 20 && a <= 110);
+  const x = (_obits || []).filter(o => o.gender === 'X').length;
+  const ages = (_obits || []).map(o => o.age).filter(a => typeof a === 'number');
   const yrs = Array.from(new Set((_obits || []).map(o => o.year).filter(Boolean))).sort();
   const range = yrs.length ? `${yrs[0]}–${yrs[yrs.length-1]}` : '';
 
-  let title1, title2, legendItems = [];
+  // headerLegend = drawn at top-center under subtitle (gender chart)
+  // Age chart embeds its own legend in the canvas via Chart.js, so we omit the
+  // bottom strip there.
+  let title1, title2, headerLegend = null, drawBottomLegend = false;
   if (canvasId === 'chartObitAge') {
-    title1 = `New York Times obituaries — age at death${range ? ', ' + range : ''}`;
-    title2 = `Stacked bars = obituaries per 5-year age bin · n=${ages.length.toLocaleString()} where age is parsed · Data from NYT Archive API`;
-    legendItems = [
-      { color: 'rgba(196,120,74,0.7)', label: 'Female' },
-      { color: 'rgba(74,124,139,0.7)', label: 'Male' },
-    ];
+    title1 = `Age of death of subjects of New York Times obituaries${range ? ' (' + range.replace('–','-') + ')' : ''}`;
+    title2 = `n = ${ages.length.toLocaleString()} obituaries w/ identified age · Data from NYT Archive API`;
   } else if (canvasId === 'chartObitGender') {
-    const known = m + f;
-    title1 = `New York Times obituaries — female share over time${range ? ', ' + range : ''}`;
-    title2 = `Line = % female of obituaries with parsed gender per year (current year omitted) · n=${known.toLocaleString()} of ${total.toLocaleString()} · Data from NYT Archive API`;
-    legendItems = [{ color: 'rgba(196,120,74,0.9)', label: '% Female' }];
+    const known = m + f + x;
+    title1 = `The share of New York Times obituaries for women${range ? ' (' + range.replace('–','-') + ')' : ''}`;
+    title2 = `n = ${known.toLocaleString()} obituaries w/ identified gender · Data from NYT Archive API`;
+    headerLegend = [
+      { color: 'rgba(196,120,74,0.9)', label: '% Female' },
+      { color: 'rgba(120,90,155,0.9)', label: '% Non-binary' },
+    ];
   } else {
     title1 = 'New York Times obituaries';
     title2 = `n=${total.toLocaleString()} · Data from NYT Archive API`;
@@ -1122,7 +1126,8 @@ function downloadObitChart(canvasId, baseName, btn) {
 
   const W = canvas.width;
   const H = canvas.height;
-  const TOP = 60, BOT = 40;
+  const TOP = headerLegend ? 78 : 60;
+  const BOT = drawBottomLegend ? 40 : 24;
   const out = document.createElement('canvas');
   out.width = W;
   out.height = TOP + H + BOT;
@@ -1131,16 +1136,16 @@ function downloadObitChart(canvasId, baseName, btn) {
   c.fillRect(0, 0, out.width, out.height);
 
   c.fillStyle = '#111';
-  c.font = 'bold 14px Arial,sans-serif';
-  c.fillText(title1, 12, 22);
+  c.font = 'bold 16px Arial,sans-serif';
+  c.fillText(title1, 12, 24);
   c.fillStyle = '#666';
   c.font = '11px Arial,sans-serif';
   const maxW = W - 24;
   if (c.measureText(title2).width <= maxW) {
-    c.fillText(title2, 12, 42);
+    c.fillText(title2, 12, 44);
   } else {
     const parts = title2.split(' · ');
-    let line = parts[0], y = 42;
+    let line = parts[0], y = 44;
     for (let i = 1; i < parts.length; i++) {
       const next = line + ' · ' + parts[i];
       if (c.measureText(next).width > maxW) { c.fillText(line, 12, y); line = parts[i]; y += 15; }
@@ -1149,19 +1154,27 @@ function downloadObitChart(canvasId, baseName, btn) {
     c.fillText(line, 12, y);
   }
 
-  c.drawImage(canvas, 0, TOP);
+  // Top-center legend (gender chart): draw between subtitle and chart.
+  if (headerLegend) {
+    c.font = '11px Arial,sans-serif';
+    let totW = 0;
+    headerLegend.forEach(({ label }, i) => {
+      totW += 14 + 4 + c.measureText(label).width + (i < headerLegend.length - 1 ? 16 : 0);
+    });
+    let lx = Math.max(12, (W - totW) / 2);
+    const ly = 66;
+    headerLegend.forEach(({ color, label }) => {
+      c.fillStyle = color;
+      c.fillRect(lx, ly - 10, 14, 12);
+      c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
+      c.strokeRect(lx, ly - 10, 14, 12);
+      c.fillStyle = '#333';
+      c.fillText(label, lx + 18, ly);
+      lx += 14 + 4 + c.measureText(label).width + 16;
+    });
+  }
 
-  let lx = 12, ly = TOP + H + 22;
-  legendItems.forEach(({ color, label }) => {
-    c.fillStyle = color;
-    c.fillRect(lx, ly - 10, 12, 12);
-    c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
-    c.strokeRect(lx, ly - 10, 12, 12);
-    c.fillStyle = '#333';
-    c.font = '10px Arial,sans-serif';
-    c.fillText(label, lx + 16, ly);
-    lx += 16 + c.measureText(label).width + 14;
-  });
+  c.drawImage(canvas, 0, TOP);
 
   c.font = '9px Arial,sans-serif';
   c.fillStyle = '#aaa';
@@ -1843,11 +1856,12 @@ function renderCarouselObitGender() {
     const cutoffYr = String(new Date().getFullYear());
     const yrs = Array.from(new Set(obs.map(o => o.year).filter(Boolean)))
       .filter(y => y !== cutoffYr).sort();
-    const mCounts = [], fCounts = [];
+    const mCounts = [], fCounts = [], xCounts = [];
     yrs.forEach(y => {
       const oy = obs.filter(o => o.year === y);
       mCounts.push(oy.filter(o => o.gender === 'M').length);
       fCounts.push(oy.filter(o => o.gender === 'F').length);
+      xCounts.push(oy.filter(o => o.gender === 'X').length);
     });
     destroyChart('chartCarouselObitGender');
     chartInstances['chartCarouselObitGender'] = new Chart(canvas, {
@@ -1855,8 +1869,9 @@ function renderCarouselObitGender() {
       data: {
         labels: yrs,
         datasets: [
-          { label: 'Female', data: fCounts, backgroundColor: 'rgba(196,120,74,0.85)', stack: 'a' },
-          { label: 'Male',   data: mCounts, backgroundColor: 'rgba(74,124,139,0.85)', stack: 'a' },
+          { label: 'Female',     data: fCounts, backgroundColor: 'rgba(196,120,74,0.85)', stack: 'a' },
+          { label: 'Male',       data: mCounts, backgroundColor: 'rgba(74,124,139,0.85)', stack: 'a' },
+          { label: 'Non-binary', data: xCounts, backgroundColor: 'rgba(120,90,155,0.9)',  stack: 'a' },
         ],
       },
       options: {
@@ -2613,8 +2628,10 @@ function renderSectionsTable() {
     ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared Bylines', cls: 'num' }] : []),
   ];
 
-  // Summary row across all sections — pinned to top, never participates in sort
-  const fullSpan = dashboard.all_years.filter(y => y !== currentYear);
+  // Summary row across all sections — pinned to top, never participates in sort.
+  // Period span runs through the current year (unlike per-section rows, where
+  // the in-progress year is excluded for fair averages).
+  const fullSpan = dashboard.all_years.slice();
   const allCount = rows.reduce((s, r) => s + (r.count || 0), 0);
   const allTotalWords = rows.reduce((s, r) => s + (r.total_words || 0), 0);
   const allAvgWords = allCount ? Math.round(allTotalWords / allCount) : 0;
@@ -2655,7 +2672,7 @@ function renderSectionsTable() {
     } else if (c.key === '_sharedPct') {
       html += `<td class="${c.cls||''}">${v !== null && v !== undefined ? v + '%' : '—'}</td>`;
     } else if (c.key === 'name') {
-      html += `<td>${escapeHtml(String(v))}</td>`;
+      html += `<td><a href="#" class="section-detail-link" data-section="All Sections" style="color:#326891;text-decoration:none">${escapeHtml(String(v))}</a></td>`;
     } else {
       if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
       html += `<td class="${c.cls||''}">${escapeHtml(String(v ?? ''))}</td>`;
@@ -2701,7 +2718,12 @@ function openSectionDetail(sectionName) {
   const panel = document.getElementById('sectionDetailPanel');
   const currentYear = String(new Date().getFullYear());
   const trend = dashboard.section_trends[sectionName] || [];
-  const allYears = dashboard.all_years.filter(y => y !== currentYear);
+  // For All Sections aggregate, include the in-progress year (it represents
+  // the paper as a whole, so partial-year totals are useful context).
+  const isAllSections = sectionName === 'All Sections';
+  const allYears = isAllSections
+    ? dashboard.all_years.slice()
+    : dashboard.all_years.filter(y => y !== currentYear);
   const sec = dashboard.sections.find(s => s.name === sectionName);
   const total = sec ? sec.count : 0;
 
@@ -2714,7 +2736,9 @@ function openSectionDetail(sectionName) {
   const hasInferred = Object.keys(inferredByYear).length > 0;
 
   // Compute years active and avg words for meta line
-  const activeYrs = trend.filter(d => d.count > 0 && d.year !== String(new Date().getFullYear())).map(d => d.year).sort();
+  const activeYrs = trend
+    .filter(d => d.count > 0 && (isAllSections || d.year !== String(new Date().getFullYear())))
+    .map(d => d.year).sort();
   const yearRange = activeYrs.length ? `${activeYrs[0]}–${activeYrs[activeYrs.length-1]}` : '';
   const totalWords = trend.reduce((s, d) => s + (d.count || 0) * (d.avg_words || 0), 0);
   const avgWords = total > 0 ? Math.round(totalWords / total) : 0;
@@ -2750,14 +2774,16 @@ function openSectionDetail(sectionName) {
         </div>
       </div>
       <div id="sectionDetailReporters" style="margin-top:12px"></div>
-      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:14px;margin-bottom:4px">Recent articles</div>
+      ${isAllSections ? '' : `<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:14px;margin-bottom:4px">Recent articles</div>
       <div id="sectionDetailArticleList" style="max-height:300px;overflow-y:auto;font-size:13px">
         ${articlesReady ? '' : IS_MOBILE ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>' : '<p style="color:#888;font-size:13px">Loading article data…</p>'}
-      </div>
+      </div>`}
     </div>`;
 
-  // Populate lead reporters (below chart, matching state/country pattern)
-  const secAuthors = (authors || [])
+  // Populate lead reporters (below chart, matching state/country pattern).
+  // Skip for All Sections aggregate — paper-wide top reporters are already
+  // shown in the home carousel and Reporters tab.
+  const secAuthors = isAllSections ? [] : (authors || [])
     .filter(a => a.primary_section === sectionName && !a.likely_multimedia && a.article_count >= 5)
     .sort((a, b) => b.article_count - a.article_count)
     .slice(0, 8);
@@ -2822,7 +2848,7 @@ function openSectionDetail(sectionName) {
   window._currentSectionHist = { sec, sectionName, avgWords, mode: 'all' };
   renderSectionHistogram('all');
 
-  if (articlesReady) fillSectionArticleList(sectionName);
+  if (articlesReady && !isAllSections) fillSectionArticleList(sectionName);
 }
 
 function setSectionHistMode(mode) {
@@ -4554,7 +4580,7 @@ const POPULATION_M = {
   'Macau':0.7,'Bahamas':0.4,'West Bank':3,'Gaza Strip':2,'Nagorno-Karabakh':0.15,
   'North Macedonia':2,'Somaliland':4,'Kosovo':2,
   // Countries missing from earlier sweep
-  'Finland':5.6,'Kazakhstan':19,'South Sudan':12,
+  'Finland':5.6,'Kazakhstan':19,'South Sudan':12,'Greenland':0.056,
   // Name-variant aliases used in NYT API tagging
   'Congo, Democratic Republic of (Congo-Kinshasa)':105,
   'Republic of Congo':6,'Congo, Republic of (Congo-Brazzaville)':6,
@@ -6267,12 +6293,14 @@ function renderObitAgeChart() {
   };
   const mBins = new Array(nBins).fill(0);
   const fBins = new Array(nBins).fill(0);
+  const xBins = new Array(nBins).fill(0);
   _obits.forEach(o => {
     if (typeof o.age !== 'number') return;
     const b = binFor(o.age);
     if (b < 0) return;
     if (o.gender === 'F') fBins[b]++;
     else if (o.gender === 'M') mBins[b]++;
+    else if (o.gender === 'X') xBins[b]++;
   });
   destroyChart('chartObitAge');
   const canvasEl = document.getElementById('chartObitAge');
@@ -6281,8 +6309,9 @@ function renderObitAgeChart() {
     data: {
       labels,
       datasets: [
-        { label: 'Female', data: fBins, backgroundColor: 'rgba(196,120,74,0.7)', stack: 'a' },
-        { label: 'Male',   data: mBins, backgroundColor: 'rgba(74,124,139,0.7)', stack: 'a' },
+        { label: 'Female',     data: fBins, backgroundColor: 'rgba(196,120,74,0.7)', stack: 'a' },
+        { label: 'Male',       data: mBins, backgroundColor: 'rgba(74,124,139,0.7)', stack: 'a' },
+        { label: 'Non-binary', data: xBins, backgroundColor: 'rgba(120,90,155,0.85)', stack: 'a' },
       ]
     },
     options: {
@@ -6331,13 +6360,15 @@ function renderObitGenderChart() {
   const cutoffYr = String(new Date().getFullYear());
   const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean)))
     .filter(y => y !== cutoffYr).sort();
-  const fPct = [], totals = [];
+  const fPct = [], xPct = [], totals = [];
   yrs.forEach(y => {
     const oy = _obits.filter(o => o.year === y);
     const m = oy.filter(o => o.gender === 'M').length;
     const f = oy.filter(o => o.gender === 'F').length;
-    const known = m + f;
+    const x = oy.filter(o => o.gender === 'X').length;
+    const known = m + f + x;
     fPct.push(known > 0 ? 100 * f / known : null);
+    xPct.push(known > 0 ? 100 * x / known : null);
     totals.push(oy.length);
   });
   destroyChart('chartObitGender');
@@ -6348,13 +6379,15 @@ function renderObitGenderChart() {
       datasets: [
         { label: '% Female', data: fPct, borderColor: 'rgba(196,120,74,0.9)', backgroundColor: 'rgba(196,120,74,0.15)',
           tension: 0.25, pointRadius: 2, fill: true, yAxisID: 'y' },
+        { label: '% Non-binary', data: xPct, borderColor: 'rgba(120,90,155,0.9)', backgroundColor: 'rgba(120,90,155,0.15)',
+          tension: 0.25, pointRadius: 2, fill: false, yAxisID: 'y' },
       ]
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => `${c.parsed.y?.toFixed(1) || '—'}% (n=${totals[c.dataIndex]?.toLocaleString()})` } }
+        legend: { position: 'top', align: 'center', labels: { font: { size: 10 }, boxWidth: 10 } },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y?.toFixed(2) || '—'}% (n=${totals[c.dataIndex]?.toLocaleString()})` } }
       },
       scales: {
         x: { ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
@@ -6558,6 +6591,21 @@ const corrObserver = new MutationObserver(() => {
 });
 corrObserver.observe(document.getElementById('view-corrections'), { attributes: true });
 
+// Date parsing for the "year(s) covered" label in subtitle.
+let _corrSort = { key: 'ref_date', dir: 'desc' };
+
+function _setCorrMatch(val) {
+  const wrap = document.getElementById('corrMatchFilter');
+  if (!wrap) return;
+  wrap.dataset.value = val;
+  wrap.querySelectorAll('button').forEach(b => {
+    const on = b.dataset.val === val;
+    b.style.background = on ? '#326891' : '#fff';
+    b.style.color = on ? '#fff' : '#333';
+  });
+  renderCorrTable();
+}
+
 async function initCorrections() {
   try {
     const [r1, r2] = await Promise.all([
@@ -6581,91 +6629,100 @@ async function initCorrections() {
     secSel.appendChild(opt);
   });
 
-  renderCorrSummary();
-  renderCorrSectionsChart();
+  // Subtitle: derive period from ref_date / page_date span.
+  const sub = document.getElementById('corrSubtitle');
+  if (sub) {
+    const dates = _corr.map(c => c.ref_date || c.page_date).filter(Boolean).sort();
+    if (dates.length) {
+      const yrs = new Set(dates.map(d => d.slice(0, 4)));
+      const period = yrs.size === 1 ? [...yrs][0] : `${[...yrs][0]}–${[...yrs].pop()}`;
+      sub.textContent = `Every correction the Times printed in ${period}, linked to the underlying article.`;
+    }
+  }
+
   document.getElementById('corrSearch').addEventListener('input', () => renderCorrTable());
+  _setCorrMatch('all');  // paints the segmented control + triggers initial render
+}
+
+function _fmtCorrDate(iso) {
+  // YYYY-MM-DD → MM/DD/YYYY (matches obit-tab format)
+  if (!iso || iso.length < 10) return '';
+  const y = iso.slice(0, 4), m = iso.slice(5, 7), d = iso.slice(8, 10);
+  return `${m}/${d}/${y}`;
+}
+
+function _toggleCorrSort(key) {
+  if (_corrSort.key === key) {
+    _corrSort.dir = _corrSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _corrSort = { key, dir: key === 'ref_date' ? 'desc' : 'asc' };
+  }
   renderCorrTable();
-}
-
-function renderCorrSummary() {
-  const total = _corrSummary.total;
-  const matched = _corrSummary.matched;
-  const matchPct = total ? Math.round(100 * matched / total) : 0;
-  // Pages = unique page_url
-  const uniqPages = new Set(_corr.map(c => c.page_url)).size;
-  const wrap = document.getElementById('corrSummary');
-  const card = (label, value, sub) =>
-    `<div style="border:1px solid #eee;border-radius:6px;padding:10px 14px;background:#fafafa">
-      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">${label}</div>
-      <div style="font-size:22px;font-weight:600;color:#333">${value}</div>
-      ${sub ? `<div style="font-size:11px;color:#aaa;margin-top:2px">${sub}</div>` : ''}
-    </div>`;
-  wrap.innerHTML =
-    card('Corrections (2025)', total.toLocaleString(), `${uniqPages} daily pages`)
-    + card('Matched to articles', matched.toLocaleString(), `${matchPct}% link rate`)
-    + card('Top corrected section', _corrSummary.by_section[0] ? _corrSummary.by_section[0][0] : '—', _corrSummary.by_section[0] ? `${_corrSummary.by_section[0][1]} corrections` : '');
-}
-
-function renderCorrSectionsChart() {
-  destroyChart('chartCorrSections');
-  const top = _corrSummary.by_section.slice(0, 12);
-  const ctx = document.getElementById('chartCorrSections').getContext('2d');
-  chartInstances['chartCorrSections'] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: top.map(d => d[0]),
-      datasets: [{ data: top.map(d => d[1]), backgroundColor: '#326891' }],
-    },
-    options: {
-      indexAxis: 'y',
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { ticks: { font: { size: 10 } }, beginAtZero: true },
-        y: { ticks: { font: { size: 10 } } },
-      },
-    },
-  });
 }
 
 function renderCorrTable() {
   if (!_corr) return;
   const q = (document.getElementById('corrSearch').value || '').toLowerCase();
   const sec = document.getElementById('corrSectionFilter').value;
-  const matchedOnly = document.getElementById('corrMatchedOnly').checked;
+  const matchMode = document.getElementById('corrMatchFilter')?.dataset.value || 'all';
   let rows = _corr.filter(c => {
-    if (matchedOnly && !c.match_url) return false;
+    if (matchMode === 'matched' && !c.match_url) return false;
+    if (matchMode === 'unmatched' && c.match_url) return false;
     if (sec && c.match_section !== sec) return false;
     if (q) {
-      const hay = ((c.text || '') + ' ' + (c.match_section || '') + ' ' + ((c.match_authors || []).join(' '))).toLowerCase();
+      const hay = ((c.text || '') + ' ' + (c.match_section || '') + ' ' + (c.match_headline || '') + ' ' + ((c.match_authors || []).join(' '))).toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
   });
-  // Sort by ref_date desc by default
-  rows.sort((a, b) => (b.ref_date || '').localeCompare(a.ref_date || ''));
+  // Sort
+  const k = _corrSort.key, dir = _corrSort.dir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    const va = (a[k] || '').toString();
+    const vb = (b[k] || '').toString();
+    if (va === vb) return 0;
+    return va < vb ? -1 * dir : 1 * dir;
+  });
   document.getElementById('corrCount').textContent = `${rows.length.toLocaleString()} matching`;
 
   const display = rows.slice(0, 500);
-  let html = '<table class="author-table"><thead><tr>'
-    + '<th>Date</th><th>Section</th><th>Reporter(s)</th><th>Article</th><th>Correction</th>'
+  const arrow = (col) => _corrSort.key === col ? (_corrSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  const sortableTh = (col, label) =>
+    `<th style="cursor:pointer;user-select:none" onclick="_toggleCorrSort('${col}')">${label}${arrow(col)}</th>`;
+  let html = '<table class="author-table corrections-table"><thead><tr>'
+    + sortableTh('ref_date', 'Date')
+    + sortableTh('match_section', 'Section')
+    + '<th>Reporter(s)</th><th>Article</th><th>Correction</th>'
     + '</tr></thead><tbody>';
   display.forEach(c => {
-    const refDate = c.ref_date || '<span style="color:#bbb">—</span>';
-    const sec = c.match_section || '<span style="color:#bbb">—</span>';
+    const refDateText = _fmtCorrDate(c.ref_date);
+    const refDateCell = refDateText ? escapeHtml(refDateText) : '<span style="color:#bbb">—</span>';
+    const secCell = c.match_section ? escapeHtml(c.match_section) : '<span style="color:#bbb">—</span>';
     const authors = (c.match_authors || []).join(', ');
-    const articleCell = c.match_url
-      ? `<a href="https://www.nytimes.com${escapeHtml(c.match_url)}" target="_blank" style="color:#326891;text-decoration:none">view</a>`
-      : '<span style="color:#bbb">—</span>';
-    const correctionCell = c.page_url
-      ? `<a href="${escapeHtml(c.page_url)}" target="_blank" style="color:#666;text-decoration:none" title="${escapeHtml(c.text)}">${escapeHtml(c.text.slice(0, 200))}${c.text.length > 200 ? '…' : ''}</a>`
-      : escapeHtml(c.text.slice(0, 200));
+    let articleCell;
+    if (c.match_url) {
+      const headline = c.match_headline || 'view';
+      articleCell = `<a href="https://www.nytimes.com${escapeHtml(c.match_url)}" target="_blank" style="color:#326891;text-decoration:none">${escapeHtml(headline)}</a>`;
+    } else {
+      articleCell = '<span style="color:#bbb">—</span>';
+    }
+    // Correction text + secondary-page parenthetical if duplicate
+    const truncated = c.text.length > 240 ? c.text.slice(0, 240) + '…' : c.text;
+    let correctionCell = c.page_url
+      ? `<a href="${escapeHtml(c.page_url)}" target="_blank" style="color:#666;text-decoration:none" title="${escapeHtml(c.text)}">${escapeHtml(truncated)}</a>`
+      : escapeHtml(truncated);
+    if (Array.isArray(c.additional_pages) && c.additional_pages.length) {
+      const links = c.additional_pages.map(ap =>
+        `<a href="${escapeHtml(ap.page_url || '')}" target="_blank" style="color:#888;text-decoration:underline">Additional notification</a>`
+      ).join(', ');
+      correctionCell += ` <span style="color:#aaa;font-size:11px">(${links})</span>`;
+    }
     html += `<tr>
-      <td style="color:#aaa;white-space:nowrap;font-size:12px">${escapeHtml(refDate)}</td>
-      <td style="font-size:12px">${escapeHtml(sec)}</td>
-      <td style="font-size:12px">${escapeHtml(authors)}</td>
-      <td style="font-size:12px">${articleCell}</td>
-      <td style="font-size:12px;max-width:560px">${correctionCell}</td>
+      <td style="color:#666;white-space:nowrap;font-size:12px;vertical-align:top">${refDateCell}</td>
+      <td style="font-size:12px;vertical-align:top">${secCell}</td>
+      <td class="corr-reporters" style="font-size:12px;vertical-align:top">${escapeHtml(authors)}</td>
+      <td class="corr-article" style="font-size:12px;vertical-align:top">${articleCell}</td>
+      <td class="corr-text" style="font-size:12px;vertical-align:top">${correctionCell}</td>
     </tr>`;
   });
   if (rows.length > 500) {
@@ -7250,7 +7307,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/26/26 6:29am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/26/26 9:01am</span>
 </div>
 </body>
 </html>

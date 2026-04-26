@@ -1,30 +1,35 @@
 {
-  "total": 569,
-  "matched": 497,
+  "total": 550,
+  "parsed": 569,
+  "matched": 542,
   "by_section": [
     [
       "U.S.",
-      106
+      102
     ],
     [
       "World",
-      96
-    ],
-    [
-      "Arts",
-      59
+      92
     ],
     [
       "Obituaries",
-      58
+      74
+    ],
+    [
+      "Arts",
+      71
     ],
     [
       "New York",
-      39
+      49
     ],
     [
       "Business",
-      35
+      32
+    ],
+    [
+      "Magazine",
+      17
     ],
     [
       "Health",
@@ -32,58 +37,50 @@
     ],
     [
       "Climate",
-      15
-    ],
-    [
-      "Opinion",
-      15
-    ],
-    [
-      "Movies",
       14
     ],
     [
+      "Movies",
+      13
+    ],
+    [
       "Technology",
-      7
+      10
+    ],
+    [
+      "T Magazine",
+      10
     ],
     [
       "Theater",
+      9
+    ],
+    [
+      "Science",
       7
+    ],
+    [
+      "Books",
+      5
+    ],
+    [
+      "Well",
+      5
     ],
     [
       "Times Insider",
       4
     ],
     [
-      "Science",
-      4
-    ],
-    [
-      "Briefing",
-      3
-    ],
-    [
-      "Real Estate",
-      3
-    ],
-    [
-      "Books",
-      3
-    ],
-    [
-      "Podcasts",
-      3
-    ],
-    [
       "Style",
       3
     ],
     [
-      "Well",
-      2
+      "Opinion",
+      3
     ],
     [
-      "The Learning Network",
+      "Travel",
       2
     ],
     [
@@ -91,45 +88,61 @@
       1
     ],
     [
-      "T Magazine",
+      "Headway",
       1
     ],
     [
-      "Headway",
+      "Briefing",
+      1
+    ],
+    [
+      "Real Estate",
       1
     ]
   ],
   "by_author": [
     [
-      "Ephrat Livni",
-      8
+      "Richard Sandomir",
+      9
     ],
     [
-      "Richard Sandomir",
-      8
+      "Robert D. McFadden",
+      7
     ],
     [
       "Sheryl Gay Stolberg",
-      5
+      6
     ],
     [
-      "Zach Montague",
-      5
+      "Anita Gates",
+      6
+    ],
+    [
+      "Ephrat Livni",
+      6
+    ],
+    [
+      "Lisa Friedman",
+      6
     ],
     [
       "Penelope Green",
       5
     ],
     [
-      "Zolan Kanno-Youngs",
+      "Annie Karni",
       5
     ],
     [
-      "Robert D. McFadden",
+      "Alexis Soloski",
       5
     ],
     [
-      "Alissa Wilkinson",
+      "Brooks Barnes",
+      5
+    ],
+    [
+      "Mike Hale",
       4
     ],
     [
@@ -137,35 +150,27 @@
       4
     ],
     [
-      "Theodore Schleifer",
-      4
-    ],
-    [
-      "Anita Gates",
-      4
-    ],
-    [
-      "Annie Karni",
-      4
-    ],
-    [
       "Benjamin Oreskes",
       4
     ],
     [
-      "Michael C. Bender",
+      "Zolan Kanno-Youngs",
       4
     ],
     [
-      "Jeanna Smialek",
+      "David E. Sanger",
       4
     ],
     [
-      "Hiroko Tabuchi",
+      "Andrew Jacobs",
       4
     ],
     [
-      "Robin Pogrebin",
+      "Devlin Barrett",
+      4
+    ],
+    [
+      "Shivani Gonzalez",
       4
     ],
     [
@@ -173,15 +178,7 @@
       4
     ],
     [
-      "Dana Goldstein",
-      4
-    ],
-    [
-      "Lisa Friedman",
-      4
-    ],
-    [
-      "John Eligon",
+      "Sam Roberts",
       4
     ],
     [
@@ -189,27 +186,11 @@
       4
     ],
     [
-      "Gina Kolata",
-      4
-    ],
-    [
-      "The New York Times",
+      "Elisabetta Povoledo",
       4
     ],
     [
       "Taylor Robinson",
-      4
-    ],
-    [
-      "Brad Plumer",
-      4
-    ],
-    [
-      "Brooks Barnes",
-      4
-    ],
-    [
-      "Amelia Nierenberg",
       4
     ],
     [
@@ -225,11 +206,19 @@
       3
     ],
     [
-      "Charlie Savage",
+      "Michael D. Shear",
       3
     ],
     [
-      "David E. Sanger",
+      "Zach Montague",
+      3
+    ],
+    [
+      "Aishvarya Kavi",
+      3
+    ],
+    [
+      "Constant M\u00e9heut",
       3
     ],
     [
@@ -237,19 +226,23 @@
       3
     ],
     [
-      "Stephen Castle",
+      "Isabel Kershner",
       3
     ],
     [
-      "Michael Crowley",
+      "Jeanna Smialek",
       3
     ],
     [
-      "Andrew Jacobs",
+      "Julian E. Barnes",
       3
     ],
     [
-      "Debra Kamin",
+      "Reid J. Epstein",
+      3
+    ],
+    [
+      "Hurubie Meko",
       3
     ],
     [
@@ -257,27 +250,27 @@
       3
     ],
     [
-      "Harold Goldberg",
+      "Beatrice Loayza",
       3
     ],
     [
-      "Adam Rasgon",
+      "Robin Pogrebin",
       3
     ],
     [
-      "Sarah Mervosh",
+      "Farnaz Fassihi",
       3
     ],
     [
-      "Devlin Barrett",
+      "Matina Stevis-Gridneff",
       3
     ],
     [
-      "Sam Roberts",
+      "Meaghan Tobin",
       3
     ],
     [
-      "Emma Bubola",
+      "Scott Reyburn",
       3
     ],
     [
@@ -285,19 +278,27 @@
       3
     ],
     [
-      "Tyler Pager",
+      "Ronen Bergman",
       3
     ],
     [
-      "Lara Jakes",
+      "Choe Sang-Hun",
       3
     ],
     [
-      "Jer\u00e9 Longman",
+      "Kenneth Chang",
       3
     ],
     [
-      "Lydia DePillis",
+      "Harold Goldberg",
+      3
+    ],
+    [
+      "Sui-lee Wee",
+      3
+    ],
+    [
+      "Lynsey Chutel",
       3
     ]
   ]

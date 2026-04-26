@@ -396,6 +396,9 @@ OBIT_OVERRIDES = {
     '/2024/12/04/style/rohit-bal-dead.html': {'gender': 'M', 'gender_src': 'manual'},
     '/2025/03/07/arts/music/dwayne-wiggins-dead.html': {'gender': 'M', 'gender_src': 'manual', 'name': "D'Wayne Wiggins"},
     '/2025/11/24/science/gramma-galapagos-tortoise-san-diego-zoo-dies.html': {'gender': 'F', 'gender_src': 'manual', 'age': 141},
+    # Non-binary obits surfaced via Google site:nytimes.com "Mx." search
+    '/2024/11/18/theater/morgan-jenness-dead.html': {'gender': 'X', 'gender_src': 'manual'},
+    '/2025/06/27/theater/diana-oh-dead.html': {'gender': 'X', 'gender_src': 'manual'},
     # ---- 2026-04-25 /interactive/ audit — name/profession swaps & parsing breakage ----
     # Bruce Lee: headline "Not Forgotten: A Fighter's Fighter, Bruce Lee" — parser
     # took the descriptor as name and the real name as profession. Swap.

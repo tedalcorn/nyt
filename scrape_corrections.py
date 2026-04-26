@@ -127,6 +127,11 @@ RE_DATE_MONTH = re.compile(
 )
 RE_DAY_OF_WEEK = re.compile(r'\bon\s+(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\b', re.I)
 RE_HEADLINE_QUOTED = re.compile(r'[\u201C"]([^\u201D"]{4,200})[\u201D"]')
+# NYT article URL inside a corrections paragraph — points at the corrected piece.
+RE_NYT_ARTICLE_URL = re.compile(r'^https?://(?:www\.)?nytimes\.com(/\d{4}/\d{2}/\d{2}/[^?#\s]+\.html)', re.I)
+# Skip URLs that point at the corrections page itself, related corrections, or
+# tangential refs (interactives, topic pages).
+RE_SKIP_URL_PATH = re.compile(r'/pageoneplus/', re.I)
 
 MON_TO_N = {
     'jan': 1, 'january': 1, 'feb': 2, 'february': 2, 'mar': 3, 'march': 3,
@@ -149,6 +154,22 @@ def parse_correction_page(html, page_url, page_pub_date):
             continue
         if not RE_LEAD.match(text):
             continue
+
+        # Inline reference: first <a href> in the paragraph that points at an
+        # NYT article (not another corrections page). NYT correction text often
+        # links the word "article"/"obituary"/"caption" to the original piece —
+        # this is the most reliable matching signal we have.
+        inline_url = None
+        for a in p.find_all('a'):
+            href = (a.get('href') or '').strip()
+            m = RE_NYT_ARTICLE_URL.match(href)
+            if not m:
+                continue
+            path = m.group(1)
+            if RE_SKIP_URL_PATH.search(path):
+                continue
+            inline_url = path
+            break
         # Skip boilerplate footer items
         low = text.lower()
         if 'errors are corrected during the press run' in low:
@@ -205,6 +226,7 @@ def parse_correction_page(html, page_url, page_pub_date):
             'text': text,
             'ref_date': ref_date,
             'ref_headline': ref_headline,
+            'inline_url': inline_url,
             'page_url': page_url,
             'page_date': page_pub_date,
         })

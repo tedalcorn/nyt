@@ -22,9 +22,12 @@ OUT_SUMMARY = 'data/corrections_summary.json'
 
 
 def load_articles_by_date():
-    """Return {YYYY-MM-DD: [...] } from condensed yearly files. Each article
-    has all the fields we need plus a precomputed token set."""
+    """Return ({YYYY-MM-DD: [...]}, {url: art}) from condensed yearly files.
+    Each article has all the fields we need plus a precomputed token set.
+    The url→article index lets us short-circuit when a correction's inline_url
+    is set (corrections that link to the original piece in their HTML)."""
     by_date = defaultdict(list)
+    by_url = {}
     for f in sorted(glob.glob('data/articles_*.json')):
         with open(f) as fh:
             arts = json.load(fh)
@@ -36,14 +39,17 @@ def load_articles_by_date():
             slug = a.get('u', '').replace('-', ' ').replace('/', ' ')
             text = ' '.join([a.get('h', '') or '', slug, ' '.join(a.get('sb', []) or [])])
             tokens = set(w.lower() for w in WORD.findall(text) if len(w) > 3)
-            by_date[d].append({
+            rec = {
                 'u': a.get('u', ''),
                 'h': a.get('h', '') or '',
                 'a': a.get('a', []) or [],
                 'sec': a.get('s', '') or '',
                 'tokens': tokens,
-            })
-    return by_date
+            }
+            by_date[d].append(rec)
+            if rec['u']:
+                by_url[rec['u']] = rec
+    return by_date, by_url
 
 
 WORD = re.compile(r'\w+')
@@ -117,30 +123,67 @@ def main():
         corrections = json.load(fh)
     print(f'Loaded {len(corrections)} parsed corrections')
 
-    by_date = load_articles_by_date()
-    print(f'Indexed {sum(len(v) for v in by_date.values())} articles across {len(by_date)} dates')
+    by_date, by_url = load_articles_by_date()
+    print(f'Indexed {sum(len(v) for v in by_date.values())} articles across {len(by_date)} dates ({len(by_url)} unique URLs)')
 
     matched = []
     no_ref = 0
     no_match = 0
     matched_n = 0
+    inline_n = 0
     by_section = Counter()
     by_author = Counter()
 
+    def _emit_match(c, art, score, source):
+        """Append a matched record. Pulls section/headline/authors from art."""
+        sec = art['sec']
+        authors = art['a'] or []
+        by_section[sec] += 1
+        for au in authors:
+            by_author[au] += 1
+        matched.append({
+            **c,
+            'match_url': art['u'],
+            'match_score': round(score, 3),
+            'match_section': sec,
+            'match_headline': art['h'],
+            'match_authors': authors,
+            'match_source': source,
+        })
+
+    def _emit_unmatched(c, score):
+        matched.append({
+            **c,
+            'match_url': None,
+            'match_score': round(score, 3),
+            'match_section': None,
+            'match_headline': None,
+            'match_authors': None,
+            'match_source': None,
+        })
+
     for c in corrections:
+        # Strongest signal: an inline <a> in the correction HTML pointed at the
+        # original article. Trust it without further token scoring.
+        inline = c.get('inline_url')
+        if inline and inline in by_url:
+            inline_n += 1
+            matched_n += 1
+            _emit_match(c, by_url[inline], 1.0, 'inline')
+            continue
+
         ref_date = c.get('ref_date')
         ref_head = c.get('ref_headline')
         if not ref_date:
             no_ref += 1
-            matched.append({**c, 'match_url': None, 'match_score': 0, 'match_section': None, 'match_authors': None})
+            _emit_unmatched(c, 0)
             continue
-        # Build candidate pool: ref_date ±3 days
         try:
             y, mm, dd = ref_date.split('-')
             base = date(int(y), int(mm), int(dd))
         except Exception:
             no_ref += 1
-            matched.append({**c, 'match_url': None, 'match_score': 0, 'match_section': None, 'match_authors': None})
+            _emit_unmatched(c, 0)
             continue
         pool = []
         for offset in (-3, -2, -1, 0, 1, 2, 3):
@@ -152,26 +195,62 @@ def main():
         # within the date window.
         if m and (n_match >= 2 or score == 1.0):
             matched_n += 1
-            sec = m['sec']
-            authors = m['a'] or []
-            by_section[sec] += 1
-            for au in authors:
-                by_author[au] += 1
-            matched.append({**c, 'match_url': m['u'], 'match_score': round(score, 3), 'match_section': sec, 'match_authors': authors})
+            _emit_match(c, m, score, 'tokens')
         else:
             no_match += 1
-            matched.append({**c, 'match_url': None, 'match_score': round(score, 3), 'match_section': None, 'match_authors': None})
+            _emit_unmatched(c, score)
 
     print(f'Matched: {matched_n}/{len(corrections)} ({100*matched_n/len(corrections):.0f}%)')
+    print(f'  via inline URL: {inline_n}')
+    print(f'  via tokens:     {matched_n - inline_n}')
     print(f'  no ref_date: {no_ref}')
     print(f'  no match (ref present): {no_match}')
+
+    # Duplicate detection: corrections that resolve to the same article (and share
+    # the same set of authors) get rolled up. The earliest by page_date is kept
+    # as the primary; later page URLs are listed as `additional_pages` so the UI
+    # can render them as "(Additional notification)" links.
+    by_key = defaultdict(list)
+    for i, c in enumerate(matched):
+        if not c.get('match_url'):
+            continue
+        key = (c['match_url'], tuple(sorted(c.get('match_authors') or [])))
+        by_key[key].append(i)
+    n_dupes = 0
+    drop = set()
+    for key, idxs in by_key.items():
+        if len(idxs) < 2:
+            continue
+        # Sort by page_date asc (then index for stability)
+        idxs_sorted = sorted(idxs, key=lambda i: (matched[i].get('page_date') or '', i))
+        primary = idxs_sorted[0]
+        extras = idxs_sorted[1:]
+        addl = []
+        for j in extras:
+            addl.append({'page_url': matched[j].get('page_url'), 'page_date': matched[j].get('page_date')})
+            drop.add(j)
+        matched[primary]['additional_pages'] = addl
+        n_dupes += len(extras)
+    if drop:
+        matched = [c for i, c in enumerate(matched) if i not in drop]
+        # by_section / by_author counts overshot — recompute from surviving rows.
+        by_section = Counter()
+        by_author = Counter()
+        for c in matched:
+            if c.get('match_url'):
+                by_section[c['match_section']] += 1
+                for au in c.get('match_authors') or []:
+                    by_author[au] += 1
+        matched_n -= n_dupes
+    print(f'Merged duplicates: {n_dupes} secondary notifications folded into primary')
 
     with open(OUT_MATCHED, 'w') as fh:
         json.dump(matched, fh, separators=(',', ':'))
     print(f'Saved {OUT_MATCHED}')
 
     summary = {
-        'total': len(corrections),
+        'total': len(matched),       # post-dedup row count (what the table shows)
+        'parsed': len(corrections),  # raw parsed corrections (pre-dedup)
         'matched': matched_n,
         'by_section': by_section.most_common(50),
         'by_author': by_author.most_common(50),
