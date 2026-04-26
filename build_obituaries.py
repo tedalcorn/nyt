@@ -292,6 +292,12 @@ NON_OBIT_URLS = {
     '/interactive/2016/08/14/obituaries/india-hp.html',
     '/interactive/2021/03/25/obituaries/womens-history-month-obituaries.html',
     '/interactive/2016/08/25/obituaries/capote-obits.html',  # group of obits ("In Cold Blood…")
+    # 2026-04-25 /interactive/ audit — non-obit features
+    '/interactive/2011/11/06/obituaries/rooney-video-gallery.html',          # Andy Rooney video gallery
+    '/interactive/2016/01/13/obituaries/anderson-cooper-obits.html',         # Cooper alive, on his father
+    '/interactive/2016/01/13/obituaries/tom-brokaw-obits.html',              # Breaking Bread feature
+    '/interactive/2016/07/22/obituaries/dawes-breakingbread.html',           # Breaking Bread feature
+    '/interactive/2017/02/17/obituaries/17stambler-encyclopedia-excerpts.html',  # book excerpts
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -390,6 +396,82 @@ OBIT_OVERRIDES = {
     '/2024/12/04/style/rohit-bal-dead.html': {'gender': 'M', 'gender_src': 'manual'},
     '/2025/03/07/arts/music/dwayne-wiggins-dead.html': {'gender': 'M', 'gender_src': 'manual', 'name': "D'Wayne Wiggins"},
     '/2025/11/24/science/gramma-galapagos-tortoise-san-diego-zoo-dies.html': {'gender': 'F', 'gender_src': 'manual', 'age': 141},
+    # ---- 2026-04-25 /interactive/ audit — name/profession swaps & parsing breakage ----
+    # Bruce Lee: headline "Not Forgotten: A Fighter's Fighter, Bruce Lee" — parser
+    # took the descriptor as name and the real name as profession. Swap.
+    '/interactive/2016/06/30/obituaries/bruce-lee.html': {
+        'name': 'Bruce Lee', 'profession': "A Fighter's Fighter",
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Ella Fitzgerald: parser took "Fitzgerald Obits" from URL slug.
+    '/interactive/2016/01/13/obituaries/fitzgerald-obits.html': {
+        'name': 'Ella Fitzgerald', 'gender': 'F', 'gender_src': 'manual',
+    },
+    # Ruhollah Khomeini: profession parsed as "Man"; name had "Iran's" prefix.
+    '/interactive/2016/01/13/obituaries/summer-obits-copy.html': {
+        'name': 'Ruhollah Khomeini', 'profession': 'A Man Who Shook the World',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Robert F. Kennedy: headline "On One California Night, Triumph and Tragedy"
+    # carries no name; subject inferred from context (RFK assassination, June 1968).
+    '/interactive/2016/01/13/obituaries/summer-obits-kennedy.html': {
+        'name': 'Robert F. Kennedy', 'profession': 'Triumph and Tragedy',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Billy the Kid: parser dropped "the" between Billy and Kid.
+    '/interactive/2016/06/30/obituaries/billy-kid.html': {
+        'name': 'Billy the Kid', 'profession': 'An Outlaw by Any Name',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # John F. Kennedy Jr.: URL slug "jfkjr-copy" → "Jfkjr Copy".
+    '/interactive/2016/06/30/obituaries/jfkjr-copy.html': {
+        'name': 'John F. Kennedy Jr.', 'profession': 'A Life Cut Short',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Laurence Olivier: headline "Laurence Olivier: Scene-Stealer Extraordinaire"
+    # was split on the colon, putting "Scene" as name.
+    '/interactive/2016/06/30/obituaries/nf-olivier.html': {
+        'name': 'Laurence Olivier', 'profession': 'Scene-Stealer Extraordinaire',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Princess Diana: parser kept only "Diana"; profession truncated to "Was Beloved".
+    '/interactive/2016/06/30/obituaries/princess-diana-obits.html': {
+        'name': 'Princess Diana', 'profession': 'Beloved, Yet Troubled',
+        'gender': 'F', 'gender_src': 'manual',
+    },
+    # Jesse Owens: name parsed as None.
+    '/interactive/2016/07/22/obituaries/owens.html': {
+        'name': 'Jesse Owens', 'gender': 'M', 'gender_src': 'manual',
+    },
+    # Hans Christian Andersen: URL slug "andersen-sf" → "Andersen Sf".
+    '/interactive/2016/08/03/obituaries/andersen-sf.html': {
+        'name': 'Hans Christian Andersen', 'profession': 'Sprung From Poverty',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Raymond Smullyan: parser took the headline's "Large Birds" (referring to
+    # the puzzles in his book) as name.
+    '/interactive/2017/02/11/obituaries/smullyan-logic-puzzles.html': {
+        'name': 'Raymond Smullyan', 'profession': 'Logic Puzzles',
+        'gender': 'M', 'gender_src': 'manual',
+    },
+    # Major Taylor: parser dropped "Major" (treated as honorific).
+    '/interactive/2019/obituaries/major-taylor-overlooked.html': {
+        'name': 'Major Taylor', 'gender': 'M', 'gender_src': 'manual',
+    },
+    # Mary Ellen Pleasant: headline "The Many Chapters of Mary Ellen Pleasant"
+    # gave parser only "Mary Ellen".
+    '/interactive/2019/obituaries/mary-ellen-pleasant-overlooked.html': {
+        'name': 'Mary Ellen Pleasant', 'gender': 'F', 'gender_src': 'manual',
+    },
+    # Moses Fleetwood Walker: headline was just "Moses Fleetwood Walker" but
+    # parser truncated to "Moses Fleetwood".
+    '/interactive/2019/obituaries/moses-fleetwood-walker-overlooked.html': {
+        'name': 'Moses Fleetwood Walker', 'gender': 'M', 'gender_src': 'manual',
+    },
+    # Zelda Wynn Valdes: headline "Zelda Wynn, Fashion Designer..." dropped Valdes.
+    '/interactive/2019/obituaries/zelda-wynn-valdes-overlooked.html': {
+        'name': 'Zelda Wynn Valdes', 'gender': 'F', 'gender_src': 'manual',
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
