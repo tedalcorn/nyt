@@ -784,9 +784,9 @@
         <label style="display:inline-flex;align-items:center;gap:4px;color:#7a4ca8"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> Overlooked No More</label>
         <label style="display:inline-flex;align-items:center;gap:4px;color:#999"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished</label>
         <label style="display:inline-flex;align-items:center;gap:4px;color:#b35454"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief</label>
-        <span id="obitAgeChip" style="display:none;background:#fff3cd;border:1px solid #ffe69c;border-radius:12px;padding:2px 10px;font-size:12px;color:#664d03;cursor:pointer" onclick="clearObitAgeBand()" title="Click to clear"></span>
         <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
       </div>
+      <div id="obitAgeNote" style="display:none;font-size:12px;color:#555;margin-bottom:8px"></div>
       <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="obitsTableContainer"></div></div>
     </div>
   </div>
@@ -2613,6 +2613,30 @@ function renderSectionsTable() {
     ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared Bylines', cls: 'num' }] : []),
   ];
 
+  // Summary row across all sections — pinned to top, never participates in sort
+  const fullSpan = dashboard.all_years.filter(y => y !== currentYear);
+  const allCount = rows.reduce((s, r) => s + (r.count || 0), 0);
+  const allTotalWords = rows.reduce((s, r) => s + (r.total_words || 0), 0);
+  const allAvgWords = allCount ? Math.round(allTotalWords / allCount) : 0;
+  let allSharedPct = null;
+  if (hasSharedData && authors) {
+    let arts = 0, sh = 0;
+    for (const a of authors) {
+      if (INSTITUTIONAL_BYLINES.has(a.name) || !isValidAuthorName(a.name)) continue;
+      arts += a.article_count || 0;
+      sh += a.shared_byline_count || 0;
+    }
+    allSharedPct = arts ? Math.round(sh / arts * 100) : null;
+  }
+  const allRow = {
+    name: 'All sections',
+    period: fullSpan.length ? `${fullSpan[0]}\u2013${fullSpan[fullSpan.length - 1]}` : '—',
+    _spark: '',
+    count: allCount,
+    avg_words: allAvgWords,
+    _sharedPct: allSharedPct,
+  };
+
   let html = `<table class="author-table"><thead><tr>`;
   cols.forEach(c => {
     if (c.key === '_spark') {
@@ -2622,6 +2646,22 @@ function renderSectionsTable() {
     }
   });
   html += `</tr></thead><tbody>`;
+  // Summary row — distinct background, bold name, no sort participation
+  html += `<tr style="background:#f5f7fa;font-weight:600;border-bottom:2px solid #ccd5e0">`;
+  cols.forEach(c => {
+    let v = allRow[c.key];
+    if (c.key === '_spark') {
+      html += `<td class="${c.cls||''}"></td>`;
+    } else if (c.key === '_sharedPct') {
+      html += `<td class="${c.cls||''}">${v !== null && v !== undefined ? v + '%' : '—'}</td>`;
+    } else if (c.key === 'name') {
+      html += `<td>${escapeHtml(String(v))}</td>`;
+    } else {
+      if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
+      html += `<td class="${c.cls||''}">${escapeHtml(String(v ?? ''))}</td>`;
+    }
+  });
+  html += `</tr>`;
   rows.forEach(r => {
     html += `<tr>`;
     cols.forEach(c => {
@@ -6193,34 +6233,47 @@ function mostProfiledYear() {
   return `${best} (${bestN.toLocaleString()})`;
 }
 
-let _obitAgeBand = null; // [startInclusive, endExclusive] or null
-function clearObitAgeBand() { _obitAgeBand = null; renderObitsTable(); _refreshObitAgeChip(); }
-function _refreshObitAgeChip() {
-  const chip = document.getElementById('obitAgeChip');
-  if (!chip) return;
+let _obitAgeBand = null; // [startInclusive, endExclusive] or null. Final bin is [110, Infinity).
+function clearObitAgeBand() { _obitAgeBand = null; renderObitsTable(); _refreshObitAgeNote(); }
+function _refreshObitAgeNote() {
+  const note = document.getElementById('obitAgeNote');
+  if (!note) return;
   if (_obitAgeBand) {
-    chip.style.display = '';
-    chip.textContent = `Age ${_obitAgeBand[0]}–${_obitAgeBand[1]-1} ✕`;
+    const [lo, hi] = _obitAgeBand;
+    const rangeStr = !isFinite(hi) ? `Ages ${lo}+` : `Ages ${lo}\u2013${hi - 1}`;
+    const matching = _obits.filter(o => typeof o.age === 'number' && o.age >= lo && o.age < hi).length;
+    note.style.display = '';
+    note.innerHTML = `<strong>${rangeStr}</strong> · ${matching.toLocaleString()} obits · <a href="#" id="obitAgeNoteClear" style="color:#326891">show all</a>`;
+    const a = document.getElementById('obitAgeNoteClear');
+    if (a) a.addEventListener('click', e => { e.preventDefault(); clearObitAgeBand(); });
   } else {
-    chip.style.display = 'none';
+    note.style.display = 'none';
+    note.innerHTML = '';
   }
 }
 
 function renderObitAgeChart() {
-  // Histogram of ages, 5-year bins
-  const ages = _obits.map(o => o.age).filter(a => typeof a === 'number' && a >= 20 && a <= 110);
-  const BIN = 5;
-  const bins = new Array(Math.ceil(110 / BIN)).fill(0);
-  ages.forEach(a => bins[Math.floor(a / BIN)]++);
-  // Trim leading empty bins (under age 20)
-  const startBin = Math.floor(20 / BIN);
-  const trimmed = bins.slice(startBin);
-  const labels = trimmed.map((_, i) => (startBin + i) * BIN);
-  // Split by gender for stacked breakdown
-  const mAges = _obits.filter(o => o.gender === 'M').map(o => o.age).filter(a => typeof a === 'number');
-  const fAges = _obits.filter(o => o.gender === 'F').map(o => o.age).filter(a => typeof a === 'number');
-  const mBins = new Array(bins.length).fill(0); mAges.forEach(a => { if (a>=20&&a<=110) mBins[Math.floor(a/BIN)]++; });
-  const fBins = new Array(bins.length).fill(0); fAges.forEach(a => { if (a>=20&&a<=110) fBins[Math.floor(a/BIN)]++; });
+  // 5-year bins from 10 (captures young deaths) through 109. Final bin is
+  // 110+ catchall (Gramma the turtle, etc.).
+  const BIN = 5, MIN_AGE = 10, TOP_BIN_LO = 110;
+  const nBins = Math.floor((TOP_BIN_LO - MIN_AGE) / BIN) + 1;  // 21 bins
+  const labels = [];
+  for (let i = 0; i < nBins - 1; i++) labels.push(MIN_AGE + i * BIN);
+  labels.push(`${TOP_BIN_LO}+`);
+  const binFor = a => {
+    if (a < MIN_AGE) return -1;
+    if (a >= TOP_BIN_LO) return nBins - 1;
+    return Math.floor((a - MIN_AGE) / BIN);
+  };
+  const mBins = new Array(nBins).fill(0);
+  const fBins = new Array(nBins).fill(0);
+  _obits.forEach(o => {
+    if (typeof o.age !== 'number') return;
+    const b = binFor(o.age);
+    if (b < 0) return;
+    if (o.gender === 'F') fBins[b]++;
+    else if (o.gender === 'M') mBins[b]++;
+  });
   destroyChart('chartObitAge');
   const canvasEl = document.getElementById('chartObitAge');
   chartInstances['chartObitAge'] = new Chart(canvasEl, {
@@ -6228,8 +6281,8 @@ function renderObitAgeChart() {
     data: {
       labels,
       datasets: [
-        { label: 'Female', data: fBins.slice(startBin), backgroundColor: 'rgba(196,120,74,0.7)', stack: 'a' },
-        { label: 'Male',   data: mBins.slice(startBin), backgroundColor: 'rgba(74,124,139,0.7)', stack: 'a' },
+        { label: 'Female', data: fBins, backgroundColor: 'rgba(196,120,74,0.7)', stack: 'a' },
+        { label: 'Male',   data: mBins, backgroundColor: 'rgba(74,124,139,0.7)', stack: 'a' },
       ]
     },
     options: {
@@ -6241,7 +6294,9 @@ function renderObitAgeChart() {
           callbacks: {
             title: (items) => {
               if (!items.length) return '';
-              const lo = Number(items[0].label);
+              const idx = items[0].dataIndex;
+              if (idx === nBins - 1) return `Ages ${TOP_BIN_LO}+`;
+              const lo = MIN_AGE + idx * BIN;
               return `Ages ${lo}\u2013${lo + BIN - 1}`;
             }
           }
@@ -6254,14 +6309,17 @@ function renderObitAgeChart() {
       onClick: (evt) => {
         const chart = chartInstances['chartObitAge'];
         if (!chart) return;
-        // Click anywhere in the column — use scale to find the index
         const xScale = chart.scales.x;
         const idx = xScale.getValueForPixel(evt.x);
-        if (idx == null || idx < 0 || idx >= labels.length) return;
-        const lo = labels[idx];
-        _obitAgeBand = [lo, lo + BIN];
+        if (idx == null || idx < 0 || idx >= nBins) return;
+        if (idx === nBins - 1) {
+          _obitAgeBand = [TOP_BIN_LO, Infinity];
+        } else {
+          const lo = MIN_AGE + idx * BIN;
+          _obitAgeBand = [lo, lo + BIN];
+        }
         renderObitsTable();
-        _refreshObitAgeChip();
+        _refreshObitAgeNote();
       }
     }
   });
@@ -6348,7 +6406,8 @@ function renderObitsTable() {
     if (onlyPor && !o.portraits) return false;
     if (_obitAgeBand) {
       if (typeof o.age !== 'number') return false;
-      if (o.age < _obitAgeBand[0] || o.age >= _obitAgeBand[1]) return false;
+      const [lo, hi] = _obitAgeBand;
+      if (o.age < lo || o.age >= hi) return false;
     }
     if (gen) {
       if (gen === '?' && o.gender) return false;
@@ -7174,10 +7233,14 @@ _syncTrackerBtns();
   const p = _readHash();
   if (!Object.keys(p).length) return;
   const hasDetail = p.author || p.beat || p.state || p.country || p.section || p.subject || p.q;
-  if (!hasDetail) {
+  // Corrections is unlisted in nav but still live — honor #tab=corrections
+  // so shared links work. Same for any future hidden tabs.
+  const isHiddenTab = p.tab === 'corrections';
+  if (!hasDetail && !isHiddenTab) {
     history.replaceState(null, '', location.pathname + location.search);
     return;
   }
+  if (isHiddenTab) showView(p.tab);
   _pendingRestore = p;
 })();
 
@@ -7187,7 +7250,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/26/26 6:04am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/26/26 6:21am</span>
 </div>
 </body>
 </html>
