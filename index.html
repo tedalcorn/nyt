@@ -773,17 +773,17 @@
         <input type="text" id="obitSearch" placeholder="Filter by name, profession, or headline…" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
         <select id="obitGenderFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
           <option value="">All genders</option>
-          <option value="M">Male only</option>
-          <option value="F">Female only</option>
-          <option value="X">Non-binary only</option>
+          <option value="M">Male</option>
+          <option value="F">Female</option>
+          <option value="X">Non-binary</option>
           <option value="?">Gender not parsed</option>
         </select>
         <select id="obitYearFilter" onchange="renderObitsTable()" style="padding:5px 8px;font-size:13px">
           <option value="">All years</option>
         </select>
-        <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> Overlooked No More</label>
-        <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished</label>
-        <label style="display:inline-flex;align-items:center;gap:4px;color:#666"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief</label>
+        <label style="display:inline-flex;align-items:center;gap:4px;color:#7a4ca8"><input type="checkbox" id="obitOverlookedOnly" onchange="renderObitsTable()"> Overlooked No More</label>
+        <label style="display:inline-flex;align-items:center;gap:4px;color:#999"><input type="checkbox" id="obitRepublishedOnly" onchange="renderObitsTable()"> Republished</label>
+        <label style="display:inline-flex;align-items:center;gap:4px;color:#b35454"><input type="checkbox" id="obitPortraitsOnly" onchange="renderObitsTable()"> 9/11 Portraits of Grief</label>
         <span id="obitAgeChip" style="display:none;background:#fff3cd;border:1px solid #ffe69c;border-radius:12px;padding:2px 10px;font-size:12px;color:#664d03;cursor:pointer" onclick="clearObitAgeBand()" title="Click to clear"></span>
         <span id="obitsCount" style="color:#888;font-size:12px;margin-left:auto"></span>
       </div>
@@ -6236,7 +6236,16 @@ function renderObitAgeChart() {
       responsive: true,
       plugins: {
         legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
-        tooltip: { mode: 'index' }
+        tooltip: {
+          mode: 'index',
+          callbacks: {
+            title: (items) => {
+              if (!items.length) return '';
+              const lo = Number(items[0].label);
+              return `Ages ${lo}\u2013${lo + BIN - 1}`;
+            }
+          }
+        }
       },
       scales: {
         x: { stacked: true, ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 12 } },
@@ -6407,8 +6416,21 @@ function renderObitsTable() {
       .replace(/[\u2018\u2019]/g, "'")
       .replace(/[\u201C\u201D]/g, '"')
       .trim();
-    const linkOpen  = url ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:#326891;text-decoration:none">` : '';
+    const featColor = o.portraits   ? '#b35454'
+                    : o.overlooked  ? '#7a4ca8'
+                    : o.republished ? '#999'
+                    : '';
+    const featLabel = o.portraits ? '9/11 Portraits of Grief'
+                    : o.overlooked ? 'Overlooked No More'
+                    : o.republished ? 'Republished obituary'
+                    : '';
+    const trStyle = featColor ? ` style="color:${featColor}"` : '';
+    const linkColor = featColor || '#326891';
+    const linkOpen  = url ? `<a href="${escapeHtml(safeUrl)}" target="_blank" style="color:${linkColor};text-decoration:none">` : '';
     const linkClose = url ? `</a>` : '';
+    const titleAttr = featLabel
+      ? `${featLabel}${o.headline ? ' — ' + o.headline : ''}`
+      : (o.headline || '');
     // Secondary URL: link if present, else blank
     const secCell = (() => {
       const urls = o.secondary_urls || [];
@@ -6422,7 +6444,7 @@ function renderObitsTable() {
     })();
     const reviewCell = _reviewCell(o.gender_src);
     if (!o.name) {
-      html += `<tr title="${escapeHtml(o.headline || '')}">
+      html += `<tr title="${escapeHtml(titleAttr)}"${trStyle}>
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(fmtDate(o.date))}</td>
         <td style="color:#bbb">${linkOpen}(unparsed)${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
@@ -6432,7 +6454,7 @@ function renderObitsTable() {
         <td class="mob-hide">${secCell}</td>
       </tr>`;
     } else {
-      html += `<tr title="${escapeHtml(o.headline || '')}">
+      html += `<tr title="${escapeHtml(titleAttr)}"${trStyle}>
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(fmtDate(o.date))}</td>
         <td>${linkOpen}${escapeHtml(fullName)}${linkClose}</td>
         <td class="num">${o.age ?? ''}</td>
@@ -7165,7 +7187,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/25/26 11:45pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/26/26 6:04am</span>
 </div>
 </body>
 </html>

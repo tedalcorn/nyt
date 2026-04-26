@@ -1,5 +1,5 @@
 """Extract obituary records from raw Archive API dumps and write data/obituaries.json."""
-import json, os, re, glob, sys
+import json, os, re, glob, sys, unicodedata
 from collections import Counter
 
 RAW_DIR = 'data/raw'
@@ -291,6 +291,7 @@ NON_OBIT_URLS = {
     '/interactive/2016/07/22/obituaries/nf-farewell.html',
     '/interactive/2016/08/14/obituaries/india-hp.html',
     '/interactive/2021/03/25/obituaries/womens-history-month-obituaries.html',
+    '/interactive/2016/08/25/obituaries/capote-obits.html',  # group of obits ("In Cold Blood…")
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -993,14 +994,26 @@ def main():
         try: return _date(int(s[:4]), int(s[5:7]), int(s[8:10]))
         except Exception: return None
 
-    # Group by name; within each group, cluster by date proximity.
+    # Group by *normalized* name so middle-initial variants merge
+    # (e.g. "Theodore Kupferman" + "Theodore R. Kupferman" 2003-09-20/21).
+    def _norm_name(name):
+        if not name: return ''
+        n = unicodedata.normalize('NFKD', name)
+        n = ''.join(c for c in n if not unicodedata.combining(c))
+        n = re.sub(r'^(?:Mr|Mrs|Ms|Mx|Dr|Prof|Sir|Lord|Lady|Cardinal|Bishop|Rev|Sister|Father|Brother|Sen|Rep|Gov|Pres|Capt|Col|Gen|Maj|Lt|Sgt|Hon)\.?\s+', '', n, flags=re.I)
+        n = re.sub(r',?\s+(?:Jr|Sr|II|III|IV|V|Esq|MD|PhD|DDS)\.?\s*$', '', n, flags=re.I)
+        n = re.sub(r"['\u2018\u2019.\-]", '', n)
+        n = re.sub(r'\s+', ' ', n).strip().lower()
+        toks = [t for t in n.split() if len(t) > 1]   # drop single-letter middle inits
+        return ' '.join(toks)
+
     by_name = {}
     no_name_rows = []
     for o in all_obits:
         if not o.get('name'):
             no_name_rows.append(o)
             continue
-        by_name.setdefault(o['name'], []).append(o)
+        by_name.setdefault(_norm_name(o['name']) or o['name'], []).append(o)
 
     merged = []
     n_merged = 0
@@ -1038,18 +1051,28 @@ def main():
     by_name2 = {}
     for o in merged:
         nm = o.get('name')
-        if nm: by_name2.setdefault(nm, []).append(o)
+        if nm: by_name2.setdefault(_norm_name(nm) or nm, []).append(o)
     n_repub_merged = 0
     drop_ids = set()
     for nm, recs in by_name2.items():
         if len(recs) < 2: continue
         repubs = [r for r in recs if r.get('republished')]
         origs  = [r for r in recs if not r.get('republished')]
-        if not repubs or not origs: continue
-        primary = sorted(origs, key=_rank)[0]
+        # Case A: at least one orig + ≥1 repub — attach repubs to canonical orig.
+        # Case B: no orig but ≥2 repubs (subject died pre-2000, e.g. Judy
+        # Garland) — collapse to the oldest republication.
+        if origs and repubs:
+            primary = sorted(origs, key=_rank)[0]
+            others = repubs
+        elif len(repubs) >= 2 and not origs:
+            repubs_sorted = sorted(repubs, key=lambda r: r.get('date') or '')
+            primary = repubs_sorted[0]
+            others = repubs_sorted[1:]
+        else:
+            continue
         sec_urls = list(primary.get('secondary_urls') or [])
         sec_dates = list(primary.get('secondary_dates') or [])
-        for r in repubs:
+        for r in others:
             u = r.get('url'); d = r.get('date')
             if u: sec_urls.append(u)
             if d: sec_dates.append(d)
