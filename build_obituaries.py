@@ -47,7 +47,11 @@ RE_HAS_FUNC_WORD = re.compile(r'\s(?:of|for|with|in|on|by|from|to|at|the|that)\s
 DESCRIPTIVE_TOKENS = {
     'force', 'career', 'life', 'lives', 'hall', 'fame', 'reign', 'novelist',
     'leader', 'wrestler', 'patron', 'founder', 'pioneer', 'champion',
-    'legend', 'hero', 'icon', 'star', 'death', 'novel', 'song', 'art',
+    'legend', 'hero', 'icon', 'death',
+    # NOTE: 'art', 'star', 'song', 'novel' are too easily real first names
+    # or surnames (Art Buchwald, Art Winfree, Star Jones) — including them
+    # blocks legitimate parses and forces fallback to slug, which produces
+    # garbage like "Dr Art" because the slug fallback can't strip Dr/Rev.
     'made', 'helped', 'wrote', 'founded', 'led', 'died', 'killed',
     'who', 'whose', 'whom', 'what', 'where', 'when', 'why',
     'former', 'late', 'old', 'young', 'famous', 'notable',
@@ -303,6 +307,13 @@ NON_OBIT_URLS = {
     '/2019/06/05/obituaries/tonys-nominees-obits.html',
     # Letter-of-remembrances feature, not an obit
     '/2006/10/04/obituaries/apple-remember.html',
+    # Personal essay/appreciation, not an obit (Stan Lee)
+    '/2018/11/12/obituaries/my-moments-with-stan.html',
+    # Tribute essay, not an obit (Robert Heilbroner)
+    '/2005/01/28/obituaries/a-tribute-for-robert-heilbroner.html',
+    # Memorial-service announcements (not obits)
+    '/2007/02/19/obituaries/19altman.html',          # Robert Altman memorial service
+    '/2006/09/16/obituaries/memorial-for-cy-feuer.html',  # Cy Feuer memorial
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -313,9 +324,11 @@ NON_OBIT_URLS = {
 # - age: republished obits whose source year predates 2000 (no raw-dump record
 #   to cross-reference) and whose abstract carries no age phrase
 OBIT_OVERRIDES = {
-    # Sister Inah Canabarro Lucas: headline reads "Brazilian Nun Who Was…"
+    # Sister Inah Canabarro Lucas: store name without "Sister" — title is
+    # added back via make_display_name from the headline. Keeps internal
+    # name consistent with Dr/Rev/Sir stripping policy.
     '/2025/05/02/world/americas/inah-canabarro-lucas-oldest-person-dead.html': {
-        'name': 'Sister Inah Canabarro Lucas', 'profession': None,
+        'name': 'Inah Canabarro Lucas', 'profession': None,
     },
     # Leslie Edwards (dancer, Royal Ballet) — male; pronoun count in our extracts
     # came out F (likely because the abstract referenced a female partner).
@@ -648,6 +661,23 @@ OBIT_OVERRIDES = {
     '/2011/10/21/world/africa/qaddafi-killed-as-hometown-falls-to-libyan-rebels.html': {
         'name': 'Muammar el-Qaddafi', 'gender': 'M', 'gender_src': 'manual', 'age': 69,
     },
+    # Hugo Chavez: tom='Obituary (Obit)' but headline is essay-style
+    # ('A Polarizing Figure Who Led a Movement') with no name.
+    '/2013/03/06/world/americas/hugo-chavez-venezuelas-polarizing-leader-dies-at-58.html': {
+        'name': 'Hugo Chávez', 'gender': 'M', 'gender_src': 'manual', 'age': 58,
+    },
+    # Helen Keller Insider feature: slug 'document-Helenkeller' is one
+    # concatenated word; parser produced 'Document Helenkeller'.
+    '/interactive/2016/06/01/obituaries/document-Helenkeller.html': {
+        'name': 'Helen Keller', 'gender': 'F', 'gender_src': 'manual', 'age': 87,
+        'profession': 'author and disability advocate',
+    },
+    # Dale Earnhardt: short crash-news headline ("Earnhardt Dies in Crash")
+    # has no first name. Race-car driver, killed at Daytona.
+    '/2001/02/19/sports/earnhardt-dies-in-crash.html': {
+        'name': 'Dale Earnhardt', 'age': 49, 'profession': 'NASCAR Driver',
+        'gender': 'M', 'gender_src': 'manual',
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -737,6 +767,16 @@ def extract_name_from_slug(url):
     slug = re.sub(r'^(?:overlooked(?:-no-more)?|not-forgotten|portraits-of-grief|'
                   r'in-memoriam|lives-they-lived|what-they-left-behind)[-_]+',
                   '', slug)
+    # Strip honorific title prefixes from slug — "dr-art-winfree-..." should
+    # yield "Art Winfree", not "Dr Art". The title is preserved on the obit
+    # via make_display_name (which reads the original headline), so the
+    # internal `name` field stays canonical.
+    slug = re.sub(r'^(?:dr|rev|reverend|sister|brother|father|sir|dame|'
+                  r'lord|lady|justice|judge|sen|senator|rep|representative|'
+                  r'gov|governor|capt|captain|col|colonel|gen|general|'
+                  r'lt|lieutenant|sgt|sergeant|cardinal|bishop|prof|professor|'
+                  r'mr|mrs|ms|mx|mayor|president)[-_]+',
+                  '', slug, flags=re.I)
     parts = [p for p in re.split(r'[-_]+', slug)
              if p and not p.isdigit() and len(p) > 1
              and p not in {'cnd', 'and', 'the', 'at', 'on', 'in', 'of', 'web', 'index'}]
@@ -1282,15 +1322,17 @@ def main():
     _PREF = {'Obituary (Obit)': 0, 'Obituary; Biography': 1,
              'Biography; Obituary': 1, 'Obituary': 2}
     def _rank(o):
-        # Lower = preferred. tom rank, then word_count (longer body wins —
-        # otherwise dedup may keep a 93-word stub over a 6,000-word obit
-        # when both share the same news section, e.g. Rehnquist 2005), then
-        # headline length and url length as tiebreakers.
+        # Lower = preferred. word_count first so we always pick the longest
+        # canonical obit within a same-name cluster, regardless of how each
+        # variant is tagged (Althea Gibson 2003: 1,991-word 'News' obit beats
+        # 69-word 'Obituary; Biography' stub; Byron White 2002: 4,314-word
+        # 'News' beats 3,881-word 'Obituary; Biography'). tom rank only as
+        # tiebreaker when word counts are equal.
         try:
             wc = int(o.get('word_count') or 0)
         except (TypeError, ValueError):
             wc = 0
-        return (_PREF.get(o.get('tom') or '', 9), -wc,
+        return (-wc, _PREF.get(o.get('tom') or '', 9),
                 -len(o.get('headline') or ''),
                 -len(o.get('url') or ''))
     def _parse_date(s):
@@ -1305,6 +1347,12 @@ def main():
         n = ''.join(c for c in n if not unicodedata.combining(c))
         n = re.sub(r'^(?:Mr|Mrs|Ms|Mx|Dr|Prof|Sir|Lord|Lady|Cardinal|Bishop|Rev|Sister|Father|Brother|Sen|Rep|Gov|Pres|Capt|Col|Gen|Maj|Lt|Sgt|Hon)\.?\s+', '', n, flags=re.I)
         n = re.sub(r',?\s+(?:Jr|Sr|II|III|IV|V|Esq|MD|PhD|DDS)\.?\s*$', '', n, flags=re.I)
+        # Insert space between consecutive initial-period tokens so
+        # "R.W." normalizes the same way as "R. W." (both → "R W"
+        # → drop both as 1-letter tokens). Without this, "R.W. Apple"
+        # → "rw apple" while "R. W. Apple Jr." → "apple", and they
+        # don't cluster.
+        n = re.sub(r'([A-Z])\.([A-Z])', r'\1. \2', n)
         n = re.sub(r"['\u2018\u2019.\-]", '', n)
         n = re.sub(r'\s+', ' ', n).strip().lower()
         toks = [t for t in n.split() if len(t) > 1]   # drop single-letter middle inits
