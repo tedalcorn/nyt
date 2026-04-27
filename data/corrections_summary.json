@@ -1,94 +1,158 @@
 {
-  "total": 657,
-  "parsed": 733,
-  "matched": 645,
+  "total": 11014,
+  "parsed": 11984,
+  "matched": 10626,
   "by_section": [
     [
       "U.S.",
-      126
-    ],
-    [
-      "World",
-      103
-    ],
-    [
-      "Arts",
-      92
+      1644
     ],
     [
       "Obituaries",
-      80
+      1485
     ],
     [
-      "New York",
-      57
+      "World",
+      1323
+    ],
+    [
+      "Arts",
+      1179
     ],
     [
       "Business",
-      36
-    ],
-    [
-      "Magazine",
-      26
-    ],
-    [
-      "Health",
-      19
-    ],
-    [
-      "Climate",
-      16
-    ],
-    [
-      "Movies",
-      14
-    ],
-    [
-      "Technology",
-      12
-    ],
-    [
-      "Theater",
-      11
-    ],
-    [
-      "T Magazine",
-      11
-    ],
-    [
-      "Science",
-      9
-    ],
-    [
-      "Well",
-      6
-    ],
-    [
-      "Style",
-      4
-    ],
-    [
-      "Books",
-      4
-    ],
-    [
-      "Times Insider",
-      4
-    ],
-    [
-      "Opinion",
-      4
-    ],
-    [
-      "Travel",
-      3
-    ],
-    [
-      "Real Estate",
-      3
+      781
     ],
     [
       "Sports",
+      699
+    ],
+    [
+      "New York",
+      622
+    ],
+    [
+      "Magazine",
+      350
+    ],
+    [
+      "Style",
+      344
+    ],
+    [
+      "Books",
+      232
+    ],
+    [
+      "Health",
+      231
+    ],
+    [
+      "Movies",
+      219
+    ],
+    [
+      "Climate",
+      212
+    ],
+    [
+      "Theater",
+      205
+    ],
+    [
+      "Technology",
+      195
+    ],
+    [
+      "Opinion",
+      149
+    ],
+    [
+      "Science",
+      146
+    ],
+    [
+      "Travel",
+      128
+    ],
+    [
+      "Real Estate",
+      123
+    ],
+    [
+      "Food",
+      94
+    ],
+    [
+      "T Magazine",
+      60
+    ],
+    [
+      "Your Money",
+      44
+    ],
+    [
+      "Well",
+      42
+    ],
+    [
+      "The Upshot",
+      27
+    ],
+    [
+      "Times Insider",
+      18
+    ],
+    [
+      "Education",
+      9
+    ],
+    [
+      "Sunday Review",
+      8
+    ],
+    [
+      "Reader Center",
+      8
+    ],
+    [
+      "Crosswords & Games",
+      8
+    ],
+    [
+      "Neediest Cases",
+      7
+    ],
+    [
+      "The Learning Network",
+      5
+    ],
+    [
+      "Briefing",
+      5
+    ],
+    [
+      "Watching",
+      4
+    ],
+    [
+      "Smarter Living",
+      4
+    ],
+    [
+      "Podcasts",
+      3
+    ],
+    [
+      "International Home",
+      3
+    ],
+    [
+      "Job Market",
+      2
+    ],
+    [
+      "Automobiles",
       2
     ],
     [
@@ -96,210 +160,222 @@
       2
     ],
     [
-      "Briefing",
+      "Corrections",
+      1
+    ],
+    [
+      "Multimedia/Photos",
+      1
+    ],
+    [
+      "Home & Garden",
+      1
+    ],
+    [
+      "Weather",
       1
     ]
   ],
   "by_author": [
     [
+      "Sam Roberts",
+      174
+    ],
+    [
       "Richard Sandomir",
-      9
+      131
+    ],
+    [
+      "Maggie Haberman",
+      88
     ],
     [
       "Robert D. McFadden",
-      8
-    ],
-    [
-      "Shivani Gonzalez",
-      7
-    ],
-    [
-      "Sheryl Gay Stolberg",
-      6
-    ],
-    [
-      "Penelope Green",
-      6
-    ],
-    [
-      "Anita Gates",
-      6
-    ],
-    [
-      "Annie Karni",
-      6
-    ],
-    [
-      "Ephrat Livni",
-      6
-    ],
-    [
-      "Alexis Soloski",
-      6
-    ],
-    [
-      "Lisa Friedman",
-      6
+      86
     ],
     [
       "Clay Risen",
-      6
+      82
     ],
     [
-      "Elisabetta Povoledo",
-      6
+      "Neil Genzlinger",
+      81
     ],
     [
-      "Zach Montague",
-      5
+      "Richard Goldstein",
+      73
     ],
     [
-      "Benjamin Oreskes",
-      5
+      "Penelope Green",
+      71
     ],
     [
-      "Devlin Barrett",
-      5
+      "Lisa Friedman",
+      59
     ],
     [
-      "Choe Sang-Hun",
-      5
+      "Anita Gates",
+      58
     ],
     [
-      "Pooja Salhotra",
-      5
+      "Alexis Soloski",
+      57
     ],
     [
-      "Mike Hale",
-      4
+      "Jon Pareles",
+      56
     ],
     [
-      "Ana Swanson",
-      4
+      "Sheryl Gay Stolberg",
+      53
     ],
     [
-      "Zolan Kanno-Youngs",
-      4
+      "Billy Witz",
+      49
     ],
     [
-      "Jeanna Smialek",
-      4
+      "Katharine Q. Seelye",
+      49
     ],
     [
-      "David E. Sanger",
-      4
+      "Glenn Thrush",
+      48
     ],
     [
-      "Andrew Jacobs",
-      4
-    ],
-    [
-      "Robin Pogrebin",
-      4
-    ],
-    [
-      "Hamed Aleaziz",
-      4
-    ],
-    [
-      "Kenneth Chang",
-      4
-    ],
-    [
-      "Sam Roberts",
-      4
-    ],
-    [
-      "Nick Haramis",
-      4
-    ],
-    [
-      "Taylor Robinson",
-      4
+      "Peter Baker",
+      46
     ],
     [
       "Brooks Barnes",
-      4
+      45
     ],
     [
-      "Jonah Engel Bromwich",
-      4
+      "Alex Williams",
+      44
     ],
     [
-      "Salamishah Tillet",
-      3
+      "Andrew Higgins",
+      43
+    ],
+    [
+      "Alan Feuer",
+      42
+    ],
+    [
+      "Ken Belson",
+      42
+    ],
+    [
+      "Nicholas Fandos",
+      42
+    ],
+    [
+      "David E. Sanger",
+      41
     ],
     [
       "Michael D. Shear",
-      3
+      40
     ],
     [
-      "S\u00e9gol\u00e8ne Le Stradic",
-      3
+      "Giovanni Russonello",
+      40
     ],
     [
-      "Constant M\u00e9heut",
-      3
+      "Charlie Savage",
+      39
     ],
     [
-      "Tariq Panja",
-      3
+      "Coral Davenport",
+      38
+    ],
+    [
+      "Annie Karni",
+      38
+    ],
+    [
+      "Roberta Smith",
+      37
+    ],
+    [
+      "Mark Landler",
+      37
+    ],
+    [
+      "Emily Cochrane",
+      37
+    ],
+    [
+      "Patrick Kingsley",
+      37
+    ],
+    [
+      "The Editorial Board",
+      36
+    ],
+    [
+      "Jennifer Schuessler",
+      36
     ],
     [
       "Steven Erlanger",
-      3
+      36
+    ],
+    [
+      "Katie Benner",
+      36
+    ],
+    [
+      "Michael Crowley",
+      36
     ],
     [
       "Julian E. Barnes",
-      3
+      35
     ],
     [
-      "Adam Liptak",
-      3
+      "Daniel E. Slotnik",
+      34
     ],
     [
-      "Robert Draper",
-      3
+      "David Waldstein",
+      34
     ],
     [
-      "Reid J. Epstein",
-      3
+      "Robin Pogrebin",
+      34
     ],
     [
-      "Hurubie Meko",
-      3
+      "Neal E. Boudette",
+      33
     ],
     [
-      "Adam Nossiter",
-      3
+      "Luke Broadwater",
+      33
     ],
     [
-      "Beatrice Loayza",
-      3
+      "The New York Times",
+      32
     ],
     [
-      "Farnaz Fassihi",
-      3
+      "Marc Tracy",
+      32
     ],
     [
-      "Matina Stevis-Gridneff",
-      3
+      "Gina Kolata",
+      32
     ],
     [
-      "Meaghan Tobin",
-      3
+      "Nick Corasaniti",
+      32
     ],
     [
-      "Scott Reyburn",
-      3
+      "Tariq Panja",
+      32
     ],
     [
-      "Abbie VanSickle",
-      3
-    ],
-    [
-      "Ronen Bergman",
-      3
+      "Katie Rogers",
+      32
     ]
   ]
 }

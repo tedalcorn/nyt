@@ -42,7 +42,7 @@ def main():
         print(f'  {n} match(es) for {snip[:50]!r} → {inline}')
     shutil.copy(CORR_PATH, str(CORR_PATH) + '.bak')
     with open(CORR_PATH, 'w') as f:
-        json.dump(corrs, f, ensure_ascii=False, indent=2)
+        json.dump(corrs, f, ensure_ascii=False, separators=(',', ':'))
     print(f'\nTotal corrections patched: {patched}')
     print(f'Wrote {CORR_PATH}')
 
