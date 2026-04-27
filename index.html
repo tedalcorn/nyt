@@ -804,7 +804,7 @@
     <div class="chart-box">
       <h3>Corrections</h3>
       <p id="corrSubtitle" style="font-size:13px;color:#666;margin-bottom:10px">
-        Every correction the Times printed in 2025, linked to the underlying article.
+        Every correction the Times printed in 2025, linked to the underlying article. (We're still backfilling earlier years; 2000–2024 will follow.)
       </p>
       <div id="corrLoading" style="color:#888;padding:8px 0">Loading corrections data…</div>
       <div id="corrContent" style="display:none">
@@ -1117,7 +1117,6 @@ function downloadObitChart(canvasId, baseName, btn) {
     title2 = `n = ${known.toLocaleString()} obituaries w/ identified gender · Data from NYT Archive API`;
     headerLegend = [
       { color: 'rgba(196,120,74,0.9)', label: '% Female' },
-      { color: 'rgba(120,90,155,0.9)', label: '% Non-binary' },
     ];
   } else {
     title1 = 'New York Times obituaries';
@@ -6360,7 +6359,7 @@ function renderObitGenderChart() {
   const cutoffYr = String(new Date().getFullYear());
   const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean)))
     .filter(y => y !== cutoffYr).sort();
-  const fPct = [], xPct = [], totals = [];
+  const fPct = [], totals = [];
   yrs.forEach(y => {
     const oy = _obits.filter(o => o.year === y);
     const m = oy.filter(o => o.gender === 'M').length;
@@ -6368,7 +6367,6 @@ function renderObitGenderChart() {
     const x = oy.filter(o => o.gender === 'X').length;
     const known = m + f + x;
     fPct.push(known > 0 ? 100 * f / known : null);
-    xPct.push(known > 0 ? 100 * x / known : null);
     totals.push(oy.length);
   });
   destroyChart('chartObitGender');
@@ -6379,8 +6377,6 @@ function renderObitGenderChart() {
       datasets: [
         { label: '% Female', data: fPct, borderColor: 'rgba(196,120,74,0.9)', backgroundColor: 'rgba(196,120,74,0.15)',
           tension: 0.25, pointRadius: 2, fill: true, yAxisID: 'y' },
-        { label: '% Non-binary', data: xPct, borderColor: 'rgba(120,90,155,0.9)', backgroundColor: 'rgba(120,90,155,0.15)',
-          tension: 0.25, pointRadius: 2, fill: false, yAxisID: 'y' },
       ]
     },
     options: {
@@ -6592,7 +6588,7 @@ const corrObserver = new MutationObserver(() => {
 corrObserver.observe(document.getElementById('view-corrections'), { attributes: true });
 
 // Date parsing for the "year(s) covered" label in subtitle.
-let _corrSort = { key: 'ref_date', dir: 'desc' };
+let _corrSort = { key: 'page_date', dir: 'desc' };
 
 function _setCorrMatch(val) {
   const wrap = document.getElementById('corrMatchFilter');
@@ -6630,13 +6626,19 @@ async function initCorrections() {
   });
 
   // Subtitle: derive period from ref_date / page_date span.
+  // Aim is 2000–2025; while we backfill, advertise actual coverage but flag
+  // the goal so readers don't think we're claiming everything since 1944.
   const sub = document.getElementById('corrSubtitle');
   if (sub) {
     const dates = _corr.map(c => c.ref_date || c.page_date).filter(Boolean).sort();
     if (dates.length) {
       const yrs = new Set(dates.map(d => d.slice(0, 4)));
       const period = yrs.size === 1 ? [...yrs][0] : `${[...yrs][0]}–${[...yrs].pop()}`;
-      sub.textContent = `Every correction the Times printed in ${period}, linked to the underlying article.`;
+      const targetEnd = '2025';
+      const haveAll = yrs.has('2000') && yrs.has(targetEnd);
+      sub.textContent = haveAll
+        ? `Every correction the Times printed from 2000 through ${targetEnd}, linked to the underlying article.`
+        : `Every correction the Times printed in ${period}, linked to the underlying article. (Backfill underway — the goal is full 2000–2025 coverage.)`;
     }
   }
 
@@ -6655,7 +6657,7 @@ function _toggleCorrSort(key) {
   if (_corrSort.key === key) {
     _corrSort.dir = _corrSort.dir === 'asc' ? 'desc' : 'asc';
   } else {
-    _corrSort = { key, dir: key === 'ref_date' ? 'desc' : 'asc' };
+    _corrSort = { key, dir: key === 'page_date' ? 'desc' : 'asc' };
   }
   renderCorrTable();
 }
@@ -6690,12 +6692,12 @@ function renderCorrTable() {
   const sortableTh = (col, label) =>
     `<th style="cursor:pointer;user-select:none" onclick="_toggleCorrSort('${col}')">${label}${arrow(col)}</th>`;
   let html = '<table class="author-table corrections-table"><thead><tr>'
-    + sortableTh('ref_date', 'Date')
+    + sortableTh('page_date', 'Date published')
     + sortableTh('match_section', 'Section')
     + '<th>Reporter(s)</th><th>Article</th><th>Correction</th>'
     + '</tr></thead><tbody>';
   display.forEach(c => {
-    const refDateText = _fmtCorrDate(c.ref_date);
+    const refDateText = _fmtCorrDate(c.page_date);
     const refDateCell = refDateText ? escapeHtml(refDateText) : '<span style="color:#bbb">—</span>';
     const secCell = c.match_section ? escapeHtml(c.match_section) : '<span style="color:#bbb">—</span>';
     const authors = (c.match_authors || []).join(', ');
@@ -7307,7 +7309,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 5:30am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 12:30pm</span>
 </div>
 </body>
 </html>

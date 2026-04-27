@@ -152,6 +152,16 @@ RE_DATE_MONTH = re.compile(
     re.I,
 )
 RE_DAY_OF_WEEK = re.compile(r'\bon\s+(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\b', re.I)
+RE_LAST_DAY = re.compile(r'\blast\s+(Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\b', re.I)
+# "this weekend" / "last weekend" — both mean the most recent Sunday relative
+# to the correction page's pub_date. Sunday-section corrections (Magazine, Book
+# Review, T Magazine) almost always use this phrasing instead of a date or weekday.
+RE_WEEKEND = re.compile(r'\b(this|last)\s+weekend\b', re.I)
+# Daily-corrections URL slug carries the page date when text-based parsing fails:
+# /pageoneplus/corrections-MONTH-D-YYYY.html. The slug date is the *correction*
+# pub date (page_date), so when we fall back here we record it as a hint and
+# let the matcher search the broader window.
+RE_URL_DATE = re.compile(r'/corrections-([a-z]+)-(\d{1,2})-(\d{4})', re.I)
 RE_HEADLINE_QUOTED = re.compile(r'[\u201C"]([^\u201D"]{4,200})[\u201D"]')
 # NYT article URL inside a corrections paragraph — points at the corrected piece.
 RE_NYT_ARTICLE_URL = re.compile(r'^https?://(?:www\.)?nytimes\.com(/\d{4}/\d{2}/\d{2}/[^?#\s]+\.html)', re.I)
@@ -226,22 +236,34 @@ def parse_correction_page(html, page_url, page_pub_date):
                         ref_date = f'{yr:04d}-{mn:02d}-{day:02d}'
                     except Exception:
                         pass
-        # Day-of-week fallback: derive date relative to page_pub_date
+        # Day-of-week fallback: derive date relative to page_pub_date.
+        # Tries in priority order:
+        #   1. "on Sunday" / "on Monday" → most recent matching weekday before page_date
+        #   2. "last Sunday" / "last Monday" → same logic; Times uses "last" interchangeably
+        #   3. "this weekend" / "last weekend" → most recent Sunday before page_date
+        from datetime import date, timedelta
         if not ref_date and page_pub_date:
-            dm = RE_DAY_OF_WEEK.search(text)
+            dm = RE_DAY_OF_WEEK.search(text) or RE_LAST_DAY.search(text)
+            target_day = None
             if dm:
+                target_day = DAY_TO_N[dm.group(1).lower()]
+            elif RE_WEEKEND.search(text):
+                target_day = DAY_TO_N['sunday']
+            if target_day is not None:
                 try:
-                    from datetime import date, timedelta
                     py, pmm, pdd = page_pub_date.split('-')
                     base = date(int(py), int(pmm), int(pdd))
-                    target = DAY_TO_N[dm.group(1).lower()]
-                    # Correction page mentions a recent past day
-                    delta = (base.weekday() - target) % 7
+                    delta = (base.weekday() - target_day) % 7
                     if delta == 0:
                         delta = 7
                     ref_date = (base - timedelta(days=delta)).isoformat()
                 except Exception:
                     pass
+        # Last-resort: just stamp the page's own date so the matcher has a window.
+        # The matcher widens ±3 days around ref_date, which catches articles from
+        # the prior week. Better than skipping entirely.
+        if not ref_date and page_pub_date:
+            ref_date = page_pub_date
 
         ref_headline = None
         hm = RE_HEADLINE_QUOTED.search(text)
