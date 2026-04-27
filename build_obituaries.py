@@ -298,6 +298,9 @@ NON_OBIT_URLS = {
     '/interactive/2016/01/13/obituaries/tom-brokaw-obits.html',              # Breaking Bread feature
     '/interactive/2016/07/22/obituaries/dawes-breakingbread.html',           # Breaking Bread feature
     '/interactive/2017/02/17/obituaries/17stambler-encyclopedia-excerpts.html',  # book excerpts
+
+    # ---- 2026-04-27 manual review (Corrected obits.xlsx) ----
+    '/2019/06/05/obituaries/tonys-nominees-obits.html',
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -475,6 +478,134 @@ OBIT_OVERRIDES = {
     '/interactive/2019/obituaries/zelda-wynn-valdes-overlooked.html': {
         'name': 'Zelda Wynn Valdes', 'gender': 'F', 'gender_src': 'manual',
     },
+
+    # ---- 2026-04-27 manual review (Corrected obits.xlsx, 130 rows) ----
+    '/2000/02/08/business/gad-rausing-77-swedish-innovator-of-beverage-containers.html': {'gender': 'M', 'gender_src': 'manual', 'age': 77},
+    '/2000/05/12/world/gervase-cowell-73-manager-of-a-soviet-turncoat-spy-dies.html': {'gender': 'M', 'gender_src': 'manual', 'age': 73},
+    '/2000/06/22/nyregion/elvin-kabat-85-microbiologist-known-for-work-in-immunology.html': {'gender': 'M', 'gender_src': 'manual', 'age': 85},
+    '/2000/08/26/nyregion/l-b-boyer-84-psychoanalyst-promoted-countertransference.html': {'gender': 'M', 'gender_src': 'manual', 'age': 84},
+    '/2000/09/08/nyregion/t-l-deglin-92-public-relations-executive.html': {'age': 92},
+    '/2000/10/13/world/hendrik-casimir-90-theorist-in-study-of-quantum-mechanics.html': {'age': 90},
+    '/2000/12/11/world/vlado-gotovac-a-voice-of-freedom-in-croatia-dies-at-70.html': {'gender': 'M', 'gender_src': 'manual', 'age': 70},
+    '/2001/03/04/world/c-m-woodhouse-writer-on-modern-greece-dies-at-83.html': {'gender': 'M', 'gender_src': 'manual', 'age': 83},
+    '/2001/03/13/us/s-dillon-ripley-dies-87-led-smithsonian-institution-during-its-greatest-growth.html': {'age': 87},
+    '/2001/03/24/us/rowland-evans-79-tv-host-and-conservative-columnist.html': {'gender': 'M', 'gender_src': 'manual', 'age': 79},
+    '/2001/10/12/national/portraits/tawanna-griffin-family-meant-everything.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2001/12/02/national/portraits/jrme-r-lohez-vive-lamrique.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2001/12/02/national/portraits/weibin-wang-living-the-american-dream-2001120293520614313.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2001/12/08/national/portraits/gayle-greene-two-trips-a-year.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2001/12/15/national/portraits/dominick-pezzulo-the-unusual-was-typical.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2001/12/15/nyregion/a-keith-smiley-91-executive-of-resort-and-preservationist.html': {'age': 91},
+    '/2002/07/14/world/yousuf-karsh-who-photographed-famous-and-infamous-of-20th-century-dies-at-93.html': {'age': 93},
+    '/2002/08/08/business/cortlandt-parker-80-publisher-of-17-weeklies-in-new-jersey.html': {'gender': 'M', 'gender_src': 'manual', 'age': 80},
+    '/2002/08/25/sports/hoyt-wilhelm-first-reliever-in-the-hall-of-fame-dies.html': {'gender': 'M', 'gender_src': 'manual', 'age': 79},
+    '/2002/09/09/sports/frankie-albert-a-pioneering-quarterback-is-dead-at-82.html': {'gender': 'M', 'gender_src': 'manual', 'age': 82},
+    '/2002/12/05/world/achille-castiglioni-84-modern-design-leader.html': {'gender': 'M', 'gender_src': 'manual', 'age': 84},
+    '/2002/12/13/world/nani-palkhivala-82-dies-civil-rights-leader-in-india.html': {'gender': 'M', 'gender_src': 'manual', 'age': 82},
+    '/2003/01/09/business/siggi-b-wilzig-76-executive-and-survivor-of-the-holocaust.html': {'gender': 'M', 'gender_src': 'manual', 'age': 76},
+    '/2003/03/23/us/col-edson-raff-95-dies-led-paratroopers-in-1942.html': {'age': 95},
+    '/2003/06/06/world/natalya-reshetovskaya-84-is-dead-solzhenitsyn-s-wife-questioned-gulag.html': {'gender': 'F', 'gender_src': 'manual', 'age': 84},
+    '/2003/09/11/nyregion/m-konvitz-scholar-of-law-and-idealism-is-dead-at-95.html': {'age': 95},
+    '/2003/09/24/world/simcha-dinitz-74-ex-israeli-envoy-had-role-in-disputed-airlift.html': {'gender': 'M', 'gender_src': 'manual', 'age': 74},
+    '/2004/01/06/business/takashi-ishihara-91-dies-led-nissan-s-rise.html': {'age': 91},
+    '/2004/01/15/theater/uta-hagen-tony-winning-broadway-star-and-teacher-of-actors-dies-at-84.html': {'gender': 'F', 'gender_src': 'manual', 'age': 84},
+    '/2004/02/04/nyregion/adella-wotherspoon-last-survivor-of-general-slocum-disaster-is-dead-at-100.html': {'age': 100},
+    '/2004/02/06/nyregion/trude-wenzel-lash-95-an-advocate-for-children.html': {'age': 95},
+    '/2004/03/01/nyregion/labe-scheinberg-78-physician-and-multiple-sclerosis-specialist.html': {'gender': 'M', 'gender_src': 'manual', 'age': 78},
+    '/2004/03/15/arts/vilayat-khan-76-musician-who-redefined-sitar-playing.html': {'gender': 'M', 'gender_src': 'manual', 'age': 76},
+    '/2004/03/17/arts/genevieve-83-french-singer-who-mutilated-english-on-tv.html': {'gender': 'F', 'gender_src': 'manual', 'age': 83},
+    '/2004/04/08/world/larisa-bogoraz-soviet-dissident-dies-at-74.html': {'gender': 'F', 'gender_src': 'manual', 'age': 74},
+    '/2004/05/19/arts/elvin-jones-jazz-drummer-with-coltrane-dies-at-76.html': {'gender': 'M', 'gender_src': 'manual', 'age': 76},
+    '/2004/06/07/nyregion/m-searle-wright-86-teacher-composer-and-organ-expert.html': {'age': 86},
+    '/2004/06/15/nyregion/whitman-knapp-95-dies-exposed-police-corruption.html': {'age': 95},
+    '/2004/07/07/sports/rodger-ward-83-two-time-indianapolis-500-winner.html': {'gender': 'M', 'gender_src': 'manual', 'age': 83},
+    '/2004/07/07/us/tf-mancuso-who-led-radiation-study-dies-at-92.html': {'age': 92},
+    '/2004/07/11/nyregion/corrine-grad-coleman-77-radical-feminist-and-writer.html': {'gender': 'F', 'gender_src': 'manual', 'age': 77},
+    '/2004/07/12/business/laurance-s-rockefeller-passionate-conservationist-and-investor-is-dead-at-94.html': {'age': 94},
+    '/2004/07/12/theater/phoebe-brand-96-actress-and-group-theater-co-founder.html': {'age': 96},
+    '/2004/09/22/us/w-c-reeves-crucial-ally-in-west-nile-fight-dies-at-87.html': {'age': 87},
+    '/2004/09/26/obituaries/w-dorwin-teague-94-industrial-designer-is-dead.html': {'age': 94},
+    '/2004/09/30/books/mulk-raj-anand-99-famed-indian-writer-dies.html': {'age': 99},
+    '/2004/10/10/politics/townsend-hoopes-82-author-who-wrote-about-vietnam-dies.html': {'gender': 'M', 'gender_src': 'manual', 'age': 82},
+    '/2004/11/26/us/langdon-gilkey-85-theorist-on-nexus-of-faith-and-science-dies.html': {'gender': 'M', 'gender_src': 'manual', 'age': 85},
+    '/2005/01/06/obituaries/maclyn-mccarty-dies-at-93-pioneer-in-dna-research.html': {'age': 93},
+    '/2005/01/10/obituaries/r-bruce-mcgill-84-educator-who-led-development-of-tests.html': {'gender': 'M', 'gender_src': 'manual', 'age': 84},
+    '/2005/01/17/obituaries/suzie-frankfurt-73-a-decorator-and-friend-to-warhol-dies.html': {'gender': 'F', 'gender_src': 'manual', 'age': 73},
+    '/2005/01/20/science/h-bentley-glass-provocative-science-theorist-dies-at-98.html': {'age': 98},
+    '/2005/03/10/theater/trude-rittmann-an-arranger-of-broadway-favorites-dies-at-96.html': {'age': 96},
+    '/2005/03/23/arts/design/kenzo-tange-architect-of-urban-japan-dies-at-91.html': {'age': 91},
+    '/2005/03/24/arts/design/czeslaw-slania-83-engraver-of-postage-stamps-and-money-dies.html': {'gender': 'M', 'gender_src': 'manual', 'age': 83},
+    '/2005/04/15/college/andr-franois-is-dead-at-89-illustrator-with-biting-satire.html': {'name': 'AndrÃ© FranÃ§ois', 'age': 89},
+    '/2005/04/30/sports/hockey/red-horner-one-of-hockeys-toughest-players-dies-at-95.html': {'age': 95},
+    '/2005/07/21/business/gerry-thomas-who-thought-up-the-tv-dinner-is-dead-at-83.html': {'gender': 'M', 'gender_src': 'manual', 'age': 83},
+    '/2005/07/23/arts/music/blue-barron-91-bigband-leader-dies.html': {'age': 91},
+    '/2005/11/04/nyregion/waldemar-nielsen-expert-on-philanthropy-dies-at-88.html': {'age': 88},
+    '/2006/01/31/arts/design/nam-june-paik-73-dies-pioneer-of-video-art-whose-work-broke.html': {'gender': 'M', 'gender_src': 'manual', 'age': 73},
+    '/2006/04/02/nyregion/matt-kennedy-101-dies-stalwart-of-coney-island.html': {'age': 101},
+    '/2006/04/12/style/bobbie-nudie-purveyor-of-glitter-to-rhinestone-cowboys-dies-at-92.html': {'age': 92},
+    '/2006/04/13/movies/rajkumar-beloved-indian-film-star-dies-at-77.html': {'gender': 'M', 'gender_src': 'manual', 'age': 77},
+    '/2006/04/15/nyregion/dr-paulina-f-kernberg-child-psychiatrist-dies-at-71.html': {'gender': 'F', 'gender_src': 'manual', 'age': 71},
+    '/2006/05/02/world/europe/02revel.html': {'gender': 'M', 'gender_src': 'manual', 'name': 'Jean-François Revel', 'age': 82},
+    '/2006/06/01/arts/01aarons.html': {'age': 89},
+    '/2006/06/10/arts/10sano.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/2006/07/03/us/03bullough.html': {'gender': 'M', 'gender_src': 'manual', 'age': 77},
+    '/2006/07/04/arts/television/04murray.html': {'age': 89},
+    '/2006/07/12/arts/12hughes.html': {'age': 90},
+    '/2006/07/27/us/27mosteller.html': {'age': 89},
+    '/2006/08/26/obituaries/26mccullum.html': {'age': 93},
+    '/2006/08/29/arts/music/leopold-simoneau-90-acclaimed-mozart-tenor-dies.html': {'age': 90},
+    '/2006/08/30/world/europe/30BARZEL.html': {'gender': 'M', 'gender_src': 'manual', 'age': 82},
+    '/2006/09/02/obituaries/02johnson.html': {'age': 94},
+    '/2006/09/22/world/asia/22an.html': {'gender': 'M', 'gender_src': 'manual', 'age': 79},
+    '/2006/09/28/world/asia/iva-toguri-daquino-known-as-tokyo-rose-and-later-convicted-of.html': {'age': 90},
+    '/2006/10/05/us/05apple.html': {'gender': 'M', 'gender_src': 'manual', 'age': 71},
+    '/2006/10/15/us/15bennett.html': {'gender': 'F', 'gender_src': 'manual', 'age': 71},
+    '/2006/10/31/world/africa/01bothacnd.html': {'gender': 'M', 'gender_src': 'manual', 'age': 90},
+    '/2006/11/01/sports/baseball/silas-simmons-111-veteran-of-baseballs-negro-leagues-is.html': {'age': 111},
+    '/2006/11/01/world/africa/p-w-botha-defender-of-apartheid-is-dead-at-90.html': {'gender': 'M', 'gender_src': 'manual', 'age': 90},
+    '/2006/11/03/obituaries/03duprat.html': {'gender': 'M', 'gender_src': 'manual', 'age': 74},
+    '/2006/11/12/nyregion/12barmash.html': {'gender': 'M', 'gender_src': 'manual', 'age': 84},
+    '/2006/12/18/technology/c-peter-mccolough-86-dies-led-xerox-to-prominence-in-13-years-as.html': {'age': 86},
+    '/2007/03/16/sports/baseball/16kuhn.html': {'gender': 'M', 'gender_src': 'manual', 'age': 80},
+    '/2007/03/31/business/31sticht.html': {'age': 89},
+    '/2008/12/07/nyregion/07vonbulow.html': {'gender': 'F', 'gender_src': 'manual', 'age': 76},
+    '/2009/05/23/sports/hockey/23smith.html': {'age': 95},
+    '/2009/08/12/sports/baseball/12mantle.html': {'gender': 'F', 'gender_src': 'manual', 'age': 77},
+    '/2010/04/10/movies/10raabe.html': {'age': 94},
+    '/2010/11/29/us/29chance.html': {'age': 97},
+    '/2013/07/31/sports/basketball/ossie-schectman-who-scored-the-nbas-first-points-dies-at-94.html': {'age': 94},
+    '/2014/08/18/us/sophie-masloff-ex-mayor-of-pittsburgh-dies-at-96.html': {'age': 96},
+    '/2015/05/20/nyregion/happy-rockefeller-whose-marriage-to-governor-scandalized-voters-dies-at-88.html': {'age': 88},
+    '/2016/10/14/us/yutaka-yoshida-dead.html': {'gender': 'M', 'gender_src': 'manual', 'age': 104},
+    '/2017/02/16/world/asia/ren-xinmin-dead-china-rockets.html': {'gender': 'M', 'gender_src': 'manual', 'age': 101},
+    '/2017/07/21/books/clancy-sigal-dead-author-of-going-away.html': {'gender': 'M', 'gender_src': 'manual', 'age': 90},
+    '/2018/03/08/obituaries/overlooked-lillias-campbell-davidson.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2018/03/28/obituaries/overlooked-yu-gwan-sun.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2018/04/18/obituaries/overlooked-harriott-daley.html': {'gender': 'F', 'gender_src': 'manual'},
+    '/2018/07/06/obituaries/gudrun-burwitz-ever-loyal-daughter-of-himmler-is-dead-at-88.html': {'gender': 'F', 'gender_src': 'manual', 'age': 88},
+    '/2018/09/05/obituaries/jan-ellen-lewis-expert-on-jeffersons-other-family-dies-at-69.html': {'gender': 'F', 'gender_src': 'manual', 'age': 69},
+    '/2018/09/26/obituaries/voltairine-de-cleyre-overlooked.html': {'gender': 'F', 'gender_src': 'manual', 'age': 45},
+    '/2018/10/17/obituaries/yamei-kin-overlooked.html': {'gender': 'F', 'gender_src': 'manual', 'age': 70},
+    '/2018/11/14/obituaries/pandita-ramabai-overlooked.html': {'gender': 'F', 'gender_src': 'manual', 'age': 63},
+    '/2019/02/27/obituaries/dondi-donald-joseph-white-overlooked.html': {'gender': 'M', 'gender_src': 'manual', 'age': 37},
+    '/2019/07/12/science/rene-favaloro-dead.html': {'gender': 'M', 'gender_src': 'manual', 'age': 77},
+    '/2019/11/27/arts/evelyne-daitz-dies-at-83-ran-a-vital-photography-gallery.html': {'gender': 'F', 'gender_src': 'manual', 'age': 83},
+    '/2020/04/03/arts/harriet-glickman-dead-peanuts.html': {'gender': 'F', 'gender_src': 'manual', 'age': 93},
+    '/2020/08/07/obituaries/jovita-idar-overlooked.html': {'gender': 'F', 'gender_src': 'manual', 'age': 60},
+    '/2020/08/23/books/mercedes-barcha-dead.html': {'gender': 'F', 'gender_src': 'manual', 'age': 87},
+    '/2020/08/23/obituaries/dr-alyce-gullattee-dead-coronavirus.html': {'gender': 'F', 'gender_src': 'manual', 'age': 91},
+    '/2020/11/05/obituaries/arolde-de-oliveira-dead-coronavirus.html': {'gender': 'M', 'gender_src': 'manual', 'age': 83},
+    '/2021/05/29/us/sister-margherita-marchione-dead.html': {'gender': 'F', 'gender_src': 'manual', 'age': 99},
+    '/2021/07/13/books/priscilla-mcmillan-dead.html': {'gender': 'F', 'gender_src': 'manual', 'age': 92},
+    '/2023/05/08/science/theodor-diener-dead.html': {'gender': 'M', 'gender_src': 'manual', 'age': 102},
+    '/2024/04/12/obituaries/lizzie-magie-overlooked.html': {'gender': 'F', 'gender_src': 'manual', 'age': 81},
+    '/2025/04/27/us/politics/alexis-herman-dead.html': {'gender': 'F', 'gender_src': 'manual', 'age': 77},
+    '/2025/06/06/arts/jillian-sackler-dead.html': {'gender': 'F', 'gender_src': 'manual', 'age': 84},
+    '/2025/07/24/sports/hulk-hogan-dead.html': {'gender': 'M', 'gender_src': 'manual', 'age': 71},
+    '/2025/09/28/arts/music/viv-prince-dead.html': {'gender': 'M', 'gender_src': 'manual', 'age': 84},
+    '/2025/10/16/world/asia/kanchha-sherpa-mt-everest-dead.html': {'gender': 'M', 'gender_src': 'manual', 'age': 92},
+    '/interactive/2016/01/13/obituaries/von-braun-obits.html': {'gender': 'M', 'gender_src': 'manual'},
+    '/interactive/2016/06/30/obituaries/sinclair.html': {'gender': 'M', 'gender_src': 'manual'},
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -512,6 +643,16 @@ OBIT_SPLITS = {
     '/2022/10/14/obituaries/katharine-briggs-and-isabel-myers-overlooked.html': [
         {'name': 'Katharine Briggs', 'age': 93, 'gender': 'F', 'gender_src': 'manual'},
         {'name': 'Isabel Myers', 'age': 82, 'gender': 'F', 'gender_src': 'manual'},
+    ],
+
+    # ---- 2026-04-27 manual review (Corrected obits.xlsx) ----
+    '/2022/01/07/world/europe/grichka-and-igor-bogdanoff-dead.html': [
+        {'name': 'Grichka Bogdanoff', 'age': 72, 'gender': 'M', 'gender_src': 'manual'},
+        {'name': 'Igor Bogdanoff', 'age': 72, 'gender': 'M', 'gender_src': 'manual'},
+    ],
+    '/2022/09/23/us/ilse-nathan-ruth-siegler-scheuer-dead.html': [
+        {'name': 'Ilse Nathan', 'age': 98, 'gender': 'F', 'gender_src': 'manual'},
+        {'name': 'Ruth Siegler', 'age': 95, 'gender': 'F', 'gender_src': 'manual'},
     ],
 }
 # 9/11 "Portraits of Grief" — published Dec 2001 - Sep 2002, ~1,800 articles.
@@ -912,6 +1053,11 @@ def main():
             year = pub[:4] if pub else ''
 
             display_name = make_display_name(h, name) if name else name
+            wc = d.get('word_count', 0) or 0
+            try:
+                wc = int(wc)
+            except (TypeError, ValueError):
+                wc = 0
             all_obits.append({
                 'name': name,
                 'display_name': display_name,
@@ -930,6 +1076,7 @@ def main():
                 'headline': h,
                 'abstract': ab,
                 'url': url,
+                'word_count': wc,
             })
             by_year[year] += 1
 

@@ -1,11 +1,11 @@
 {
-  "total": 660,
+  "total": 657,
   "parsed": 733,
-  "matched": 641,
+  "matched": 645,
   "by_section": [
     [
       "U.S.",
-      125
+      126
     ],
     [
       "World",
@@ -13,7 +13,7 @@
     ],
     [
       "Arts",
-      91
+      92
     ],
     [
       "Obituaries",
@@ -80,15 +80,15 @@
       4
     ],
     [
+      "Travel",
+      3
+    ],
+    [
       "Real Estate",
-      2
+      3
     ],
     [
       "Sports",
-      2
-    ],
-    [
-      "Travel",
       2
     ],
     [

@@ -765,14 +765,14 @@
             <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Age at death</div>
             <button onclick="downloadObitChart('chartObitAge', 'obit-age-at-death', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
-          <canvas id="chartObitAge" style="max-height:180px"></canvas>
+          <div style="position:relative;height:180px"><canvas id="chartObitAge"></canvas></div>
         </div>
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Gender split over time</div>
             <button onclick="downloadObitChart('chartObitGender', 'obit-gender-over-time', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
-          <canvas id="chartObitGender" style="max-height:180px"></canvas>
+          <div style="position:relative;height:180px"><canvas id="chartObitGender"></canvas></div>
         </div>
       </div>
 
@@ -6315,6 +6315,7 @@ function renderObitAgeChart() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
         tooltip: {
@@ -6381,6 +6382,7 @@ function renderObitGenderChart() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top', align: 'center', labels: { font: { size: 10 }, boxWidth: 10 } },
         tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y?.toFixed(2) || '—'}% (n=${totals[c.dataIndex]?.toLocaleString()})` } }
@@ -6452,8 +6454,8 @@ function renderObitsTable() {
   const keyFor = (o, c) => {
     if (c === 'firstName') return _firstName(o.name);
     if (c === 'lastName')  return _lastName(o.name);
-    if (c === 'review')     return o.gender_src === 'first_name' ? 1 : 0;
     if (c === 'secondary')  return (o.secondary_urls || []).length;
+    if (c === 'word_count') return o.word_count || 0;
     return o[c];
   };
   rows.sort((a, b) => {
@@ -6479,7 +6481,7 @@ function renderObitsTable() {
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
     { k: 'profession', label: 'Profession / Role', cls: 'mob-hide' },
-    { k: 'review', label: 'Review', cls: 'mob-hide' },
+    { k: 'word_count', label: 'Words', cls: 'num mob-hide' },
     { k: 'secondary', label: 'Addl. URL(s)', cls: 'mob-hide' },
   ];
   const fmtDate = s => {
@@ -6487,10 +6489,7 @@ function renderObitsTable() {
     const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? `${m[2]}/${m[3]}/${m[1].slice(2)}` : s;
   };
-  // gender confidence indicator → small marker (used in Review column)
-  const _reviewCell = src => src === 'first_name'
-    ? '<span title="Gender inferred from first name only — low confidence" style="color:#c08040;font-size:11px">⚠</span>'
-    : '';
+  const _wcCell = wc => (wc && wc > 0) ? wc.toLocaleString() : '';
   let html = '<table class="author-table"><thead><tr>';
   cols.forEach(c => { html += `<th class="${c.cls||''}" data-sort="${c.k}">${c.label}${ind(c.k)}</th>`; });
   html += '</tr></thead><tbody>';
@@ -6530,7 +6529,7 @@ function renderObitsTable() {
         return `<a href="${escapeHtml(su || '')}" target="_blank" style="color:#326891;font-size:11px">${escapeHtml(lbl)}</a>`;
       }).join(', ');
     })();
-    const reviewCell = _reviewCell(o.gender_src);
+    const wcCell = _wcCell(o.word_count);
     if (!o.name) {
       html += `<tr title="${escapeHtml(titleAttr)}"${trStyle}>
         <td style="color:#aaa;white-space:nowrap">${escapeHtml(fmtDate(o.date))}</td>
@@ -6538,7 +6537,7 @@ function renderObitsTable() {
         <td class="num">${o.age ?? ''}</td>
         <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
         <td class="mob-hide">${escapeHtml(o.profession || '')}</td>
-        <td class="mob-hide">${reviewCell}</td>
+        <td class="num mob-hide" style="color:#aaa">${wcCell}</td>
         <td class="mob-hide">${secCell}</td>
       </tr>`;
     } else {
@@ -6548,7 +6547,7 @@ function renderObitsTable() {
         <td class="num">${o.age ?? ''}</td>
         <td>${o.gender || '<span style="color:#bbb">·</span>'}</td>
         <td class="mob-hide">${escapeHtml(o.profession || '')}</td>
-        <td class="mob-hide">${reviewCell}</td>
+        <td class="num mob-hide" style="color:#aaa">${wcCell}</td>
         <td class="mob-hide">${secCell}</td>
       </tr>`;
     }
@@ -6567,7 +6566,7 @@ function renderObitsTable() {
       else {
         _obitTableSort.col = c;
         // Booleans + date default to descending (true/recent first); other text/numeric default to ascending
-        const descByDefault = (c === 'date' || c === 'review' || c === 'secondary' || c === 'age');
+        const descByDefault = (c === 'date' || c === 'word_count' || c === 'secondary' || c === 'age');
         _obitTableSort.asc = !descByDefault;
       }
       renderObitsTable();
@@ -6625,19 +6624,20 @@ async function initCorrections() {
     secSel.appendChild(opt);
   });
 
-  // Subtitle: derive period from ref_date / page_date span.
-  // Aim is 2000–2025; while we backfill, advertise actual coverage but flag
-  // the goal so readers don't think we're claiming everything since 1944.
+  // Subtitle: derive period from page_date only. ref_date can carry stray
+  // years pulled out of correction body text (e.g. "the year 1944"), which
+  // would falsely widen the window. page_date is the date the correction
+  // notice itself ran — the only reliable bound for "what's in this dataset".
   const sub = document.getElementById('corrSubtitle');
   if (sub) {
-    const dates = _corr.map(c => c.ref_date || c.page_date).filter(Boolean).sort();
+    const dates = _corr.map(c => c.page_date).filter(Boolean).sort();
     if (dates.length) {
       const yrs = new Set(dates.map(d => d.slice(0, 4)));
-      const period = yrs.size === 1 ? [...yrs][0] : `${[...yrs][0]}–${[...yrs].pop()}`;
-      const targetEnd = '2025';
-      const haveAll = yrs.has('2000') && yrs.has(targetEnd);
+      const sortedYrs = [...yrs].sort();
+      const period = sortedYrs.length === 1 ? sortedYrs[0] : `${sortedYrs[0]}–${sortedYrs[sortedYrs.length - 1]}`;
+      const haveAll = yrs.has('2000') && yrs.has('2025');
       sub.textContent = haveAll
-        ? `Every correction the Times printed from 2000 through ${targetEnd}, linked to the underlying article.`
+        ? `Every correction the Times printed from 2000 through 2025, linked to the underlying article.`
         : `Every correction the Times printed in ${period}, linked to the underlying article. (Backfill underway — the goal is full 2000–2025 coverage.)`;
     }
   }
@@ -7309,7 +7309,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 12:30pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 6:55am</span>
 </div>
 </body>
 </html>
