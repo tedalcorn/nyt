@@ -54,6 +54,19 @@ def load_articles_by_date():
 
 WORD = re.compile(r'\w+')
 
+# Lightweight subcategory tags. We track these silently in the data so we can
+# decide later whether to surface them as filters in the UI.
+TAG_PATTERNS = [
+    ('photo_caption',   re.compile(r'\b(picture|photo)(graph)?\b[^.]*\bcaption\b|\bcaption\b[^.]*\b(picture|photo)', re.I)),
+    ('editing_error',   re.compile(r'\bediting error\b|\bbecause of an editing\b', re.I)),
+    ('production_error',re.compile(r'\bproduction error\b', re.I)),
+]
+
+
+def correction_tags(text):
+    if not text: return []
+    return [name for name, pat in TAG_PATTERNS if pat.search(text)]
+
 # Common words to drop — they're in nearly every correction.
 STOP = set("""
 about article above abstract above an and any are article articles because been
@@ -149,6 +162,7 @@ def main():
             'match_headline': art['h'],
             'match_authors': authors,
             'match_source': source,
+            'tags': correction_tags(c.get('text')),
         })
 
     def _emit_unmatched(c, score):
@@ -160,6 +174,7 @@ def main():
             'match_headline': None,
             'match_authors': None,
             'match_source': None,
+            'tags': correction_tags(c.get('text')),
         })
 
     for c in corrections:

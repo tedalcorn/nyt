@@ -1,103 +1,103 @@
 {
-  "total": 11014,
-  "parsed": 11984,
-  "matched": 10626,
+  "total": 10991,
+  "parsed": 12039,
+  "matched": 10806,
   "by_section": [
     [
       "U.S.",
-      1644
+      1665
     ],
     [
       "Obituaries",
-      1485
+      1499
     ],
     [
       "World",
-      1323
+      1334
     ],
     [
       "Arts",
-      1179
+      1203
     ],
     [
       "Business",
-      781
+      787
     ],
     [
       "Sports",
-      699
+      703
     ],
     [
       "New York",
-      622
+      634
     ],
     [
       "Magazine",
-      350
+      367
     ],
     [
       "Style",
-      344
+      351
     ],
     [
       "Books",
-      232
+      236
     ],
     [
       "Health",
-      231
+      233
     ],
     [
       "Movies",
-      219
+      225
     ],
     [
       "Climate",
-      212
+      214
     ],
     [
       "Theater",
-      205
+      209
     ],
     [
       "Technology",
-      195
+      201
     ],
     [
       "Opinion",
-      149
+      158
     ],
     [
       "Science",
-      146
+      148
     ],
     [
       "Travel",
-      128
+      132
     ],
     [
       "Real Estate",
-      123
+      125
     ],
     [
       "Food",
-      94
+      100
     ],
     [
       "T Magazine",
-      60
+      67
+    ],
+    [
+      "Well",
+      44
     ],
     [
       "Your Money",
       44
     ],
     [
-      "Well",
-      42
-    ],
-    [
       "The Upshot",
-      27
+      29
     ],
     [
       "Times Insider",
@@ -108,11 +108,11 @@
       9
     ],
     [
-      "Sunday Review",
-      8
+      "Reader Center",
+      9
     ],
     [
-      "Reader Center",
+      "Sunday Review",
       8
     ],
     [
@@ -124,8 +124,12 @@
       7
     ],
     [
+      "Podcasts",
+      6
+    ],
+    [
       "The Learning Network",
-      5
+      6
     ],
     [
       "Briefing",
@@ -138,10 +142,6 @@
     [
       "Smarter Living",
       4
-    ],
-    [
-      "Podcasts",
-      3
     ],
     [
       "International Home",
@@ -172,6 +172,10 @@
       1
     ],
     [
+      "Special Series",
+      1
+    ],
+    [
       "Weather",
       1
     ]
@@ -179,7 +183,7 @@
   "by_author": [
     [
       "Sam Roberts",
-      174
+      177
     ],
     [
       "Richard Sandomir",
@@ -187,23 +191,23 @@
     ],
     [
       "Maggie Haberman",
-      88
+      89
     ],
     [
       "Robert D. McFadden",
       86
     ],
     [
+      "Neil Genzlinger",
+      82
+    ],
+    [
       "Clay Risen",
       82
     ],
     [
-      "Neil Genzlinger",
-      81
-    ],
-    [
       "Richard Goldstein",
-      73
+      74
     ],
     [
       "Penelope Green",
@@ -211,19 +215,19 @@
     ],
     [
       "Lisa Friedman",
-      59
+      60
+    ],
+    [
+      "Alexis Soloski",
+      58
     ],
     [
       "Anita Gates",
       58
     ],
     [
-      "Alexis Soloski",
-      57
-    ],
-    [
       "Jon Pareles",
-      56
+      58
     ],
     [
       "Sheryl Gay Stolberg",
@@ -234,24 +238,24 @@
       49
     ],
     [
+      "Glenn Thrush",
+      49
+    ],
+    [
       "Katharine Q. Seelye",
       49
     ],
     [
-      "Glenn Thrush",
-      48
+      "Peter Baker",
+      47
     ],
     [
-      "Peter Baker",
+      "Alex Williams",
       46
     ],
     [
       "Brooks Barnes",
       45
-    ],
-    [
-      "Alex Williams",
-      44
     ],
     [
       "Andrew Higgins",
@@ -274,11 +278,11 @@
       41
     ],
     [
-      "Michael D. Shear",
-      40
+      "Giovanni Russonello",
+      41
     ],
     [
-      "Giovanni Russonello",
+      "Michael D. Shear",
       40
     ],
     [
@@ -287,10 +291,14 @@
     ],
     [
       "Coral Davenport",
-      38
+      39
     ],
     [
       "Annie Karni",
+      39
+    ],
+    [
+      "The Editorial Board",
       38
     ],
     [
@@ -310,10 +318,6 @@
       37
     ],
     [
-      "The Editorial Board",
-      36
-    ],
-    [
       "Jennifer Schuessler",
       36
     ],
@@ -326,12 +330,12 @@
       36
     ],
     [
-      "Michael Crowley",
+      "Julian E. Barnes",
       36
     ],
     [
-      "Julian E. Barnes",
-      35
+      "Michael Crowley",
+      36
     ],
     [
       "Daniel E. Slotnik",
@@ -350,11 +354,15 @@
       33
     ],
     [
+      "Katie Rogers",
+      33
+    ],
+    [
       "Luke Broadwater",
       33
     ],
     [
-      "The New York Times",
+      "Trip Gabriel",
       32
     ],
     [
@@ -371,10 +379,6 @@
     ],
     [
       "Tariq Panja",
-      32
-    ],
-    [
-      "Katie Rogers",
       32
     ]
   ]
