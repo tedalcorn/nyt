@@ -245,12 +245,20 @@
   .corrections-table th[onclick] { cursor: pointer; }
   .corrections-table .corr-reporters { max-width: 130px; min-width: 90px; white-space: normal; word-break: break-word; }
   .corrections-table .corr-article    { max-width: 220px; word-break: break-word; }
-  .corrections-table .corr-text       { max-width: 620px; }
+  .corrections-table .corr-text       { max-width: 620px; word-break: break-word; }
   .corrections-table td.corr-section-cell,
   .corrections-table td.corr-author-link { cursor: pointer; color: #326891; }
   .corrections-table td.corr-section-cell:hover,
   .corrections-table td.corr-author-link:hover { text-decoration: underline; }
   .corrections-table .corr-author-link + .corr-author-link::before { content: ", "; color: #666; }
+  /* Mobile: drop section + reporter columns; date / article / correction only */
+  @media (max-width: 720px) {
+    .corrections-table .col-section,
+    .corrections-table .col-reporter { display: none; }
+    .corrections-table .corr-article { max-width: none; }
+    .corrections-table .corr-text { max-width: none; }
+    .corrections-table th, .corrections-table td { padding: 6px 6px; font-size: 12px; }
+  }
 
   /* Corrections visualizer */
   .corr-viz-controls { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin-bottom:10px; font-size:13px; }
@@ -553,6 +561,12 @@
       <p>Obituaries that appear to have run at distinct URLs within a few days of each other were then merged into a single canonical entry.</p>
       <p>Each obituary was parsed for name, age, gender, and profession from the headline and abstract, relying on honorifics (Mr./Mrs./Sir/Dame) and pronouns (he/his vs. she/her) the paper used. Special series including Overlooked No More (retroactive obituaries for historically overlooked figures), historical obituaries republished for special occasions like Women's History Month, and the 9/11 Portraits of Grief feature were also tagged.</p>
       <p>The Portraits of Grief series ran from September 2001 through 2002 and ultimately included roughly 1,910 individual portraits of 9/11 victims. Only ~400 are individually URL-addressable in the Archive API; the remainder were either bundled into daily compilation articles or are not separately indexed, so this dashboard surfaces only the subset the API exposes as standalone records.</p>
+
+      <h4>Corrections</h4>
+      <p>The Times publishes a digest of its corrections each day at a stable URL under <em>pageoneplus</em>, and this dashboard scrapes every such digest the Archive API has tagged as a Correction since 2017. Each individual correction blurb is pulled out of the digest page, and where the correction itself links to the article it concerns, that link is followed; otherwise the matcher uses topic-keyword overlap and the correction's date phrase to find the most likely article within a few days of when it ran. About 98 percent of the roughly 12,000 corrections in the dataset are linked back to a specific article.</p>
+      <p>Each correction is also tagged with a few quality signals. The day of the week the correction cites ("An article on Friday about…") is converted into a likely print date and compared to the matched article's online pub date, which lets the dashboard flag matches where the two dates disagree by more than a few days. The word count of the correction blurb itself is recorded as a way to spot truncated or unusually long entries. These flags surface candidates for manual review and feed back into the matching pipeline.</p>
+      <p>The per-100-articles view divides correction counts by the total number of articles published by that section or reporter in the same year, drawn from the same Archive API used elsewhere on this dashboard. Rates rather than raw counts are what let Obituaries, for example, show up as a relatively correction-prone section despite producing far fewer articles than U.S. or World.</p>
+      <p>Coverage is not yet complete. Roughly 250 daily-corrections pages from late 2024 and 2025 are listed in the Archive API but have not yet been ingested, in most cases because the Wayback Machine hasn't crawled the most recent URLs and the live NYT site is bot-blocked from direct fetches. Earlier years (2000–2016) have not yet been backfilled at all. Both gaps are planned.</p>
 
       <h4>API anomalies</h4>
       <p>Known quirks in the Archive API data, in chronological order. Where this dashboard applies a correction, it's noted explicitly.</p>
@@ -1103,56 +1117,59 @@ function downloadSectionChart(btn, canvasId) {
     legendItems = [{ color: 'rgba(50,104,145,0.7)', label: 'Articles' }];
   }
 
-  // Render title bar above canvas + URL credit below
-  const W = canvas.width;
-  const H = canvas.height;
-  const TOP = 60, BOT = 40;
+  // Render title bar above canvas + URL credit below — at 2x for sharpness
+  const SCALE = 2;
+  const W = canvas.width * SCALE;
+  const H = canvas.height * SCALE;
+  const TOP = 60 * SCALE, BOT = 40 * SCALE;
   const out = document.createElement('canvas');
   out.width = W;
   out.height = TOP + H + BOT;
   const c = out.getContext('2d');
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
   c.fillStyle = '#fff';
   c.fillRect(0, 0, out.width, out.height);
 
   c.fillStyle = '#111';
-  c.font = 'bold 14px Arial,sans-serif';
-  c.fillText(title1, 12, 22);
+  c.font = `bold ${14 * SCALE}px Arial,sans-serif`;
+  c.fillText(title1, 12 * SCALE, 22 * SCALE);
   c.fillStyle = '#666';
-  c.font = '11px Arial,sans-serif';
+  c.font = `${11 * SCALE}px Arial,sans-serif`;
   // Wrap title2 if long
-  const maxW = W - 24;
+  const maxW = W - 24 * SCALE;
   if (c.measureText(title2).width <= maxW) {
-    c.fillText(title2, 12, 42);
+    c.fillText(title2, 12 * SCALE, 42 * SCALE);
   } else {
     const parts = title2.split(' · ');
-    let line = parts[0], y = 42;
+    let line = parts[0], y = 42 * SCALE;
     for (let i = 1; i < parts.length; i++) {
       const next = line + ' · ' + parts[i];
-      if (c.measureText(next).width > maxW) { c.fillText(line, 12, y); line = parts[i]; y += 15; }
+      if (c.measureText(next).width > maxW) { c.fillText(line, 12 * SCALE, y); line = parts[i]; y += 15 * SCALE; }
       else line = next;
     }
-    c.fillText(line, 12, y);
+    c.fillText(line, 12 * SCALE, y);
   }
 
-  c.drawImage(canvas, 0, TOP);
+  c.drawImage(canvas, 0, TOP, W, H);
 
   // Legend below chart
-  let lx = 12, ly = TOP + H + 22;
+  let lx = 12 * SCALE, ly = TOP + H + 22 * SCALE;
   legendItems.forEach(({ color, label }) => {
     c.fillStyle = color;
-    c.fillRect(lx, ly - 10, 12, 12);
-    c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
-    c.strokeRect(lx, ly - 10, 12, 12);
+    c.fillRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
+    c.strokeStyle = '#bbb'; c.lineWidth = 0.5 * SCALE;
+    c.strokeRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
     c.fillStyle = '#333';
-    c.font = '10px Arial,sans-serif';
-    c.fillText(label, lx + 16, ly);
-    lx += 16 + c.measureText(label).width + 14;
+    c.font = `${10 * SCALE}px Arial,sans-serif`;
+    c.fillText(label, lx + 16 * SCALE, ly);
+    lx += 16 * SCALE + c.measureText(label).width + 14 * SCALE;
   });
 
-  c.font = '9px Arial,sans-serif';
+  c.font = `${9 * SCALE}px Arial,sans-serif`;
   c.fillStyle = '#aaa';
   c.textAlign = 'right';
-  c.fillText('https://tedalcorn.github.io/nyt/', W - 8, TOP + H + BOT - 8);
+  c.fillText('https://tedalcorn.github.io/nyt/', W - 8 * SCALE, TOP + H + BOT - 8 * SCALE);
   c.textAlign = 'left';
 
   const a = document.createElement('a');
@@ -1175,9 +1192,10 @@ function downloadObitChart(canvasId, baseName, btn) {
   const yrs = Array.from(new Set((_obits || []).map(o => o.year).filter(Boolean))).sort();
   const range = yrs.length ? `${yrs[0]}–${yrs[yrs.length-1]}` : '';
 
-  // headerLegend = drawn at top-center under subtitle (gender chart)
-  // Age chart embeds its own legend in the canvas via Chart.js, so we omit the
-  // bottom strip there.
+  // headerLegend = drawn at top-center under subtitle. We deliberately leave
+  // it null for charts whose Chart.js instance already renders its legend
+  // inside the canvas (chartObitAge, chartObitGender) — drawing a second
+  // strip would duplicate it.
   let title1, title2, headerLegend = null, drawBottomLegend = false;
   if (canvasId === 'chartObitAge') {
     title1 = `Age of death of subjects of New York Times obituaries${range ? ' (' + range.replace('–','-') + ')' : ''}`;
@@ -1186,70 +1204,74 @@ function downloadObitChart(canvasId, baseName, btn) {
     const known = m + f + x;
     title1 = `The share of New York Times obituaries for women${range ? ' (' + range.replace('–','-') + ')' : ''}`;
     title2 = `n = ${known.toLocaleString()} obituaries w/ identified gender · Data from NYT Archive API`;
-    headerLegend = [
-      { color: 'rgba(196,120,74,0.9)', label: '% Female' },
-    ];
+    // (Chart.js draws "% Female" inside the chart canvas; no extra strip.)
   } else {
     title1 = 'New York Times obituaries';
     title2 = `n=${total.toLocaleString()} · Data from NYT Archive API`;
   }
 
-  const W = canvas.width;
-  const H = canvas.height;
-  const TOP = headerLegend ? 78 : 60;
-  const BOT = drawBottomLegend ? 40 : 24;
+  // Export at 2x to give the JPG enough resolution to look crisp on retina
+  // displays and when zoomed. We scale every dimension AND every text size.
+  const SCALE = 2;
+  const W = canvas.width * SCALE;
+  const H = canvas.height * SCALE;
+  const TOP = (headerLegend ? 78 : 60) * SCALE;
+  const BOT = (drawBottomLegend ? 40 : 24) * SCALE;
   const out = document.createElement('canvas');
   out.width = W;
   out.height = TOP + H + BOT;
   const c = out.getContext('2d');
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
   c.fillStyle = '#fff';
   c.fillRect(0, 0, out.width, out.height);
 
   c.fillStyle = '#111';
-  c.font = 'bold 16px Arial,sans-serif';
-  c.fillText(title1, 12, 24);
+  c.font = `bold ${16 * SCALE}px Arial,sans-serif`;
+  c.fillText(title1, 12 * SCALE, 24 * SCALE);
   c.fillStyle = '#666';
-  c.font = '11px Arial,sans-serif';
-  const maxW = W - 24;
+  c.font = `${11 * SCALE}px Arial,sans-serif`;
+  const maxW = W - 24 * SCALE;
   if (c.measureText(title2).width <= maxW) {
-    c.fillText(title2, 12, 44);
+    c.fillText(title2, 12 * SCALE, 44 * SCALE);
   } else {
     const parts = title2.split(' · ');
-    let line = parts[0], y = 44;
+    let line = parts[0], y = 44 * SCALE;
     for (let i = 1; i < parts.length; i++) {
       const next = line + ' · ' + parts[i];
-      if (c.measureText(next).width > maxW) { c.fillText(line, 12, y); line = parts[i]; y += 15; }
+      if (c.measureText(next).width > maxW) { c.fillText(line, 12 * SCALE, y); line = parts[i]; y += 15 * SCALE; }
       else line = next;
     }
-    c.fillText(line, 12, y);
+    c.fillText(line, 12 * SCALE, y);
   }
 
-  // Top-center legend (gender chart): draw between subtitle and chart.
+  // Top-center legend (only when explicitly set above).
   if (headerLegend) {
-    c.font = '11px Arial,sans-serif';
+    c.font = `${11 * SCALE}px Arial,sans-serif`;
     let totW = 0;
     headerLegend.forEach(({ label }, i) => {
-      totW += 14 + 4 + c.measureText(label).width + (i < headerLegend.length - 1 ? 16 : 0);
+      totW += (14 + 4) * SCALE + c.measureText(label).width + (i < headerLegend.length - 1 ? 16 * SCALE : 0);
     });
-    let lx = Math.max(12, (W - totW) / 2);
-    const ly = 66;
+    let lx = Math.max(12 * SCALE, (W - totW) / 2);
+    const ly = 66 * SCALE;
     headerLegend.forEach(({ color, label }) => {
       c.fillStyle = color;
-      c.fillRect(lx, ly - 10, 14, 12);
-      c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
-      c.strokeRect(lx, ly - 10, 14, 12);
+      c.fillRect(lx, ly - 10 * SCALE, 14 * SCALE, 12 * SCALE);
+      c.strokeStyle = '#bbb'; c.lineWidth = 0.5 * SCALE;
+      c.strokeRect(lx, ly - 10 * SCALE, 14 * SCALE, 12 * SCALE);
       c.fillStyle = '#333';
-      c.fillText(label, lx + 18, ly);
-      lx += 14 + 4 + c.measureText(label).width + 16;
+      c.fillText(label, lx + 18 * SCALE, ly);
+      lx += (14 + 4) * SCALE + c.measureText(label).width + 16 * SCALE;
     });
   }
 
-  c.drawImage(canvas, 0, TOP);
+  // Upscale the chart canvas to match the 2x export.
+  c.drawImage(canvas, 0, TOP, W, H);
 
-  c.font = '9px Arial,sans-serif';
+  c.font = `${9 * SCALE}px Arial,sans-serif`;
   c.fillStyle = '#aaa';
   c.textAlign = 'right';
-  c.fillText('https://tedalcorn.github.io/nyt/', W - 8, TOP + H + BOT - 8);
+  c.fillText('https://tedalcorn.github.io/nyt/', W - 8 * SCALE, TOP + H + BOT - 8 * SCALE);
   c.textAlign = 'left';
 
   const a = document.createElement('a');
@@ -6923,56 +6945,59 @@ function _downloadCorrVizChart(btn) {
   const inst = chartInstances['chartCorrViz'];
   const legendItems = inst ? inst.data.datasets.map(d => ({ color: d.borderColor, label: d.label })) : [];
 
-  const W = canvas.width;
-  const H = canvas.height;
-  const TOP = 60;
-  const BOT = 44;
+  const SCALE = 2;
+  const W = canvas.width * SCALE;
+  const H = canvas.height * SCALE;
+  const TOP = 60 * SCALE;
+  const BOT = 44 * SCALE;
   const out = document.createElement('canvas');
   out.width = W; out.height = TOP + H + BOT;
   const c = out.getContext('2d');
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
   c.fillStyle = '#fff';
   c.fillRect(0, 0, out.width, out.height);
 
   c.fillStyle = '#111';
-  c.font = 'bold 14px Arial,sans-serif';
-  c.fillText(title1, 12, 22);
+  c.font = `bold ${14 * SCALE}px Arial,sans-serif`;
+  c.fillText(title1, 12 * SCALE, 22 * SCALE);
   c.fillStyle = '#666';
-  c.font = '11px Arial,sans-serif';
-  const maxW = W - 24;
+  c.font = `${11 * SCALE}px Arial,sans-serif`;
+  const maxW = W - 24 * SCALE;
   if (c.measureText(title2).width <= maxW) {
-    c.fillText(title2, 12, 42);
+    c.fillText(title2, 12 * SCALE, 42 * SCALE);
   } else {
     const parts = title2.split(' · ');
-    let line = parts[0], y = 42;
+    let line = parts[0], y = 42 * SCALE;
     for (let i = 1; i < parts.length; i++) {
       const next = line + ' · ' + parts[i];
-      if (c.measureText(next).width > maxW) { c.fillText(line, 12, y); line = parts[i]; y += 14; }
+      if (c.measureText(next).width > maxW) { c.fillText(line, 12 * SCALE, y); line = parts[i]; y += 14 * SCALE; }
       else line = next;
     }
-    c.fillText(line, 12, y);
+    c.fillText(line, 12 * SCALE, y);
   }
 
-  c.drawImage(canvas, 0, TOP);
+  c.drawImage(canvas, 0, TOP, W, H);
 
   // Legend below
-  let lx = 12, ly = TOP + H + 22;
-  c.font = '10px Arial,sans-serif';
+  let lx = 12 * SCALE, ly = TOP + H + 22 * SCALE;
+  c.font = `${10 * SCALE}px Arial,sans-serif`;
   legendItems.forEach(({ color, label }) => {
     c.fillStyle = color;
-    c.fillRect(lx, ly - 10, 12, 12);
-    c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
-    c.strokeRect(lx, ly - 10, 12, 12);
+    c.fillRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
+    c.strokeStyle = '#bbb'; c.lineWidth = 0.5 * SCALE;
+    c.strokeRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
     c.fillStyle = '#333';
     const lblW = c.measureText(label).width;
-    if (lx + 16 + lblW > W - 8) return;   // skip overflow
-    c.fillText(label, lx + 16, ly);
-    lx += 16 + lblW + 14;
+    if (lx + 16 * SCALE + lblW > W - 8 * SCALE) return;   // skip overflow
+    c.fillText(label, lx + 16 * SCALE, ly);
+    lx += 16 * SCALE + lblW + 14 * SCALE;
   });
 
-  c.font = '9px Arial,sans-serif';
+  c.font = `${9 * SCALE}px Arial,sans-serif`;
   c.fillStyle = '#aaa';
   c.textAlign = 'right';
-  c.fillText('https://tedalcorn.github.io/nyt/', W - 8, TOP + H + BOT - 8);
+  c.fillText('https://tedalcorn.github.io/nyt/', W - 8 * SCALE, TOP + H + BOT - 8 * SCALE);
   c.textAlign = 'left';
 
   const slug = (isRate ? 'nyt-corrections-rate' : 'nyt-corrections-count')
@@ -7108,12 +7133,12 @@ function renderCorrTable() {
 
   const display = rows.slice(0, 500);
   const arrow = (col) => _corrSort.key === col ? (_corrSort.dir === 'asc' ? ' ▲' : ' ▼') : '';
-  const sortableTh = (col, label) =>
-    `<th style="cursor:pointer;user-select:none" onclick="_toggleCorrSort('${col}')">${label}${arrow(col)}</th>`;
+  const sortableTh = (col, label, cls) =>
+    `<th class="${cls || ''}" style="cursor:pointer;user-select:none" onclick="_toggleCorrSort('${col}')">${label}${arrow(col)}</th>`;
   let html = '<table class="author-table corrections-table"><thead><tr>'
     + sortableTh('page_date', 'Date published')
-    + sortableTh('match_section', 'Section')
-    + '<th>Reporter(s)</th><th>Article</th><th>Correction</th>'
+    + sortableTh('match_section', 'Section', 'col-section')
+    + '<th class="col-reporter">Reporter(s)</th><th>Article</th><th>Correction</th>'
     + '</tr></thead><tbody>';
   display.forEach(c => {
     const refDateText = _fmtCorrDate(c.page_date);
@@ -7145,8 +7170,8 @@ function renderCorrTable() {
     }
     html += `<tr>
       <td style="color:#666;white-space:nowrap;font-size:12px;vertical-align:top">${refDateCell}</td>
-      <td style="font-size:12px;vertical-align:top">${secCell}</td>
-      <td class="corr-reporters" style="font-size:12px;vertical-align:top">${authors}</td>
+      <td class="col-section" style="font-size:12px;vertical-align:top">${secCell}</td>
+      <td class="col-reporter corr-reporters" style="font-size:12px;vertical-align:top">${authors}</td>
       <td class="corr-article" style="font-size:12px;vertical-align:top">${articleCell}</td>
       <td class="corr-text" style="font-size:12px;vertical-align:top">${correctionCell}</td>
     </tr>`;
@@ -7729,7 +7754,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 10:20am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 11:42am</span>
 </div>
 </body>
 </html>
