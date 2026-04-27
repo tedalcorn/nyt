@@ -26,8 +26,17 @@ def slug(url):
 
 
 def collect_urls(years):
-    """Pull (url, pub_date, headline) for all type_of_material=Correction in given years."""
+    """Pull (url, pub_date, headline) for daily corrections pages in given years.
+
+    Two tagging conventions cover the SAME daily-page URL pattern but with no
+    overlap, so we have to union them:
+      - tom=Correction (primary tagging, ~94% of pages)
+      - tom=News + section=Corrections (residual, ~6%)
+    Quote of the Day items live in section=Corrections too; filter them out.
+    Empty `/no-corrections-DATE/` placeholder URLs are also skipped.
+    """
     out = []
+    seen = set()
     for f in sorted(glob.glob(os.path.join(RAW_DIR, '*.json'))):
         y = os.path.basename(f)[:4]
         if y not in years:
@@ -38,12 +47,29 @@ def collect_urls(years):
             except Exception:
                 continue
         for d in docs:
-            if d.get('type_of_material') == 'Correction':
-                url = d.get('web_url', '')
-                pub = (d.get('pub_date', '') or '')[:10]
-                head = (d.get('headline', {}) or {}).get('main', '') or ''
-                if url:
-                    out.append((url, pub, head))
+            url = d.get('web_url', '') or ''
+            if not url:
+                continue
+            tom = (d.get('type_of_material') or '').strip()
+            sec = (d.get('section_name') or '').strip()
+            ul = url.lower()
+            # Restrict to the daily-corrections URL slug; skip empty-day stubs.
+            if 'corrections-' not in ul:
+                continue
+            if '/no-corrections-' in ul:
+                continue
+            keep = (
+                tom == 'Correction'
+                or (sec == 'Corrections' and tom != 'Quote' and tom != 'Correction')
+            )
+            if not keep:
+                continue
+            if url in seen:
+                continue
+            seen.add(url)
+            pub = (d.get('pub_date', '') or '')[:10]
+            head = (d.get('headline', {}) or {}).get('main', '') or ''
+            out.append((url, pub, head))
     return out
 
 

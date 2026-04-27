@@ -1,102 +1,102 @@
 {
-  "total": 550,
-  "parsed": 569,
-  "matched": 542,
+  "total": 660,
+  "parsed": 733,
+  "matched": 641,
   "by_section": [
     [
       "U.S.",
-      102
+      125
     ],
     [
       "World",
-      92
-    ],
-    [
-      "Obituaries",
-      74
+      103
     ],
     [
       "Arts",
-      71
+      91
+    ],
+    [
+      "Obituaries",
+      80
     ],
     [
       "New York",
-      49
+      57
     ],
     [
       "Business",
-      32
+      36
     ],
     [
       "Magazine",
-      17
+      26
     ],
     [
       "Health",
-      16
+      19
     ],
     [
       "Climate",
-      14
+      16
     ],
     [
       "Movies",
-      13
+      14
     ],
     [
       "Technology",
-      10
-    ],
-    [
-      "T Magazine",
-      10
+      12
     ],
     [
       "Theater",
-      9
+      11
+    ],
+    [
+      "T Magazine",
+      11
     ],
     [
       "Science",
-      7
-    ],
-    [
-      "Books",
-      5
+      9
     ],
     [
       "Well",
-      5
+      6
+    ],
+    [
+      "Style",
+      4
+    ],
+    [
+      "Books",
+      4
     ],
     [
       "Times Insider",
       4
     ],
     [
-      "Style",
-      3
+      "Opinion",
+      4
     ],
     [
-      "Opinion",
-      3
+      "Real Estate",
+      2
+    ],
+    [
+      "Sports",
+      2
     ],
     [
       "Travel",
       2
     ],
     [
-      "Sports",
-      1
-    ],
-    [
       "Headway",
-      1
+      2
     ],
     [
       "Briefing",
-      1
-    ],
-    [
-      "Real Estate",
       1
     ]
   ],
@@ -107,6 +107,10 @@
     ],
     [
       "Robert D. McFadden",
+      8
+    ],
+    [
+      "Shivani Gonzalez",
       7
     ],
     [
@@ -114,7 +118,15 @@
       6
     ],
     [
+      "Penelope Green",
+      6
+    ],
+    [
       "Anita Gates",
+      6
+    ],
+    [
+      "Annie Karni",
       6
     ],
     [
@@ -122,23 +134,39 @@
       6
     ],
     [
+      "Alexis Soloski",
+      6
+    ],
+    [
       "Lisa Friedman",
       6
     ],
     [
-      "Penelope Green",
+      "Clay Risen",
+      6
+    ],
+    [
+      "Elisabetta Povoledo",
+      6
+    ],
+    [
+      "Zach Montague",
       5
     ],
     [
-      "Annie Karni",
+      "Benjamin Oreskes",
       5
     ],
     [
-      "Alexis Soloski",
+      "Devlin Barrett",
       5
     ],
     [
-      "Brooks Barnes",
+      "Choe Sang-Hun",
+      5
+    ],
+    [
+      "Pooja Salhotra",
       5
     ],
     [
@@ -150,11 +178,11 @@
       4
     ],
     [
-      "Benjamin Oreskes",
+      "Zolan Kanno-Youngs",
       4
     ],
     [
-      "Zolan Kanno-Youngs",
+      "Jeanna Smialek",
       4
     ],
     [
@@ -166,11 +194,7 @@
       4
     ],
     [
-      "Devlin Barrett",
-      4
-    ],
-    [
-      "Shivani Gonzalez",
+      "Robin Pogrebin",
       4
     ],
     [
@@ -178,15 +202,15 @@
       4
     ],
     [
+      "Kenneth Chang",
+      4
+    ],
+    [
       "Sam Roberts",
       4
     ],
     [
-      "Clay Risen",
-      4
-    ],
-    [
-      "Elisabetta Povoledo",
+      "Nick Haramis",
       4
     ],
     [
@@ -194,11 +218,11 @@
       4
     ],
     [
-      "Jonah Engel Bromwich",
+      "Brooks Barnes",
       4
     ],
     [
-      "Pooja Salhotra",
+      "Jonah Engel Bromwich",
       4
     ],
     [
@@ -210,11 +234,7 @@
       3
     ],
     [
-      "Zach Montague",
-      3
-    ],
-    [
-      "Aishvarya Kavi",
+      "S\u00e9gol\u00e8ne Le Stradic",
       3
     ],
     [
@@ -226,15 +246,19 @@
       3
     ],
     [
-      "Isabel Kershner",
-      3
-    ],
-    [
-      "Jeanna Smialek",
+      "Steven Erlanger",
       3
     ],
     [
       "Julian E. Barnes",
+      3
+    ],
+    [
+      "Adam Liptak",
+      3
+    ],
+    [
+      "Robert Draper",
       3
     ],
     [
@@ -251,10 +275,6 @@
     ],
     [
       "Beatrice Loayza",
-      3
-    ],
-    [
-      "Robin Pogrebin",
       3
     ],
     [
@@ -279,26 +299,6 @@
     ],
     [
       "Ronen Bergman",
-      3
-    ],
-    [
-      "Choe Sang-Hun",
-      3
-    ],
-    [
-      "Kenneth Chang",
-      3
-    ],
-    [
-      "Harold Goldberg",
-      3
-    ],
-    [
-      "Sui-lee Wee",
-      3
-    ],
-    [
-      "Lynsey Chutel",
       3
     ]
   ]
