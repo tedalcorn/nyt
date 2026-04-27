@@ -301,6 +301,8 @@ NON_OBIT_URLS = {
 
     # ---- 2026-04-27 manual review (Corrected obits.xlsx) ----
     '/2019/06/05/obituaries/tonys-nominees-obits.html',
+    # Letter-of-remembrances feature, not an obit
+    '/2006/10/04/obituaries/apple-remember.html',
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -606,6 +608,46 @@ OBIT_OVERRIDES = {
     '/2025/10/16/world/asia/kanchha-sherpa-mt-everest-dead.html': {'gender': 'M', 'gender_src': 'manual', 'age': 92},
     '/interactive/2016/01/13/obituaries/von-braun-obits.html': {'gender': 'M', 'gender_src': 'manual'},
     '/interactive/2016/06/30/obituaries/sinclair.html': {'gender': 'M', 'gender_src': 'manual'},
+    # ---- 2026-04-27 user-flagged name parser failures ----
+    # Reagan: all-caps "FOSTERED COLD-WAR MIGHT…" segment fooled parser.
+    '/2004/06/06/us/ronald-reagan-dies-at-93-fostered-cold-war-might-and-curbs-on-government.html': {
+        'name': 'Ronald Reagan', 'gender': 'M', 'gender_src': 'manual', 'age': 93,
+    },
+    # Solzhenitsyn: slug "04solzhenitsyn" has no first name; parser kept just last name.
+    '/2008/08/04/books/04solzhenitsyn.html': {
+        'name': 'Aleksandr Solzhenitsyn', 'gender': 'M', 'gender_src': 'manual', 'age': 89,
+    },
+    # John Paul Stevens: parser kept "Supreme Court Justice" prefix.
+    '/2019/07/16/us/john-paul-stevens-dead.html': {
+        'name': 'John Paul Stevens', 'gender': 'M', 'gender_src': 'manual', 'age': 99,
+    },
+    # Cartier-Bresson: hyphenated last name; parser captured only the surname.
+    '/2004/08/05/arts/cartier-bresson-artist-who-used-lens-dies-at-95.html': {
+        'name': 'Henri Cartier-Bresson', 'gender': 'M', 'gender_src': 'manual', 'age': 95,
+    },
+    # Moynihan: "Former Senator" prefix swallowed the name.
+    '/2003/03/26/obituaries/former-senator-daniel-patrick-moynihan-dead-at-76.html': {
+        'name': 'Daniel Patrick Moynihan', 'gender': 'M', 'gender_src': 'manual', 'age': 76,
+    },
+    # Isaac Stern: "Violinist" profession-prefix kept in name.
+    '/2001/09/23/nyregion/violinist-isaac-stern-dies-at-81-led-efforts-to-save-carnegie-hall.html': {
+        'name': 'Isaac Stern', 'gender': 'M', 'gender_src': 'manual', 'age': 81,
+    },
+    # Buchwald: numeric-prefix slug + "Whose…" func-word foiled parser.
+    '/2007/01/19/obituaries/19buchwald.html': {
+        'name': 'Art Buchwald', 'gender': 'M', 'gender_src': 'manual', 'age': 81,
+    },
+    # Pope John Paul II: section=World, no tom; URL is /obituary-karol-wojtyla-…
+    # Now picked up by RE_OBIT_URL_HINT but headline lacks subject's English name.
+    '/2005/04/04/world/europe/obituary-karol-wojtyla-19202005.html': {
+        'name': 'Pope John Paul II', 'gender': 'M', 'gender_src': 'manual', 'age': 84,
+        'profession': 'Pope',
+    },
+    # Qaddafi: section=Obituaries, but headline is "An Erratic Leader…" with
+    # no death verb. URL slug "qaddafi-killed-…" now matches the URL hint.
+    '/2011/10/21/world/africa/qaddafi-killed-as-hometown-falls-to-libyan-rebels.html': {
+        'name': 'Muammar el-Qaddafi', 'gender': 'M', 'gender_src': 'manual', 'age': 69,
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -948,7 +990,17 @@ def main():
         r'Dead\b|,\s*\d{2,3}\s*,)',
         re.I,
     )
-    RE_OBIT_URL_HINT = re.compile(r'-(?:dead|dies|obituary)\b|/obituaries/', re.I)
+    # Strong URL pattern — explicit "obituary" or "/obituaries/" in slug.
+    # Promotes an article to is_obit even when section/tom don't tag it
+    # (e.g. Pope John Paul II 2005, filed under section=World with URL
+    # /obituary-karol-wojtyla-…). Limited to obituary-shaped slugs to
+    # avoid sweeping in unrelated crime/war coverage.
+    RE_OBIT_URL_STRONG = re.compile(r'/obituar(?:y|ies)[/\-]', re.I)
+    # Loose hint — used inside the looks_like_obit gate to confirm an
+    # already-tagged article (section=Obituaries, tom=Obit, etc.) really
+    # is one. Includes 'killed' for war/violence-cause obits (Qaddafi
+    # 2011, headline lacks any death verb).
+    RE_OBIT_URL_HINT = re.compile(r'-(?:dead|dies|obituary|killed)\b|/obituar(?:y|ies)[/\-]', re.I)
 
     for f in files:
         with open(f) as fh:
@@ -982,7 +1034,8 @@ def main():
                        or tom == 'Biography; Obituary'
                        or news_desk == 'Obits'
                        or section == 'Obituaries'
-                       or is_portraits)
+                       or is_portraits
+                       or RE_OBIT_URL_STRONG.search(url))
             if not is_obit:
                 continue
             # Drop slideshows and videos — many sit on the Obits desk but carry
@@ -1047,7 +1100,13 @@ def main():
             # Skip profession parsing rather than emit garbage.
             prof = None if is_portraits else extract_profession(h)
             gen, gen_src = extract_gender(name, full)
-            overlooked = bool(re.match(r'^Overlooked No More\b', h, re.I))
+            # Overlooked No More: detect from headline prefix, but also from
+            # URL slug — some entries (Margaret Garner) have a slug ending in
+            # -overlooked.html with no headline prefix.
+            overlooked = bool(
+                re.match(r'^Overlooked No More\b', h, re.I)
+                or re.search(r'/overlooked-|-overlooked(?:\.html|/|$)', url, re.I)
+            )
 
             pub = d.get('pub_date', '')[:10]
             year = pub[:4] if pub else ''
@@ -1216,11 +1275,23 @@ def main():
     # 2010-04-01 and 2010-04-05). Keep the canonical entry as primary, but
     # surface the secondary URL so the reader can see it.
     from datetime import date as _date
-    _PREF = {'Obituary (Obit)': 0, 'Obituary': 1, 'Obituary; Biography': 2}
+    # 'Obituary; Biography' / 'Biography; Obituary' tag the canonical long-form
+    # NYT obit; plain 'Obituary' is often used for short stubs (Rehnquist 2005:
+    # 93-word teaser tagged 'Obituary' next to the 6,270-word real obit tagged
+    # 'Obituary; Biography'). Rank the biography combos above plain Obituary.
+    _PREF = {'Obituary (Obit)': 0, 'Obituary; Biography': 1,
+             'Biography; Obituary': 1, 'Obituary': 2}
     def _rank(o):
-        # Lower = preferred. tom rank, then length of headline (longer = more
-        # specific), then negated url length so the longer slug wins on ties.
-        return (_PREF.get(o.get('tom') or '', 9), -len(o.get('headline') or ''),
+        # Lower = preferred. tom rank, then word_count (longer body wins —
+        # otherwise dedup may keep a 93-word stub over a 6,000-word obit
+        # when both share the same news section, e.g. Rehnquist 2005), then
+        # headline length and url length as tiebreakers.
+        try:
+            wc = int(o.get('word_count') or 0)
+        except (TypeError, ValueError):
+            wc = 0
+        return (_PREF.get(o.get('tom') or '', 9), -wc,
+                -len(o.get('headline') or ''),
                 -len(o.get('url') or ''))
     def _parse_date(s):
         try: return _date(int(s[:4]), int(s[5:7]), int(s[8:10]))
