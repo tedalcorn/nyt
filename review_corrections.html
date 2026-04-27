@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Corrections automatch review</title>
+<style>
+  body { font-family: -apple-system, 'nyt-cheltenham', Georgia, serif; max-width: 980px; margin: 30px auto; padding: 0 18px; color: #222; line-height: 1.4; }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .meta { color: #888; font-size: 12px; margin-bottom: 16px; }
+  .panel { border: 1px solid #ddd; border-radius: 6px; padding: 14px 16px; margin-bottom: 14px; background: #fafafa; }
+  .panel h2 { font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.05em; color: #666; }
+  .corr-text { font-size: 15px; line-height: 1.5; padding: 8px 12px; background: #fff; border-left: 3px solid #326891; margin-bottom: 8px; }
+  .kv { font-size: 12px; color: #555; margin: 2px 0; }
+  .kv b { color: #333; }
+  .candidate { border: 1px solid #ddd; border-radius: 4px; padding: 10px 12px; margin-bottom: 10px; background: #fff; }
+  .candidate.high { border-color: #5a8a3e; }
+  .candidate.medium { border-color: #b08a00; }
+  .candidate.low { border-color: #aaa; }
+  .candidate.accepted { background: #e8f0e0; border-color: #5a8a3e; }
+  .candidate.rejected { opacity: 0.45; background: #f5f5f5; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-right: 6px; vertical-align: middle; }
+  .badge.high { background: #5a8a3e; color: #fff; }
+  .badge.medium { background: #b08a00; color: #fff; }
+  .badge.low { background: #aaa; color: #fff; }
+  .badge.none { background: #ddd; color: #555; }
+  .score { font-variant-numeric: tabular-nums; color: #666; font-size: 11px; }
+  .head { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .head a { color: #326891; text-decoration: none; }
+  .head a:hover { text-decoration: underline; }
+  .leadp { font-size: 12px; color: #555; margin: 4px 0; }
+  .ent-hits { color: #5a8a3e; font-weight: 600; }
+  .toks { color: #888; font-size: 11px; margin-top: 4px; }
+  .controls { display: flex; gap: 6px; align-items: center; margin-top: 8px; }
+  .controls button { font-family: inherit; font-size: 12px; padding: 4px 10px; border-radius: 3px; border: 1px solid #ccc; cursor: pointer; background: #fff; }
+  .controls button.accept { background: #5a8a3e; color: #fff; border-color: #5a8a3e; }
+  .controls button.reject { background: #fff; color: #999; }
+  .controls button:hover { filter: brightness(0.95); }
+  .nav { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd; padding: 10px 0; margin-bottom: 16px; display: flex; gap: 12px; align-items: center; z-index: 10; }
+  .nav button { font-family: inherit; padding: 6px 14px; border-radius: 4px; border: 1px solid #326891; background: #326891; color: #fff; cursor: pointer; font-size: 13px; }
+  .nav button:disabled { opacity: 0.5; cursor: default; }
+  .nav .filter { font-size: 12px; }
+  .nav .progress { color: #666; font-size: 12px; margin-left: auto; }
+  .summary-bar { display: flex; gap: 14px; font-size: 12px; color: #666; }
+  .summary-bar span { padding: 2px 8px; border-radius: 3px; background: #f0ede6; }
+  .empty { color: #888; padding: 30px; text-align: center; font-style: italic; }
+  .download-bar { background: #f8f4e6; border: 1px solid #d8c890; border-radius: 4px; padding: 8px 14px; margin-bottom: 14px; font-size: 13px; }
+  .download-bar button { font-family: inherit; padding: 4px 10px; margin-left: 8px; cursor: pointer; }
+  .keyboard-hint { font-size: 11px; color: #888; }
+</style>
+</head>
+<body>
+<h1>Corrections automatch review</h1>
+<div class="meta">
+  Step through automatch candidates. <kbd>j</kbd>/<kbd>k</kbd> next/prev · <kbd>1</kbd>–<kbd>5</kbd> accept candidate N · <kbd>r</kbd> reject all · <kbd>?</kbd> toggle help.
+</div>
+
+<div class="download-bar">
+  <span id="dlSummary">No decisions yet.</span>
+  <button onclick="exportOverrides()">↓ Export overrides JSON</button>
+  <button onclick="loadOverrides()">⇪ Load saved progress</button>
+  <span class="keyboard-hint" style="margin-left:8px">Decisions auto-save to localStorage. Drop the exported file at <code>data/corrections_overrides.json</code> when done.</span>
+</div>
+
+<div class="nav">
+  <button id="prevBtn" onclick="navigate(-1)">← Prev</button>
+  <button id="nextBtn" onclick="navigate(+1)">Next →</button>
+  <label class="filter">
+    Show only:
+    <select id="bandFilter" onchange="applyFilter()">
+      <option value="all">All</option>
+      <option value="high">High confidence</option>
+      <option value="medium">Medium</option>
+      <option value="low">Low</option>
+      <option value="none">No candidates</option>
+      <option value="undecided">Undecided</option>
+    </select>
+  </label>
+  <span class="progress" id="progress"></span>
+</div>
+
+<div id="loading" class="empty">Loading data/corrections_automatched_review.json…</div>
+<div id="content" style="display:none"></div>
+
+<script>
+let _data = [];
+let _filtered = [];
+let _idx = 0;
+const STORAGE_KEY = 'corr_automatch_decisions_v1';
+let _decisions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+
+function escapeHtml(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function recId(rec) {
+  // Stable id per correction blurb
+  return (rec.page_url || '') + '||' + (rec.text || '').slice(0, 80);
+}
+
+async function init() {
+  try {
+    const r = await fetch('data/corrections_automatched_review.json');
+    _data = await r.json();
+  } catch (e) {
+    document.getElementById('loading').textContent = 'Failed to load. Run automatch_corrections.py first.';
+    return;
+  }
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+  applyFilter();
+}
+
+function applyFilter() {
+  const f = document.getElementById('bandFilter').value;
+  _filtered = _data.filter(rec => {
+    if (f === 'all') return true;
+    if (f === 'undecided') return !_decisions[recId(rec)];
+    return rec.best_band === f;
+  });
+  _idx = 0;
+  render();
+}
+
+function render() {
+  const c = document.getElementById('content');
+  if (!_filtered.length) {
+    c.innerHTML = '<div class="empty">No corrections in this filter.</div>';
+    document.getElementById('progress').textContent = '';
+    return;
+  }
+  if (_idx < 0) _idx = 0;
+  if (_idx >= _filtered.length) _idx = _filtered.length - 1;
+  const rec = _filtered[_idx];
+  const id = recId(rec);
+  const decision = _decisions[id];
+
+  // Summary bar of all decisions
+  const totals = {};
+  Object.values(_decisions).forEach(d => { totals[d.action] = (totals[d.action] || 0) + 1; });
+  const totalRecs = _data.length;
+  const decided = Object.keys(_decisions).length;
+  document.getElementById('dlSummary').innerHTML =
+    `<b>${decided}</b> / ${totalRecs} reviewed · ` +
+    `accepted: <b>${totals.accept || 0}</b> · rejected: <b>${totals.reject || 0}</b>`;
+
+  document.getElementById('progress').textContent = `${_idx + 1} / ${_filtered.length}`;
+  document.getElementById('prevBtn').disabled = _idx === 0;
+  document.getElementById('nextBtn').disabled = _idx === _filtered.length - 1;
+
+  let html = `
+    <div class="panel">
+      <h2>The correction</h2>
+      <div class="corr-text">${escapeHtml(rec.text)}</div>
+      <div class="kv"><b>Page date:</b> ${rec.page_date || '—'} ·
+        <b>Anchor (DOW-inferred):</b> ${rec.anchor_date || '—'}${rec.dow_name ? ' (' + rec.dow_name + ')' : ''} ·
+        <b>Source page:</b> <a href="${escapeHtml(rec.page_url || '#')}" target="_blank">view</a></div>
+      <div class="kv"><b>Reason for review:</b> ${rec.reason}${rec.reason === 'high_dow_diff' ? ' (DOW-vs-match diff = ' + rec.dow_match_diff + ' days)' : ''}</div>
+      <div class="kv"><b>Entities:</b> ${(rec.entities || []).map(e => '<span class="badge medium" style="background:#326891">' + escapeHtml(e) + '</span>').join(' ') || '—'}</div>
+      <div class="kv"><b>Queries tried:</b> ${(rec.queries_tried || []).map(q => '“' + escapeHtml(q) + '”').join(', ') || '—'}</div>
+      ${rec.existing_match_url ? `
+        <div class="kv" style="margin-top:6px"><b>Currently matched to:</b>
+          <a href="https://www.nytimes.com${escapeHtml(rec.existing_match_url)}" target="_blank">${escapeHtml(rec.existing_match_headline || rec.existing_match_url)}</a>
+          ${rec.existing_match_authors ? ' (by ' + escapeHtml(rec.existing_match_authors.join(', ')) + ')' : ''}
+        </div>` : ''}
+    </div>
+    <div class="panel">
+      <h2>Candidates (${(rec.candidates || []).length})</h2>
+  `;
+
+  if (!rec.candidates || !rec.candidates.length) {
+    html += `<div class="empty">No candidates from API search.</div>`;
+  } else {
+    rec.candidates.forEach((cand, i) => {
+      const acceptedHere = decision && decision.action === 'accept' && decision.url === cand.url;
+      const rejected = decision && decision.action === 'reject';
+      const cls = (acceptedHere ? 'accepted ' : (rejected ? 'rejected ' : '')) + cand.band;
+      html += `
+        <div class="candidate ${cls}">
+          <div class="head">
+            <span class="badge ${cand.band}">${cand.band}</span>
+            <span class="score">score ${cand.score}</span>
+            ${i + 1}. <a href="${escapeHtml(cand.web_url)}" target="_blank">${escapeHtml(cand.headline || cand.url)}</a>
+          </div>
+          <div class="kv">
+            <b>${escapeHtml(cand.section)}${cand.subsection ? ' / ' + escapeHtml(cand.subsection) : ''}</b> ·
+            ${cand.pub_date} ·
+            ${cand.byline ? escapeHtml(cand.byline) : 'no byline'} ·
+            ${cand.word_count ? cand.word_count + ' words' : 'wc unknown'} ·
+            type: <i>${escapeHtml(cand.type_of_material || '—')}</i>
+          </div>
+          ${cand.lead_paragraph ? '<div class="leadp">' + escapeHtml(cand.lead_paragraph) + '</div>' : ''}
+          <div class="toks">
+            <b>Entity hits:</b> <span class="ent-hits">${(cand.breakdown.ent_hits || []).map(escapeHtml).join(', ') || '—'}</span> ·
+            <b>Token overlap:</b> ${(cand.breakdown.overlap_tokens || []).map(escapeHtml).join(', ') || '—'} ·
+            <b>Days off:</b> ${cand.breakdown.days_off === null ? '—' : cand.breakdown.days_off}d
+          </div>
+          <div class="controls">
+            <button class="accept" onclick="decide('${id.replace(/'/g, "\\\'")}', 'accept', '${cand.url.replace(/'/g, "\\\'")}', ${cand.score})">Accept this</button>
+            ${cand.url === rec.existing_match_url ? '<span style="color:#888;font-size:11px">(already matched)</span>' : ''}
+          </div>
+        </div>`;
+    });
+  }
+
+  html += `
+    </div>
+    <div class="panel">
+      <div class="controls">
+        <button class="reject" onclick="decide('${id.replace(/'/g, "\\\'")}', 'reject', null, 0)">Reject all (no good match)</button>
+        <button onclick="decide('${id.replace(/'/g, "\\\'")}', 'skip', null, 0)">Skip (revisit later)</button>
+        ${decision ? '<span style="color:#888;font-size:12px;margin-left:auto">Current decision: <b>' + decision.action + '</b>' + (decision.url ? ' → ' + decision.url : '') + '</span>' : ''}
+      </div>
+    </div>
+  `;
+  c.innerHTML = html;
+}
+
+function decide(id, action, url, score) {
+  if (action === 'skip') {
+    delete _decisions[id];
+  } else {
+    _decisions[id] = { action, url, score, ts: new Date().toISOString() };
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(_decisions));
+  render();
+  // Auto-advance after a decision (not on skip)
+  if (action !== 'skip' && _idx < _filtered.length - 1) {
+    setTimeout(() => navigate(+1), 250);
+  }
+}
+
+function navigate(delta) {
+  _idx += delta;
+  render();
+}
+
+function exportOverrides() {
+  // Build a clean overrides object — only accepts and rejects, dropping `skip`.
+  const out = { generated_at: new Date().toISOString(), decisions: [] };
+  for (const id in _decisions) {
+    const d = _decisions[id];
+    out.decisions.push({ correction_id: id, ...d });
+  }
+  const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.download = 'corrections_overrides.json';
+  a.href = URL.createObjectURL(blob);
+  a.click();
+}
+
+function loadOverrides() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json';
+  inp.onchange = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const j = JSON.parse(r.result);
+        const incoming = (j.decisions || []);
+        incoming.forEach(d => { _decisions[d.correction_id] = { action: d.action, url: d.url, score: d.score, ts: d.ts }; });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(_decisions));
+        render();
+      } catch (err) { alert('Could not parse: ' + err); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'j' || e.key === 'ArrowRight') { navigate(+1); e.preventDefault(); }
+  else if (e.key === 'k' || e.key === 'ArrowLeft') { navigate(-1); e.preventDefault(); }
+  else if (e.key === 'r') {
+    const rec = _filtered[_idx]; if (rec) decide(recId(rec), 'reject', null, 0);
+  }
+  else if ('12345'.includes(e.key)) {
+    const rec = _filtered[_idx]; if (!rec) return;
+    const i = parseInt(e.key, 10) - 1;
+    const c = (rec.candidates || [])[i];
+    if (c) decide(recId(rec), 'accept', c.url, c.score);
+  }
+});
+
+init();
+</script>
+</body>
+</html>

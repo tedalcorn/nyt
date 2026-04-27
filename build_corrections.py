@@ -20,6 +20,59 @@ CORR_PATH = 'data/corrections.json'
 OUT_MATCHED = 'data/corrections_matched.json'
 OUT_SUMMARY = 'data/corrections_summary.json'
 
+DOW_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+DOW_TO_NUM = {n: i for i, n in enumerate(DOW_NAMES)}
+DOW_RE = re.compile(r'\b(last|on)?\s*(' + '|'.join(DOW_NAMES) + r')\b', re.I)
+URL_DATE_RE = re.compile(r'^/(\d{4})/(\d{2})/(\d{2})/')
+
+
+def infer_print_date(text, page_date_str):
+    """DOW-based print-date inference. 'last <DAY>' → previous week.
+    Returns (iso_date | None, dow_name | None)."""
+    if not text or not page_date_str:
+        return None, None
+    m = DOW_RE.search(text)
+    if not m:
+        return None, None
+    qualifier = (m.group(1) or '').lower()
+    dow_name = m.group(2).capitalize()
+    target = DOW_TO_NUM[dow_name]
+    try:
+        pd = date.fromisoformat(page_date_str)
+    except Exception:
+        return None, dow_name
+    most_recent = None
+    for delta in range(0, 8):
+        c = pd - timedelta(days=delta)
+        if c.weekday() == target:
+            most_recent = c
+            break
+    if most_recent is None:
+        return None, dow_name
+    if qualifier == 'last':
+        most_recent -= timedelta(days=7)
+    return most_recent.isoformat(), dow_name
+
+
+def augment_record(rec):
+    """Add text_word_count, dow_inferred_date, dow_name, dow_match_diff in place."""
+    text = rec.get('text') or ''
+    rec['text_word_count'] = len(text.split())
+    inferred, dow_name = infer_print_date(text, rec.get('page_date') or '')
+    rec['dow_inferred_date'] = inferred
+    rec['dow_name'] = dow_name
+    diff = None
+    mu = rec.get('match_url') or ''
+    m = URL_DATE_RE.match(mu) if mu else None
+    if inferred and m:
+        try:
+            d_inf = date.fromisoformat(inferred)
+            d_mu = date.fromisoformat(f'{m.group(1)}-{m.group(2)}-{m.group(3)}')
+            diff = abs((d_inf - d_mu).days)
+        except Exception:
+            diff = None
+    rec['dow_match_diff'] = diff
+
 
 def load_articles_by_date():
     """Return ({YYYY-MM-DD: [...]}, {url: art}) from condensed yearly files.
@@ -258,6 +311,12 @@ def main():
                     by_author[au] += 1
         matched_n -= n_dupes
     print(f'Merged duplicates: {n_dupes} secondary notifications folded into primary')
+
+    for rec in matched:
+        augment_record(rec)
+    n_dow = sum(1 for r in matched if r.get('dow_name'))
+    n_diff_ge7 = sum(1 for r in matched if (r.get('dow_match_diff') or 0) >= 7)
+    print(f'Augmented: {n_dow} have parsed DOW, {n_diff_ge7} flagged dow_match_diff>=7d')
 
     with open(OUT_MATCHED, 'w') as fh:
         json.dump(matched, fh, separators=(',', ':'))

@@ -214,8 +214,14 @@
 
   /* Obituaries side-by-side charts (desktop) */
   .obit-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  @media (max-width: 880px) {
+    .obit-charts-row { grid-template-columns: 1fr; }
+  }
   /* Section popup side-by-side charts (desktop) */
   .section-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 880px) {
+    .section-charts-row { grid-template-columns: 1fr; }
+  }
 
   /* Authors table */
   .author-table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -240,6 +246,32 @@
   .corrections-table .corr-reporters { max-width: 130px; min-width: 90px; white-space: normal; word-break: break-word; }
   .corrections-table .corr-article    { max-width: 220px; word-break: break-word; }
   .corrections-table .corr-text       { max-width: 620px; }
+  .corrections-table td.corr-section-cell,
+  .corrections-table td.corr-author-link { cursor: pointer; color: #326891; }
+  .corrections-table td.corr-section-cell:hover,
+  .corrections-table td.corr-author-link:hover { text-decoration: underline; }
+  .corrections-table .corr-author-link + .corr-author-link::before { content: ", "; color: #666; }
+
+  /* Corrections visualizer */
+  .corr-viz-controls { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin-bottom:10px; font-size:13px; }
+  .corr-viz-controls .seg { display:inline-flex; border:1px solid #ccc; border-radius:3px; overflow:hidden; font-size:11px; }
+  .corr-viz-controls .seg button { padding:3px 10px; border:none; border-right:1px solid #ccc; cursor:pointer; font-family:inherit; background:#fff; color:#333; }
+  .corr-viz-controls .seg button:last-child { border-right:none; }
+  .corr-viz-controls .seg button.on { background:#326891; color:#fff; }
+  .corr-viz-controls label { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.4px; }
+  .corr-viz-chips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:24px; }
+  .corr-viz-chip { display:inline-flex; align-items:center; background:#e8e0d4; border:1px solid #d4c8b0; border-radius:12px; padding:2px 6px 2px 10px; font-size:12px; }
+  .corr-viz-chip button { background:none; border:none; cursor:pointer; color:#666; font-size:14px; padding:0 4px; line-height:1; }
+  .corr-viz-chip button:hover { color:#000; }
+  .corr-viz-add-wrap { position:relative; display:inline-block; }
+  .corr-viz-add { padding:3px 10px; border:1px dashed #aaa; border-radius:12px; background:#fafafa; cursor:pointer; font-size:12px; color:#326891; }
+  .corr-viz-add:hover { background:#f0ede6; }
+  .corr-viz-search { position:absolute; top:100%; left:0; margin-top:4px; background:#fff; border:1px solid #ccc; border-radius:4px; padding:6px; z-index:30; box-shadow:0 2px 8px rgba(0,0,0,0.1); min-width:280px; }
+  .corr-viz-search input { width:100%; padding:4px 8px; border:1px solid #ccc; border-radius:3px; font-size:13px; box-sizing:border-box; }
+  .corr-viz-search ul { list-style:none; margin:6px 0 0; padding:0; max-height:240px; overflow-y:auto; }
+  .corr-viz-search li { padding:4px 8px; cursor:pointer; font-size:12px; border-radius:3px; }
+  .corr-viz-search li:hover { background:#f0ede6; }
+  .corr-viz-search li .meta { color:#888; font-size:11px; margin-left:6px; }
 
   /* Author timeline */
   .author-timeline {
@@ -389,7 +421,7 @@
   <button data-view="states">U.S. States</button>
   <button data-view="world">World</button>
   <button data-view="obits">Obituaries</button>
-  <button data-view="corrections" style="display:none">Corrections</button>
+  <button data-view="corrections">Corrections</button>
   <button data-view="about">About</button>
 </nav>
 
@@ -803,21 +835,61 @@
     <div class="chart-box">
       <h3>Corrections</h3>
       <p id="corrSubtitle" style="font-size:13px;color:#666;margin-bottom:10px">
-        Every correction the Times printed in 2025, linked to the underlying article. (We're still backfilling earlier years; 2000–2024 will follow.)
+        Every correction the Times printed since 2017, linked to the underlying article.
       </p>
       <div id="corrLoading" style="color:#888;padding:8px 0">Loading corrections data…</div>
       <div id="corrContent" style="display:none">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
-          <input type="text" id="corrSearch" placeholder="Filter by text, section, or reporter…" style="flex:1;min-width:220px;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
-          <select id="corrSectionFilter" onchange="renderCorrTable()" style="padding:5px 8px;font-size:13px">
-            <option value="">All sections</option>
-          </select>
-          <span id="corrMatchFilter" data-value="all" style="display:inline-flex;border:1px solid #ccc;border-radius:3px;overflow:hidden;font-size:11px;vertical-align:middle">
-            <button type="button" data-val="all"       onclick="_setCorrMatch('all')"       style="padding:3px 10px;border:none;border-right:1px solid #ccc;cursor:pointer;font-family:inherit">All</button>
-            <button type="button" data-val="matched"   onclick="_setCorrMatch('matched')"   style="padding:3px 10px;border:none;border-right:1px solid #ccc;cursor:pointer;font-family:inherit">Matched</button>
-            <button type="button" data-val="unmatched" onclick="_setCorrMatch('unmatched')" style="padding:3px 10px;border:none;cursor:pointer;font-family:inherit">Unmatched</button>
+
+        <!-- Visualizer & unified filters -->
+        <div id="corrVizPanel" style="border:1px solid #e6e2d6;border-radius:6px;padding:12px 14px;background:#fbf9f4;margin-bottom:14px">
+          <!-- Row 1: free-text search (top) + Count/Per-100 toggle (upper-right) -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+            <input type="text" id="corrSearch" placeholder="Filter by text, section, or reporter…"
+                   style="flex:1;padding:6px 10px;border:1px solid #ccc;border-radius:4px;font-family:inherit;font-size:13px">
+            <span class="seg" id="corrVizMetric">
+              <button type="button" data-val="count" class="on" onclick="_setVizMetric('count')">Count</button>
+              <button type="button" data-val="rate"          onclick="_setVizMetric('rate')">Per 100 articles</button>
+            </span>
+          </div>
+          <!-- Row 2: section chips -->
+          <div class="corr-viz-rowfilter" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+            <label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.4px;min-width:84px">Sections:</label>
+            <div class="corr-viz-chips" id="corrVizChipsSection"></div>
+            <div class="corr-viz-add-wrap" data-kind="section">
+              <button type="button" class="corr-viz-add" onclick="_toggleVizSearch('section')">+ add</button>
+              <div class="corr-viz-search" id="corrVizSearchSection" style="display:none">
+                <input type="text" class="corrVizSearchInput" placeholder="Type to search sections…">
+                <ul></ul>
+              </div>
+            </div>
+          </div>
+          <!-- Row 3: reporter chips -->
+          <div class="corr-viz-rowfilter" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+            <label style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.4px;min-width:84px">Reporters:</label>
+            <div class="corr-viz-chips" id="corrVizChipsReporter"></div>
+            <div class="corr-viz-add-wrap" data-kind="reporter">
+              <button type="button" class="corr-viz-add" onclick="_toggleVizSearch('reporter')">+ add</button>
+              <div class="corr-viz-search" id="corrVizSearchReporter" style="display:none">
+                <input type="text" class="corrVizSearchInput" placeholder="Type to search reporters…">
+                <ul></ul>
+              </div>
+            </div>
+          </div>
+          <!-- Chart with title bar (used for the JPG export) -->
+          <div id="corrVizTitleBar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div id="corrVizChartTitle" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Corrections by year</div>
+            <button onclick="_downloadCorrVizChart(this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
+          </div>
+          <div style="position:relative;height:280px"><canvas id="chartCorrViz"></canvas></div>
+        </div>
+        <!-- Mini diagnostic row above table -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:11px;color:#888">
+          <span id="corrCount"></span>
+          <span id="corrMatchFilter" data-value="all" style="margin-left:auto;display:inline-flex;border:1px solid #ddd;border-radius:3px;overflow:hidden;font-size:10px">
+            <button type="button" data-val="all"       onclick="_setCorrMatch('all')"       style="padding:2px 7px;border:none;border-right:1px solid #ddd;cursor:pointer;font-family:inherit;background:#fff;color:#666">All</button>
+            <button type="button" data-val="matched"   onclick="_setCorrMatch('matched')"   style="padding:2px 7px;border:none;border-right:1px solid #ddd;cursor:pointer;font-family:inherit;background:#fff;color:#666">Matched</button>
+            <button type="button" data-val="unmatched" onclick="_setCorrMatch('unmatched')" style="padding:2px 7px;border:none;cursor:pointer;font-family:inherit;background:#fff;color:#666">Unmatched</button>
           </span>
-          <span id="corrCount" style="color:#888;font-size:12px;margin-left:auto"></span>
         </div>
         <div class="table-scroll-wrap" style="max-height:600px;overflow-y:auto"><div id="corrTableContainer"></div></div>
       </div>
@@ -6394,6 +6466,23 @@ function renderObitGenderChart() {
   });
 }
 
+// Wire window resize → explicitly call .resize() on obit charts. Chart.js's
+// ResizeObserver sometimes misses grid-cell width changes when the window
+// stays in the same media-query bucket.
+if (!window._obitResizeWired) {
+  window._obitResizeWired = true;
+  let _obitRT;
+  window.addEventListener('resize', () => {
+    clearTimeout(_obitRT);
+    _obitRT = setTimeout(() => {
+      ['chartObitAge', 'chartObitGender'].forEach(id => {
+        const ch = chartInstances[id];
+        if (ch) ch.resize();
+      });
+    }, 120);
+  });
+}
+
 // Last-word-of-name; ignores trailing comma/period and handles smart quotes.
 // Single-token names (mononyms like "Cher", "Madonna", or names where the
 // title was already stripped leaving one token) place the lone token in Last
@@ -6591,6 +6680,322 @@ corrObserver.observe(document.getElementById('view-corrections'), { attributes: 
 // Date parsing for the "year(s) covered" label in subtitle.
 let _corrSort = { key: 'page_date', dir: 'desc' };
 
+// ── Corrections visualizer state ────────────────────────────────────────────
+let _corrDenom = null;            // {years, section_year_counts, reporter_year_counts, overall_year_counts}
+let _corrAgg = null;              // pre-aggregated correction counts by year/section/reporter
+let _vizMetric = 'count';         // 'count' | 'rate'
+let _vizSectionChips = [];        // selected sections
+let _vizReporterChips = [];       // selected reporters
+const _vizPalette = ['#326891','#c87533','#5a8a3e','#8b3a62','#b08a00','#3a7a8a','#a04a4a','#6a4a8a'];
+
+function _setVizMetric(m) {
+  _vizMetric = m;
+  document.querySelectorAll('#corrVizMetric button').forEach(b =>
+    b.classList.toggle('on', b.dataset.val === m));
+  _renderCorrViz();
+}
+
+function _addVizChip(kind, name) {
+  if (!name) return;
+  const arr = (kind === 'section') ? _vizSectionChips : _vizReporterChips;
+  if (arr.includes(name)) return;
+  if ((_vizSectionChips.length + _vizReporterChips.length) >= 8) {
+    alert('Up to 8 selections at a time'); return;
+  }
+  arr.push(name);
+  _renderVizChips();
+  _hideVizSearch();
+  _renderCorrViz();
+  renderCorrTable();
+}
+function _removeVizChip(kind, name) {
+  if (kind === 'section') _vizSectionChips = _vizSectionChips.filter(c => c !== name);
+  else _vizReporterChips = _vizReporterChips.filter(c => c !== name);
+  _renderVizChips();
+  _renderCorrViz();
+  renderCorrTable();
+}
+
+function _renderVizChips() {
+  // Compute color indices: sections first, then reporters, in the same order
+  // they appear in the chart, so swatch ↔ chart-line color match.
+  const all = [..._vizSectionChips.map(n => ({kind:'section', name:n})),
+               ..._vizReporterChips.map(n => ({kind:'reporter', name:n}))];
+  const colorByKey = {};
+  all.forEach((c, i) => { colorByKey[c.kind + ':' + c.name] = _vizPalette[i % _vizPalette.length]; });
+
+  const renderRow = (chips, kind) => chips.map(name => {
+    const color = colorByKey[kind + ':' + name];
+    return `<span class="corr-viz-chip" style="border-color:${color}">
+       <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>${escapeHtml(name)}
+       <button type="button" onclick="_removeVizChip('${kind}','${name.replace(/'/g, "\\'")}')" title="remove">×</button>
+     </span>`;
+  }).join('');
+
+  const sec = document.getElementById('corrVizChipsSection');
+  const rep = document.getElementById('corrVizChipsReporter');
+  if (sec) sec.innerHTML = renderRow(_vizSectionChips, 'section');
+  if (rep) rep.innerHTML = renderRow(_vizReporterChips, 'reporter');
+}
+
+function _toggleVizSearch(kind) {
+  const sb = document.getElementById(kind === 'section' ? 'corrVizSearchSection' : 'corrVizSearchReporter');
+  if (!sb) return;
+  // Close any open one of the other kind
+  ['corrVizSearchSection','corrVizSearchReporter'].forEach(id => {
+    if (id !== sb.id) { const e = document.getElementById(id); if (e) e.style.display = 'none'; }
+  });
+  if (sb.style.display === 'none') {
+    sb.style.display = 'block';
+    const inp = sb.querySelector('input');
+    inp.value = '';
+    inp.focus();
+    _renderVizSearchList(kind, '');
+  } else {
+    sb.style.display = 'none';
+  }
+}
+function _hideVizSearch() {
+  ['corrVizSearchSection','corrVizSearchReporter'].forEach(id => {
+    const e = document.getElementById(id); if (e) e.style.display = 'none';
+  });
+}
+
+function _renderVizSearchList(kind, q) {
+  const sb = document.getElementById(kind === 'section' ? 'corrVizSearchSection' : 'corrVizSearchReporter');
+  const list = sb.querySelector('ul');
+  if (!list || !_corrAgg) return;
+  q = (q || '').toLowerCase();
+  const src = (kind === 'section')
+    ? Object.entries(_corrAgg.bySection || {})
+    : Object.entries(_corrAgg.byReporter || {});
+  const taken = (kind === 'section') ? _vizSectionChips : _vizReporterChips;
+  const items = src
+    .filter(([name]) => !taken.includes(name))
+    .filter(([name]) => !q || name.toLowerCase().includes(q))
+    .map(([name, perYear]) => {
+      const total = Object.values(perYear).reduce((a, b) => a + b, 0);
+      return { name, total };
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 50);
+  list.innerHTML = items.map(it =>
+    `<li onclick="_addVizChip('${kind}','${it.name.replace(/'/g, "\\'")}')">${escapeHtml(it.name)}<span class="meta">${it.total} correction${it.total === 1 ? '' : 's'}</span></li>`
+  ).join('') || `<li style="color:#888;cursor:default">No matches</li>`;
+}
+
+function _aggregateCorrections() {
+  // Build {byYear, bySection: {sec: {year: n}}, byReporter: {rep: {year: n}}}
+  const byYear = {};
+  const bySection = {};
+  const byReporter = {};
+  for (const c of _corr) {
+    if (!c.match_url) continue; // skip unmatched (no section/authors)
+    const y = (c.page_date || '').slice(0, 4);
+    if (!y) continue;
+    byYear[y] = (byYear[y] || 0) + 1;
+    const sec = c.match_section;
+    if (sec) {
+      bySection[sec] = bySection[sec] || {};
+      bySection[sec][y] = (bySection[sec][y] || 0) + 1;
+    }
+    for (const r of (c.match_authors || [])) {
+      byReporter[r] = byReporter[r] || {};
+      byReporter[r][y] = (byReporter[r][y] || 0) + 1;
+    }
+  }
+  return { byYear, bySection, byReporter };
+}
+
+function _renderCorrViz() {
+  if (!_corr || !_corrDenom || !_corrAgg) return;
+  destroyChart('chartCorrViz');
+  // Drop the current (incomplete) calendar year so an in-progress 2026 doesn't
+  // imply a downward trend.
+  const cutoffYr = String(new Date().getFullYear());
+  const years = (_corrDenom.years || []).slice().filter(y => y < cutoffYr);
+  const labels = years.slice();
+  const datasets = [];
+  let colorIdx = 0;
+
+  function buildSeries(label, perYear, denomPerYear) {
+    const color = _vizPalette[colorIdx++ % _vizPalette.length];
+    const data = years.map(y => {
+      const n = perYear[y] || 0;
+      if (_vizMetric === 'rate') {
+        const denom = denomPerYear ? (denomPerYear[y] || 0) : 0;
+        if (!denom) return null;
+        return +(100 * n / denom).toFixed(2);
+      }
+      return n;
+    });
+    datasets.push({
+      label, data, borderColor: color, backgroundColor: color,
+      tension: 0.2, pointRadius: 3, fill: false, borderWidth: 2,
+    });
+  }
+
+  if (!_vizSectionChips.length && !_vizReporterChips.length) {
+    buildSeries('All corrections', _corrAgg.byYear, _corrDenom.overall_year_counts);
+  } else {
+    _vizSectionChips.forEach(name => {
+      buildSeries(name, _corrAgg.bySection[name] || {},
+        (_corrDenom.section_year_counts || {})[name] || {});
+    });
+    _vizReporterChips.forEach(name => {
+      buildSeries(name, _corrAgg.byReporter[name] || {},
+        (_corrDenom.reporter_year_counts || {})[name] || {});
+    });
+  }
+  // Update chart title (used for both on-screen and JPG export)
+  const titleEl = document.getElementById('corrVizChartTitle');
+  if (titleEl) {
+    if (!_vizSectionChips.length && !_vizReporterChips.length) {
+      titleEl.textContent = _vizMetric === 'rate'
+        ? 'NYT corrections per 100 articles, by year'
+        : 'NYT corrections per year';
+    } else {
+      const parts = [];
+      if (_vizSectionChips.length) parts.push(_vizSectionChips.join(', '));
+      if (_vizReporterChips.length) parts.push(_vizReporterChips.join(', '));
+      titleEl.textContent = (_vizMetric === 'rate' ? 'Corrections per 100 articles: ' : 'Corrections by year: ') + parts.join(' · ');
+    }
+  }
+
+  if (!datasets.length) return;
+  chartInstances['chartCorrViz'] = new Chart(document.getElementById('chartCorrViz'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },   // chips above serve as the legend
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const v = ctx.parsed.y;
+              if (v === null) return `${ctx.dataset.label}: n/a`;
+              return _vizMetric === 'rate'
+                ? `${ctx.dataset.label}: ${v} per 100 articles`
+                : `${ctx.dataset.label}: ${v}`;
+            },
+          },
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: _vizMetric === 'rate' ? 'Corrections per 100 articles' : 'Number of corrections', font: { size: 11 } },
+        },
+        x: { title: { display: false } },
+      },
+    },
+  });
+}
+
+function _downloadCorrVizChart(btn) {
+  const canvas = document.getElementById('chartCorrViz');
+  if (!canvas) return;
+  btn.textContent = '…';
+
+  // Title from current state
+  const cutoffYr = String(new Date().getFullYear());
+  const yrs = (_corrDenom?.years || []).slice().filter(y => y < cutoffYr);
+  const range = yrs.length ? `${yrs[0]}–${yrs[yrs.length - 1]}` : '';
+  const isRate = _vizMetric === 'rate';
+  let title1, title2;
+  if (!_vizSectionChips.length && !_vizReporterChips.length) {
+    title1 = isRate
+      ? `New York Times corrections per 100 articles${range ? ' (' + range + ')' : ''}`
+      : `New York Times corrections per year${range ? ' (' + range + ')' : ''}`;
+    title2 = `Source: NYT Archive API · scraped from /pageoneplus/ daily-correction digests`;
+  } else {
+    const segs = [];
+    if (_vizSectionChips.length) segs.push('Sections: ' + _vizSectionChips.join(', '));
+    if (_vizReporterChips.length) segs.push('Reporters: ' + _vizReporterChips.join(', '));
+    title1 = (isRate ? 'NYT corrections per 100 articles' : 'NYT corrections per year')
+             + (range ? ` (${range})` : '');
+    title2 = segs.join(' · ') + ' · Source: NYT Archive API';
+  }
+
+  // Legend items: pull from current chart datasets
+  const inst = chartInstances['chartCorrViz'];
+  const legendItems = inst ? inst.data.datasets.map(d => ({ color: d.borderColor, label: d.label })) : [];
+
+  const W = canvas.width;
+  const H = canvas.height;
+  const TOP = 60;
+  const BOT = 44;
+  const out = document.createElement('canvas');
+  out.width = W; out.height = TOP + H + BOT;
+  const c = out.getContext('2d');
+  c.fillStyle = '#fff';
+  c.fillRect(0, 0, out.width, out.height);
+
+  c.fillStyle = '#111';
+  c.font = 'bold 14px Arial,sans-serif';
+  c.fillText(title1, 12, 22);
+  c.fillStyle = '#666';
+  c.font = '11px Arial,sans-serif';
+  const maxW = W - 24;
+  if (c.measureText(title2).width <= maxW) {
+    c.fillText(title2, 12, 42);
+  } else {
+    const parts = title2.split(' · ');
+    let line = parts[0], y = 42;
+    for (let i = 1; i < parts.length; i++) {
+      const next = line + ' · ' + parts[i];
+      if (c.measureText(next).width > maxW) { c.fillText(line, 12, y); line = parts[i]; y += 14; }
+      else line = next;
+    }
+    c.fillText(line, 12, y);
+  }
+
+  c.drawImage(canvas, 0, TOP);
+
+  // Legend below
+  let lx = 12, ly = TOP + H + 22;
+  c.font = '10px Arial,sans-serif';
+  legendItems.forEach(({ color, label }) => {
+    c.fillStyle = color;
+    c.fillRect(lx, ly - 10, 12, 12);
+    c.strokeStyle = '#bbb'; c.lineWidth = 0.5;
+    c.strokeRect(lx, ly - 10, 12, 12);
+    c.fillStyle = '#333';
+    const lblW = c.measureText(label).width;
+    if (lx + 16 + lblW > W - 8) return;   // skip overflow
+    c.fillText(label, lx + 16, ly);
+    lx += 16 + lblW + 14;
+  });
+
+  c.font = '9px Arial,sans-serif';
+  c.fillStyle = '#aaa';
+  c.textAlign = 'right';
+  c.fillText('https://tedalcorn.github.io/nyt/', W - 8, TOP + H + BOT - 8);
+  c.textAlign = 'left';
+
+  const slug = (isRate ? 'nyt-corrections-rate' : 'nyt-corrections-count')
+             + (_vizSectionChips.length || _vizReporterChips.length ? '-filtered' : '');
+  const a = document.createElement('a');
+  a.download = slug + '.jpg';
+  a.href = out.toDataURL('image/jpeg', 0.92);
+  a.click();
+  btn.textContent = '↓ JPG';
+}
+
+// Click-through from table row: add chip and scroll up
+function _vizFromSection(sec) {
+  if (!sec) return;
+  _addVizChip('section', sec);
+  document.getElementById('corrVizPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function _vizFromReporter(name) {
+  if (!name) return;
+  _addVizChip('reporter', name);
+  document.getElementById('corrVizPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function _setCorrMatch(val) {
   const wrap = document.getElementById('corrMatchFilter');
   if (!wrap) return;
@@ -6605,12 +7010,15 @@ function _setCorrMatch(val) {
 
 async function initCorrections() {
   try {
-    const [r1, r2] = await Promise.all([
+    const [r1, r2, r3] = await Promise.all([
       fetch('data/corrections_matched.json').then(r => r.json()),
       fetch('data/corrections_summary.json').then(r => r.json()),
+      fetch('data/corrections_denominators.json').then(r => r.json()).catch(() => null),
     ]);
     _corr = r1;
     _corrSummary = r2;
+    _corrDenom = r3;
+    _corrAgg = _aggregateCorrections();
   } catch (e) {
     document.getElementById('corrLoading').textContent = 'Failed to load corrections data.';
     return;
@@ -6618,13 +7026,6 @@ async function initCorrections() {
   document.getElementById('corrLoading').style.display = 'none';
   document.getElementById('corrContent').style.display = 'block';
 
-  // Section filter options from summary
-  const secSel = document.getElementById('corrSectionFilter');
-  _corrSummary.by_section.forEach(([s, n]) => {
-    const opt = document.createElement('option');
-    opt.value = s; opt.textContent = `${s} (${n})`;
-    secSel.appendChild(opt);
-  });
 
   // Subtitle: derive period from page_date only. ref_date can carry stray
   // years pulled out of correction body text (e.g. "the year 1944"), which
@@ -6637,15 +7038,23 @@ async function initCorrections() {
       const yrs = new Set(dates.map(d => d.slice(0, 4)));
       const sortedYrs = [...yrs].sort();
       const period = sortedYrs.length === 1 ? sortedYrs[0] : `${sortedYrs[0]}–${sortedYrs[sortedYrs.length - 1]}`;
-      const haveAll = yrs.has('2000') && yrs.has('2025');
-      sub.textContent = haveAll
-        ? `Every correction the Times printed from 2000 through 2025, linked to the underlying article.`
-        : `Every correction the Times printed in ${period}, linked to the underlying article. (Backfill underway — the goal is full 2000–2025 coverage.)`;
+      sub.textContent = `Every correction the Times printed from ${period}, linked to the underlying article.`;
     }
   }
 
   document.getElementById('corrSearch').addEventListener('input', () => renderCorrTable());
+  // Wire viz search inputs (one per kind)
+  document.querySelectorAll('.corrVizSearchInput').forEach(inp => {
+    const kind = inp.closest('[id^="corrVizSearch"]').id.includes('Section') ? 'section' : 'reporter';
+    inp.addEventListener('input', e => _renderVizSearchList(kind, e.target.value));
+  });
+  // Click outside any search popover closes them
+  document.addEventListener('click', (e) => {
+    const inAdd = e.target.closest('.corr-viz-add-wrap');
+    if (!inAdd) _hideVizSearch();
+  });
   _setCorrMatch('all');  // paints the segmented control + triggers initial render
+  _renderCorrViz();      // initial overall chart
 }
 
 function _fmtCorrDate(iso) {
@@ -6667,12 +7076,20 @@ function _toggleCorrSort(key) {
 function renderCorrTable() {
   if (!_corr) return;
   const q = (document.getElementById('corrSearch').value || '').toLowerCase();
-  const sec = document.getElementById('corrSectionFilter').value;
   const matchMode = document.getElementById('corrMatchFilter')?.dataset.value || 'all';
+  // Section / reporter chips drive the table filter too. If both kinds are
+  // selected, show rows that match either kind (union).
+  const secSet = new Set(_vizSectionChips);
+  const repSet = new Set(_vizReporterChips);
+  const hasChips = secSet.size > 0 || repSet.size > 0;
   let rows = _corr.filter(c => {
     if (matchMode === 'matched' && !c.match_url) return false;
     if (matchMode === 'unmatched' && c.match_url) return false;
-    if (sec && c.match_section !== sec) return false;
+    if (hasChips) {
+      const secOk = secSet.size > 0 && c.match_section && secSet.has(c.match_section);
+      const repOk = repSet.size > 0 && (c.match_authors || []).some(a => repSet.has(a));
+      if (!(secOk || repOk)) return false;
+    }
     if (q) {
       const hay = ((c.text || '') + ' ' + (c.match_section || '') + ' ' + (c.match_headline || '') + ' ' + ((c.match_authors || []).join(' '))).toLowerCase();
       if (!hay.includes(q)) return false;
@@ -6701,8 +7118,13 @@ function renderCorrTable() {
   display.forEach(c => {
     const refDateText = _fmtCorrDate(c.page_date);
     const refDateCell = refDateText ? escapeHtml(refDateText) : '<span style="color:#bbb">—</span>';
-    const secCell = c.match_section ? escapeHtml(c.match_section) : '<span style="color:#bbb">—</span>';
-    const authors = (c.match_authors || []).join(', ');
+    const secCell = c.match_section
+      ? `<span class="corr-section-link" onclick="_vizFromSection('${(c.match_section || '').replace(/'/g, "\\'")}')" style="cursor:pointer;color:#326891" title="View corrections trend for ${escapeHtml(c.match_section)}">${escapeHtml(c.match_section)}</span>`
+      : '<span style="color:#bbb">—</span>';
+    const authorList = c.match_authors || [];
+    const authors = authorList.map(a =>
+      `<span class="corr-author-link" onclick="_vizFromReporter('${a.replace(/'/g, "\\'")}')" style="cursor:pointer;color:#326891" title="View corrections trend for ${escapeHtml(a)}">${escapeHtml(a)}</span>`
+    ).join(', ');
     let articleCell;
     if (c.match_url) {
       const headline = c.match_headline || 'view';
@@ -6724,7 +7146,7 @@ function renderCorrTable() {
     html += `<tr>
       <td style="color:#666;white-space:nowrap;font-size:12px;vertical-align:top">${refDateCell}</td>
       <td style="font-size:12px;vertical-align:top">${secCell}</td>
-      <td class="corr-reporters" style="font-size:12px;vertical-align:top">${escapeHtml(authors)}</td>
+      <td class="corr-reporters" style="font-size:12px;vertical-align:top">${authors}</td>
       <td class="corr-article" style="font-size:12px;vertical-align:top">${articleCell}</td>
       <td class="corr-text" style="font-size:12px;vertical-align:top">${correctionCell}</td>
     </tr>`;
@@ -7294,14 +7716,10 @@ _syncTrackerBtns();
   const p = _readHash();
   if (!Object.keys(p).length) return;
   const hasDetail = p.author || p.beat || p.state || p.country || p.section || p.subject || p.q;
-  // Corrections is unlisted in nav but still live — honor #tab=corrections
-  // so shared links work. Same for any future hidden tabs.
-  const isHiddenTab = p.tab === 'corrections';
-  if (!hasDetail && !isHiddenTab) {
+  if (!hasDetail) {
     history.replaceState(null, '', location.pathname + location.search);
     return;
   }
-  if (isHiddenTab) showView(p.tab);
   _pendingRestore = p;
 })();
 
@@ -7311,7 +7729,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 8:35am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/27/26 10:20am</span>
 </div>
 </body>
 </html>

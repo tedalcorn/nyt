@@ -320,6 +320,10 @@ NON_OBIT_URLS = {
     '/2020/05/29/podcasts/the-daily/obituaries-coronavirus-100000.html',       # Daily podcast
     '/article/obituary-suggestions.html',                                      # reader-suggestion solicitation
     '/interactive/2016/06/30/obituaries/shootings-part3.html',                 # interactive feature
+    # Reader Center "Overlooked" reader-submission feature, not an obit
+    '/2018/05/02/reader-center/obituary-suggestions-overlooked.html',
+    # Maureen Stapleton memorial-service announcement (sibling of /2006/09/16/obituaries/17stapleton.html)
+    '/2006/09/17/obituaries/stapleton-memorial.html',
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -759,6 +763,23 @@ OBIT_OVERRIDES = {
     '/2014/01/06/sports/soccer/eusebio-71-legend-of-portuguese-soccer-dies.html': {'name': 'Eusébio', 'age': 71, 'gender': 'M', 'gender_src': 'manual'},
     '/2014/08/18/us/sophie-masloff-ex-mayor-of-pittsburgh-dies-at-96.html': {'name': 'Sophie Masloff', 'age': 96, 'gender': 'F', 'gender_src': 'manual', 'profession': 'Ex-Mayor of Pittsburgh'},
     '/2015/05/20/nyregion/happy-rockefeller-whose-marriage-to-governor-scandalized-voters-dies-at-88.html': {'name': 'Happy Rockefeller', 'age': 88, 'gender': 'F', 'gender_src': 'manual'},
+    # Charlotta Bass: Overlooked headline "Before Kamala Harris, There Was
+    # Charlotta Bass" got split on the comma — name parsed as "Before Kamala
+    # Harris", profession as "There Was Charlotta Bass".
+    '/2020/09/04/obituaries/charlotta-bass-vice-president-overlooked.html': {
+        'name': 'Charlotta Bass', 'profession': 'First Black Woman to Run for Vice President',
+        'gender': 'F', 'gender_src': 'manual',
+    },
+    # Yousra Abdel Raouf al-Kidwa: headline "Arafat's Sister, 77, Dies in a
+    # Cairo Hospital" carries no name — the parser captured the descriptor.
+    '/2003/08/14/world/arafat-s-sister-77-dies-in-a-cairo-hospital.html': {
+        'name': 'Yousra Abdel Raouf al-Kidwa', 'profession': "Yasser Arafat's Sister",
+    },
+    # Leonard L. Farber: headline "Leonard L. Farber Shopping Mall Executive,
+    # Dies at 89" was split on the wrong comma — name absorbed the descriptor.
+    '/2005/08/08/business/leonard-l-farber-shopping-mall-executive-dies-at-89.html': {
+        'name': 'Leonard L. Farber', 'profession': 'Shopping Mall Executive',
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
