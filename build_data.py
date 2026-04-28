@@ -447,6 +447,8 @@ def process_articles(raw_articles):
         "Sarah Bahr Photographs":   "Sarah Bahr",
         # Podcast show names indexed as bylines — merge to the host's personal byline
         "The Ezra Klein Show":      "Ezra Klein",
+        "‘The Ezra Klein Show’": "Ezra Klein",  # curly-quoted form
+        "‘The Ezra Klein Show'": "Ezra Klein",       # curly-open + straight-close (the actual stored form)
         # "X Nyt" suffix — Metro Briefing and wire-style bylines (2001-2006)
         'Abby Goodnough Nyt': 'Abby Goodnough',
         'Abby Gruen Nyt': 'Abby Gruen',
@@ -1333,6 +1335,8 @@ def build_author_stats(articles):
         "monthly_counts": defaultdict(int),  # YYYY-MM -> article count
         "annual_blog_counts": defaultdict(int),  # year -> blog article count
         "annual_blog_words": defaultdict(int),   # year -> words from blog articles
+        "annual_podcast_counts": defaultdict(int),  # year -> podcast article count
+        "annual_podcast_words": defaultdict(int),   # year -> words from podcast articles
         "shared_byline_count": 0,
         "monthly_shared_counts": defaultdict(int),  # YYYY-MM -> shared article count
         "coauthors": Counter(),
@@ -1361,6 +1365,9 @@ def build_author_stats(articles):
             if is_blog_url(art.get("web_url", "")):
                 d["annual_blog_counts"][year] += 1
                 d["annual_blog_words"][year] += author_words
+            if is_podcast_article(art.get("section"), art.get("web_url", ""), art.get("kicker", "")):
+                d["annual_podcast_counts"][year] += 1
+                d["annual_podcast_words"][year] += author_words
             if art["word_count"] == 0:
                 d["zero_word_articles"] += 1
             else:
@@ -1427,6 +1434,14 @@ def build_author_stats(articles):
             raw_blog = d["annual_blog_words"].get(y, 0)
             if raw_total > 0 and raw_blog > 0 and y in annual_words_norm:
                 annual_blog_words_norm[y] = round(annual_words_norm[y] * raw_blog / raw_total)
+
+        # Same normalization for podcast words
+        annual_podcast_words_norm = {}
+        for y in years:
+            raw_total = d["annual_words"].get(y, 0)
+            raw_pod = d["annual_podcast_words"].get(y, 0)
+            if raw_total > 0 and raw_pod > 0 and y in annual_words_norm:
+                annual_podcast_words_norm[y] = round(annual_words_norm[y] * raw_pod / raw_total)
 
         # avg_words_per_year: total words / actual date span in fractional years.
         # This avoids the distortion of averaging annualized edge years (which can
@@ -1515,6 +1530,8 @@ def build_author_stats(articles):
             "monthly_counts": dict(d["monthly_counts"]),
             "annual_blog_counts": dict(d["annual_blog_counts"]) if any(d["annual_blog_counts"].values()) else {},
             "annual_blog_words_norm": annual_blog_words_norm if annual_blog_words_norm else {},
+            "annual_podcast_counts": dict(d["annual_podcast_counts"]) if any(d["annual_podcast_counts"].values()) else {},
+            "annual_podcast_words_norm": annual_podcast_words_norm if annual_podcast_words_norm else {},
             "shared_byline_count": shared_count,
             "monthly_shared_counts": dict(d["monthly_shared_counts"]),
             "coauthors": top_coauthors,
@@ -1716,6 +1733,51 @@ def is_blog_url(url):
     except IndexError:
         return False
     return domain.endswith('.blogs.nytimes.com') or domain == 'dealbook.nytimes.com'
+
+
+# Kicker strings (case-insensitive, stripped) used to label NYT podcast episodes
+# in sections other than "Podcasts" (most often Opinion). Sourced from the kicker
+# distribution of the existing Podcasts-section corpus.
+_PODCAST_KICKERS = {
+    'the daily', 'the ezra klein show', 'still processing', 'the run-up',
+    'dear sugars', 'cannonball with wesley morris', 'the new washington',
+    "tell me something i don't know", "tell me something i don’t know",
+    'the modern love podcast', 'modern love podcast', 'modern love',
+    'the book review podcast', 'book review podcast', 'the argument',
+    'matter of opinion', 'first person', 'sway', 'hard fork',
+    'popcast', 'the popcast', "the 'hard fork' podcast",
+}
+
+# Slug fragments that reliably mark Opinion-section podcast posts (e.g. early
+# Ezra Klein Show episodes from 2020-21 that have no kicker or section flag).
+_PODCAST_SLUG_PATTERNS = (
+    'ezra-klein-podcast-', 'argument-podcast-', 'matter-of-opinion-',
+)
+
+
+def is_podcast_article(section, url, kicker):
+    """Return True if the article is a podcast episode (not an article *about* podcasts).
+
+    Detection signals (any one is sufficient):
+      1. section_name == 'Podcasts'
+      2. URL path contains '/podcasts/' or starts with '/audio/'
+      3. Kicker matches a known NYT podcast show (Daily, Ezra Klein Show, etc.)
+      4. URL slug contains a podcast-specific token (handles 2020-21 Opinion
+         episodes that lack both a kicker and the Podcasts section tag)
+    """
+    if section == 'Podcasts':
+        return True
+    u = (url or '').lower()
+    if '/podcasts/' in u:
+        return True
+    # /audio/ path prefix (works for both full URLs and stored path-only form)
+    if '/audio/' in u and ('nytimes.com/audio/' in u or u.startswith('/audio/')):
+        return True
+    if kicker and kicker.strip().lower() in _PODCAST_KICKERS:
+        return True
+    if any(p in u for p in _PODCAST_SLUG_PATTERNS):
+        return True
+    return False
 
 
 def deduplicate_articles(articles):
@@ -2478,19 +2540,28 @@ def _normalize_loc(loc):
 
 def build_dashboard_data(articles, authors):
     """Pre-compute dashboard statistics."""
-    # Articles per month — with blog/non-blog split
+    # Articles per month — split into blog / podcast / standard (mutually exclusive,
+    # blog takes precedence over podcast for the rare overlap)
     monthly = Counter()
     monthly_words = defaultdict(int)
     monthly_blog = Counter()
-    monthly_nonblog = Counter()
+    monthly_blog_words = defaultdict(int)
+    monthly_podcast = Counter()
+    monthly_podcast_words = defaultdict(int)
+    monthly_standard = Counter()
     for art in articles:
         ym = art["year_month"]
+        wc = art["word_count"]
         monthly[ym] += 1
-        monthly_words[ym] += art["word_count"]
+        monthly_words[ym] += wc
         if is_blog_url(art["web_url"]):
             monthly_blog[ym] += 1
+            monthly_blog_words[ym] += wc
+        elif is_podcast_article(art.get("section"), art.get("web_url", ""), art.get("kicker", "")):
+            monthly_podcast[ym] += 1
+            monthly_podcast_words[ym] += wc
         else:
-            monthly_nonblog[ym] += 1
+            monthly_standard[ym] += 1
 
     months_sorted = sorted(monthly.keys())
     articles_per_month = [
@@ -2499,7 +2570,11 @@ def build_dashboard_data(articles, authors):
             "count": monthly[m],
             "words": monthly_words[m],
             "blog": monthly_blog[m],
-            "nonblog": monthly_nonblog[m],
+            "blog_words": monthly_blog_words[m],
+            "podcast": monthly_podcast[m],
+            "podcast_words": monthly_podcast_words[m],
+            # `nonblog` retained for backward compatibility — it now means "non-blog AND non-podcast"
+            "nonblog": monthly_standard[m],
         }
         for m in months_sorted
     ]
@@ -3089,11 +3164,11 @@ def main():
         if a["article_count"] >= 2 and a["name"] not in _INSTITUTIONAL_BYLINES
     ]
     with open(os.path.join(DATA_DIR, "authors.json"), "w") as f:
-        json.dump(authors_export, f)
+        json.dump(authors_export, f, separators=(',', ':'))
     print(f"Saved authors.json ({len(authors_export):,} authors, >= 2 articles)")
 
     with open(os.path.join(DATA_DIR, "dashboard.json"), "w") as f:
-        json.dump(dashboard, f)
+        json.dump(dashboard, f, separators=(',', ':'))
     print(f"Saved dashboard.json")
 
     with open(os.path.join(DATA_DIR, "beats.json"), "w") as f:
