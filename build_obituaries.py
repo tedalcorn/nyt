@@ -782,6 +782,37 @@ OBIT_OVERRIDES = {
     '/2005/08/08/business/leonard-l-farber-shopping-mall-executive-dies-at-89.html': {
         'name': 'Leonard L. Farber', 'profession': 'Shopping Mall Executive',
     },
+    # Archbishop Christodoulos: headline "Greek Orthodox Leader Dies at 69" gives
+    # no parseable name — override both URL variants (same article, two API entries).
+    '/2008/01/29/world/europe/29christodoulos.html': {
+        'name': 'Christodoulos', 'display_name': 'Archbishop Christodoulos',
+        'gender': 'M', 'gender_src': 'honorific', 'profession': 'Greek Orthodox Archbishop',
+    },
+    '/2008/01/29/world/europe/29greece.html': {
+        'name': 'Christodoulos', 'display_name': 'Archbishop Christodoulos',
+        'gender': 'M', 'gender_src': 'honorific', 'profession': 'Greek Orthodox Archbishop',
+    },
+    # Essay-style obits added to ESSAY_OBIT_URLS — also override names/metadata
+    # since their headlines are descriptive rather than name-first.
+    '/2005/04/03/world/europe/allembracing-man-of-action-for-a-new-era-of-papacy.html': {
+        'name': 'John Paul II', 'display_name': 'Pope John Paul II',
+        'gender': 'M', 'gender_src': 'manual', 'age': 84, 'profession': 'Pope',
+    },
+    '/2011/03/27/us/politics/27geraldine-ferraro.html': {
+        'name': 'Geraldine Ferraro', 'display_name': 'Geraldine A. Ferraro',
+        'gender': 'F', 'gender_src': 'pronoun', 'age': 75,
+        'profession': 'First Female Major-Party V.P. Nominee',
+    },
+    '/2010/12/14/world/14holbrooke.html': {
+        'name': 'Richard Holbrooke', 'display_name': 'Richard C. Holbrooke',
+        'gender': 'M', 'gender_src': 'pronoun', 'age': 69,
+        'profession': 'Diplomat and Special Envoy',
+    },
+    '/2010/12/08/us/08edwards.html': {
+        'name': 'Elizabeth Edwards',
+        'gender': 'F', 'gender_src': 'pronoun', 'age': 61,
+        'profession': 'Political Activist and Author',
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -1203,8 +1234,19 @@ def main():
             #     articles riding the Obits desk byline)
             #   - tom-tagged appreciation pieces with no name in the headline
             # Portraits of Grief bypass this gate — they're profile-style.
+            # Essay-style obits with no death verb — bypass looks_like_obit for known URLs.
+            ESSAY_OBIT_URLS = {
+                '/2005/04/03/world/europe/allembracing-man-of-action-for-a-new-era-of-papacy.html',  # Pope John Paul II
+                '/2005/04/01/international/europe/allembracing-man-of-action-for-a-new-era-of-papacy.html',
+                '/2005/04/02/international/europe/allembracing-man-of-action-for-a-new-era-of-papacy.html',
+                '/2011/03/27/us/politics/27geraldine-ferraro.html',   # Geraldine Ferraro
+                '/2010/12/14/world/14holbrooke.html',                  # Richard Holbrooke
+                '/2010/12/08/us/08edwards.html',                       # Elizabeth Edwards
+                '/2004/03/09/nyregion/body-of-spalding-gray-found-monologuist-and-actor-was-62.html',  # Spalding Gray
+            }
             looks_like_obit = bool(
                 is_portraits
+                or url in ESSAY_OBIT_URLS
                 or RE_DEATH_HEADLINE.search(h)
                 or RE_OBIT_URL_HINT.search(url)
                 or RE_LEADING_SERIES.match(h)
