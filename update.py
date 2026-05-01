@@ -43,28 +43,30 @@ def main():
     if do_fetch:
         step('Fetching new months from NYT Archive API', [py, 'fetch_nyt.py'])
 
-    step('Rebuilding dashboard data (build_data.py)', [py, 'build_data.py'])
+    step('Rebuilding dashboard data', [py, 'build_data.py'])
+    step('Rebuilding unique reporters (section + state)', [py, 'build_unique_reporters.py'])
 
     step('Rebuilding obituaries', [py, 'build_obituaries.py'])
-    # Apply surgical name/profession overrides + drop NON_OBIT_URLs that the
-    # full builder already handles, but the regenerator also catches anything
-    # added since the last full build. Idempotent.
     step('Applying surgical obit fixes', [py, 'regenerate_obit_interactive_fixes.py'])
 
     if do_corr:
-        # Only re-scrape the current year for nightly runs; historical pages
-        # are cached and don't change.
-        step(f'Scraping corrections (year: {cur_year})',
+        step(f'Scraping corrections ({cur_year})',
              [py, 'scrape_corrections.py', cur_year])
         step('Building corrections matched + augmented',
              [py, 'build_corrections.py'])
+        step('Re-applying inline URL matches', [py, '-c',
+            'import json; cm=json.load(open("data/corrections_matched.json")); '
+            '[c.update(match_url=c["inline_url"],match_source="inline_url",match_score=99) '
+            'for c in cm if not c.get("match_url") and c.get("inline_url")]; '
+            'json.dump(cm,open("data/corrections_matched.json","w"),ensure_ascii=False,separators=(",",":"))'
+        ])
         step('Rebuilding corrections denominators',
              [py, 'build_corrections_denominators.py'])
 
     if do_validate:
         step('Validating fresh records', [py, 'validate.py'])
 
-    print('\nAll steps complete.')
+    print('\nAll steps complete. Remember to update the timestamp in index.html and push.')
 
 
 if __name__ == '__main__':
