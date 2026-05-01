@@ -25,6 +25,7 @@ _PODCAST_KICKERS = {
     'the book review podcast', 'book review podcast', 'the argument',
     'matter of opinion', 'first person', 'sway', 'hard fork',
     'popcast', 'the popcast', "the 'hard fork' podcast",
+    'the opinions', 'interesting times',
 }
 _PODCAST_SLUG_PATTERNS = ('ezra-klein-podcast-', 'argument-podcast-', 'matter-of-opinion-')
 _INSTITUTIONAL = {

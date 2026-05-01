@@ -45,16 +45,18 @@ RE_HAS_FUNC_WORD = re.compile(r'\s(?:of|for|with|in|on|by|from|to|at|the|that)\s
 # A real name almost never contains these tokens; if extract_name returns a
 # candidate containing one, it's almost certainly a tagline-as-name artifact.
 DESCRIPTIVE_TOKENS = {
-    'force', 'career', 'life', 'lives', 'hall', 'fame', 'reign', 'novelist',
+    'force', 'career', 'life', 'lives', 'fame', 'reign', 'novelist',
     'leader', 'wrestler', 'patron', 'founder', 'pioneer', 'champion',
     'legend', 'hero', 'icon', 'death',
     # NOTE: 'art', 'star', 'song', 'novel' are too easily real first names
     # or surnames (Art Buchwald, Art Winfree, Star Jones) — including them
     # blocks legitimate parses and forces fallback to slug, which produces
     # garbage like "Dr Art" because the slug fallback can't strip Dr/Rev.
+    # NOTE: 'hall' and 'young' removed — both are common surnames (Oakley Hall,
+    # Lee Young, etc.) and their presence silently dropped legitimate names.
     'made', 'helped', 'wrote', 'founded', 'led', 'died', 'killed',
     'who', 'whose', 'whom', 'what', 'where', 'when', 'why',
-    'former', 'late', 'old', 'young', 'famous', 'notable',
+    'former', 'late', 'old', 'famous', 'notable',
 }
 def looks_descriptive(name):
     if not name: return False

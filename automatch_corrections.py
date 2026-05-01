@@ -246,9 +246,10 @@ def process_correction(c, nlp):
         'existing_match_headline': c.get('match_headline'),
         'existing_match_authors': c.get('match_authors'),
         'dow_match_diff': c.get('dow_match_diff'),
+        'inline_url': c.get('inline_url'),
         'reason': 'unmatched' if not c.get('match_url') else 'high_dow_diff',
         'candidates': candidates[:5],   # top 5 only — keep file readable
-        'best_band': candidates[0]['band'] if candidates else 'none',
+        'best_band': 'inline' if c.get('inline_url') and not c.get('match_url') else (candidates[0]['band'] if candidates else 'none'),
     }
 
 

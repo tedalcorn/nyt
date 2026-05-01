@@ -68,6 +68,7 @@
     Show only:
     <select id="bandFilter" onchange="applyFilter()">
       <option value="all">All</option>
+      <option value="inline">Has inline link</option>
       <option value="high">High confidence</option>
       <option value="medium">Medium</option>
       <option value="low">Low</option>
@@ -116,6 +117,7 @@ function applyFilter() {
   _filtered = _data.filter(rec => {
     if (f === 'all') return true;
     if (f === 'undecided') return !_decisions[recId(rec)];
+    if (f === 'inline') return !!rec.inline_url;
     return rec.best_band === f;
   });
   _idx = 0;
@@ -165,8 +167,25 @@ function render() {
         </div>` : ''}
     </div>
     <div class="panel">
-      <h2>Candidates (${(rec.candidates || []).length})</h2>
+      <h2>Candidates (${(rec.candidates || []).length})${rec.inline_url ? ' <span style="color:#5a8a3e;font-size:11px;font-weight:400;background:#e8f4e0;padding:2px 7px;border-radius:3px;margin-left:4px">INLINE LINK FOUND</span>' : ''}</h2>
   `;
+
+  if (rec.inline_url) {
+    const accepted = decision && decision.action === 'accept' && decision.url === rec.inline_url;
+    const nytUrl = rec.inline_url.startsWith('http') ? rec.inline_url : 'https://www.nytimes.com' + rec.inline_url;
+    html += `
+      <div class="candidate high" style="border-color:#5a8a3e;background:${accepted ? '#e8f0e0' : '#f2fbf0'};">
+        <div class="head">
+          <span class="badge high">inline link</span>
+          <span style="color:#5a8a3e;font-size:11px">Hyperlink embedded in correction text — very high confidence</span>
+        </div>
+        <div class="kv" style="margin-top:4px">→ <a href="${escapeHtml(nytUrl)}" target="_blank">${escapeHtml(rec.inline_url)}</a></div>
+        <div class="controls">
+          <button class="accept" onclick="decide('${id.replace(/'/g, "\\'")}', 'accept', '${rec.inline_url.replace(/'/g, "\\'")}', 99)">Use inline link</button>
+          ${accepted ? '<span style="color:#5a8a3e;font-size:11px">(already accepted)</span>' : ''}
+        </div>
+      </div>`;
+  }
 
   if (!rec.candidates || !rec.candidates.length) {
     html += `<div class="empty">No candidates from API search.</div>`;

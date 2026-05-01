@@ -358,6 +358,13 @@ def process_articles(raw_articles):
         }
         section = SECTION_MERGES.get(section, section)
 
+        # "Quote of the Day" column is filed under section_name='Corrections' by the API,
+        # but it's a distinct editorial feature. Reassign to "Today's Paper" so it doesn't
+        # inflate the Corrections section count or appear in corrections analysis.
+        headline_main = (doc.get("headline") or {}).get("main", "") or ""
+        if section == "Corrections" and (mat == "Quote" or headline_main.startswith("Quote of the Day")):
+            section = "Today's Paper"
+
         # Override section for obituaries filed under subject sections.
         # 2001-2010: tom was usually "Obituary; Biography" (or "Obituary"/
         # "Biography; Obituary") but section was Arts/Sports/Business/etc.
@@ -1746,6 +1753,7 @@ _PODCAST_KICKERS = {
     'the book review podcast', 'book review podcast', 'the argument',
     'matter of opinion', 'first person', 'sway', 'hard fork',
     'popcast', 'the popcast', "the 'hard fork' podcast",
+    'the opinions', 'interesting times',
 }
 
 # Slug fragments that reliably mark Opinion-section podcast posts (e.g. early

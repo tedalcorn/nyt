@@ -46,7 +46,7 @@
   /* Home header (disclaimer + stats) */
   .home-header { margin: 4px 0 18px; }
   .home-disclaimer {
-    margin: 0 0 14px; font-size: 14px; line-height: 1.55; color: #333;
+    margin: 0 0 14px; font-size: 15.5px; line-height: 1.55; color: #333;
   }
   .home-disclaimer a { color: #326891; }
   .home-header .stats-row { margin-bottom: 0; }
@@ -260,12 +260,15 @@
     .corrections-table th, .corrections-table td { padding: 6px 6px; font-size: 12px; }
   }
 
+  /* Segmented control (reusable) */
+  .seg { display:inline-flex; border:1px solid #ccc; border-radius:3px; overflow:hidden; font-size:10px; }
+  .seg button { padding:2px 8px; border:none; border-right:1px solid #ccc; cursor:pointer; font-family:inherit; background:#fff; color:#555; white-space:nowrap; }
+  .seg button:last-child { border-right:none; }
+  .seg button.on { background:#326891; color:#fff; }
   /* Corrections visualizer */
   .corr-viz-controls { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; margin-bottom:10px; font-size:13px; }
-  .corr-viz-controls .seg { display:inline-flex; border:1px solid #ccc; border-radius:3px; overflow:hidden; font-size:11px; }
-  .corr-viz-controls .seg button { padding:3px 10px; border:none; border-right:1px solid #ccc; cursor:pointer; font-family:inherit; background:#fff; color:#333; }
-  .corr-viz-controls .seg button:last-child { border-right:none; }
-  .corr-viz-controls .seg button.on { background:#326891; color:#fff; }
+  .corr-viz-controls .seg { font-size:11px; }
+  .corr-viz-controls .seg button { padding:3px 10px; }
   .corr-viz-controls label { font-size:11px; color:#888; text-transform:uppercase; letter-spacing:0.4px; }
   .corr-viz-chips { display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-height:24px; }
   .corr-viz-chip { display:inline-flex; align-items:center; background:#e8e0d4; border:1px solid #d4c8b0; border-radius:12px; padding:2px 6px 2px 10px; font-size:12px; }
@@ -415,8 +418,7 @@
 <body>
 
 <header>
-  <img src="below-the-fold.png" alt="Below the Fold" style="height:56px;margin-bottom:4px;cursor:pointer" onclick="showView('home');window.scrollTo({top:0,behavior:'smooth'})">
-  <h1 id="siteSubtitle">Explore Coverage by The New York Times</h1>
+  <img src="below-the-fold-logo.png" alt="Below the Fold" style="height:72px;cursor:pointer" onclick="showView('home');window.scrollTo({top:0,behavior:'smooth'})">
 </header>
 
 <nav id="nav">
@@ -439,7 +441,7 @@
   <!-- HOME -->
   <div class="view" id="view-home">
     <div class="home-header">
-      <p class="home-disclaimer">This dashboard draws on every article published in <em>The New York Times</em> from January 2000 to the present, retrieved through the <a href="https://developer.nytimes.com/docs/archive-product/1/overview" target="_blank">NYT Archive API</a> and updated monthly. Errors in the API or in the function of the website could yield spurious conclusions, so users should independently verify any findings.</p>
+      <p class="home-disclaimer">This dashboard draws on every article published in <strong><em>The New York Times</em></strong> from January 2000 to the present, retrieved through the NYT Archive API and updated monthly. Errors in the API or in the function of the website could yield spurious conclusions, so users should independently verify any findings.</p>
       <div class="stats-row" id="statsRow"></div>
     </div>
 
@@ -447,7 +449,7 @@
     <div class="carousel">
       <div class="carousel-tag">Insights</div>
       <div class="carousel-track" id="homeCarousel">
-        <!-- SLIDE 1: 100 writers photo grid -->
+        <!-- SLIDE 1: 100 writers illustration grid -->
         <section class="slide">
           <div class="slide-inner">
             <h4 class="slide-title">The most prolific reporters in 2025</h4>
@@ -499,6 +501,17 @@
             <h4 class="slide-title">Fewer, longer articles</h4>
             <p class="slide-caption">Over the last decade, the number of articles published by <em>The New York Times</em> has diminished and the average word count per article has increased.</p>
             <div class="slide-chart-wrap"><canvas id="chartDecade"></canvas></div>
+          </div>
+        </section>
+        <!-- SLIDE: Final Obits infographic -->
+        <section class="slide">
+          <div class="slide-inner" style="align-items:center">
+            <h4 class="slide-title">The lives they led</h4>
+            <p class="slide-caption">An analysis of more than 29,000 Times obituaries published since 2001.</p>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;border-radius:4px;margin:4px 0" onclick="window.open('final-obits-hires.png','_blank')">
+              <img src="final-obits.jpg" alt="Final Obits infographic" style="max-width:100%;max-height:380px;object-fit:contain;border-radius:4px" loading="lazy">
+            </div>
+            <p class="slide-more" style="font-size:11px;color:#888;margin-top:6px"><a onclick="window.open('final-obits-hires.png','_blank');event.stopPropagation()" style="color:#326891;cursor:pointer">Open full resolution →</a></p>
           </div>
         </section>
       </div>
@@ -684,7 +697,7 @@
       </div>
       <div id="sectionCountCanvasWrap" style="position:relative;height:220px"><canvas id="chartSectionCount"></canvas></div>
     </div>
-    <div class="chart-box">
+    <div class="chart-box" data-no-dl="true">
       <h3>Coverage by Section</h3>
       <div id="sectionDetailPanel" style="display:none;margin-bottom:16px"></div>
       <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap">
@@ -816,10 +829,14 @@
         </div>
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Gender split over time</div>
-            <button onclick="downloadObitChart('chartObitGender', 'obit-gender-over-time', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
+            <span class="seg" id="obitChartModeSeg">
+              <button type="button" id="obitChartModeGender" data-val="gender" class="on" onclick="setObitChartMode('gender')">Gender Split Over Time</button>
+              <button type="button" id="obitChartModeCount" data-val="count" onclick="setObitChartMode('count')">Obituaries Over Time</button>
+            </span>
+            <button id="obitGenderDlBtn" onclick="downloadObitChart('chartObitGender', 'obit-gender-over-time', this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
-          <div style="position:relative;height:180px"><canvas id="chartObitGender"></canvas></div>
+          <div id="obitGenderWrap" style="position:relative;height:180px"><canvas id="chartObitGender"></canvas></div>
+          <div id="obitByYearWrap" style="position:relative;height:180px;display:none"><canvas id="chartObitByYear"></canvas></div>
         </div>
       </div>
 
@@ -1010,7 +1027,7 @@ function getChartFilename(box) {
 
 function addDownloadBtns() {
   document.querySelectorAll('.chart-box').forEach(box => {
-    if (box.querySelector('.chart-dl-btn') || !box.querySelector('canvas')) return;
+    if (box.dataset.noDl || box.querySelector('.chart-dl-btn') || !box.querySelector('canvas')) return;
 
     // Tracker box: add CSV + JPG at lower-right, using tracker-specific functions
     if (box.closest('#view-tracker')) {
@@ -1055,7 +1072,7 @@ function addDownloadBtns() {
         a.click();
         btn.textContent = '↓ JPG';
       } else {
-        html2canvas(target, { backgroundColor: '#fff', scale: 2, useCORS: true, logging: false })
+        html2canvas(target, { backgroundColor: '#fff', scale: 3, useCORS: true, logging: false })
           .then(c => {
             const a = document.createElement('a');
             a.download = filename + '.jpg';
@@ -1118,8 +1135,8 @@ function downloadSectionChart(btn, canvasId) {
     legendItems = [{ color: 'rgba(50,104,145,0.7)', label: 'Articles' }];
   }
 
-  // Render title bar above canvas + URL credit below — at 2x for sharpness
-  const SCALE = 2;
+  // Render title bar above canvas + URL credit below — at 3x for sharpness
+  const SCALE = 3;
   const W = canvas.width * SCALE;
   const H = canvas.height * SCALE;
   const TOP = 60 * SCALE, BOT = 40 * SCALE;
@@ -1211,9 +1228,9 @@ function downloadObitChart(canvasId, baseName, btn) {
     title2 = `n=${total.toLocaleString()} · Data from NYT Archive API`;
   }
 
-  // Export at 2x to give the JPG enough resolution to look crisp on retina
+  // Export at 3x to give the JPG enough resolution to look crisp on retina
   // displays and when zoomed. We scale every dimension AND every text size.
-  const SCALE = 2;
+  const SCALE = 3;
   const W = canvas.width * SCALE;
   const H = canvas.height * SCALE;
   const TOP = (headerLegend ? 78 : 60) * SCALE;
@@ -1388,7 +1405,7 @@ async function loadData() {
     document.getElementById('loading').style.display = 'none';
     const allYears = dashboard.all_years;
     const endYrShort = String(allYears[allYears.length - 1]).slice(-2);
-    document.getElementById('siteSubtitle').textContent = `Explore Coverage by The New York Times (${allYears[0]}\u2013${endYrShort})`;
+    // siteSubtitle removed
     initOverview();
     initHeadlineSearch();
     renderWordsDist();
@@ -1789,11 +1806,11 @@ function initHomeCarousel() {
         const tip = `<div class="photo-tooltip"><div class="tt-name">${e.name}</div>` +
                     `<div>${(s.articles||0).toLocaleString()} articles in 2025</div>` +
                     `<div>${(s.words||0).toLocaleString()} words</div></div>`;
-        const img = e.filename
-          ? `<img src="data/bio_photos/${e.filename}" alt="${e.name}" loading="lazy">`
-          : '';
-        const cls = e.filename ? 'cell' : 'cell missing';
-        return `<div class="${cls}" onclick="openAuthor('${esc(e.name)}')">${img}${tip}</div>`;
+        const slug = e.slug || e.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+        const illSrc = `data/bio_photos/Illustrations/Compressed Illustrations/${slug}.jpg`;
+        // Use illustration if available; fall back to grey dot (missing class)
+        const img = `<img src="${illSrc}" onerror="this.parentNode.classList.add('missing');this.remove()" alt="${e.name}" loading="lazy">`;
+        return `<div class="cell" onclick="openAuthor('${esc(e.name)}')">${img}${tip}</div>`;
       }).join('');
       grid.dataset.loaded = '1';
     }).catch(err => console.warn('bio photo manifest load failed', err));
@@ -2049,9 +2066,8 @@ function _paintCarouselWorldMap(geo) {
   };
 
   const W = container.clientWidth || 800;
-  // Keep the map from getting taller than a typical laptop viewport.
-  // Natural Earth looks best at ~W/2 aspect; cap at 420px so it never dominates a short viewport.
-  const H = Math.max(180, Math.min(Math.round(W * 0.48), 420));
+  // Cap height so the world map slide stays the same height as other carousel slides.
+  const H = Math.max(160, Math.min(Math.round(W * 0.35), 300));
   container.innerHTML = '';
   const projection = d3.geoNaturalEarth1().fitSize([W, H], geo);
   const path = d3.geoPath().projection(projection);
@@ -2407,7 +2423,7 @@ const SECTION_BLOCKLIST = new Set([
   'Public Editor',      // office discontinued 2017
   'Smarter Living',     // service journalism vertical, merged into other desks
   'Reader Center',      // reader relations, not journalism
-  'Weather',            // weather data, not editorial
+  // 'Weather',         // small section — included per user request
   'Watching',           // streaming recs, too small
   'Giving',             // charity/philanthropy vertical
   'Job Market',         // classifieds-era section
@@ -2852,11 +2868,14 @@ function openSectionDetail(sectionName) {
       <div class="timeline-meta">${total.toLocaleString()} articles · ${yearRange}${avgWords ? ` · ${avgWords.toLocaleString()} avg words` : ''}</div>
       <div class="section-charts-row" style="margin-top:10px">
         <div>
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Articles by year</div>
-          <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
-          <div style="text-align:right;margin-top:2px">
-            <button onclick="downloadSectionChart(this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span class="seg" id="secChartModeSeg">
+              <button type="button" id="secChartModeArticles" data-val="articles" class="on" onclick="setSectionDetailChartMode('articles')">Articles/year</button>
+              <button type="button" id="secChartModeReporters" data-val="reporters" onclick="setSectionDetailChartMode('reporters')">Unique reporters/year</button>
+            </span>
+            <button id="secDetailDlBtn" onclick="downloadSectionChart(this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
+          <canvas id="chartSectionDetail" style="max-height:180px"></canvas>
           ${hasInferred ? `<p style="font-size:11px;color:#888;margin:6px 0 0">Hatched bar (2005): ~795 articles estimated from core reviewers' bylines — API gap year.</p>` : ''}
         </div>
         <div>
@@ -2900,48 +2919,10 @@ function openSectionDetail(sectionName) {
     });
   }
 
-  destroyChart('chartSectionDetail');
-  const sdDatasets = [{
-    label: hasInferred ? 'Confirmed articles' : 'Articles',
-    data: allYears.map(y => byYear[y] || 0),
-    backgroundColor: 'rgba(50,104,145,0.7)',
-    stack: 'a',
-  }];
-  if (hasInferred) {
-    // Build diagonal stripe pattern for inferred bars
-    const patCanvas = document.createElement('canvas');
-    patCanvas.width = 8; patCanvas.height = 8;
-    const pCtx = patCanvas.getContext('2d');
-    pCtx.fillStyle = 'rgba(50,104,145,0.15)';
-    pCtx.fillRect(0, 0, 8, 8);
-    pCtx.strokeStyle = 'rgba(50,104,145,0.75)';
-    pCtx.lineWidth = 1.5;
-    [[-2,6],[2,-2],[6,10]].forEach(([x1,y1]) => {
-      pCtx.beginPath(); pCtx.moveTo(x1, y1); pCtx.lineTo(x1+8, y1-8); pCtx.stroke();
-    });
-    const sdCtx = document.getElementById('chartSectionDetail').getContext('2d');
-    const stripePattern = sdCtx.createPattern(patCanvas, 'repeat');
-    sdDatasets.push({
-      label: 'Inferred articles (API gap)',
-      data: allYears.map(y => inferredByYear[y] || 0),
-      backgroundColor: stripePattern,
-      borderColor: 'rgba(50,104,145,0.6)',
-      borderWidth: 1,
-      stack: 'a',
-    });
-  }
-  chartInstances['chartSectionDetail'] = new Chart(document.getElementById('chartSectionDetail'), {
-    type: 'bar',
-    data: { labels: allYears, datasets: sdDatasets },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { stacked: true, ticks: { font: { size: 10 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 14 } },
-        y: { stacked: true, beginAtZero: true, ticks: { font: { size: 10 } } },
-      },
-    },
-  });
+  // Store context for toggle re-renders
+  window._currentSectionDetail = { allYears, byYear, inferredByYear, sectionName, hasInferred };
+  window._sectionDetailChartMode = 'articles';
+  _renderSectionDetailArticlesChart();
 
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -2950,6 +2931,117 @@ function openSectionDetail(sectionName) {
   renderSectionHistogram('all');
 
   if (articlesReady && !isAllSections) fillSectionArticleList(sectionName);
+}
+
+let _uniqueRepBySection = null;
+function setSectionDetailChartMode(mode) {
+  window._sectionDetailChartMode = mode;
+  document.querySelectorAll('#secChartModeSeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.val === mode);
+  });
+  if (mode === 'articles') {
+    _renderSectionDetailArticlesChart();
+  } else {
+    _renderSectionDetailReportersChart();
+  }
+}
+function _renderSectionDetailArticlesChart() {
+  const ctx = window._currentSectionDetail;
+  if (!ctx) return;
+  const { allYears, byYear, inferredByYear, sectionName, hasInferred } = ctx;
+  destroyChart('chartSectionDetail');
+  const sdDatasets = [{
+    label: hasInferred ? 'Confirmed articles' : 'Articles',
+    data: allYears.map(y => byYear[y] || 0),
+    backgroundColor: 'rgba(50,104,145,0.7)', stack: 'a',
+  }];
+  if (hasInferred) {
+    const patCanvas = document.createElement('canvas');
+    patCanvas.width = 8; patCanvas.height = 8;
+    const pCtx = patCanvas.getContext('2d');
+    pCtx.fillStyle = 'rgba(50,104,145,0.15)'; pCtx.fillRect(0,0,8,8);
+    pCtx.strokeStyle = 'rgba(50,104,145,0.75)'; pCtx.lineWidth = 1.5;
+    [[-2,6],[2,-2],[6,10]].forEach(([x1,y1]) => { pCtx.beginPath(); pCtx.moveTo(x1,y1); pCtx.lineTo(x1+8,y1-8); pCtx.stroke(); });
+    const sdCtx = document.getElementById('chartSectionDetail').getContext('2d');
+    sdDatasets.push({ label: 'Inferred articles (API gap)', data: allYears.map(y => inferredByYear[y] || 0),
+      backgroundColor: sdCtx.createPattern(patCanvas,'repeat'), borderColor: 'rgba(50,104,145,0.6)', borderWidth:1, stack:'a' });
+  }
+  chartInstances['chartSectionDetail'] = new Chart(document.getElementById('chartSectionDetail'), {
+    type: 'bar', data: { labels: allYears, datasets: sdDatasets },
+    options: { responsive: true, plugins: { legend: { display: false } },
+      scales: { x: { stacked:true, ticks: { font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:14 } },
+                y: { stacked:true, beginAtZero:true, ticks: { font:{size:10} } } } }
+  });
+}
+function _renderSectionDetailReportersChart() {
+  const ctx = window._currentSectionDetail;
+  if (!ctx) return;
+  const { allYears, sectionName } = ctx;
+  const load = _uniqueRepBySection
+    ? Promise.resolve(_uniqueRepBySection)
+    : fetch('data/unique_reporters_by_section.json').then(r=>r.json()).then(d => { _uniqueRepBySection = d; return d; });
+  load.then(data => {
+    const repByYear = data[sectionName] || {};
+    destroyChart('chartSectionDetail');
+    chartInstances['chartSectionDetail'] = new Chart(document.getElementById('chartSectionDetail'), {
+      type: 'bar', data: { labels: allYears, datasets: [{
+        label: 'Unique reporters', data: allYears.map(y => repByYear[y] || 0),
+        backgroundColor: 'rgba(100,140,80,0.7)',
+      }]},
+      options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { x: { ticks: { font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:14 }, grid:{display:false} },
+                  y: { beginAtZero:true, ticks: { font:{size:10} } } } }
+    });
+  }).catch(err => console.warn('unique reporters data failed', err));
+}
+
+let _uniqueRepByState = null;
+function setStateDetailChartMode(mode) {
+  window._stateDetailChartMode = mode;
+  document.querySelectorAll('#stateChartModeSeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.val === mode);
+  });
+  if (mode === 'articles') {
+    _renderStateDetailArticlesChart();
+  } else {
+    _renderStateDetailReportersChart();
+  }
+}
+function _renderStateDetailArticlesChart() {
+  const ctx = window._currentStateDetail;
+  if (!ctx) return;
+  const { years, vals, barColors, annotations, isDC, DC_BAD } = ctx;
+  destroyChart('chartStateDetail');
+  chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
+    type: 'bar',
+    data: { labels: years, datasets: [{ label: 'Articles', data: vals, backgroundColor: barColors }] },
+    options: { responsive: true, plugins: { legend: { display: false },
+      tooltip: { callbacks: { afterLabel: ctx => {
+        const y = years[ctx.dataIndex];
+        const note = annotations[y] ? 'Notable: ' + annotations[y] : '';
+        const dcNote = isDC && DC_BAD.has(y) ? '⚠ API over-tagging suspected (post-9/11)' : '';
+        return [note, dcNote].filter(Boolean).join('\n');
+      }}}},
+      scales: { y: { beginAtZero: true } } }
+  });
+}
+function _renderStateDetailReportersChart() {
+  const ctx = window._currentStateDetail;
+  if (!ctx) return;
+  const { state, years } = ctx;
+  const load = _uniqueRepByState
+    ? Promise.resolve(_uniqueRepByState)
+    : fetch('data/unique_reporters_by_state.json').then(r=>r.json()).then(d => { _uniqueRepByState = d; return d; });
+  load.then(data => {
+    const repByYear = data[state] || {};
+    destroyChart('chartStateDetail');
+    chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
+      type: 'bar',
+      data: { labels: years, datasets: [{ label: 'Unique reporters', data: years.map(y => repByYear[y] || 0), backgroundColor: 'rgba(100,140,80,0.7)' }] },
+      options: { responsive: true, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } } }
+    });
+  }).catch(err => console.warn('unique reporters by state failed', err));
 }
 
 function setSectionHistMode(mode) {
@@ -5095,7 +5187,7 @@ function _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, noDataColo
   return new Promise((resolve, reject) => {
     const W = svgEl.width?.baseVal?.value || parseInt(svgEl.getAttribute('width')) || 800;
     const H = svgEl.height?.baseVal?.value || parseInt(svgEl.getAttribute('height')) || 500;
-    const SCALE = 2;
+    const SCALE = 3;
     const TOP = 56;   // px: room for two title lines above the map
     const BOT = 38;   // px: room for legend below the map
     const canvas = document.createElement('canvas');
@@ -5534,14 +5626,86 @@ function openCountryDetail(country) {
     });
   }
 
-  renderArticleList('countryArticleList', countryArticles, a => {
-    const byline = a.authors.join(', ') || 'No byline';
-    return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
-      <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
-      <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
-      <span style="color:#aaa;font-size:11px"> · ${byline} · ${a.word_count.toLocaleString()} words</span>
-    </div>`;
+  // Outsize subjects: TF-IDF-style scoring for this country
+  const WORLD_GENERIC = new Set([
+    'International Relations','United States International Relations',
+    'Politics and Government','United States Politics and Government',
+    'News and News Media','Law and Legislation','Military','Armament, Defense and Military Forces',
+    'Defense and Military Forces','Terrorism','War and Armed Conflicts',
+    'Economic Conditions and Trends','Deaths (Fatalities)','Deaths (Obituaries)',
+    'Embargoes and Sanctions','Foreign Aid','Diplomacy and World Leaders','Suspensions, Dismissals and Resignations',
+  ]);
+  function isWorldJunkTag(tag) {
+    return WORLD_GENERIC.has(tag) || GENERIC_SUBJECTS.has(tag) ||
+           tag.startsWith('internal-') || tag.startsWith('Content Type:') ||
+           tag.startsWith('Content type:') || tag.startsWith('audio-') ||
+           tag.toLowerCase() === country.toLowerCase();
+  }
+  const countryTotal = countryArticles.length || 1;
+  const countryTagCounts = {};
+  countryArticles.forEach(a => {
+    (a.subjects || []).forEach(tag => {
+      if (!isWorldJunkTag(tag)) countryTagCounts[tag] = (countryTagCounts[tag] || 0) + 1;
+    });
   });
+  const totalCorpus = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
+  const countryTopTags = Object.entries(countryTagCounts)
+    .filter(([, cnt]) => cnt >= Math.max(3, countryTotal * 0.01))
+    .map(([tag, cnt]) => {
+      const corpusFreq = (corpusSubjectFreq && corpusSubjectFreq[tag]) || 1;
+      const score = totalCorpus > 0 ? (cnt / countryTotal) / (corpusFreq / totalCorpus) : cnt;
+      return { tag, cnt, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 7);
+  if (countryTopTags.length) {
+    const tagsHtml = countryTopTags.map(({ tag, cnt }) => {
+      const display = tag.replace(/\b[A-Z]{2,}\b/g, w => w.charAt(0) + w.slice(1).toLowerCase());
+      return `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:#eef3f7;border-radius:10px;font-size:12px;color:#326891;cursor:pointer" class="country-tag-filter" data-tag="${escapeHtml(tag)}" title="${cnt} articles">${escapeHtml(display)}</span>`;
+    }).join('');
+    const tagsContainer = document.createElement('div');
+    tagsContainer.style.cssText = 'margin-top:12px';
+    tagsContainer.innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Outsize subjects</div>` +
+      `<div>${tagsHtml}</div>` +
+      `<div id="countryTagNote" style="font-size:11px;color:#aaa;margin-top:4px"></div>`;
+    document.getElementById('countryTopReporters').after(tagsContainer);
+    tagsContainer.querySelectorAll('.country-tag-filter').forEach(el => {
+      el.addEventListener('click', () => {
+        const tag = el.dataset.tag;
+        const isActive = el.style.background === 'rgb(50, 104, 145)';
+        tagsContainer.querySelectorAll('.country-tag-filter').forEach(t => { t.style.background = '#eef3f7'; t.style.color = '#326891'; });
+        if (!isActive) {
+          el.style.background = '#326891'; el.style.color = '#fff';
+          const filtered = countryArticles.filter(a => (a.subjects || []).includes(tag));
+          const noteEl = document.getElementById('countryTagNote');
+          if (noteEl) noteEl.innerHTML = `<strong>${escapeHtml(tag)}</strong> · ${filtered.length} articles · <a href="#" class="cty-tag-clear" style="color:#326891">show all</a>`;
+          tagsContainer.querySelector('.cty-tag-clear')?.addEventListener('click', e => {
+            e.preventDefault();
+            el.style.background = '#eef3f7'; el.style.color = '#326891';
+            noteEl.innerHTML = '';
+            renderCountryArticles(countryArticles);
+          });
+          renderCountryArticles(filtered);
+        } else {
+          const noteEl = document.getElementById('countryTagNote');
+          if (noteEl) noteEl.innerHTML = '';
+          renderCountryArticles(countryArticles);
+        }
+      });
+    });
+  }
+  function renderCountryArticles(list) {
+    renderArticleList('countryArticleList', list, a => {
+      const byline = (a.authors || []).join(', ') || 'No byline';
+      return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
+        <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
+        <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
+        <span style="color:#aaa;font-size:11px"> · ${byline} · ${a.word_count.toLocaleString()} words</span>
+      </div>`;
+    });
+  }
+  renderCountryArticles(countryArticles);
 }
 
 // --- STATES ---
@@ -5987,8 +6151,13 @@ function openStateDetail(state) {
       <h3>${escapeHtml(state)}</h3>
       <div class="timeline-meta">${total.toLocaleString()} articles · ${years[0]}–${years[years.length-1]}</div>
       <div style="margin-top:10px">
-        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
-        <canvas id="chartStateDetail" style="max-height:180px"></canvas>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span class="seg" id="stateChartModeSeg">
+            <button type="button" id="stateChartModeArticles" data-val="articles" class="on" onclick="setStateDetailChartMode('articles')">Articles/year</button>
+            <button type="button" id="stateChartModeReporters" data-val="reporters" onclick="setStateDetailChartMode('reporters')">Unique reporters/year</button>
+          </span>
+        </div>
+        <div id="stateChartWrap" style="position:relative;height:180px"><canvas id="chartStateDetail" style="max-height:180px"></canvas></div>
       </div>
       ${eventsHtml}
       <div id="stateTopReporters" style="margin-top:12px"></div>
@@ -6003,36 +6172,14 @@ function openStateDetail(state) {
     isDC && DC_BAD.has(y) ? 'rgba(180,80,80,0.55)' : 'rgba(50,104,145,0.7)'
   );
 
-  destroyChart('chartStateDetail');
-  chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
-    type: 'bar',
-    data: {
-      labels: years,
-      datasets: [{ label: 'Articles', data: vals, backgroundColor: barColors }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            afterLabel: ctx => {
-              const y = years[ctx.dataIndex];
-              const note = annotations[y] ? `Notable: ${annotations[y]}` : '';
-              const dcNote = isDC && DC_BAD.has(y) ? '⚠ API over-tagging suspected (post-9/11)' : '';
-              return [note, dcNote].filter(Boolean).join('\n');
-            }
-          }
-        }
-      },
-      scales: { y: { beginAtZero: true } }
-    }
-  });
+  window._currentStateDetail = { state, years, vals, barColors, annotations, isDC, DC_BAD };
+  window._stateDetailChartMode = 'articles';
+  _renderStateDetailArticlesChart();
   if (isDC) {
     const noteEl = document.createElement('p');
     noteEl.style.cssText = 'font-size:11px;color:#999;margin:4px 0 0 0;display:flex;align-items:flex-start;gap:5px';
     noteEl.innerHTML = '<span style="display:inline-block;width:10px;height:10px;background:rgba(180,80,80,0.65);border-radius:2px;flex-shrink:0;margin-top:1px"></span><span>API geographic tags in 2001–3 appear over-inclusive of non-D.C. related articles and are excluded from per-capita calculations.</span>';
-    document.getElementById('chartStateDetail').parentNode.appendChild(noteEl);
+    document.getElementById('stateChartWrap').after(noteEl);
   }
 
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -6127,7 +6274,7 @@ function openStateDetail(state) {
     const tagsContainer = document.createElement('div');
     tagsContainer.style.cssText = 'margin-top:12px';
     tagsContainer.innerHTML =
-      `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Recurring themes</div>` +
+      `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Outsize subjects</div>` +
       `<div id="stateTagsRow">${tagsHtml}</div>` +
       `<div id="stateTagNote" style="font-size:11px;color:#aaa;margin-top:4px"></div>`;
     document.getElementById('stateTopReporters').after(tagsContainer);
@@ -6493,20 +6640,45 @@ function renderObitAgeChart() {
   canvasEl.style.cursor = 'pointer';
 }
 
+let _obitChartMode = 'gender';
+function setObitChartMode(mode) {
+  _obitChartMode = mode;
+  document.querySelectorAll('#obitChartModeSeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.val === mode);
+  });
+  const genderWrap = document.getElementById('obitGenderWrap');
+  const countWrap  = document.getElementById('obitByYearWrap');
+  const dlBtn = document.getElementById('obitGenderDlBtn');
+  if (mode === 'gender') {
+    genderWrap.style.display = '';
+    countWrap.style.display = 'none';
+    dlBtn.style.display = '';
+    renderObitGenderChart();
+  } else {
+    genderWrap.style.display = 'none';
+    countWrap.style.display = '';
+    dlBtn.style.display = 'none';
+    renderObitByYearChart();
+  }
+}
+
 function renderObitGenderChart() {
   // Female share by year — drop the current year (incomplete + biased high)
   const cutoffYr = String(new Date().getFullYear());
   const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean)))
     .filter(y => y !== cutoffYr).sort();
-  const fPct = [], totals = [];
+  const fPct = [], ovrFPct = [], totals = [];
   yrs.forEach(y => {
     const oy = _obits.filter(o => o.year === y);
     const m = oy.filter(o => o.gender === 'M').length;
     const f = oy.filter(o => o.gender === 'F').length;
     const x = oy.filter(o => o.gender === 'X').length;
+    const fOvr = oy.filter(o => o.gender === 'F' && o.overlooked).length;
     const known = m + f + x;
+    const total = oy.length;
     fPct.push(known > 0 ? 100 * f / known : null);
-    totals.push(oy.length);
+    ovrFPct.push(total > 0 ? 100 * fOvr / total : null);
+    totals.push(total);
   });
   destroyChart('chartObitGender');
   chartInstances['chartObitGender'] = new Chart(document.getElementById('chartObitGender'), {
@@ -6515,7 +6687,11 @@ function renderObitGenderChart() {
       labels: yrs,
       datasets: [
         { label: '% Female', data: fPct, borderColor: 'rgba(196,120,74,0.9)', backgroundColor: 'rgba(196,120,74,0.15)',
-          tension: 0.25, pointRadius: 2, fill: true, yAxisID: 'y' },
+          tension: 0.25, pointRadius: 2, fill: true, yAxisID: 'y', order: 2 },
+        { label: 'Overlooked No More', data: ovrFPct,
+          borderColor: 'rgba(122,76,168,0.85)', backgroundColor: 'rgba(122,76,168,0.12)',
+          tension: 0.25, pointRadius: 2, fill: true, yAxisID: 'y', order: 1,
+          borderDash: [4,3] },
       ]
     },
     options: {
@@ -6523,11 +6699,66 @@ function renderObitGenderChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top', align: 'center', labels: { font: { size: 10 }, boxWidth: 10 } },
-        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y?.toFixed(2) || '—'}% (n=${totals[c.dataIndex]?.toLocaleString()})` } }
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y?.toFixed(1) || '—'}% (n=${totals[c.dataIndex]?.toLocaleString()})` } }
       },
       scales: {
         x: { ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
         y: { beginAtZero: true, max: 50, ticks: { font: { size: 9 }, callback: v => v + '%' } }
+      }
+    }
+  });
+}
+
+function renderObitByYearChart() {
+  const cutoffYr = String(new Date().getFullYear());
+  const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean)))
+    .filter(y => y !== cutoffYr).sort();
+  const mCounts = [], fCounts = [], xCounts = [];
+  yrs.forEach(y => {
+    const oy = _obits.filter(o => o.year === y);
+    mCounts.push(oy.filter(o => o.gender === 'M').length);
+    fCounts.push(oy.filter(o => o.gender === 'F').length);
+    xCounts.push(oy.filter(o => o.gender === 'X').length);
+  });
+  destroyChart('chartObitByYear');
+  const canvas = document.getElementById('chartObitByYear');
+  chartInstances['chartObitByYear'] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: yrs,
+      datasets: [
+        { label: 'Female',     data: fCounts, backgroundColor: 'rgba(196,120,74,0.85)', stack: 'a' },
+        { label: 'Male',       data: mCounts, backgroundColor: 'rgba(74,124,139,0.85)', stack: 'a' },
+        { label: 'Non-binary', data: xCounts, backgroundColor: 'rgba(120,90,155,0.9)',  stack: 'a' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const yr = yrs[elements[0].index];
+        const sel = document.getElementById('obitYearFilter');
+        sel.value = (sel.value === yr) ? '' : yr;
+        renderObitsTable();
+        document.getElementById('obitsTableContainer').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      },
+      scales: {
+        x: { stacked: true, ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Obituaries/year', font: { size: 10 } }, ticks: { font: { size: 9 } } },
+      },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+        tooltip: {
+          callbacks: {
+            footer: items => {
+              const i = items[0].dataIndex;
+              const tot = mCounts[i] + fCounts[i] + xCounts[i];
+              if (!tot) return '';
+              const pctF = Math.round(100 * fCounts[i] / tot);
+              return `${tot.toLocaleString()} total — ${pctF}% female`;
+            }
+          }
+        }
       }
     }
   });
@@ -6542,7 +6773,7 @@ if (!window._obitResizeWired) {
   window.addEventListener('resize', () => {
     clearTimeout(_obitRT);
     _obitRT = setTimeout(() => {
-      ['chartObitAge', 'chartObitGender'].forEach(id => {
+      ['chartObitAge', 'chartObitGender', 'chartObitByYear'].forEach(id => {
         const ch = chartInstances[id];
         if (ch) ch.resize();
       });
@@ -6634,7 +6865,7 @@ function renderObitsTable() {
   const display = rows.slice(0, 500);
   const ind = c => _obitTableSort.col === c ? (_obitTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
-    { k: 'date', label: 'Date' },
+    { k: 'date', label: 'Pub. Date' },
     { k: 'lastName', label: 'Name' },
     { k: 'age', label: 'Age', cls: 'num' },
     { k: 'gender', label: 'Gender' },
@@ -6990,7 +7221,7 @@ function _downloadCorrVizChart(btn) {
   const inst = chartInstances['chartCorrViz'];
   const legendItems = inst ? inst.data.datasets.map(d => ({ color: d.borderColor, label: d.label })) : [];
 
-  const SCALE = 2;
+  const SCALE = 3;
   const W = canvas.width * SCALE;
   const H = canvas.height * SCALE;
   const TOP = 60 * SCALE;
@@ -7799,7 +8030,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 4/28/26 8:02am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 6:20am</span>
 </div>
 </body>
 </html>
