@@ -1,0 +1,215 @@
+{
+  "generated_at": "2026-05-01T10:15:11.115Z",
+  "decisions": [
+    {
+      "correction_id": "https://www.nytimes.com/2018/02/28/pageoneplus/corrections-march-1-2018.html||An article last Thursday about the street style star Anna dello Russo misstated ",
+      "action": "accept",
+      "url": "/2018/02/22/fashion/anna-dello-russo-christies-milan.html",
+      "score": 21.5,
+      "ts": "2026-04-27T15:53:32.529Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/03/03/pageoneplus/corrections-march-3-2018.html||Because of an editing error, an obituary on Friday about William H.T. Bush, the ",
+      "action": "accept",
+      "url": "/2018/03/01/obituaries/william-ht-bush-brother-and-uncle-of-presidents-dies-at-79.html",
+      "score": 18.5,
+      "ts": "2026-04-27T15:53:38.963Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/05/26/pageoneplus/corrections-may-27-2018.html||A picture caption with an article on May 13 about “RBG,” a documentary on the Su",
+      "action": "reject",
+      "url": null,
+      "score": 0,
+      "ts": "2026-04-27T15:52:21.453Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2017/01/07/pageoneplus/corrections-january-8-2017.html||An article on Dec. 25 about the astronaut Edgar Mitchell described inaccurately ",
+      "action": "accept",
+      "url": "/interactive/2016/12/21/magazine/the-lives-they-lived-edgar-mitchell.html",
+      "score": -1,
+      "ts": "2026-04-27T15:52:39.796Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2017/01/07/pageoneplus/corrections-january-8-2017.html||An article on Dec. 25 about Sirdeaner Walker, an anti-bullying activist, transpo",
+      "action": "accept",
+      "url": "/interactive/2016/12/21/magazine/the-lives-they-lived-sirdeaner-walker.html",
+      "score": -1,
+      "ts": "2026-04-27T15:52:56.095Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2017/09/29/pageoneplus/corrections-september-29-2017.html||An article on Aug. 16 about plans by the artist Yayoi Kusama to open her own mus",
+      "action": "accept",
+      "url": "/2017/08/15/arts/design/yayoi-kusama-museum-tokyo.html",
+      "score": -1,
+      "ts": "2026-04-27T15:53:16.178Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/06/04/pageoneplus/corrections-june-5-2018.html||An article on Tuesday about L.G.B.T. rights in countries hosting the World Cup m",
+      "action": "accept",
+      "url": "/2018/05/28/opinion/fifa-world-cup-russia-lgbtq.html",
+      "score": -1,
+      "ts": "2026-04-29T14:04:23.027Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/06/11/pageoneplus/corrections-june-12-2018.html||An article on Sunday about the marginalization of science in shaping federal pol",
+      "action": "accept",
+      "url": "/2018/06/09/climate/trump-administration-science.html",
+      "score": 41.5,
+      "ts": "2026-04-29T14:06:36.193Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/07/17/pageoneplus/corrections-july-18-2018.html||An article on Tuesday about dubious claims made at the joint news conference hel",
+      "action": "accept",
+      "url": "/2018/07/16/us/politics/fact-check-trump-putin-news-conference.html",
+      "score": -1,
+      "ts": "2026-04-29T14:09:56.727Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/08/09/pageoneplus/corrections-august-10-2018.html||An obituary on Sunday about the dissident Russian writer Vladimir Voinovich miss",
+      "action": "accept",
+      "url": "/2018/08/01/obituaries/vladimir-voinovich-dissident-russian-writer-dies-at-85.html",
+      "score": 15,
+      "ts": "2026-04-29T14:10:17.297Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/08/10/pageoneplus/corrections-august-11-2018.html||A headline with the Streaming column on Page 9 misidentifies “How It Ends.” It i",
+      "action": "accept",
+      "url": "/2018/08/09/movies/how-it-ends-no-blade-of-grass.html",
+      "score": 14,
+      "ts": "2026-04-29T14:10:54.844Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/08/11/pageoneplus/corrections-august-12-2018.html||A headline with the Streaming column on Page 9 misidentifies “How It Ends.” It i",
+      "action": "accept",
+      "url": "/2018/08/09/movies/how-it-ends-no-blade-of-grass.html",
+      "score": 14,
+      "ts": "2026-04-29T14:10:59.277Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/09/08/pageoneplus/corrections-september-9-2018.html||An article on Sept. 2 about the actor Riz Ahmed misspelled the given name of a B",
+      "action": "accept",
+      "url": "/interactive/2018/08/29/magazine/riz-ahmed-actor-rapper-venom.html",
+      "score": -1,
+      "ts": "2026-04-29T14:11:28.079Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2018/11/20/pageoneplus/corrections-november-21-2018.html||Because of an editing error, a recipe on Nov. 7 for Roast Turkey With Garlic and",
+      "action": "accept",
+      "url": "/recipes/1019533-roast-turkey-with-garlic-and-anchovies",
+      "score": 21,
+      "ts": "2026-04-29T14:11:40.144Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/02/01/pageoneplus/corrections-february-2-2019.html||An article on Page 10 about the challenges of contemporary opera performance mis",
+      "action": "accept",
+      "url": "/2019/02/01/arts/music/robert-ashley-improvement-kitchen.html",
+      "score": 29.5,
+      "ts": "2026-05-01T09:34:37.577Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/02/02/pageoneplus/corrections-february-3-2019.html||An article on Page 10 about the challenges of contemporary opera performance mis",
+      "action": "accept",
+      "url": "/2019/02/01/arts/music/robert-ashley-improvement-kitchen.html",
+      "score": 29,
+      "ts": "2026-05-01T09:34:48.709Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/02/04/pageoneplus/corrections-february-5-2019.html||An article on Sept. 21 about Maroon 5’s scheduled appearance in Sunday’s Super B",
+      "action": "accept",
+      "url": "/2018/09/19/arts/music/maroon-5-super-bowl-halftime.html",
+      "score": -1,
+      "ts": "2026-05-01T09:35:18.209Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/02/16/pageoneplus/corrections-february-17-2019.html||A picture caption on Page 13 with a review of “Walk This Way,” by Geoff Edgers, ",
+      "action": "accept",
+      "url": "/2019/02/13/books/review/walk-this-way-geoff-edgers.html",
+      "score": 27,
+      "ts": "2026-05-01T09:35:56.826Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/02/23/pageoneplus/corrections-february-24-2019.html||A review on Feb. 3 about the memoir “I Am Yours,” by Reema Zaman, misstated the ",
+      "action": "accept",
+      "url": "/2019/02/01/books/review/i-am-yours-reema-zaman.html",
+      "score": 22,
+      "ts": "2026-05-01T09:36:09.877Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/02/28/pageoneplus/corrections-march-1-2019.html||A picture caption with an article on Thursday about Democrats’ health care propo",
+      "action": "accept",
+      "url": "/2019/02/27/us/politics/house-democrats-medicare-for-all.html",
+      "score": 13,
+      "ts": "2026-05-01T09:36:33.943Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/03/09/pageoneplus/corrections-march-10-2019.html||A review on Feb. 24 about the Y.A. thriller “The Waning Age,” by S.E. Grove, mis",
+      "action": "accept",
+      "url": "/2019/02/22/books/review/new-young-adult-fiction.html",
+      "score": 20,
+      "ts": "2026-05-01T09:36:48.959Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/05/03/pageoneplus/corrections-may-4-2019.html||An article on Page 64 about the acquisition of Remington by Cerberus misstates t",
+      "action": "accept",
+      "url": "/interactive/2019/05/01/magazine/remington-guns-jobs-huntsville.html",
+      "score": 12,
+      "ts": "2026-05-01T09:37:10.609Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/07/27/pageoneplus/corrections-july-28-2019.html||An article last Sunday about day trips from New York City misstated the price of",
+      "action": "accept",
+      "url": "/2019/07/10/travel/day-trips-from-nyc.html",
+      "score": -1,
+      "ts": "2026-05-01T09:38:00.377Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/08/10/pageoneplus/corrections-august-11-2019.html||An article last Sunday about sustained demand for waterfront property referred i",
+      "action": "accept",
+      "url": "/2019/08/02/realestate/buying-a-beach-house-is-expensive.html",
+      "score": 12,
+      "ts": "2026-05-01T09:38:14.894Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/10/12/pageoneplus/corrections-october-13-2019.html||An article on Page 22 about the actress Kathryn Hahn misstated the number of yea",
+      "action": "accept",
+      "url": "/interactive/2019/10/09/magazine/kathryn-hahn-mrs-fletcher.html",
+      "score": 13,
+      "ts": "2026-05-01T09:39:07.576Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2019/11/18/pageoneplus/corrections-nov-18-2019.html||An article on Sept. 26 about President Trump’s long preoccupation with Ukraine m",
+      "action": "accept",
+      "url": "/2019/09/25/us/politics/trump-ukraine-obsession.html",
+      "score": -1,
+      "ts": "2026-05-01T09:39:33.693Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2020/05/24/pageoneplus/corrections-may-24-2020.html||An article on Page 5 about the choreographer Bill T. Jones misstated the name of",
+      "action": "accept",
+      "url": "/2020/05/20/arts/dance/bill-t-jones-deep-blue-sea-virus.html",
+      "score": 16,
+      "ts": "2026-05-01T09:40:11.409Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2020/06/23/pageoneplus/corrections-june-24-2020.html||An article last Wednesday about swordfish au poivre misstated the name of the mu",
+      "action": "accept",
+      "url": "/recipes/1021120-swordfish-au-poivre",
+      "score": 12,
+      "ts": "2026-05-01T09:40:27.076Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2020/08/09/pageoneplus/corrections-aug-9-2020.html||An article on July 26 about the Kariba Dam, on the border between Zambia and Zim",
+      "action": "accept",
+      "url": "/interactive/2020/07/22/magazine/zambia-kariba-dam.html",
+      "score": 12,
+      "ts": "2026-05-01T09:40:40.442Z"
+    },
+    {
+      "correction_id": "https://www.nytimes.com/2020/09/13/pageoneplus/corrections-sunday-sept-13-2020.html||An article last Sunday about Kehinde Wiley and how he is riding out the pandemic",
+      "action": "accept",
+      "url": "/2020/08/28/arts/design/kehinde-wiley-monument.html",
+      "score": -1,
+      "ts": "2026-05-01T09:40:59.543Z"
+    }
+  ]
+}
