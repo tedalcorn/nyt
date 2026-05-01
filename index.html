@@ -74,11 +74,13 @@
   .carousel-track::-webkit-scrollbar { display: none; }
   .slide {
     flex: 0 0 100%; scroll-snap-align: start; box-sizing: border-box; padding: 0 2px;
+    min-width: 0; /* prevent flex child from overflowing carousel */
   }
   .slide-inner {
     background:#fff; border:1px solid #e6e6e6; border-radius:6px;
     padding:16px 20px 18px; min-height:460px;
     display:flex; flex-direction:column;
+    overflow: hidden; /* prevent chart canvas from bleeding outside slide */
   }
   @media (max-width: 760px) {
     .slide-inner { min-height:420px; }
@@ -143,7 +145,8 @@
 
   /* Chart inside a slide: flex:1 so the chart scales with available height;
      min-height ensures the chart has room even when the slide is short. */
-  .slide-chart-wrap { position:relative; flex:1 1 auto; min-height:300px; width:100%; }
+  .slide-chart-wrap { position:relative; flex:1 1 auto; min-height:300px; width:100%; overflow:hidden; }
+  .slide-chart-wrap canvas { max-width:100% !important; }
   @media (max-width: 640px) {
     .slide-chart-wrap { min-height:240px; }
   }
@@ -1809,7 +1812,7 @@ function initHomeCarousel() {
                     `<div>${(s.articles||0).toLocaleString()} articles in 2025</div>` +
                     `<div>${(s.words||0).toLocaleString()} words</div></div>`;
         const slug = e.slug || e.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-        const illSrc = `data/bio_photos/Illustrations/Compressed Illustrations/${slug}.jpg`;
+        const illSrc = `data/bio_photos/Compressed Illustrations/${slug}.jpg`;
         // Use illustration if available; fall back to grey dot (missing class)
         const img = `<img src="${illSrc}" onerror="this.parentNode.classList.add('missing');this.remove()" alt="${e.name}" loading="lazy">`;
         return `<div class="cell" onclick="openAuthor('${esc(e.name)}')">${img}${tip}</div>`;
@@ -8047,7 +8050,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 9:01am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 9:38am</span>
 </div>
 </body>
 </html>

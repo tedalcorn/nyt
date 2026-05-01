@@ -38,10 +38,8 @@ analyze_headlines.py
 # Original NYT reporter bio photos (removed per legal request)
 data/bio_photos/*.jpg
 
-# Illustration master files (large PNG source files)
-data/bio_photos/Illustrations/Master_versions/
-data/bio_photos/Illustrations/*_generated-illustration*.png
-data/bio_photos/Illustrations/*_generated-illustration-*.png
-data/bio_photos/Illustrations/*_REJECTED.png
-data/bio_photos/Illustrations/-Prompt.rtf
-data/bio_photos/Illustrations/-Trash/
+# Everything in bio_photos except the Compressed Illustrations JPGs and manifest
+data/bio_photos/Master illustrations/
+data/bio_photos/NYT photos/
+data/bio_photos/Supporting photos/
+data/bio_photos/-Prompt.rtf
