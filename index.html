@@ -219,11 +219,15 @@
 
   /* Obituaries side-by-side charts (desktop) */
   .obit-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+  .obit-charts-row > div { min-width: 0; overflow: hidden; } /* prevent canvas overflow on resize */
+  .obit-charts-row canvas { max-width: 100% !important; }
   @media (max-width: 880px) {
     .obit-charts-row { grid-template-columns: 1fr; }
   }
   /* Section popup side-by-side charts (desktop) */
   .section-charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .section-charts-row > div { min-width: 0; overflow: hidden; }
+  .section-charts-row canvas { max-width: 100% !important; }
   @media (max-width: 880px) {
     .section-charts-row { grid-template-columns: 1fr; }
   }
@@ -4569,7 +4573,7 @@ function toTitleCase(s) {
 // Build sample chips via DOM (not document.write) to avoid reflow lag on click
 (function() {
   const SAMPLES = ['War','Climate','Hurricane','Thanksgiving','Epstein','Takeaways',
-                   'Recession','Shooting','Election','Inflation'];
+                   'Recession','Shooting','Election','Inflation','Emails'];
   const wrap = document.getElementById('trackerSamples');
   if (!wrap) return;
   const lbl = document.createElement('span');
