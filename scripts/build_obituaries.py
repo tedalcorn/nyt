@@ -1029,6 +1029,10 @@ def extract_age(headline, abstract):
         m = RE_AGE_COMMA_HEAD.search(headline)
         if m and 18 <= int(m.group(1)) <= 120: return int(m.group(1))
     if abstract:
+        # "Mr. Gugino, 81, had filed…" — age follows comma in abstract
+        m = RE_AGE_COMMA_HEAD.search(abstract)
+        if m and 18 <= int(m.group(1)) <= 120: return int(m.group(1))
+    if abstract:
         m = RE_AGE_WAS.search(abstract)
         if m and 18 <= int(m.group(1)) <= 120: return int(m.group(1))
     return None
