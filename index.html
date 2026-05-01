@@ -13,9 +13,11 @@
   body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; overflow-x: hidden; }
 
   header {
-    background: #fff; color: #121212; padding: 14px 24px 12px;
+    background: #fff; color: #121212; padding: 4px 12px;
     text-align: center;
     border-bottom: 2px solid #121212;
+    line-height: 0;  /* collapse inline spacing around img */
+    overflow: hidden;
   }
   header .nyt-wordmark { font-family: 'nyt-cheltenham', Georgia, 'Times New Roman', serif; font-size: 32px; font-weight: 700; font-style: italic; letter-spacing: -0.5px; color: #121212; line-height: 1.1; }
   header .nyt-wordmark .the { font-size: 14px; font-style: italic; font-weight: 400; letter-spacing: 1px; display: block; margin-bottom: -2px; }
@@ -373,6 +375,7 @@
     .chart-box { padding: 14px; }
     header .nyt-wordmark { font-size: 24px; }
     header h1 { font-size: 13px; }
+    header img { max-width: 100%; height: auto !important; max-height: 100px; }
     /* Year slider: allow narrower on small screens */
     .yr-slider-wrap { min-width: 100px; }
     /* Reporters table: hide less essential columns on mobile */
@@ -508,7 +511,7 @@
           <div class="slide-inner">
             <h4 class="slide-title">Who makes history?</h4>
             <p class="slide-caption">Of more than 29,000 obituaries since 2000, only 52 exceeded 4,000 words.</p>
-            <div style="flex:1;display:flex;align-items:center;cursor:pointer;overflow:hidden;border-radius:4px;margin:4px 0" onclick="window.open('final-obits-hires.png','_blank')">
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;border-radius:4px;margin:4px 0" onclick="window.open('final-obits-hires.png','_blank')">
               <img src="final-obits.jpg" alt="Final Obits infographic" style="max-width:100%;max-height:380px;object-fit:contain;border-radius:4px" loading="lazy">
             </div>
             <p class="slide-more" style="font-size:11px;color:#888;margin-top:6px"><a onclick="window.open('final-obits-hires.png','_blank');event.stopPropagation()" style="color:#326891;cursor:pointer">Open full resolution →</a></p>
@@ -2548,6 +2551,9 @@ function isLORArticle(a) {
   const k = (a.kicker || '').toLowerCase();
   return h.startsWith('letter of recommendation:') || k === 'letter of recommendation';
 }
+function isQOTDArticle(a) {
+  return (a.headline || '').toLowerCase().startsWith('quote of the day');
+}
 
 let currentFeatureKey = 'weddings';
 let featureArticleOrder = 'newest';
@@ -2640,7 +2646,9 @@ function fillFeatureArticleList() {
   }
 
   const isWeddings = currentFeatureKey === 'weddings';
-  const filterFn = isWeddings ? isWeddingArticle : isLORArticle;
+  const filterFn = isWeddings ? isWeddingArticle
+    : currentFeatureKey === 'quote_of_the_day' ? isQOTDArticle
+    : isLORArticle;
   const oldest = featureArticleOrder === 'oldest';
   let filtered = articles.filter(filterFn);
   if (isWeddings && featureVowsOnly) filtered = filtered.filter(isVowsColumnArticle);
@@ -3950,8 +3958,8 @@ function showAuthorTimeline(name, opts = {}) {
       <div style="font-size:13px;color:#555;margin-top:6px">${sections.length ? `<strong>Primary Section${sections.length > 1 ? 's' : ''}:</strong> ${sections.join(', ')}` : ''}</div>
       <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:4px">${beatsHtml}</div>
       ${sharedHtml ? `<div style="font-size:13px;color:#555;margin-top:4px">${sharedHtml}</div>` : ''}
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px">
-        <div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px;align-items:end">
+        <div style="display:flex;flex-direction:column">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
             <span style="display:flex;border:1px solid #ddd;border-radius:3px;overflow:hidden;font-size:10px;line-height:1">
               <button id="${chartId}-btn-art" style="padding:2px 9px;background:#326891;color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:10px">Articles per year</button>
@@ -3962,7 +3970,7 @@ function showAuthorTimeline(name, opts = {}) {
           <div id="${chartId}-legend" style="font-size:10px;color:#888;margin-bottom:3px;display:flex;gap:10px;flex-wrap:wrap"></div>
           <canvas id="${chartId}" style="max-height:160px"></canvas>
         </div>
-        <div>
+        <div style="display:flex;flex-direction:column">
           <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Word count per article</div>
           <canvas id="${chartId}_hist" style="max-height:160px"></canvas>
           <div id="${chartId}-hist-note" style="font-size:10px;color:#bbb;margin-top:2px"></div>
@@ -8039,7 +8047,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 7:57am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 8:33am</span>
 </div>
 </body>
 </html>

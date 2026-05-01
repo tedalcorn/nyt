@@ -1,0 +1,1002 @@
+[
+  {
+    "rank": 15,
+    "name": "Charlie Savage",
+    "slug": "charlie-savage",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/charlie-savage",
+    "image_url": "https://static01.nyt.com/images/2018/06/12/multimedia/author-charlie-savage/author-charlie-savage-thumbLarge-v2.png",
+    "filename": "charlie-savage.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 19,
+    "name": "Adam Liptak",
+    "slug": "adam-liptak",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/adam-liptak",
+    "image_url": "https://static01.nyt.com/images/2018/07/13/multimedia/author-adam-liptak/author-adam-liptak-thumbLarge-v4.png",
+    "filename": "adam-liptak.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 21,
+    "name": "Annie Karni",
+    "slug": "annie-karni",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/annie-karni",
+    "image_url": "https://static01.nyt.com/images/2019/02/05/multimedia/author-annie-karni/author-annie-karni-thumbLarge-v4.png",
+    "filename": "annie-karni.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 24,
+    "name": "Zach Montague",
+    "slug": "zach-montague",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/zach-montague",
+    "image_url": "https://static01.nyt.com/images/2023/03/01/reader-center/author-zachary-montague/author-zachary-montague-thumbLarge.png",
+    "filename": "zach-montague.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 25,
+    "name": "Devlin Barrett",
+    "slug": "devlin-barrett",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/devlin-barrett",
+    "image_url": "https://static01.nyt.com/images/2024/12/11/reader-center/author-devlin-barrett/author-devlin-barrett-thumbLarge-v5.png",
+    "filename": "devlin-barrett.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 27,
+    "name": "Peter Baker",
+    "slug": "peter-baker",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/peter-baker",
+    "image_url": "https://static01.nyt.com/images/2018/06/13/multimedia/peter-baker/peter-baker-thumbLarge-v3.png",
+    "filename": "peter-baker.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 31,
+    "name": "Maggie Haberman",
+    "slug": "maggie-haberman",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/maggie-haberman",
+    "image_url": "https://static01.nyt.com/images/2018/07/12/multimedia/author-maggie-haberman/author-maggie-haberman-thumbLarge-v2.png",
+    "filename": "maggie-haberman.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 33,
+    "name": "Tony Romm",
+    "slug": "tony-romm",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/tony-romm",
+    "image_url": "https://static01.nyt.com/images/2025/03/17/reader-center/author-tony-romm/author-tony-romm-thumbLarge-v4.png",
+    "filename": "tony-romm.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 34,
+    "name": "Jess Bidgood",
+    "slug": "jess-bidgood",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/jess-bidgood",
+    "image_url": "https://static01.nyt.com/images/2024/04/05/reader-center/author-jess-bidgood/author-jess-bidgood-thumbLarge.png",
+    "filename": "jess-bidgood.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 38,
+    "name": "Nicholas Fandos",
+    "slug": "nicholas-fandos",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/nicholas-fandos",
+    "image_url": "https://static01.nyt.com/images/2018/11/06/multimedia/author-nicholas-fandos/author-nicholas-fandos-thumbLarge-v2.png",
+    "filename": "nicholas-fandos.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 40,
+    "name": "Hamed Aleaziz",
+    "slug": "hamed-aleaziz",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/hamed-aleaziz",
+    "image_url": "https://static01.nyt.com/images/2024/02/09/reader-center/author-hamed-aleaziz/author-hamed-aleaziz-thumbLarge.png",
+    "filename": "hamed-aleaziz.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 41,
+    "name": "Luke Broadwater",
+    "slug": "luke-broadwater",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/luke-broadwater",
+    "image_url": "https://static01.nyt.com/images/2022/01/05/us/politics/author-luke-broadwater/author-luke-broadwater-thumbLarge-v3.png",
+    "filename": "luke-broadwater.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 45,
+    "name": "Alan Rappeport",
+    "slug": "alan-rappeport",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/alan-rappeport",
+    "image_url": "https://static01.nyt.com/images/2018/06/12/multimedia/author-alan-rappeport/author-alan-rappeport-thumbLarge-v4.png",
+    "filename": "alan-rappeport.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 48,
+    "name": "Zolan Kanno-Youngs",
+    "slug": "zolan-kanno-youngs",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/zolan-kanno-youngs",
+    "image_url": "https://static01.nyt.com/images/2019/12/13/reader-center/author-zolan-kanno-youngs/author-zolan-kanno-youngs-thumbLarge.png",
+    "filename": "zolan-kanno-youngs.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 52,
+    "name": "Michael Gold",
+    "slug": "michael-gold",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/michael-gold",
+    "image_url": "https://static01.nyt.com/images/2018/06/12/multimedia/author-michael-gold/author-michael-gold-thumbLarge.png",
+    "filename": "michael-gold.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 55,
+    "name": "Catie Edmondson",
+    "slug": "catie-edmondson",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/catie-edmondson",
+    "image_url": "https://static01.nyt.com/images/2024/04/11/reader-center/author-catie-edmonson/author-catie-edmonson-thumbLarge.png",
+    "filename": "catie-edmondson.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 56,
+    "name": "Julian E. Barnes",
+    "slug": "julian-e-barnes",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/julian-e-barnes",
+    "image_url": "https://static01.nyt.com/images/2019/12/13/reader-center/author-julian-barnes/author-julian-barnes-thumbLarge-v3.png",
+    "filename": "julian-e-barnes.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 57,
+    "name": "Karoun Demirjian",
+    "slug": "karoun-demirjian",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/karoun-demirjian",
+    "image_url": "https://static01.nyt.com/images/2023/02/07/reader-center/author-Karoun-Demirjian/author-Karoun-Demirjian-thumbLarge-v3.png",
+    "filename": "karoun-demirjian.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 65,
+    "name": "Glenn Thrush",
+    "slug": "glenn-thrush",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/glenn-thrush",
+    "image_url": "https://static01.nyt.com/images/2022/01/06/reader-center/author-glenn-thrush/author-glenn-thrush-thumbLarge-v3.png",
+    "filename": "glenn-thrush.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 67,
+    "name": "Neil Vigdor",
+    "slug": "neil-vigdor",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/neil-vigdor",
+    "image_url": "https://static01.nyt.com/images/2019/07/25/reader-center/author-neil-vigdor/author-neil-vigdor-thumbLarge-v2.png",
+    "filename": "neil-vigdor.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 72,
+    "name": "Tyler Pager",
+    "slug": "tyler-pager",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/tyler-pager",
+    "image_url": "https://static01.nyt.com/images/2025/02/14/reader-center/author-tyler-pager/author-tyler-pager-thumbLarge-v3.png",
+    "filename": "tyler-pager.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 73,
+    "name": "Shane Goldmacher",
+    "slug": "shane-goldmacher",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/shane-goldmacher",
+    "image_url": "https://static01.nyt.com/images/2018/07/27/multimedia/author-shane-goldmacher/author-shane-goldmacher-thumbLarge.png",
+    "filename": "shane-goldmacher.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 85,
+    "name": "Michael D. Shear",
+    "slug": "michael-d-shear",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/michael-d-shear",
+    "image_url": "https://static01.nyt.com/images/2018/06/13/multimedia/author-michael-d-shear/author-michael-d-shear-thumbLarge-v2.png",
+    "filename": "michael-d-shear.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 87,
+    "name": "Michael Levenson",
+    "slug": "michael-levenson",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/michael-levenson",
+    "image_url": "https://static01.nyt.com/images/2024/05/29/reader-center/author-michael-levenson/author-michael-levenson-thumbLarge-v3.png",
+    "filename": "michael-levenson.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 89,
+    "name": "Reid J. Epstein",
+    "slug": "reid-j-epstein",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/reid-j-epstein",
+    "image_url": "https://static01.nyt.com/images/2019/06/25/reader-center/author-reid-epstein/9e877853d8234217b58e5762253aa771-thumbLarge.png",
+    "filename": "reid-j-epstein.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 91,
+    "name": "Abbie VanSickle",
+    "slug": "abbie-vansickle",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/abbie-vansickle",
+    "image_url": "https://static01.nyt.com/images/2024/04/11/reader-center/author-abbie-vansickle/author-abbie-vansickle-thumbLarge-v3.png",
+    "filename": "abbie-vansickle.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 93,
+    "name": "Erica L. Green",
+    "slug": "erica-l-green",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/erica-l-green",
+    "image_url": "https://static01.nyt.com/images/2018/06/14/multimedia/author-erica-l-green/author-erica-l-green-thumbLarge-v2.png",
+    "filename": "erica-l-green.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 97,
+    "name": "Sheryl Gay Stolberg",
+    "slug": "sheryl-gay-stolberg",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/sheryl-gay-stolberg",
+    "image_url": "https://static01.nyt.com/images/2018/11/26/multimedia/author-sheryl-gay-stolberg/author-sheryl-gay-stolberg-thumbLarge.png",
+    "filename": "sheryl-gay-stolberg.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 99,
+    "name": "Shawn McCreesh",
+    "slug": "shawn-mccreesh",
+    "primary_section": "U.S.",
+    "bio_url": "https://www.nytimes.com/by/shawn-mccreesh",
+    "image_url": "https://static01.nyt.com/images/2019/12/13/reader-center/author-shawn-mccreesh/author-shawn-mccreesh-thumbLarge-v3.png",
+    "filename": "shawn-mccreesh.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 10,
+    "name": "David E. Sanger",
+    "slug": "david-e-sanger",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/david-e-sanger",
+    "image_url": "https://static01.nyt.com/images/2018/10/03/multimedia/author-david-e-sanger/author-david-e-sanger-thumbLarge-v3.png",
+    "filename": "david-e-sanger.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 14,
+    "name": "Katrin Bennhold",
+    "slug": "katrin-bennhold",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/katrin-bennhold",
+    "image_url": "https://static01.nyt.com/images/2018/07/13/multimedia/author-katrin-bennhold/author-katrin-bennhold-thumbLarge-v2.png",
+    "filename": "katrin-bennhold.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 23,
+    "name": "Aaron Boxerman",
+    "slug": "aaron-boxerman",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/aaron-boxerman",
+    "image_url": "https://static01.nyt.com/images/2023/09/22/reader-center/author-aaron-boxerman/author-aaron-boxerman-thumbLarge.png",
+    "filename": "aaron-boxerman.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 26,
+    "name": "Mark Landler",
+    "slug": "mark-landler",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/mark-landler",
+    "image_url": "https://static01.nyt.com/images/2019/10/22/reader-center/author-mark-landler/author-mark-landler-thumbLarge-v7.png",
+    "filename": "mark-landler.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 49,
+    "name": "Ian Austen",
+    "slug": "ian-austen",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/ian-austen",
+    "image_url": "https://static01.nyt.com/images/2019/07/18/reader-center/author-ian-austen/author-ian-austen-thumbLarge.png",
+    "filename": "ian-austen.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 58,
+    "name": "Isabel Kershner",
+    "slug": "isabel-kershner",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/isabel-kershner",
+    "image_url": "https://static01.nyt.com/images/2018/10/12/multimedia/author-isabel-kershner/author-isabel-kershner-thumbLarge.png",
+    "filename": "isabel-kershner.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 59,
+    "name": "Elisabetta Povoledo",
+    "slug": "elisabetta-povoledo",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/elisabetta-povoledo",
+    "image_url": "https://static01.nyt.com/images/2025/04/28/reader-center/author-elisabetta-povoledo/author-elisabetta-povoledo-thumbLarge-v2.png",
+    "filename": "elisabetta-povoledo.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 64,
+    "name": "Adam Nossiter",
+    "slug": "adam-nossiter",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/adam-nossiter",
+    "image_url": "https://static01.nyt.com/images/2018/10/15/multimedia/author-adam-nossiter/author-adam-nossiter-thumbLarge-v2.png",
+    "filename": "adam-nossiter.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 74,
+    "name": "Eric Schmitt",
+    "slug": "eric-schmitt",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/eric-schmitt",
+    "image_url": "https://static01.nyt.com/images/2018/06/12/multimedia/author-eric-schmitt/author-eric-schmitt-thumbLarge-v2.png",
+    "filename": "eric-schmitt.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 81,
+    "name": "Choe Sang-Hun",
+    "slug": "choe-sang-hun",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/choe-sang-hun",
+    "image_url": "https://static01.nyt.com/images/2018/07/18/multimedia/author-choe-sang-hun/author-choe-sang-hun-thumbLarge-v2.png",
+    "filename": "choe-sang-hun.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 82,
+    "name": "Constant Méheut",
+    "slug": "constant-meheut",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/constant-meheut",
+    "image_url": "https://static01.nyt.com/images/2022/04/04/reader-center/author-constant-meheut/author-constant-meheut-thumbLarge.png",
+    "filename": "constant-meheut.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 83,
+    "name": "Edward Wong",
+    "slug": "edward-wong",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/edward-wong",
+    "image_url": "https://static01.nyt.com/images/2018/09/24/multimedia/author-edward-wong/author-edward-wong-thumbLarge-v5.png",
+    "filename": "edward-wong.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 98,
+    "name": "Adam Rasgon",
+    "slug": "adam-rasgon",
+    "primary_section": "World",
+    "bio_url": "https://www.nytimes.com/by/adam-rasgon",
+    "image_url": "https://static01.nyt.com/images/2024/05/14/reader-center/author-adam-rasgon/author-adam-rasgon-thumbLarge-v3.png",
+    "filename": "adam-rasgon.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 1,
+    "name": "Ezra Klein",
+    "slug": "ezra-klein",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/ezra-klein",
+    "image_url": "https://static01.nyt.com/images/2021/01/06/opinion/ezra-klein/ezra-klein-thumbLarge-v4.png",
+    "filename": "ezra-klein.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 2,
+    "name": "Ross Douthat",
+    "slug": "ross-douthat",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/ross-douthat",
+    "image_url": "https://static01.nyt.com/images/2018/04/03/opinion/ross-douthat/ross-douthat-thumbLarge-v2.png",
+    "filename": "ross-douthat.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 5,
+    "name": "David French",
+    "slug": "david-french",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/david-french",
+    "image_url": "https://static01.nyt.com/images/2023/01/10/opinion/david-french/david-french-thumbLarge-v2.png",
+    "filename": "david-french.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 11,
+    "name": "Jamelle Bouie",
+    "slug": "jamelle-bouie",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/jamelle-bouie",
+    "image_url": "https://static01.nyt.com/images/2019/01/24/opinion/jamelle-bouie/jamelle-bouie-thumbLarge-v3.png",
+    "filename": "jamelle-bouie.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 22,
+    "name": "Thomas B. Edsall",
+    "slug": "thomas-b-edsall",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/thomas-b-edsall",
+    "image_url": "https://static01.nyt.com/images/2018/04/02/opinion/thomas-b-edsall/thomas-b-edsall-thumbLarge-v2.png",
+    "filename": "thomas-b-edsall.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 28,
+    "name": "Frank Bruni",
+    "slug": "frank-bruni",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/frank-bruni",
+    "image_url": "https://static01.nyt.com/images/2018/04/03/opinion/frank-bruni/frank-bruni-thumbLarge.png",
+    "filename": "frank-bruni.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 46,
+    "name": "David Wallace-Wells",
+    "slug": "david-wallace-wells",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/david-wallace-wells",
+    "image_url": "https://static01.nyt.com/images/2022/05/16/reader-center/author-david-wallace-wells/author-david-wallace-wells-thumbLarge.png",
+    "filename": "david-wallace-wells.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 69,
+    "name": "Nicholas Kristof",
+    "slug": "nicholas-kristof",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/nicholas-kristof",
+    "image_url": "https://static01.nyt.com/images/2018/04/03/opinion/nicholas-kristof/nicholas-kristof-thumbLarge-v2.png",
+    "filename": "nicholas-kristof.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 71,
+    "name": "Jessica Grose",
+    "slug": "jessica-grose",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/jessica-grose",
+    "image_url": "https://static01.nyt.com/images/2021/11/09/opinion/Jessica_Grose_newsletter/Jessica_Grose_newsletter-thumbLarge.png",
+    "filename": "jessica-grose.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 75,
+    "name": "Michelle Goldberg",
+    "slug": "michelle-goldberg",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/michelle-goldberg",
+    "image_url": "https://static01.nyt.com/images/2018/04/02/opinion/michelle-goldberg/michelle-goldberg-thumbLarge-v2.png",
+    "filename": "michelle-goldberg.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 95,
+    "name": "Thomas L. Friedman",
+    "slug": "thomas-l-friedman",
+    "primary_section": "Opinion",
+    "bio_url": "https://www.nytimes.com/by/thomas-l-friedman",
+    "image_url": "https://static01.nyt.com/images/2018/04/02/opinion/thomas-l-friedman/thomas-l-friedman-thumbLarge.png",
+    "filename": "thomas-l-friedman.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 6,
+    "name": "Colby Smith",
+    "slug": "colby-smith",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/colby-smith",
+    "image_url": "https://static01.nyt.com/images/2025/01/29/business/author_colby_smith/author_colby_smith-thumbLarge-v3.png",
+    "filename": "colby-smith.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 7,
+    "name": "Ana Swanson",
+    "slug": "ana-swanson",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/ana-swanson",
+    "image_url": "https://static01.nyt.com/images/2018/12/10/multimedia/author-ana-swanson/author-ana-swanson-thumbLarge-v2.png",
+    "filename": "ana-swanson.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 39,
+    "name": "Ephrat Livni",
+    "slug": "ephrat-livni",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/ephrat-livni",
+    "image_url": "https://static01.nyt.com/images/2021/09/08/business/author-ephrat-livni/author-ephrat-livni-thumbLarge-v6.png",
+    "filename": "ephrat-livni.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 44,
+    "name": "Michael J. de la Merced",
+    "slug": "michael-j-de-la-merced",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/michael-j-de-la-merced",
+    "image_url": "https://static01.nyt.com/images/2019/10/07/reader-center/author-michael-j-de-la-merced/author-michael-j-de-la-merced-thumbLarge.png",
+    "filename": "michael-j-de-la-merced.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 50,
+    "name": "Jeanna Smialek",
+    "slug": "jeanna-smialek",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/jeanna-smialek",
+    "image_url": "https://static01.nyt.com/images/2020/07/03/reader-center/author-jeanna-smialek/author-jeanna-smialek-thumbLarge-v2.png",
+    "filename": "jeanna-smialek.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 68,
+    "name": "Sarah Kessler",
+    "slug": "sarah-kessler",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/sarah-kessler",
+    "image_url": "https://static01.nyt.com/images/2023/06/13/multimedia/author-sarah-kessler/author-sarah-kessler-thumbLarge.png",
+    "filename": "sarah-kessler.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 70,
+    "name": "Keith Bradsher",
+    "slug": "keith-bradsher",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/keith-bradsher",
+    "image_url": "https://static01.nyt.com/images/2022/08/12/universal/Keith-Bradsher/Keith-Bradsher-thumbLarge.png",
+    "filename": "keith-bradsher.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 88,
+    "name": "Andrew Ross Sorkin",
+    "slug": "andrew-ross-sorkin",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/andrew-ross-sorkin",
+    "image_url": "https://static01.nyt.com/images/2018/07/16/multimedia/author-andrew-ross-sorkin/author-andrew-ross-sorkin-thumbLarge.png",
+    "filename": "andrew-ross-sorkin.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 90,
+    "name": "Bernhard Warner",
+    "slug": "bernhard-warner",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/bernhard-warner",
+    "image_url": "https://static01.nyt.com/images/2023/09/26/reader-center/author-bernhard-warner/author-bernhard-warner-thumbLarge.png",
+    "filename": "bernhard-warner.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 96,
+    "name": "Lauren Hirsch",
+    "slug": "lauren-hirsch",
+    "primary_section": "Business",
+    "bio_url": "https://www.nytimes.com/by/lauren-hirsch",
+    "image_url": "https://static01.nyt.com/images/2021/08/10/business/author-lauren-hirsch/author-lauren-hirsch-thumbLarge-v3.png",
+    "filename": "lauren-hirsch.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 3,
+    "name": "James Barron",
+    "slug": "james-barron",
+    "primary_section": "New York",
+    "bio_url": "https://www.nytimes.com/by/james-barron",
+    "image_url": "https://static01.nyt.com/images/2018/02/16/multimedia/author-james-barron/author-james-barron-thumbLarge-v2.png",
+    "filename": "james-barron.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 8,
+    "name": "Alan Feuer",
+    "slug": "alan-feuer",
+    "primary_section": "New York",
+    "bio_url": "https://www.nytimes.com/by/alan-feuer",
+    "image_url": "https://static01.nyt.com/images/2023/10/20/reader-center/author-alan-feuer/author-alan-feuer-thumbLarge.png",
+    "filename": "alan-feuer.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 20,
+    "name": "Emma G. Fitzsimmons",
+    "slug": "emma-g-fitzsimmons",
+    "primary_section": "New York",
+    "bio_url": "https://www.nytimes.com/by/emma-g-fitzsimmons",
+    "image_url": "https://static01.nyt.com/images/2018/07/18/multimedia/author-emma-g-fitzsimmons/author-emma-g-fitzsimmons-thumbLarge-v3.png",
+    "filename": "emma-g-fitzsimmons.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 51,
+    "name": "Benjamin Oreskes",
+    "slug": "benjamin-oreskes",
+    "primary_section": "New York",
+    "bio_url": "https://www.nytimes.com/by/benjamin-oreskes",
+    "image_url": "https://static01.nyt.com/images/2024/10/02/reader-center/author-benjamin-oreskes/author-benjamin-oreskes-thumbLarge.png",
+    "filename": "benjamin-oreskes.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 76,
+    "name": "J. David Goodman",
+    "slug": "j-david-goodman",
+    "primary_section": "New York",
+    "bio_url": "https://www.nytimes.com/by/j-david-goodman",
+    "image_url": "https://static01.nyt.com/images/2018/07/18/nyregion/author-j-david-goodman/author-j-david-goodman-thumbLarge.png",
+    "filename": "j-david-goodman.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 100,
+    "name": "Tracey Tully",
+    "slug": "tracey-tully",
+    "primary_section": "New York",
+    "bio_url": "https://www.nytimes.com/by/tracey-tully",
+    "image_url": "https://static01.nyt.com/images/2021/06/16/reader-center/author-tracey-tully/author-tracey-tully-thumbLarge-v2.png",
+    "filename": "tracey-tully.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 4,
+    "name": "Matthew Cullen",
+    "slug": "matthew-cullen",
+    "primary_section": "Briefing",
+    "bio_url": "https://www.nytimes.com/by/matthew-cullen",
+    "image_url": "https://static01.nyt.com/images/2021/08/18/reader-center/author-matthew-cullen/author-matthew-cullen-thumbLarge.png",
+    "filename": "matthew-cullen.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 12,
+    "name": "Emmett Lindner",
+    "slug": "emmett-lindner",
+    "primary_section": "Briefing",
+    "bio_url": "https://www.nytimes.com/by/emmett-lindner",
+    "image_url": "https://static01.nyt.com/images/2021/08/23/reader-center/author-emmett-lindner/author-emmett-lindner-thumbLarge-v4.png",
+    "filename": "emmett-lindner.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 16,
+    "name": "Natasha Frost",
+    "slug": "natasha-frost",
+    "primary_section": "Briefing",
+    "bio_url": "https://www.nytimes.com/by/natasha-frost",
+    "image_url": "https://static01.nyt.com/images/2020/08/28/reader-center/author-natasha-frost/author-natasha-frost-thumbLarge.png",
+    "filename": "natasha-frost.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 62,
+    "name": "Melissa Kirsch",
+    "slug": "melissa-kirsch",
+    "primary_section": "Briefing",
+    "bio_url": "https://www.nytimes.com/by/melissa-kirsch",
+    "image_url": "https://static01.nyt.com/images/2022/02/04/reader-center/author-melissa-kirsch/author-melissa-kirsch-thumbLarge-v2.png",
+    "filename": "melissa-kirsch.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 63,
+    "name": "Justin Porter",
+    "slug": "justin-porter",
+    "primary_section": "Briefing",
+    "bio_url": "https://www.nytimes.com/by/justin-porter",
+    "image_url": "https://static01.nyt.com/images/2023/06/09/reader-center/author-justin-porter/author-justin-porter-thumbLarge.png",
+    "filename": "justin-porter.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 43,
+    "name": "Julia Jacobs",
+    "slug": "julia-jacobs",
+    "primary_section": "Arts",
+    "bio_url": "https://www.nytimes.com/by/julia-jacobs",
+    "image_url": "https://static01.nyt.com/images/2023/12/06/reader-center/author-julia-jacobs/author-julia-jacobs-thumbLarge.png",
+    "filename": "julia-jacobs.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 77,
+    "name": "Sarah Bahr",
+    "slug": "sarah-bahr",
+    "primary_section": "Arts",
+    "bio_url": "https://www.nytimes.com/by/sarah-bahr",
+    "image_url": "https://static01.nyt.com/images/2020/08/14/reader-center/author-sarah-bahr/author-sarah-bahr-thumbLarge-v2.png",
+    "filename": "sarah-bahr.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 79,
+    "name": "Ben Sisario",
+    "slug": "ben-sisario",
+    "primary_section": "Arts",
+    "bio_url": "https://www.nytimes.com/by/ben-sisario",
+    "image_url": "https://static01.nyt.com/images/2018/02/20/multimedia/author-ben-sisario/author-ben-sisario-thumbLarge-v4.png",
+    "filename": "ben-sisario.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 86,
+    "name": "Trish Bendix",
+    "slug": "trish-bendix",
+    "primary_section": "Arts",
+    "bio_url": "https://www.nytimes.com/by/trish-bendix",
+    "image_url": "https://static01.nyt.com/images/2022/12/14/arts/author-trish-bendix/author-trish-bendix-thumbLarge.png",
+    "filename": "trish-bendix.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 13,
+    "name": "Kwame Anthony Appiah",
+    "slug": "kwame-anthony-appiah",
+    "primary_section": "Magazine",
+    "bio_url": "https://www.nytimes.com/by/kwame-anthony-appiah",
+    "image_url": "https://static01.nyt.com/images/2022/11/14/reader-center/author-kwame-anthony-appiah/author-kwame-anthony-appiah-thumbLarge-v2.png",
+    "filename": "kwame-anthony-appiah.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 42,
+    "name": "Lulu Garcia-Navarro",
+    "slug": "lulu-garcia-navarro",
+    "primary_section": "Magazine",
+    "bio_url": "https://www.nytimes.com/by/lulu-garcia-navarro",
+    "image_url": "https://static01.nyt.com/images/2024/04/29/reader-center/author-lulu-navarro-garcia/author-lulu-navarro-garcia-thumbLarge.png",
+    "filename": "lulu-garcia-navarro.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 92,
+    "name": "David Marchese",
+    "slug": "david-marchese",
+    "primary_section": "Magazine",
+    "bio_url": "https://www.nytimes.com/by/david-marchese",
+    "image_url": "https://static01.nyt.com/images/2022/07/01/reader-center/author-david-marchese/author-david-marchese-thumbLarge-v2.png",
+    "filename": "david-marchese.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 29,
+    "name": "Alissa Wilkinson",
+    "slug": "alissa-wilkinson",
+    "primary_section": "Movies",
+    "bio_url": "https://www.nytimes.com/by/alissa-wilkinson",
+    "image_url": "https://static01.nyt.com/images/2024/01/05/reader-center/author-alissa-wilkinson/author-alissa-wilkinson-thumbLarge.png",
+    "filename": "alissa-wilkinson.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 60,
+    "name": "Manohla Dargis",
+    "slug": "manohla-dargis",
+    "primary_section": "Movies",
+    "bio_url": "https://www.nytimes.com/by/manohla-dargis",
+    "image_url": "https://static01.nyt.com/images/2024/02/15/reader-center/author-manohla-dargis/author-manohla-dargis-thumbLarge.png",
+    "filename": "manohla-dargis.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 84,
+    "name": "Esther Zuckerman",
+    "slug": "esther-zuckerman",
+    "primary_section": "Movies",
+    "bio_url": "https://www.nytimes.com/by/esther-zuckerman",
+    "image_url": "https://static01.nyt.com/images/2025/10/01/reader-center/author-esther-zuckerman/author-esther-zuckerman-thumbLarge.png",
+    "filename": "esther-zuckerman.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 53,
+    "name": "Elisabeth Vincentelli",
+    "slug": "elisabeth-vincentelli",
+    "primary_section": "Theater",
+    "bio_url": "https://www.nytimes.com/by/elisabeth-vincentelli",
+    "image_url": null,
+    "filename": null,
+    "status": "no_thumb_large_found"
+  },
+  {
+    "rank": 78,
+    "name": "Alexis Soloski",
+    "slug": "alexis-soloski",
+    "primary_section": "Theater",
+    "bio_url": "https://www.nytimes.com/by/alexis-soloski",
+    "image_url": "https://static01.nyt.com/images/2023/06/23/reader-center/author-alexis-soloski/author-alexis-soloski-thumbLarge.png",
+    "filename": "alexis-soloski.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 94,
+    "name": "Michael Paulson",
+    "slug": "michael-paulson",
+    "primary_section": "Theater",
+    "bio_url": "https://www.nytimes.com/by/michael-paulson",
+    "image_url": "https://static01.nyt.com/images/2018/02/20/multimedia/author-michael-paulson/author-michael-paulson-thumbLarge-v4.png",
+    "filename": "michael-paulson.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 30,
+    "name": "Sam Corbin",
+    "slug": "sam-corbin",
+    "primary_section": "Crosswords & Games",
+    "bio_url": "https://www.nytimes.com/by/sam-corbin",
+    "image_url": "https://static01.nyt.com/images/2023/05/15/reader-center/author-sam-corbin/author-sam-corbin-thumbLarge-v3.png",
+    "filename": "sam-corbin.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 61,
+    "name": "Deb Amlen",
+    "slug": "deb-amlen",
+    "primary_section": "Crosswords & Games",
+    "bio_url": "https://www.nytimes.com/by/deb-amlen",
+    "image_url": "https://static01.nyt.com/images/2018/07/16/multimedia/author-deb-amlen/author-deb-amlen-thumbLarge-v3.png",
+    "filename": "deb-amlen.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 18,
+    "name": "Sam Sifton",
+    "slug": "sam-sifton",
+    "primary_section": "Food",
+    "bio_url": "https://www.nytimes.com/by/sam-sifton",
+    "image_url": "https://static01.nyt.com/images/2018/06/21/multimedia/author-sam-sifton/author-sam-sifton-thumbLarge-v2.png",
+    "filename": "sam-sifton.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 35,
+    "name": "Melissa Clark",
+    "slug": "melissa-clark",
+    "primary_section": "Food",
+    "bio_url": "https://www.nytimes.com/by/melissa-clark",
+    "image_url": "https://static01.nyt.com/images/2018/06/21/multimedia/author-melissa-clark/author-melissa-clark-thumbLarge.png",
+    "filename": "melissa-clark.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 32,
+    "name": "Clay Risen",
+    "slug": "clay-risen",
+    "primary_section": "Obituaries",
+    "bio_url": "https://www.nytimes.com/by/clay-risen",
+    "image_url": "https://static01.nyt.com/images/2018/06/13/nyregion/author-clay-risen/author-clay-risen-thumbLarge-v3.png",
+    "filename": "clay-risen.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 80,
+    "name": "Sam Roberts",
+    "slug": "sam-roberts",
+    "primary_section": "Obituaries",
+    "bio_url": "https://www.nytimes.com/by/sam-roberts",
+    "image_url": "https://static01.nyt.com/images/2018/02/20/multimedia/author-sam-roberts/author-sam-roberts-thumbLarge-v3.png",
+    "filename": "sam-roberts.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 9,
+    "name": "Vanessa Friedman",
+    "slug": "vanessa-friedman",
+    "primary_section": "Style",
+    "bio_url": "https://www.nytimes.com/by/vanessa-friedman",
+    "image_url": "https://static01.nyt.com/images/2018/06/12/multimedia/vanessa-friedman/vanessa-friedman-thumbLarge.png",
+    "filename": "vanessa-friedman.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 54,
+    "name": "Alex Williams",
+    "slug": "alex-williams",
+    "primary_section": "Style",
+    "bio_url": "https://www.nytimes.com/by/alex-williams",
+    "image_url": "https://static01.nyt.com/images/2020/05/06/reader-center/alex-williams/alex-williams-thumbLarge-v4.png",
+    "filename": "alex-williams.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 36,
+    "name": "Lisa Friedman",
+    "slug": "lisa-friedman",
+    "primary_section": "Climate",
+    "bio_url": "https://www.nytimes.com/by/lisa-friedman",
+    "image_url": "https://static01.nyt.com/images/2018/07/18/multimedia/author-lisa-friedman/author-lisa-friedman-thumbLarge-v4.png",
+    "filename": "lisa-friedman.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 47,
+    "name": "Apoorva Mandavilli",
+    "slug": "apoorva-mandavilli",
+    "primary_section": "Health",
+    "bio_url": "https://www.nytimes.com/by/apoorva-mandavilli",
+    "image_url": "https://static01.nyt.com/images/2020/07/07/reader-center/author-apoorva-mandavilli/author-apoorva-mandavilli-thumbLarge-v5.png",
+    "filename": "apoorva-mandavilli.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 37,
+    "name": "Angela Serratore",
+    "slug": "angela-serratore",
+    "primary_section": "Real Estate",
+    "bio_url": "https://www.nytimes.com/by/angela-serratore",
+    "image_url": null,
+    "filename": null,
+    "status": "no_thumb_large_found"
+  },
+  {
+    "rank": 66,
+    "name": "Kenneth Chang",
+    "slug": "kenneth-chang",
+    "primary_section": "Science",
+    "bio_url": "https://www.nytimes.com/by/kenneth-chang",
+    "image_url": "https://static01.nyt.com/images/2018/02/16/multimedia/author-kenneth-chang/author-kenneth-chang-thumbLarge-v3.png",
+    "filename": "kenneth-chang.jpg",
+    "status": "ok"
+  },
+  {
+    "rank": 17,
+    "name": "Richard Sandomir",
+    "slug": "richard-sandomir",
+    "primary_section": "Sports",
+    "bio_url": "https://www.nytimes.com/by/richard-sandomir",
+    "image_url": "https://static01.nyt.com/images/2018/12/10/multimedia/author-richard-sandomir/author-richard-sandomir-thumbLarge.png",
+    "filename": "richard-sandomir.jpg",
+    "status": "ok"
+  }
+]
