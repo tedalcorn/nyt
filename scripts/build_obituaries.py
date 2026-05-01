@@ -48,12 +48,22 @@ DESCRIPTIVE_TOKENS = {
     'force', 'career', 'life', 'lives', 'fame', 'reign', 'novelist',
     'leader', 'wrestler', 'patron', 'founder', 'pioneer', 'champion',
     'legend', 'hero', 'icon', 'death',
+    # Profession/role/relationship words that appear as the leading token in
+    # essay-style headlines ("Outsider Whose Dark Vision…", "Wife of Billy
+    # Graham…", "Owner of Segway Company…"). Safe to add since they're never
+    # plausible given names or surnames.
+    'outsider', 'scientist', 'activist', 'choreographer', 'architect',
+    'astronaut', 'broadcaster', 'comedian', 'correspondent', 'diplomat',
+    'economist', 'educator', 'entertainer', 'executive', 'filmmaker',
+    'journalist', 'lawmaker', 'legislator', 'mathematician', 'musician',
+    'naturalist', 'philanthropist', 'photographer', 'playwright',
+    'politician', 'professor', 'reformer', 'sociologist', 'strategist',
+    'theologian', 'urbanist', 'violinist',
+    'wife', 'husband', 'widow', 'widower', 'owner', 'creator', 'inventor',
+    'maker', 'builder', 'commander', 'pioneer', 'champion',
     # NOTE: 'art', 'star', 'song', 'novel' are too easily real first names
-    # or surnames (Art Buchwald, Art Winfree, Star Jones) — including them
-    # blocks legitimate parses and forces fallback to slug, which produces
-    # garbage like "Dr Art" because the slug fallback can't strip Dr/Rev.
-    # NOTE: 'hall' and 'young' removed — both are common surnames (Oakley Hall,
-    # Lee Young, etc.) and their presence silently dropped legitimate names.
+    # or surnames — including them blocks legitimate parses.
+    # NOTE: 'hall' and 'young' removed — both are common surnames.
     'made', 'helped', 'wrote', 'founded', 'led', 'died', 'killed',
     'who', 'whose', 'whom', 'what', 'where', 'when', 'why',
     'former', 'late', 'old', 'famous', 'notable',
@@ -928,6 +938,32 @@ def extract_name_from_slug(url):
     return ' '.join(p.capitalize() for p in name_parts)
 
 
+def extract_name_from_abstract(abstract):
+    """Fallback: extract name from abstract when headline parsing fails.
+
+    Abstracts very often follow "Full Name, age, verb..." or "Full Name,
+    a [role] who..." \u2014 the name is the leading capitalized phrase before
+    the first comma that is followed by a digit (age) or article (a/an/the).
+    Also handles "Mr./Mrs./Dr. Full Name" patterns.
+    """
+    if not abstract:
+        return None
+    ab = abstract.strip()
+    # Strip honorific so "Mr. John Smith, 75," \u2192 "John Smith, 75,"
+    ab_clean = RE_LEADING_TITLE.sub('', ab)
+    # Pattern: "Name, age," or "Name, a/an/the role"
+    m = re.match(
+        r'^([A-Z][a-zA-Z\u00c0-\u00ff.\'\-]+(?: [A-Z][a-zA-Z\u00c0-\u00ff.\'\-]+){1,5})'
+        r',\s*(?:\d{2,3}|[Aa]n? |[Tt]he )',
+        ab_clean
+    )
+    if m:
+        cand = m.group(1).strip()
+        if 1 <= cand.count(' ') <= 5 and not looks_descriptive(cand):
+            return cand
+    return None
+
+
 def extract_name(headline, url=None, is_portraits=False):
     if not headline: return None
     # Drop zero-width chars
@@ -953,6 +989,28 @@ def extract_name(headline, url=None, is_portraits=False):
     # Strip "; description" or " -- description" trailing modifiers
     # ("Bertina Carter Hunter; Arts Patron" → "Bertina Carter Hunter")
     h = re.sub(r'\s*[;\u2014\u2013]\s.*$|\s+--\s.*$', '', h)
+    # Strip bare "Former [role]" prefix when it precedes the actual name.
+    # RE_LEADING_TITLE only strips "Former" when followed by a real title
+    # (General, Senator, etc.). This catches "Former Giants Linebacker Brad…"
+    h = re.sub(r'^(?:Former|Ex-|Late|Retired|Veteran)\s+(?:[A-Z][a-z]+\s+){0,2}(?=[A-Z])', '', h)
+    # Strip hyphenated-nationality adjective: "African-American Golf Pioneer…"
+    # → "Golf Pioneer…" (just the adjective; remaining role words are handled
+    # by the possessive/tagline logic or leave enough for slug fallback).
+    h = re.sub(
+        r'^[A-Z][a-z]+-(?:American|Born|Based|Led|Owned|Run)\s+', '', h
+    )
+    # Strip possessive-word prefix: "Baseball's Herman Franks" →
+    # "Herman Franks"; "Russia's Market Reform Architect" → drop whole phrase
+    # (those are caught by the role-tagline fallback below). Only strip when
+    # the word before 's is clearly a common noun (not a proper name like
+    # "Ellington's sideman").
+    h = re.sub(
+        r"^(?:Baseball|Football|Soccer|Tennis|Basketball|Golf|Boxing|Wrestling"
+        r"|Hollywood|Broadway|Television|Radio|Jazz|Rock|Pop|Hip-Hop|Country"
+        r"|Opera|Ballet|Dance|Art|Literature|Science|Politics|Russia|China"
+        r"|Britain|France|America|Europe|Africa|Asia)'s\s+",
+        '', h, flags=re.I
+    )
     # Strip leading "Long May He Reign:" / "In Loving Memory:" descriptive
     # prefixes that put a phrase before the name and a colon after.
     h = re.sub(r'^[A-Z][^,:]{5,80}:\s+(?=[A-Z])', '', h)
@@ -962,6 +1020,21 @@ def extract_name(headline, url=None, is_portraits=False):
     # Apply twice in case there are stacked titles ("Rep. Dr. ...").
     h = RE_LEADING_TITLE.sub('', h)
     h = RE_LEADING_TITLE.sub('', h)
+    # Single-role-then-name: "Choreographer, Sophie Maslow, Dies at 95"
+    # The first token is a capitalized profession/role (no spaces), followed
+    # by the actual name between commas. Only fires when the leading word is
+    # in DESCRIPTIVE_TOKENS (a safe signal that it's a role, not a name).
+    role_name_m = re.match(
+        r'^([A-Z][a-z]+),\s+'           # Role word,
+        r'([A-Z][a-zA-ZÀ-ÿ.\'\-]+'     # First name
+        r'(?:\s+[A-Z][a-zA-ZÀ-ÿ.\'\-]+){0,4})'  # additional tokens
+        r',\s+(?:Dies?|Is\s+Dead|Was\s+Dead)',
+        h
+    )
+    if role_name_m and role_name_m.group(1).lower() in DESCRIPTIVE_TOKENS:
+        cand = role_name_m.group(2).strip()
+        if 0 <= cand.count(' ') <= 4 and not looks_descriptive(cand):
+            return cand
     # Tagline-then-name: "A Man of Many Words, David Shulman Dies at 91" →
     # the part before the comma is descriptive; the real name follows.
     m = RE_TAGLINE_NAME.match(h) or RE_TAGLINE_NAME_GENERIC.match(h)
@@ -1279,9 +1352,15 @@ def main():
             full = ' '.join([h, ab, snip, lead_clean])
 
             name = extract_name(h, url, is_portraits=is_portraits)
-            # Slug-based fallback for "essay-style" obit headlines that don't
-            # parse — Anne Heche, Jim Fassel, etc. Only when the URL slug
-            # itself reads like a name.
+            # Abstract fallback: many essay-style obits have "Full Name, 75,
+            # verb..." in the abstract even when the headline is descriptive.
+            # Also runs when headline returned only a single token (suspicious
+            # — may be a role word the parser didn't filter).
+            name_from_abstract = extract_name_from_abstract(ab or snip or lead_clean)
+            if not name or (name_from_abstract and ' ' in name_from_abstract and ' ' not in name):
+                name = name_from_abstract or name
+            # Slug-based fallback: URL slug often contains the name when both
+            # headline and abstract parsing fail.
             if not name:
                 name = extract_name_from_slug(url)
             age = extract_age(h, ab + ' ' + snip + ' ' + lead_clean)
