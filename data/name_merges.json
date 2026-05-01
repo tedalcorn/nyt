@@ -1604,6 +1604,16 @@
     ]
   },
   {
+    "canonical": "Aurore de La Morinerie",
+    "canonical_count": 13,
+    "merged": [
+      {
+        "name": "Aurore de la Morinerie",
+        "count": 3
+      }
+    ]
+  },
+  {
     "canonical": "Ayren Jackson-Cannady",
     "canonical_count": 2,
     "merged": [
@@ -3727,7 +3737,7 @@
   },
   {
     "canonical": "Dave Itzkoff",
-    "canonical_count": 8777,
+    "canonical_count": 8784,
     "merged": [
       {
         "name": "DAVE ITZKOFF",

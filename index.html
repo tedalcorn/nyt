@@ -418,7 +418,7 @@
 <body>
 
 <header>
-  <img src="below-the-fold-logo.png" alt="Below the Fold" style="height:72px;cursor:pointer" onclick="showView('home');window.scrollTo({top:0,behavior:'smooth'})">
+  <img src="below-the-fold-logo.png" alt="Below the Fold" style="height:180px;cursor:pointer" onclick="showView('home');window.scrollTo({top:0,behavior:'smooth'})">
 </header>
 
 <nav id="nav">
@@ -505,10 +505,10 @@
         </section>
         <!-- SLIDE: Final Obits infographic -->
         <section class="slide">
-          <div class="slide-inner" style="align-items:center">
-            <h4 class="slide-title">The lives they led</h4>
-            <p class="slide-caption">An analysis of more than 29,000 Times obituaries published since 2001.</p>
-            <div style="flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;border-radius:4px;margin:4px 0" onclick="window.open('final-obits-hires.png','_blank')">
+          <div class="slide-inner">
+            <h4 class="slide-title">Who makes history?</h4>
+            <p class="slide-caption">Of more than 29,000 obituaries since 2000, only 52 exceeded 4,000 words.</p>
+            <div style="flex:1;display:flex;align-items:center;cursor:pointer;overflow:hidden;border-radius:4px;margin:4px 0" onclick="window.open('final-obits-hires.png','_blank')">
               <img src="final-obits.jpg" alt="Final Obits infographic" style="max-width:100%;max-height:380px;object-fit:contain;border-radius:4px" loading="lazy">
             </div>
             <p class="slide-more" style="font-size:11px;color:#888;margin-top:6px"><a onclick="window.open('final-obits-hires.png','_blank');event.stopPropagation()" style="color:#326891;cursor:pointer">Open full resolution →</a></p>
@@ -580,7 +580,6 @@
       <p>The Times publishes a digest of its corrections each day at a stable URL under <em>pageoneplus</em>, and this dashboard scrapes every such digest the Archive API has tagged as a Correction since 2017. Each individual correction blurb is pulled out of the digest page, and where the correction itself links to the article it concerns, that link is followed; otherwise the matcher uses topic-keyword overlap and the correction's date phrase to find the most likely article within a few days of when it ran. About 98 percent of the roughly 12,000 corrections in the dataset are linked back to a specific article.</p>
       <p>Each correction is also tagged with a few quality signals. The day of the week the correction cites ("An article on Friday about…") is converted into a likely print date and compared to the matched article's online pub date, which lets the dashboard flag matches where the two dates disagree by more than a few days. The word count of the correction blurb itself is recorded as a way to spot truncated or unusually long entries. These flags surface candidates for manual review and feed back into the matching pipeline.</p>
       <p>The per-100-articles view divides correction counts by the total number of articles published by that section or reporter in the same year, drawn from the same Archive API used elsewhere on this dashboard. Rates rather than raw counts are what let Obituaries, for example, show up as a relatively correction-prone section despite producing far fewer articles than U.S. or World.</p>
-      <p>Coverage is not yet complete. Roughly 250 daily-corrections pages from late 2024 and 2025 are listed in the Archive API but have not yet been ingested, in most cases because the Wayback Machine hasn't crawled the most recent URLs and the live NYT site is bot-blocked from direct fetches. Earlier years (2000–2016) have not yet been backfilled at all. Both gaps are planned.</p>
 
       <h4>API anomalies</h4>
       <p>Known quirks in the Archive API data, in chronological order. Where this dashboard applies a correction, it's noted explicitly.</p>
@@ -2479,6 +2478,11 @@ const FEATURE_META = {
     desc: 'A weekly Magazine column in which a writer makes a personal case for something overlooked — an obscure album, a habit, an underrated place. Running since 2015.',
     period: '2015–present',
   },
+  quote_of_the_day: {
+    label: 'Quote of the Day',
+    desc: 'A daily excerpt — typically a line from a news article — that the editors judge to best capture the moment. Published as a standalone item alongside the corrections digest.',
+    period: '2020–present',
+  },
 };
 
 function renderFeatures() {
@@ -2870,8 +2874,8 @@ function openSectionDetail(sectionName) {
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span class="seg" id="secChartModeSeg">
-              <button type="button" id="secChartModeArticles" data-val="articles" class="on" onclick="setSectionDetailChartMode('articles')">Articles/year</button>
-              <button type="button" id="secChartModeReporters" data-val="reporters" onclick="setSectionDetailChartMode('reporters')">Unique reporters/year</button>
+              <button type="button" id="secChartModeArticles" data-val="articles" class="on" onclick="setSectionDetailChartMode('articles')">Articles per year</button>
+              <button type="button" id="secChartModeReporters" data-val="reporters" onclick="setSectionDetailChartMode('reporters')">Unique reporters per year</button>
             </span>
             <button id="secDetailDlBtn" onclick="downloadSectionChart(this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
@@ -2880,17 +2884,14 @@ function openSectionDetail(sectionName) {
         </div>
         <div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Word count distribution</div>
-            <div style="display:flex;gap:3px;font-size:10px">
-              <button id="histModeAll" onclick="setSectionHistMode('all')" style="padding:1px 7px;border:1px solid #ccc;border-radius:3px;background:#567;color:#fff;cursor:pointer">All years</button>
-              <button id="histModeYear" onclick="setSectionHistMode('year')" style="padding:1px 7px;border:1px solid #ccc;border-radius:3px;background:#fff;color:#444;cursor:pointer">By year</button>
-            </div>
-          </div>
-          <canvas id="chartSectionHist" style="max-height:180px;cursor:pointer"></canvas>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;gap:6px">
-            <div id="sectionHistNote" style="font-size:10px;color:#bbb;flex:1"></div>
+            <span class="seg" id="histModeSeg">
+              <button type="button" id="histModeAll" data-val="all" class="on" onclick="setSectionHistMode('all')">Word count all years</button>
+              <button type="button" id="histModeYear" data-val="year" onclick="setSectionHistMode('year')">Word count by year</button>
+            </span>
             <button onclick="downloadSectionChart(this,'chartSectionHist')" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666;flex-shrink:0">↓ JPG</button>
           </div>
+          <canvas id="chartSectionHist" style="max-height:180px;cursor:pointer"></canvas>
+          <div id="sectionHistNote" style="font-size:10px;color:#bbb;margin-top:2px"></div>
         </div>
       </div>
       <div id="sectionDetailReporters" style="margin-top:12px"></div>
@@ -3047,14 +3048,9 @@ function _renderStateDetailReportersChart() {
 function setSectionHistMode(mode) {
   if (!window._currentSectionHist) return;
   window._currentSectionHist.mode = mode;
-  const allBtn = document.getElementById('histModeAll');
-  const yearBtn = document.getElementById('histModeYear');
-  if (allBtn && yearBtn) {
-    allBtn.style.background = mode === 'all' ? '#567' : '#fff';
-    allBtn.style.color = mode === 'all' ? '#fff' : '#444';
-    yearBtn.style.background = mode === 'year' ? '#567' : '#fff';
-    yearBtn.style.color = mode === 'year' ? '#fff' : '#444';
-  }
+  document.querySelectorAll('#histModeSeg button').forEach(b => {
+    b.classList.toggle('on', b.dataset.val === mode);
+  });
   renderSectionHistogram(mode);
 }
 
@@ -3957,11 +3953,11 @@ function showAuthorTimeline(name, opts = {}) {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px">
         <div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px">
-            <span id="${chartId}-lbl" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Articles per month</span>
             <span style="display:flex;border:1px solid #ddd;border-radius:3px;overflow:hidden;font-size:10px;line-height:1">
-              <button id="${chartId}-btn-art" style="padding:2px 9px;background:#326891;color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:10px">Articles</button>
-              <button id="${chartId}-btn-wrd" style="padding:2px 9px;background:#fff;color:#666;border:none;cursor:pointer;font-family:inherit;font-size:10px">Words</button>
+              <button id="${chartId}-btn-art" style="padding:2px 9px;background:#326891;color:#fff;border:none;cursor:pointer;font-family:inherit;font-size:10px">Articles per year</button>
+              <button id="${chartId}-btn-wrd" style="padding:2px 9px;background:#fff;color:#666;border:none;cursor:pointer;font-family:inherit;font-size:10px">Words per year</button>
             </span>
+            <span id="${chartId}-lbl" style="display:none"></span>
           </div>
           <div id="${chartId}-legend" style="font-size:10px;color:#888;margin-bottom:3px;display:flex;gap:10px;flex-wrap:wrap"></div>
           <canvas id="${chartId}" style="max-height:160px"></canvas>
@@ -5636,10 +5632,14 @@ function openCountryDetail(country) {
     'Embargoes and Sanctions','Foreign Aid','Diplomacy and World Leaders','Suspensions, Dismissals and Resignations',
   ]);
   function isWorldJunkTag(tag) {
-    return WORLD_GENERIC.has(tag) || GENERIC_SUBJECTS.has(tag) ||
-           tag.startsWith('internal-') || tag.startsWith('Content Type:') ||
-           tag.startsWith('Content type:') || tag.startsWith('audio-') ||
-           tag.toLowerCase() === country.toLowerCase();
+    if (WORLD_GENERIC.has(tag) || GENERIC_SUBJECTS.has(tag)) return true;
+    if (tag.startsWith('internal-') || tag.startsWith('Content Type:') ||
+        tag.startsWith('Content type:') || tag.startsWith('audio-') ||
+        tag.startsWith('vis-') || tag.startsWith('Vis-')) return true;
+    if (tag.toLowerCase() === country.toLowerCase()) return true;
+    // Country-specific international-relations tags (e.g. "France-International Relations-Us")
+    if (/-international.relations-us$/i.test(tag)) return true;
+    return false;
   }
   const countryTotal = countryArticles.length || 1;
   const countryTagCounts = {};
@@ -6667,7 +6667,7 @@ function renderObitGenderChart() {
   const cutoffYr = String(new Date().getFullYear());
   const yrs = Array.from(new Set(_obits.map(o => o.year).filter(Boolean)))
     .filter(y => y !== cutoffYr).sort();
-  const fPct = [], ovrFPct = [], totals = [];
+  const fPct = [], ovrFPct = [], totals = [], fOvrCounts = [];
   yrs.forEach(y => {
     const oy = _obits.filter(o => o.year === y);
     const m = oy.filter(o => o.gender === 'M').length;
@@ -6677,8 +6677,10 @@ function renderObitGenderChart() {
     const known = m + f + x;
     const total = oy.length;
     fPct.push(known > 0 ? 100 * f / known : null);
-    ovrFPct.push(total > 0 ? 100 * fOvr / total : null);
+    // Overlooked No More only meaningful from 2017 onward (series launched 2018; no entries before)
+    ovrFPct.push(y >= '2017' && total > 0 ? 100 * fOvr / total : null);
     totals.push(total);
+    fOvrCounts.push(fOvr);
   });
   destroyChart('chartObitGender');
   chartInstances['chartObitGender'] = new Chart(document.getElementById('chartObitGender'), {
@@ -6699,7 +6701,12 @@ function renderObitGenderChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { position: 'top', align: 'center', labels: { font: { size: 10 }, boxWidth: 10 } },
-        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y?.toFixed(1) || '—'}% (n=${totals[c.dataIndex]?.toLocaleString()})` } }
+        tooltip: { callbacks: { label: c => {
+          const i = c.dataIndex;
+          if (c.datasetIndex === 0) return `% Female: ${c.parsed.y?.toFixed(1) || '—'}% (n=${totals[i]?.toLocaleString()})`;
+          const n = fOvrCounts[i] || 0;
+          return `Overlooked No More: ${c.parsed.y?.toFixed(1) || '—'}% (${n} of ${totals[i]?.toLocaleString()})`;
+        }}}
       },
       scales: {
         x: { ticks: { font: { size: 9 }, autoSkip: true, maxTicksLimit: 14 }, grid: { display: false } },
@@ -6790,6 +6797,8 @@ if (!window._obitResizeWired) {
 const _NAME_SUFFIX_RE = /^(?:jr|sr|ii|iii|iv|v|2nd|3rd|4th|5th)\.?$/i;
 function _lastName(n) {
   if (!n) return '';
+  // Bracketed placeholder names (e.g. "[Not yet identified]") sort before all letters
+  if (n.startsWith('[')) return n.toLowerCase();
   let parts = n.replace(/[\u2018\u2019\u201C\u201D]/g, '').trim().split(/\s+/);
   // Drop trailing suffix tokens (Jr., 2nd, III) so "Uriah Jones 2nd" sorts under "Jones"
   while (parts.length > 1 && _NAME_SUFFIX_RE.test(parts[parts.length - 1].replace(/[.,]+$/, ''))) {
@@ -8030,7 +8039,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 6:20am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 7:57am</span>
 </div>
 </body>
 </html>

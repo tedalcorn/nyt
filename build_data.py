@@ -152,7 +152,12 @@ def extract_authors(byline):
         if not name or len(name) < 3 or len(name) > 80:
             continue
         # Skip junk entries from malformed "original" byline strings
-        if name[0] in '!-(\'&<':
+        if name[0] in '!-(\'&<‘’“”':
+            continue
+        # Strip leading possessive artifact — "s Dave Itzkoff" (bare s prefix from
+        # a mis-split "’s" possessive in the original byline string).
+        name = re.sub(r'^s\s+(?=[A-Z])', '', name).strip()  # strip bare-s prefix artifacts
+        if not name or len(name) < 3:
             continue
         if '<' in name or '&#' in name or '|' in name:
             continue
@@ -1217,6 +1222,28 @@ def process_articles(raw_articles):
         'George Gustines':      'George Gene Gustines',
         'Alan S. Blinder':      'Alan Blinder',       # shorter form is canonical
         'Scott L. Malcomson':   'Scott Malcomson',
+        # Bare-s prefix artifacts (mis-split possessive in byline string)
+        's Marilyn Stasio':     'Marilyn Stasio',
+        's Aurore de La Morinerie': 'Aurore de La Morinerie',
+        's Julie Just':         'Julie Just',
+        's Alison McCulloch':   'Alison McCulloch',
+        's Agnes Lee':          'Agnes Lee',
+        's Dave Itzkoff':       'Dave Itzkoff',
+        's Tara McKelvey':      'Tara McKelvey',
+        's Steven Heller':      'Steven Heller',
+        's Terrence Rafferty':  'Terrence Rafferty',
+        's Amy Virshup':        'Amy Virshup',
+        's Mick Sussman':       'Mick Sussman',
+        's Joseph Salvatore':   'Joseph Salvatore',
+        's Peter Dizikes':      'Peter Dizikes',
+        's Andrew Ervin':       'Andrew Ervin',
+        's Matthew Price':      'Matthew Price',
+        's Jeff Turrentine':    'Jeff Turrentine',
+        's Blake Wilson':       'Blake Wilson',
+        's Janet Maslin':       'Janet Maslin',
+        's J. Courtney':        'J. Courtney',
+        's Damien Florébert':   'Damien Florébert',
+        's Tomi Um':            'Tomi Um',
     }
 
     # Apply overrides iteratively (handles chains like "X Nyt" → "X" → "X Y. X")
@@ -2926,6 +2953,33 @@ def build_dashboard_data(articles, authors):
         })
     recent_lor_articles.sort(key=lambda x: x["d"], reverse=True)
 
+    # --- Quote of the Day ---
+    qotd_by_year = defaultdict(int)
+    recent_qotd_articles = []
+    for art in articles:
+        h = art.get("headline", "") or ""
+        tom = art.get("type_of_material", "") or ""
+        sec = art.get("section", "") or ""
+        is_qotd = (
+            h.lower().startswith("quote of the day")
+            or (tom == "Quote" and sec in ("Corrections", "Today's Paper"))
+        )
+        if not is_qotd:
+            continue
+        y = str(art["year"])
+        qotd_by_year[y] += 1
+        url = art.get("web_url", "") or ""
+        if url.startswith(URL_PREFIX_FULL):
+            url = url[len(URL_PREFIX_FULL):]
+        recent_qotd_articles.append({
+            "d": art["pub_date"][:10],
+            "h": h,
+            "a": art.get("authors", []),
+            "w": art.get("word_count", 0),
+            "u": url,
+        })
+    recent_qotd_articles.sort(key=lambda x: x["d"], reverse=True)
+
     features_data = {
         "weddings": {
             "by_year": dict(weddings_by_year),
@@ -2939,6 +2993,11 @@ def build_dashboard_data(articles, authors):
             "top_authors": [{"name": n, "count": c} for n, c in lor_authors.most_common(15)],
             "recent_articles": recent_lor_articles,
             "total": sum(lor_by_year.values()),
+        },
+        "quote_of_the_day": {
+            "by_year": dict(qotd_by_year),
+            "recent_articles": recent_qotd_articles[:50],
+            "total": sum(qotd_by_year.values()),
         },
     }
 
