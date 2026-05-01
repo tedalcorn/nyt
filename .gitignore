@@ -43,3 +43,11 @@ data/bio_photos/Master illustrations/
 data/bio_photos/NYT photos/
 data/bio_photos/Supporting photos/
 data/bio_photos/-Prompt.rtf
+
+# Local working files — never commit
+-documents/
+logos/
+*.bak
+*.pre_*
+data/corrections_overrides.json
+~$*
