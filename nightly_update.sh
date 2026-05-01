@@ -2,7 +2,7 @@
 # Nightly NYT dashboard update.
 # Fetches any unfetched months (including historical back to 2000), rebuilds
 # dashboard data, then commits and pushes so GitHub Pages stays current.
-# Emails ted.alcorn@gmail.com a notice of success/failure on completion.
+# Emails the address in NOTIFY_EMAIL env var on success/failure.
 #
 # Setup:
 #   1. Store your NYT API key in ~/.nyt_api_key  (Archive API)
@@ -15,7 +15,7 @@ set +e   # don't exit on first error — capture status and notify
 cd "$(dirname "$0")"
 
 LOG=nightly_update.log
-NOTIFY_TO="ted.alcorn@gmail.com"
+NOTIFY_TO="$NOTIFY_EMAIL"
 RUN_TS="$(date '+%Y-%m-%d %H:%M:%S %Z')"
 
 # Load API keys from dedicated secrets files (not tracked in git)

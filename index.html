@@ -964,29 +964,9 @@
         </div>
         <span id="trackerYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
       </div>
-      <!-- Sample search terms — disappear once a term is entered -->
-      <div id="trackerSamples" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-        <span style="font-size:11px;color:#bbb;text-transform:uppercase;letter-spacing:0.05em;margin-right:2px">Try:</span>
-        <script>
-        (function(){
-          const SAMPLES = [
-            'War','Climate','Hurricane','Thanksgiving','Epstein','Takeaways',
-            'Recession','Shooting','Election',
-            'Inflation',
-          ];
-          document.write(SAMPLES.map(t =>
-            `<button onclick="trackerSampleClick('${t.replace(/'/g,"\\'")}')"
-               style="font-size:12px;padding:3px 10px;border:1px solid #d4c8b0;border-radius:12px;
-                      background:#fbf9f4;color:#555;cursor:pointer;font-family:inherit;
-                      transition:background 0.1s,color 0.1s"
-               onmouseover="this.style.background='#326891';this.style.color='#fff'"
-               onmouseout="this.style.background='#fbf9f4';this.style.color='#555'"
-             >${t}</button>`
-          ).join(''));
-        })();
-        </script>
-      </div>
-      <div style="position:relative;height:calc(100vh - 210px)">
+      <!-- Sample search terms — always visible -->
+      <div id="trackerSamples" style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center"></div>
+      <div style="position:relative;height:calc(100vh - 400px);min-height:260px">
         <canvas id="chartTracker"></canvas>
       </div>
     </div>
@@ -3011,21 +2991,47 @@ function _renderSectionDetailArticlesChart() {
 function _renderSectionDetailReportersChart() {
   const ctx = window._currentSectionDetail;
   if (!ctx) return;
-  const { allYears, sectionName } = ctx;
+  const { allYears, byYear, sectionName } = ctx;
   const load = _uniqueRepBySection
     ? Promise.resolve(_uniqueRepBySection)
     : fetch('data/unique_reporters_by_section.json').then(r=>r.json()).then(d => { _uniqueRepBySection = d; return d; });
   load.then(data => {
     const repByYear = data[sectionName] || {};
+    const repCounts = allYears.map(y => repByYear[y] || 0);
+    // Avg articles per unique reporter = section articles / unique reporters that year
+    const artCounts = allYears.map(y => byYear[y] || 0);
+    const avgPerRep = allYears.map((y, i) => repCounts[i] > 0 ? +(artCounts[i] / repCounts[i]).toFixed(1) : null);
     destroyChart('chartSectionDetail');
     chartInstances['chartSectionDetail'] = new Chart(document.getElementById('chartSectionDetail'), {
-      type: 'bar', data: { labels: allYears, datasets: [{
-        label: 'Unique reporters', data: allYears.map(y => repByYear[y] || 0),
-        backgroundColor: 'rgba(100,140,80,0.7)',
-      }]},
-      options: { responsive: true, plugins: { legend: { display: false } },
-        scales: { x: { ticks: { font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:14 }, grid:{display:false} },
-                  y: { beginAtZero:true, ticks: { font:{size:10} } } } }
+      data: {
+        labels: allYears,
+        datasets: [
+          { type: 'bar', label: 'Unique reporters', data: repCounts,
+            backgroundColor: 'rgba(100,140,80,0.7)', yAxisID: 'y' },
+          { type: 'line', label: 'Avg articles per reporter', data: avgPerRep,
+            borderColor: 'rgba(50,104,145,0.85)', backgroundColor: 'transparent',
+            borderWidth: 2, pointRadius: 2, tension: 0.3, yAxisID: 'y2' },
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+          tooltip: { callbacks: {
+            label: c => c.datasetIndex === 0
+              ? `Unique reporters: ${c.parsed.y}`
+              : `Avg articles/reporter: ${c.parsed.y?.toFixed(1)}`
+          }}
+        },
+        scales: {
+          x: { ticks: { font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:14 }, grid:{display:false} },
+          y: { beginAtZero:true, ticks: { font:{size:10}, color:'rgba(100,140,80,1)' },
+               title: { display:true, text:'Unique reporters', font:{size:9}, color:'rgba(100,140,80,1)' } },
+          y2: { position:'right', beginAtZero:true, grid:{ drawOnChartArea:false },
+                ticks: { font:{size:10}, color:'rgba(50,104,145,0.85)' },
+                title: { display:true, text:'Avg articles/reporter', font:{size:9}, color:'rgba(50,104,145,0.85)' } },
+        }
+      }
     });
   }).catch(err => console.warn('unique reporters data failed', err));
 }
@@ -4560,27 +4566,38 @@ function toTitleCase(s) {
 }
 
 // --- HEADLINE TRACKER ---
-document.getElementById('trackBtn').addEventListener('click', () => { _hideTrackerSamples(); trackTerms(); });
-// trackerFrontPage and trackerUsePrint are now toggle buttons; handlers are inline onclick
+// Build sample chips via DOM (not document.write) to avoid reflow lag on click
+(function() {
+  const SAMPLES = ['War','Climate','Hurricane','Thanksgiving','Epstein','Takeaways',
+                   'Recession','Shooting','Election','Inflation'];
+  const wrap = document.getElementById('trackerSamples');
+  if (!wrap) return;
+  const lbl = document.createElement('span');
+  lbl.textContent = 'Try:';
+  lbl.style.cssText = 'font-size:11px;color:#bbb;text-transform:uppercase;letter-spacing:0.05em;margin-right:2px';
+  wrap.appendChild(lbl);
+  SAMPLES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.textContent = t;
+    btn.style.cssText = 'font-size:12px;padding:3px 10px;border:1px solid #d4c8b0;border-radius:12px;background:#fbf9f4;color:#555;cursor:pointer;font-family:inherit';
+    btn.addEventListener('mouseenter', () => { btn.style.background = '#326891'; btn.style.color = '#fff'; });
+    btn.addEventListener('mouseleave', () => { btn.style.background = '#fbf9f4'; btn.style.color = '#555'; });
+    btn.addEventListener('click', () => trackerSampleClick(t));
+    wrap.appendChild(btn);
+  });
+})();
+
+document.getElementById('trackBtn').addEventListener('click', trackTerms);
 document.getElementById('trackerYrStart').addEventListener('input', () => { updateTrackerSlider(); if (trackerReady) trackTerms(); });
 document.getElementById('trackerYrEnd').addEventListener('input', () => { updateTrackerSlider(); if (trackerReady) trackTerms(); });
 ['term1','term2','term3','term4'].forEach(id => {
   const el = document.getElementById(id);
   el.addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
-  el.addEventListener('input', () => {
-    if (el.value.trim()) _hideTrackerSamples();
-  });
 });
-
-function _hideTrackerSamples() {
-  const s = document.getElementById('trackerSamples');
-  if (s) s.style.display = 'none';
-}
 
 function trackerSampleClick(term) {
   document.getElementById('term1').value = term;
   ['term2','term3','term4'].forEach(id => { document.getElementById(id).value = ''; });
-  _hideTrackerSamples();
   if (trackerReady) trackTerms();
 }
 

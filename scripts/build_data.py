@@ -14,7 +14,7 @@ import html as html_mod
 from collections import defaultdict, Counter
 from datetime import datetime
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(PROJECT_DIR, "data", "raw")
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
 
@@ -3185,7 +3185,9 @@ def main():
             "pp": a["print_page"],     # print page
         }
         if a.get("glocations"):
-            rec["g"] = a["glocations"]  # glocations
+            # Normalize geolocation names to match world_coverage location_trends keys
+            # so the country popup filter (a.glocations.includes(country)) works correctly.
+            rec["g"] = [_normalize_loc(g) for g in a["glocations"]]
         if a.get("canonical_states"):
             rec["st"] = a["canonical_states"]  # canonical US state names
         if a.get("subsection"):
