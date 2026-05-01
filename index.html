@@ -8068,18 +8068,12 @@ function initCareers() { // dead code kept for reference, no longer called
 
 _syncTrackerBtns();
 
-// Restore state from URL hash — defer everything until after data loads
-// (lazy-init tabs like Sections/World need dashboard to be populated first)
-// Cold load policy: shallow #tab=X hashes are cleared so the page always opens on HOME;
-// deep links with detail (country, state, beat, author, etc.) are honored so shared URLs work.
+// Restore state from URL hash — defer everything until after data loads.
+// Both shallow tab links (#tab=tracker) and deep links (#tab=world&country=France)
+// are honored so shared/bookmarked URLs navigate to the right place.
 (function() {
   const p = _readHash();
   if (!Object.keys(p).length) return;
-  const hasDetail = p.author || p.beat || p.state || p.country || p.section || p.subject || p.q;
-  if (!hasDetail) {
-    history.replaceState(null, '', location.pathname + location.search);
-    return;
-  }
   _pendingRestore = p;
 })();
 
@@ -8089,7 +8083,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 11:36am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 11:40am</span>
 </div>
 </body>
 </html>
