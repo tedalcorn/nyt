@@ -964,6 +964,28 @@
         </div>
         <span id="trackerYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
       </div>
+      <!-- Sample search terms — disappear once a term is entered -->
+      <div id="trackerSamples" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+        <span style="font-size:11px;color:#bbb;text-transform:uppercase;letter-spacing:0.05em;margin-right:2px">Try:</span>
+        <script>
+        (function(){
+          const SAMPLES = [
+            'War','Climate','Hurricane','Thanksgiving','Epstein','Takeaways',
+            'Recession','Afghanistan','Ukraine','Abortion','Shooting','Election',
+            'Inflation','A.I.','Gaza',
+          ];
+          document.write(SAMPLES.map(t =>
+            `<button onclick="trackerSampleClick('${t.replace(/'/g,"\\'")}')"
+               style="font-size:12px;padding:3px 10px;border:1px solid #d4c8b0;border-radius:12px;
+                      background:#fbf9f4;color:#555;cursor:pointer;font-family:inherit;
+                      transition:background 0.1s,color 0.1s"
+               onmouseover="this.style.background='#326891';this.style.color='#fff'"
+               onmouseout="this.style.background='#fbf9f4';this.style.color='#555'"
+             >${t}</button>`
+          ).join(''));
+        })();
+        </script>
+      </div>
       <div style="position:relative;height:calc(100vh - 210px)">
         <canvas id="chartTracker"></canvas>
       </div>
@@ -4538,13 +4560,29 @@ function toTitleCase(s) {
 }
 
 // --- HEADLINE TRACKER ---
-document.getElementById('trackBtn').addEventListener('click', trackTerms);
+document.getElementById('trackBtn').addEventListener('click', () => { _hideTrackerSamples(); trackTerms(); });
 // trackerFrontPage and trackerUsePrint are now toggle buttons; handlers are inline onclick
 document.getElementById('trackerYrStart').addEventListener('input', () => { updateTrackerSlider(); if (trackerReady) trackTerms(); });
 document.getElementById('trackerYrEnd').addEventListener('input', () => { updateTrackerSlider(); if (trackerReady) trackTerms(); });
 ['term1','term2','term3','term4'].forEach(id => {
-  document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
+  const el = document.getElementById(id);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') trackTerms(); });
+  el.addEventListener('input', () => {
+    if (el.value.trim()) _hideTrackerSamples();
+  });
 });
+
+function _hideTrackerSamples() {
+  const s = document.getElementById('trackerSamples');
+  if (s) s.style.display = 'none';
+}
+
+function trackerSampleClick(term) {
+  document.getElementById('term1').value = term;
+  ['term2','term3','term4'].forEach(id => { document.getElementById(id).value = ''; });
+  _hideTrackerSamples();
+  if (trackerReady) trackTerms();
+}
 
 // Populate tracker year selects once dashboard loads — called from initOverview
 function updateTrackerSlider() {
@@ -8051,7 +8089,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 11:12am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 11:35am</span>
 </div>
 </body>
 </html>
