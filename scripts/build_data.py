@@ -1504,7 +1504,11 @@ def build_author_stats(articles):
         shared_count = d["shared_byline_count"]
         zero_word_rate = d["zero_word_articles"] / article_count if article_count else 0
         shared_rate = shared_count / article_count if article_count else 0
-        avg_words = round(d["total_words"] / article_count) if article_count else 0
+        # Exclude zero-word articles from avg so interactives/videos don't
+        # pull the average down — 0 words means the API didn't index the text,
+        # not that the article has no words.
+        nonzero_count = article_count - d["zero_word_articles"]
+        avg_words = round(d["total_words"] / nonzero_count) if nonzero_count else 0
         # Likely non-editorial / collaborative byline: photographers, video producers,
         # podcast staff, crossword constructors, illustrators, etc.
         # Five routes to flagging:
@@ -1549,7 +1553,7 @@ def build_author_stats(articles):
             "name": name,
             "article_count": article_count,
             "total_words": d["total_words"],
-            "avg_words": round(d["total_words"] / article_count) if article_count else 0,
+            "avg_words": round(d["total_words"] / nonzero_count) if nonzero_count else 0,
             "avg_words_per_year": avg_words_per_year,
             "primary_section": primary_section,
             "secondary_section": secondary_section,
@@ -2618,12 +2622,14 @@ def build_dashboard_data(articles, authors):
     section_counts = Counter()
     section_words = defaultdict(int)
     section_wc_hist = defaultdict(lambda: [0] * 21)   # 21 bins × 200 words, last = 4000+
+    section_nonzero = defaultdict(int)                 # articles with word_count > 0
     for art in articles:
         s = art["section"] or "(none)"
         section_counts[s] += 1
         section_words[s] += art["word_count"]
         wc = art["word_count"] or 0
         if wc > 0:
+            section_nonzero[s] += 1
             bin_idx = min(wc // 200, 20)
             section_wc_hist[s][bin_idx] += 1
 
@@ -2633,7 +2639,7 @@ def build_dashboard_data(articles, authors):
             "name": s,
             "count": count,
             "total_words": section_words[s],
-            "avg_words": round(section_words[s] / count) if count else 0,
+            "avg_words": round(section_words[s] / section_nonzero[s]) if section_nonzero[s] else 0,
             "wc_hist": section_wc_hist[s],
         })
 

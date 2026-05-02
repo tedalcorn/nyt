@@ -285,6 +285,7 @@ RE_NON_OBIT_URL = re.compile(
 # look like obits but aren't editorial obits. Indexed under tom=Obituary.
 # Store path-only URLs (matching how build normalizes web_url before checking).
 NON_OBIT_URLS = {
+    '/2005/04/04/world/europe/obituary-karol-wojtyla-19202005.html',  # JP II stub (698w news brief); real obit is the 13,870w April 3 essay
     '/2006/09/16/obituaries/16feuer.html',           # Cynthia Feuer memorial
     '/2006/09/17/obituaries/17stapleton.html',       # Maureen Stapleton memorial
     '/2007/02/09/us/09smith.html',                   # Anna Nicole Smith news / Robert Altman memorial
@@ -672,12 +673,9 @@ OBIT_OVERRIDES = {
     '/2007/01/19/obituaries/19buchwald.html': {
         'name': 'Art Buchwald', 'gender': 'M', 'gender_src': 'manual', 'age': 81,
     },
-    # Pope John Paul II: section=World, no tom; URL is /obituary-karol-wojtyla-…
-    # Now picked up by RE_OBIT_URL_HINT but headline lacks subject's English name.
-    '/2005/04/04/world/europe/obituary-karol-wojtyla-19202005.html': {
-        'name': 'Pope John Paul II', 'gender': 'M', 'gender_src': 'manual', 'age': 84,
-        'profession': 'Pope',
-    },
+    # JP II stub moved to NON_OBIT_URLS — the real obit is the 13,870-word
+    # April 3 version in ESSAY_OBIT_URLS; the April 4 stub is a 698-word
+    # news brief that duplicates it.
     # Qaddafi: section=Obituaries, but headline is "An Erratic Leader…" with
     # no death verb. URL slug "qaddafi-killed-…" now matches the URL hint.
     '/2011/10/21/world/africa/qaddafi-killed-as-hometown-falls-to-libyan-rebels.html': {
