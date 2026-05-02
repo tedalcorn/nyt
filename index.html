@@ -554,7 +554,7 @@
       <p>Staff versus freelance status and role (reporter, editor, photographer, critic, etc.) are drawn from each reporter's NYT bio page where available. For reporters who lack a custom bio page, no classification is given.</p>
 
       <h4>Words</h4>
-      <p>The API includes a word count of each article, but has some anomalies. Interactive and multimedia pieces including data visualizations and photo essays are typically indexed with a word count of zero, even when they contain substantial reporting. Interactives make up roughly 10% of New York Times Magazine items in the API and a growing share of digital-native journalism. Word-count statistics for sections with heavy interactive output (Magazine, Upshot, Visual Investigations) and for individual authors who shifted toward multimedia formats therefore understate actual editorial output.</p>
+      <p>The API includes a word count of each article, but has some anomalies. Interactive and multimedia pieces including data visualizations and photo essays are typically indexed with a word count of zero, even when they contain substantial reporting. Interactives make up roughly 10% of New York Times Magazine items in the API and a growing share of digital-native journalism. Word-count statistics for sections with heavy interactive output (Magazine, Upshot, Visual Investigations) and for individual authors who shifted toward multimedia formats therefore understate actual editorial output. Articles with a word count of 0 are excluded from average word count calculations per reporter and per section, on the assumption that they represent missing data rather than genuinely empty articles.</p>
       <p>The NYT has also indexed podcasts inconsistently over time and across shows: some episodes are entered with a full transcript as the article body, while others appear only as short landing pages. The same show can switch policies — The Ezra Klein Show, for example, was indexed as ~400-word descriptions through 2023 and then as full transcripts beginning in 2024, while The Daily has remained short summaries throughout. Word-count trends for podcast contributors are therefore often not comparable between reporters or across years.</p>
 
       <h4>Beats</h4>
@@ -3994,7 +3994,10 @@ function showAuthorTimeline(name, opts = {}) {
         ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article${authorInfo.avg_words_per_year ? ' · ' + authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year' : ''}
       </div>
       ${subjectNote}
-      <div style="font-size:13px;color:#555;margin-top:6px">${sections.length ? `<strong>Primary Section${sections.length > 1 ? 's' : ''}:</strong> ${sections.join(', ')}` : ''}</div>
+      <div id="${listId}-sections" style="font-size:13px;color:#555;margin-top:6px">${sections.length
+        ? `<strong style="font-size:12px;color:#666">Primary Section${sections.length > 1 ? 's' : ''}:</strong> ` +
+          sections.map(s => `<span class="author-section-chip" data-section="${escapeHtml(s)}" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;background:#f0f0ee;border-radius:10px;font-size:12px;color:#777;cursor:pointer">${escapeHtml(s)}</span>`).join('')
+        : ''}</div>
       <div id="${listId}-beats" style="font-size:13px;color:#555;margin-top:4px">${beatsHtml}</div>
       ${sharedHtml ? `<div style="font-size:13px;color:#555;margin-top:4px">${sharedHtml}</div>` : ''}
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:10px;align-items:end">
@@ -4477,22 +4480,31 @@ function showAuthorTimeline(name, opts = {}) {
       }
     }
 
-    // Wire beat chip clicks — filter article list to articles tagged with that beat subject
-    const beatsEl2 = document.getElementById(listId + '-beats');
-    if (beatsEl2) {
-      beatsEl2.querySelectorAll('.author-beat-chip').forEach(chip => {
+    // Wire beat and section chip clicks — filter article list
+    function _wireFilterChips(containerEl, chipClass, filterFn, activeColor, activeBg) {
+      if (!containerEl) return;
+      containerEl.querySelectorAll('.' + chipClass).forEach(chip => {
         chip.addEventListener('click', () => {
-          const beat = chip.dataset.beat;
-          const isActive = chip.style.background === 'rgb(50, 104, 145)';
-          beatsEl2.querySelectorAll('.author-beat-chip').forEach(c => {
-            c.style.background = '#eef3f7'; c.style.color = '#326891';
+          const wasActive = chip.dataset.active === '1';
+          // Clear all chips across both containers
+          [listId + '-beats', listId + '-sections'].forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.querySelectorAll('.author-beat-chip,.author-section-chip').forEach(c => {
+              c.dataset.active = '0';
+              const isBeat = c.classList.contains('author-beat-chip');
+              c.style.background = isBeat ? '#eef3f7' : '#f0f0ee';
+              c.style.color = isBeat ? '#326891' : '#777';
+            });
           });
-          if (isActive) {
+          if (wasActive) {
             renderHistArticles(null);
           } else {
-            chip.style.background = '#326891'; chip.style.color = '#fff';
+            chip.dataset.active = '1';
+            chip.style.background = activeBg;
+            chip.style.color = activeColor;
             if (allAuthorArticles) {
-              const filtered = allAuthorArticles.filter(a => (a.subjects || []).includes(beat));
+              const filtered = allAuthorArticles.filter(filterFn(chip));
               const _csv = name.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_articles.csv';
               renderArticleList(listId, filtered, articleRowFormatter, { csvFilename: _csv });
             }
@@ -4500,6 +4512,16 @@ function showAuthorTimeline(name, opts = {}) {
         });
       });
     }
+    _wireFilterChips(
+      document.getElementById(listId + '-beats'), 'author-beat-chip',
+      chip => (a => (a.subjects || []).includes(chip.dataset.beat)),
+      '#fff', '#326891'
+    );
+    _wireFilterChips(
+      document.getElementById(listId + '-sections'), 'author-section-chip',
+      chip => (a => a.section === chip.dataset.section),
+      '#fff', '#888'
+    );
 
     // Article list — subject-filtered path only (unfiltered handled via renderHistArticles above)
     if (subjectFilter) {
