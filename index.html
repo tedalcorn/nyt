@@ -492,7 +492,7 @@
           <div class="slide-inner">
             <h4 class="slide-title">A global paper, albeit with blind spots</h4>
             <p class="slide-caption">Conflict reliably draws <em>The New York Times</em>' attention, but large swaths of the globe rarely get covered.</p>
-            <div id="carouselWorldMapSvg" class="carousel-world-map" style="position:relative"></div>
+            <div id="carouselWorldMapSvg" class="carousel-world-map" style="position:relative;margin:0 auto"></div>
             <div id="carouselWorldMapLegend" style="font-size:10px;color:#777;margin-top:6px;line-height:1.6"></div>
             <p class="slide-more"><a onclick="showView('world')">Explore world coverage →</a></p>
           </div>
@@ -555,7 +555,7 @@
 
       <h4>Words</h4>
       <p>The API includes a word count of each article, but has some anomalies. Interactive and multimedia pieces including data visualizations and photo essays are typically indexed with a word count of zero, even when they contain substantial reporting. Interactives make up roughly 10% of New York Times Magazine items in the API and a growing share of digital-native journalism. Word-count statistics for sections with heavy interactive output (Magazine, Upshot, Visual Investigations) and for individual authors who shifted toward multimedia formats therefore understate actual editorial output. Articles with a word count of 0 are excluded from average word count calculations per reporter and per section, on the assumption that they represent missing data rather than genuinely empty articles.</p>
-      <p>The NYT has also indexed podcasts inconsistently over time and across shows: some episodes are entered with a full transcript as the article body, while others appear only as short landing pages. The same show can switch policies — The Ezra Klein Show, for example, was indexed as ~400-word descriptions through 2023 and then as full transcripts beginning in 2024, while The Daily has remained short summaries throughout. Word-count trends for podcast contributors are therefore often not comparable between reporters or across years.</p>
+      <p>The NYT has also indexed podcasts inconsistently over time and across shows: some episodes are entered with a full transcript as the article body, while others appear only as short landing pages. The same show can switch policies — The Ezra Klein Show, for example, was indexed as ~400-word descriptions through 2023 and then as full transcripts beginning in 2024, while The Daily has remained short summaries throughout. Word-count trends for podcast contributors are therefore often not comparable between reporters or across years. For purposes of the reporter profiles in this dashboard, a podcast episode is identified by any of: the article's section being "Podcasts," a URL path containing <code>/podcasts/</code> or <code>/audio/</code>, or the article's kicker matching a known NYT show title — separating true episodes from news articles that merely reference a podcast.</p>
 
       <h4>Beats</h4>
       <p>The beat topics shown on reporter profiles are derived from the NYT's own subject tags. When a reporter covers a subject twice as frequently (as a share of their overall coverage) as the newspaper as a whole, and has written a minimum of two articles about the subject, it is classified as a beat. Authors with few articles, or few articles carrying subject tags, may have no beats listed.</p>
@@ -596,12 +596,12 @@
       <p>Known quirks in the Archive API data, in chronological order. Where this dashboard applies a correction, it's noted explicitly.</p>
       <ul>
         <li><strong>2001–2003 — D.C. tag inflation.</strong> In the aftermath of September 11, the NYT's metadata system appears to have applied a Washington, D.C. geographic tag as a proxy for national-significance stories — stories that would not normally carry a geographic tag at all. D.C.'s share of World and U.S. section articles spiked from roughly 0.1% in 2000 to over 6% in 2001, then gradually returned to normal by 2003. The original metadata has been retained rather than corrected, as any automated fix would be speculative.</li>
-        <li><strong>2005 — Movies section dip.</strong> Only ~60 articles, compared to 1,400–2,200 in other years. Film coverage that year appears to have been filed under Arts rather than Movies in the API's metadata. This dashboard estimates approximately 795 additional movie reviews that year by identifying Arts-section articles written by core movie reviewers (A.O. Scott, Manohla Dargis, Stephen Holden, and others who published 20+ film reviews in 2004 or 2006) that carry motion-pictures subject tags. These inferred articles appear as a hatched bar in the Movies section detail chart.</li>
+        <li><strong>2005 — Science section drop.</strong> Section "Science" falls from ~900 articles a year (2000–2003) to 159 in 2005, then rebounds to 839+ in 2006. The articles didn't disappear — the metadata transitioned. In 2003, all 904 Science Desk articles carried <code>section_name = "Science"</code>. By 2005, the same desk's output was being filed as "Health" (411 articles), "Opinion" (331), or left untagged, with only 102 still tagged "Science". A new "Health" section was being broken out at this point. The dashboard shows the unedited tag.</li>
         <li><strong>2006–2009 — URL duplication.</strong> Beginning around May 2006, the NYT introduced a slug-based URL format alongside its old date-coded URLs, causing the API to index many articles twice. Blog posts and DealBook articles cross-posted to the main site in 2008–2009 were also frequently indexed under two or three URLs simultaneously. This dashboard removes duplicates that share the same headline, publication date, and word count (within ±10%), keeping the shortest URL — about 62,000 entries in total, concentrated in 2006 and the 2008–2009 period of peak blog activity.</li>
         <li><strong>2007 — short-item indexing.</strong> Particularly prior to 2007, but in some cases after, the API indexed short-form items (letters to the editor, Metro briefs, calendar listings, bulleted business news), then abruptly stopped. During earlier eras, many sections had a large share of 0–400 word articles: Business 2000–2010 (47–62%); New York 2000–2006 (~45%); Magazine 2000–2003 and 2011 (45–51%); Theater 2007–2010 (38–47%); Education 2010–2016 (58–66%); Automobiles 2007–2012 (39–54%); Your Money 2010–2013 (37–53%). Median article word count jumps from about 550 to 660 words at the January 2007 breakpoint, consistent with many short items being dropped from the index after that point.</li>
         <li><strong>2008–2010 — Arts blog burst.</strong> ArtsBeat and adjacent Arts-desk blogs were briefly indexed under <code>section_name = "Arts"</code>, producing a sharp 2008–2010 spike of sub-200-word entries (40% in 2009 vs. ~10% in adjacent years). Most are short blog posts linking out to other coverage. Same root cause as the 2009 blog-labeling shift, with a wider time window for Arts specifically.</li>
         <li><strong>2009 — blog labeling shift.</strong> A mid-year spike and abrupt drop in November reflect the API briefly assigning a generic "Blogs" section tag to posts that had been filed under their parent sections (Sports, Arts, etc.).</li>
-        <li><strong>2005 — Science section drop.</strong> Section "Science" falls from ~900 articles a year (2000–2003) to 159 in 2005, then rebounds to 839+ in 2006. The articles didn't disappear — the metadata transitioned. In 2003, all 904 Science Desk articles carried <code>section_name = "Science"</code>. By 2005, the same desk's output was being filed as "Health" (411 articles), "Opinion" (331), or left untagged, with only 102 still tagged "Science". A new "Health" section was being broken out at this point. The dashboard shows the unedited tag.</li>
+        <li><strong>2005 — Movies section dip.</strong> Only ~60 articles, compared to 1,400–2,200 in other years. Film coverage that year appears to have been filed under Arts rather than Movies in the API's metadata. This dashboard estimates approximately 795 additional movie reviews that year by identifying Arts-section articles written by core movie reviewers (A.O. Scott, Manohla Dargis, Stephen Holden, and others who published 20+ film reviews in 2004 or 2006) that carry motion-pictures subject tags. These inferred articles appear as a hatched bar in the Movies section detail chart.</li>
         <li><strong>2001–2015 — obituary section tagging.</strong> Throughout this stretch the NYT filed most obituaries under subject sections (Arts, Sports, Business, etc.) rather than tagging them "Obituaries" by section. In 2001–2010 the desk relied on <em>type_of_material</em> "Obituary; Biography" (or "Obituary"); in 2011–2015 it switched to "Obituary (Obit)". This dashboard overrides the section tag for all four obit-tom variants and counts those articles under Obituaries, producing a continuous series rather than a gap. The 2018–2019 spike reflects the launch of the "Overlooked" project — retroactive obituaries for historically overlooked figures, begun on International Women's Day 2018.</li>
       </ul>
     </div>
@@ -814,7 +814,7 @@
         <span id="stateYrEndLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px"></span>
       </div>
       <label style="font-size:13px;color:#444;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
-        <input type="checkbox" id="includeNYSection" onchange="initStates();if(document.getElementById('stateMapBox').style.display!=='none')renderStateMap(stateYears)"> Include New York section coverage for NY, NJ &amp; CT
+        <input type="checkbox" id="includeNYSection" checked onchange="initStates();if(document.getElementById('stateMapBox').style.display!=='none')renderStateMap(stateYears)"> Include New York section coverage for NY, NJ &amp; CT
       </label>
       <div class="table-scroll-wrap"><div id="stateTableContainer"></div></div>
     </div>
@@ -1342,7 +1342,8 @@ function _parseYearRecords(yearArticles) {
     web_url: a.u && a.u.startsWith('/') ? URL_PREFIX + a.u : (a.u || ''),
     print_section: a.ps,
     print_page: a.pp,
-    glocations: a.g || [],
+    glocations: a.g || [],          // raw (for sublocation city detection)
+    glocations_norm: a.gn || a.g || [], // normalized (for country matching)
     canonical_states: a.st || [],
     subjects: a.sb || [],
     persons: a.pe || [],
@@ -1815,13 +1816,13 @@ function initHomeCarousel() {
       });
       grid.innerHTML = ranked.map(e => {
         const s = stats[e.name] || { articles: 0, words: 0 };
-        const tip = `<div class="photo-tooltip"><div class="tt-name">${e.name}</div>` +
+        const tip = `<div class="photo-tooltip"><div class="tt-name">${escapeHtml(e.name)}</div>` +
                     `<div>${(s.articles||0).toLocaleString()} articles in 2025</div>` +
                     `<div>${(s.words||0).toLocaleString()} words</div></div>`;
         const slug = e.slug || e.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
         const illSrc = `data/bio_photos/Compressed Illustrations/${slug}.jpg`;
         // Use illustration if available; fall back to grey dot (missing class)
-        const img = `<img src="${illSrc}" onerror="this.parentNode.classList.add('missing');this.remove()" alt="${e.name}" loading="lazy">`;
+        const img = `<img src="${illSrc}" onerror="this.parentNode.classList.add('missing');this.remove()" alt="${escapeHtml(e.name)}" loading="lazy">`;
         return `<div class="cell" onclick="openAuthor('${esc(e.name)}')">${img}${tip}</div>`;
       }).join('');
       grid.dataset.loaded = '1';
@@ -3073,18 +3074,36 @@ function _renderStateDetailArticlesChart() {
 function _renderStateDetailReportersChart() {
   const ctx = window._currentStateDetail;
   if (!ctx) return;
-  const { state, years } = ctx;
+  const { state, years, vals: artCounts } = ctx;
   const load = _uniqueRepByState
     ? Promise.resolve(_uniqueRepByState)
     : fetch('data/unique_reporters_by_state.json').then(r=>r.json()).then(d => { _uniqueRepByState = d; return d; });
   load.then(data => {
     const repByYear = data[state] || {};
+    const repCounts = years.map(y => repByYear[y] || 0);
+    const avgPerRep = years.map((y, i) => repCounts[i] > 0 ? +(artCounts[i] / repCounts[i]).toFixed(1) : null);
     destroyChart('chartStateDetail');
     chartInstances['chartStateDetail'] = new Chart(document.getElementById('chartStateDetail'), {
-      type: 'bar',
-      data: { labels: years, datasets: [{ label: 'Unique reporters', data: years.map(y => repByYear[y] || 0), backgroundColor: 'rgba(100,140,80,0.7)' }] },
-      options: { responsive: true, plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true } } }
+      data: { labels: years, datasets: [
+        { type: 'bar',  label: 'Unique reporters',       data: repCounts, backgroundColor: 'rgba(100,140,80,0.7)', yAxisID: 'y' },
+        { type: 'line', label: 'Avg articles/reporter',  data: avgPerRep,
+          borderColor: 'rgba(50,104,145,0.85)', backgroundColor: 'transparent',
+          borderWidth: 2, pointRadius: 2, tension: 0.3, yAxisID: 'y2' },
+      ]},
+      options: { responsive: true, plugins: {
+        legend: { position: 'top', labels: { font: { size: 10 }, boxWidth: 10 } },
+        tooltip: { callbacks: { label: c => c.datasetIndex === 0
+          ? `Unique reporters: ${c.parsed.y}`
+          : `Avg articles/reporter: ${c.parsed.y?.toFixed(1)}` }}
+      },
+      scales: {
+        y:  { beginAtZero: true, ticks: { font:{size:10}, color:'rgba(100,140,80,1)' },
+              title: { display:true, text:'Unique reporters', font:{size:9}, color:'rgba(100,140,80,1)' } },
+        y2: { position:'right', beginAtZero:true, grid:{ drawOnChartArea:false },
+              ticks: { font:{size:10}, color:'rgba(50,104,145,0.85)' },
+              title: { display:true, text:'Avg articles/reporter', font:{size:9}, color:'rgba(50,104,145,0.85)' } },
+        x:  { ticks: { font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:14 }, grid:{display:false} },
+      }}
     });
   }).catch(err => console.warn('unique reporters by state failed', err));
 }
@@ -4151,6 +4170,7 @@ function showAuthorTimeline(name, opts = {}) {
                 if (lbl === 'Avg') return 'avg '+ctx.parsed.y.toFixed(1)+' articles';
                 return lbl + ': ' + ctx.parsed.y + ' articles';
               }}} },
+              onClick: (evt,els) => { if(els.length) _toggleYearFilter(years[els[0].index], years); },
               scales:{ x:{ stacked:true, ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:14} }, y:{ beginAtZero:true, stacked:true } } }
           });
         } else if ((hasBlog || hasPodcast) && mode === 'words') {
@@ -4170,6 +4190,7 @@ function showAuthorTimeline(name, opts = {}) {
                 if (lbl === 'Avg') return 'avg '+(ctx.parsed.y/1000).toFixed(0)+'k';
                 return lbl + ': ' + (ctx.parsed.y/1000).toFixed(0) + 'k';
               }}} },
+              onClick: (evt,els) => { if(els.length) _toggleYearFilter(wYears[els[0].index], wYears); },
               scales:{ x:{ stacked:true, ticks:{font:{size:10},maxRotation:0} }, y:{ beginAtZero:true, stacked:true, ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v} } } }
           });
         } else {
@@ -4220,6 +4241,7 @@ function showAuthorTimeline(name, opts = {}) {
             type:'bar', data:{ labels:useYears, datasets },
             options:{ responsive:true, plugins:{ legend:{display:false},
               tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?(ctx.parsed.y/1000).toFixed(0)+'k words':'avg '+(ctx.parsed.y/1000).toFixed(0)+'k'}} },
+              onClick: (evt,els) => { if(els.length) _toggleYearFilter(useYears[els[0].index], useYears); },
               scales:{ x:{ticks:{font:{size:10},maxRotation:0}},
                 y:{beginAtZero:true,ticks:{callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v}} } }
           });
@@ -4332,7 +4354,7 @@ function showAuthorTimeline(name, opts = {}) {
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
       <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
       <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline||'(no headline)')}</a>
-      <span style="color:#aaa;font-size:11px">${coStr} · ${a.section} · ${(a.word_count||0).toLocaleString()} words</span>
+      <span style="color:#aaa;font-size:11px">${coStr} · ${escapeHtml(a.section)} · ${(a.word_count||0).toLocaleString()} words</span>
     </div>`;
   }
 
@@ -4476,7 +4498,7 @@ function showAuthorTimeline(name, opts = {}) {
       const beats = extractBeats(allAuthorArticles);
       const beatsEl = document.getElementById(listId + '-beats');
       if (beatsEl && beats.length) {
-        beatsEl.innerHTML = `<strong>Beats:</strong> ${beats.map(toTitleCase).join(', ')}`;
+        beatsEl.innerHTML = `<strong>Beats:</strong> ${beats.map(b => escapeHtml(toTitleCase(b))).join(', ')}`;
       }
     }
 
@@ -4528,11 +4550,11 @@ function showAuthorTimeline(name, opts = {}) {
       const csvFilename = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_articles.csv';
       renderArticleList(listId, authorArticles, a => {
         const coauthors = a.authors.filter(n => n !== name);
-        const coauthorStr = coauthors.length ? ` · with ${coauthors.join(', ')}` : '';
+        const coauthorStr = coauthors.length ? ` · with ${escapeHtml(coauthors.join(', '))}` : '';
         return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
           <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
           <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
-          <span style="color:#aaa;font-size:11px">${coauthorStr} · ${a.section} · ${a.word_count.toLocaleString()} words</span>
+          <span style="color:#aaa;font-size:11px">${coauthorStr} · ${escapeHtml(a.section)} · ${a.word_count.toLocaleString()} words</span>
         </div>`;
       }, { csvFilename });
     }
@@ -4613,7 +4635,7 @@ function searchHeadlines() {
   const html = results.slice(0, 200).map(a => `
     <div class="headline-result">
       <div class="title"><a href="${a.web_url}" target="_blank">${highlightMatch(a.headline, query)}</a></div>
-      <div class="meta">${a.pub_date} · ${a.section || 'No section'} · ${a.authors.join(', ') || 'No byline'} · ${a.word_count.toLocaleString()} words${a.print_section === 'A' && a.print_page === '1' ? ' · <strong>Front page</strong>' : ''}</div>
+      <div class="meta">${a.pub_date} · ${escapeHtml(a.section || 'No section')} · ${escapeHtml(a.authors.join(', ') || 'No byline')} · ${a.word_count.toLocaleString()} words${a.print_section === 'A' && a.print_page === '1' ? ' · <strong>Front page</strong>' : ''}</div>
     </div>
   `).join('');
 
@@ -5003,7 +5025,7 @@ function renderWorldTable(years) {
 
   const yearStart = years.length ? years[0] : '';
   const yearEnd = years.length ? years[years.length - 1] : '';
-  const articleColLabel = `Articles (${yearStart}–${yearEnd})`;
+  const articleColLabel = 'Articles';
 
   const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa', 'Abu Ghraib', 'Antarctic Regions']);
   // Locations that should absorb counts from an alias row (alias → canonical)
@@ -5743,7 +5765,7 @@ function openCountryDetail(country) {
     return;
   }
   const countryArticles = articles
-    .filter(a => a.section === 'World' && a.glocations && a.glocations.includes(country));
+    .filter(a => a.section === 'World' && a.glocations_norm && a.glocations_norm.includes(country));
 
   // Top reporters
   const reporterCounts = {};
@@ -5754,14 +5776,28 @@ function openCountryDetail(country) {
   });
   const topReporters = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   if (topReporters.length) {
-    const rhtml = topReporters.map(([name, count]) =>
-      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="country-reporter-link" data-author="${escapeHtml(name)}" style="color:#326891;text-decoration:none">${escapeHtml(name)}</a> <span style="color:#aaa;font-size:11px">${count}</span></span>`
+    const rhtml = topReporters.map(([rname, count]) =>
+      `<span class="country-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
+         style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
+                font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
+       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${count}</span></span>`
     ).join('');
     document.getElementById('countryTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
-      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
-    document.getElementById('countryTopReporters').querySelectorAll('.country-reporter-link').forEach(el => {
-      el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+      `<div style="font-size:13px;line-height:2;display:flex;flex-wrap:wrap">${rhtml}</div>`;
+    document.getElementById('countryTopReporters').querySelectorAll('.country-reporter-selector').forEach(el => {
+      el.addEventListener('click', () => {
+        const wasActive = el.dataset.active === '1';
+        document.querySelectorAll('#countryTopReporters .country-reporter-selector').forEach(c => {
+          c.dataset.active = '0'; c.style.background = '#eef6ee'; c.style.color = '#5a8a3e';
+        });
+        if (wasActive) {
+          renderCountryArticles(countryArticles);
+        } else {
+          el.dataset.active = '1'; el.style.background = '#5a8a3e'; el.style.color = '#fff';
+          renderCountryArticles(countryArticles.filter(a => (a.authors || []).includes(el.dataset.reporter)));
+        }
+      });
     });
   }
 
@@ -5840,7 +5876,7 @@ function openCountryDetail(country) {
   }
   function renderCountryArticles(list) {
     renderArticleList('countryArticleList', list, a => {
-      const byline = (a.authors || []).join(', ') || 'No byline';
+      const byline = escapeHtml((a.authors || []).join(', ') || 'No byline');
       return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
         <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
         <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
@@ -6134,7 +6170,7 @@ function renderStatesTable(states, years, combined) {
   const ind = col => stateTableSort.col === col ? (stateTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
     { key: 'name', label: 'State' },
-    { key: 'count', label: `Articles (${years[0]}–${years[years.length-1]})`, cls: 'num' },
+    { key: 'count', label: 'Articles', cls: 'num' },
     { key: '_sparkline', label: 'Trend' },
     { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num percap-hdr' },
   ];
@@ -6347,14 +6383,29 @@ function openStateDetail(state) {
   });
   const topStateReporters = Object.entries(stateReporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
   if (topStateReporters.length) {
-    const rhtml = topStateReporters.map(([name, count]) =>
-      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="state-reporter-link" data-author="${escapeHtml(name)}" style="color:#326891;text-decoration:none">${escapeHtml(name)}</a> <span style="color:#aaa;font-size:11px">${count}</span></span>`
+    const rhtml = topStateReporters.map(([rname, count]) =>
+      `<span class="state-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
+         style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
+                font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
+       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${count}</span></span>`
     ).join('');
     document.getElementById('stateTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
-      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
-    document.getElementById('stateTopReporters').querySelectorAll('.state-reporter-link').forEach(el => {
-      el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+      `<div style="font-size:13px;line-height:2;display:flex;flex-wrap:wrap">${rhtml}</div>`;
+    document.getElementById('stateTopReporters').querySelectorAll('.state-reporter-selector').forEach(el => {
+      el.addEventListener('click', () => {
+        const wasActive = el.dataset.active === '1';
+        document.querySelectorAll('#stateTopReporters .state-reporter-selector').forEach(c => {
+          c.dataset.active = '0'; c.style.background = '#eef6ee'; c.style.color = '#5a8a3e';
+        });
+        if (wasActive) {
+          renderArticleList('stateArticleList', stateArticles, stateRowFmt);
+        } else {
+          el.dataset.active = '1'; el.style.background = '#5a8a3e'; el.style.color = '#fff';
+          const filtered = stateArticles.filter(a => (a.authors || []).includes(el.dataset.reporter));
+          renderArticleList('stateArticleList', filtered, stateRowFmt);
+        }
+      });
     });
   }
 
@@ -6473,16 +6524,32 @@ function openStateDetail(state) {
     ['New York State','Washington (State)','Washington State']));
   const stateAbbrev = STATE_ABBREVS[state] || '';
 
+  // Regional entity names to exclude from sub-locations (broad multi-state regions
+  // that don't help narrow coverage to a specific place within a state)
+  const REGIONAL_ENTITIES = new Set([
+    'East Coast', 'West Coast', 'Gulf Coast', 'Gulf Region',
+    'New England', 'New England States', 'Mid-Atlantic States', 'Mid-Atlantic Region',
+    'Southeastern States', 'Southeastern United States', 'Southeast',
+    'Southwestern States', 'Southwestern United States', 'Southwest',
+    'Midwestern States', 'Midwest', 'Great Plains', 'Great Plains States',
+    'Rocky Mountain States', 'Pacific Northwest', 'Pacific States',
+    'Mountain States', 'Great Lakes Region', 'Great Lakes States',
+    'Northern States', 'Southern States', 'Border States',
+    'Sun Belt', 'Rust Belt', 'Bible Belt',
+    'Northeast', 'Northwest', 'Southeast', 'Southwest',
+  ]);
+
   function isSubLocation(loc) {
-    // Require a parenthetical abbreviation — this is the only reliable way to know
-    // a location is within this state. Bare names like "New York City", "Iraq",
-    // "Chicago" are rejected because they lack geographic context.
     const m = loc.match(/\(([^)]+)\)$/);
-    if (!m) return false;  // no parenthetical → reject
+    if (!m) return false;
     const abbrev = m[1];
-    if (abbrev === 'US') return true;   // multi-state US region (e.g. "Sierra Nevada Region (US)")
+    if (abbrev === 'US') {
+      // Multi-state US region — only include if it's NOT a vague regional entity
+      const label = loc.replace(/\s*\(US\)$/, '').trim();
+      return !REGIONAL_ENTITIES.has(label);
+    }
     if (allStateAbbrevs.has(abbrev)) return abbrev === stateAbbrev;
-    return false;  // unknown parenthetical
+    return false;
   }
 
   function displayLoc(loc) {
@@ -6548,7 +6615,7 @@ function openStateDetail(state) {
   }
 
   function stateRowFmt(a) {
-    const byline = a.authors.join(', ') || 'No byline';
+    const byline = escapeHtml(a.authors.join(', ') || 'No byline');
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
       <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
       <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
@@ -7741,7 +7808,7 @@ function renderSubjectsTable() {
   html += `<th style="width:28px;padding:8px 4px"></th>`;
   html += `<th data-sort="name">Name${ind('name')}</th>`;
   html += `<th data-sort="type">Type${ind('type')}</th>`;
-  html += `<th class="num" data-sort="total">Articles (${yearStart}–${yearEnd})${ind('total')}</th>`;
+  html += `<th class="num" data-sort="total">Articles${ind('total')}</th>`;
   html += `<th>Trend</th>`;
   html += `</tr></thead><tbody>`;
 
@@ -7963,7 +8030,7 @@ function openSubjectDetail(rawName, type) {
   }
 
   renderArticleList('subjectDetailArticles', subjectArticles, a => {
-    const byline = (a.authors || []).join(', ') || 'No byline';
+    const byline = escapeHtml((a.authors || []).join(', ') || 'No byline');
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
       <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
       <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>

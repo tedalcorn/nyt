@@ -12,11 +12,17 @@ import json
 import re
 import html as html_mod
 from collections import defaultdict, Counter
-from datetime import datetime
+import math
+from datetime import datetime, date
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(PROJECT_DIR, "data", "raw")
 DATA_DIR = os.path.join(PROJECT_DIR, "data")
+
+# Author name overrides: wrong API form → canonical form.
+# See data/author_overrides_notes.md for rationale and negative assertions.
+with open(os.path.join(DATA_DIR, "author_overrides.json"), encoding="utf-8") as _f:
+    AUTHOR_OVERRIDES = json.load(_f)
 
 
 def load_all_articles():
@@ -303,6 +309,22 @@ def glocation_to_state(loc):
     return None
 
 
+SECTION_MERGES = {
+    "Fashion & Style": "Style",
+    "Fashion": "Style",
+    "Business Day": "Business",
+    "Gameplay": "Crosswords & Games",
+    "Book Review": "Books",
+    "Guides": "Guide",
+    "en Español": "En español",
+    "Week in Review": "Sunday Review",
+    # Defunct/absorbed sections merged into closest surviving equivalent
+    "Great Homes & Destinations": "Real Estate",  # luxury RE supplement 2002-2014
+    "At Home": "Style",                           # COVID-era home-life section 2020-2022
+    "Critic's Choice": "Arts",                    # arts picks feature folded into Arts
+}
+
+
 def process_articles(raw_articles):
     """Process raw API articles into clean records."""
     articles = []
@@ -347,20 +369,6 @@ def process_articles(raw_articles):
             continue
 
         # Merge renamed sections
-        SECTION_MERGES = {
-            "Fashion & Style": "Style",
-            "Fashion": "Style",
-            "Business Day": "Business",
-            "Gameplay": "Crosswords & Games",
-            "Book Review": "Books",
-            "Guides": "Guide",
-            "en Español": "En español",
-            "Week in Review": "Sunday Review",
-            # Defunct/absorbed sections merged into closest surviving equivalent
-            "Great Homes & Destinations": "Real Estate",  # luxury RE supplement 2002-2014
-            "At Home": "Style",                           # COVID-era home-life section 2020-2022
-            "Critic's Choice": "Arts",                    # arts picks feature folded into Arts
-        }
         section = SECTION_MERGES.get(section, section)
 
         # "Quote of the Day" column is filed under section_name='Corrections' by the API,
@@ -445,806 +453,8 @@ def process_articles(raw_articles):
 
     print(f"  {len(articles):,} processed, {skipped} skipped")
 
-    # Manual overrides for names the NYT API consistently truncates or misspells.
-    # Key: wrong form as it appears in the API data. Value: correct full name.
-    AUTHOR_OVERRIDES = {
-        # "St." compound last names — API drops the second word of the last name.
-        # Only add entries here when the correct full name is confirmed.
-        "Nicholas St":  "Nicholas St. Fleur",
-        # Middle initial sometimes dropped / capitalization varies
-        "Michael De La Merced": "Michael J. de la Merced",
-        # Trailing "Photographs" suffix (byline parsed as "Name; Photographs by ...")
-        "Ken Belson Photographs":   "Ken Belson",
-        "Ilana Kaplan Photographs": "Ilana Kaplan",
-        "Sarah Bahr Photographs":   "Sarah Bahr",
-        # Podcast show names indexed as bylines — merge to the host's personal byline
-        "The Ezra Klein Show":      "Ezra Klein",
-        "‘The Ezra Klein Show’": "Ezra Klein",  # curly-quoted form
-        "‘The Ezra Klein Show'": "Ezra Klein",       # curly-open + straight-close (the actual stored form)
-        # "X Nyt" suffix — Metro Briefing and wire-style bylines (2001-2006)
-        'Abby Goodnough Nyt': 'Abby Goodnough',
-        'Abby Gruen Nyt': 'Abby Gruen',
-        'Abeer Allam Nyt': 'Abeer Allam',
-        'Adam Clymer Nyt': 'Adam Clymer',
-        'Adam Liptak Nyt': 'Adam Liptak',
-        'Adam Nagourney Nyt': 'Adam Nagourney',
-        'Adam Nossiter Nyt': 'Adam Nossiter',
-        'Adrienne Lu Nyt': 'Adrienne Lu',
-        "Ainsley O'connell Nyt": "Ainsley O'connell",
-        'Al Baker Nyt': 'Al Baker',
-        'Alan Cowell Nyt': 'Alan Cowell',
-        'Alan Feuer Nyt': 'Alan Feuer',
-        'Alan Finder Nyt': 'Alan Finder',
-        'Alan Riding Nyt': 'Alan Riding',
-        'Albert Salvato Nyt': 'Albert Salvato',
-        'Alejandro Lazo Nyt': 'Alejandro Lazo',
-        'Alessandra Stanley Nyt': 'Alessandra Stanley',
-        'Alex Berenson Nyt': 'Alex Berenson',
-        'Alex Kuczynski Nyt': 'Alex Kuczynski',
-        'Alex Mindlin Nyt': 'Alex Mindlin',
-        'Alexander Nurnberg Nyt': 'Alexander Nurnberg',
-        'Alexandra Walsh Nyt': 'Alexandra Walsh',
-        'Alicia Zubikowski Nyt': 'Alicia Zubikowski',
-        'Alison Langley Nyt': 'Alison Langley',
-        'Alison Mitchell Nyt': 'Alison Mitchell',
-        'Alison Smale Nyt': 'Alison Smale',
-        'Allison Fass Nyt': 'Allison Fass',
-        'Amanda Hesser Nyt': 'Amanda Hesser',
-        'Amelia Gentleman Nyt': 'Amelia Gentleman',
-        'Amy Green Nyt': 'Amy Green',
-        'Amy Harmon Nyt': 'Amy Harmon',
-        'Amy Waldman Nyt': 'Amy Waldman',
-        "Anahad O'connor Nyt": "Anahad O'Connor",
-        'Anand Giridharadas Nyt': 'Anand Giridharadas',
-        'Andrea Elliott Nyt': 'Andrea Elliott',
-        'Andrew Jacobs Nyt': 'Andrew Jacobs',
-        'Andrew Kramer Nyt': 'Andrew Kramer',
-        'Andrew Pollack Nyt': 'Andrew Pollack',
-        'Andrew Revkin Nyt': 'Andrew Revkin',
-        'Andrew Salmon Nyt': 'Andrew Salmon',
-        'Andrew Tangel Nyt': 'Andrew Tangel',
-        'Andrew Zipern Nyt': 'Andrew Zipern',
-        'Andy Jacobs Nyt': 'Andy Jacobs',
-        'Andy Newman Nyt': 'Andy Newman',
-        'Anemona Hartocollis Nyt': 'Anemona Hartocollis',
-        'Ann Farmer Nyt': 'Ann Farmer',
-        'Ann Wozencraft Nyt': 'Ann Wozencraft',
-        'Anne Berryman Nyt': 'Anne Berryman',
-        'Anne Raver Nyt': 'Anne Raver',
-        'Anthee Carassava Nyt': 'Anthee Carassava',
-        'Anthony Depalma Nyt': 'Anthony Depalma',
-        'Anthony Ramirez Nyt': 'Anthony Ramirez',
-        'Antonio Betancourt Nyt': 'Antonio Betancourt',
-        'Ariane Bernard Nyt': 'Ariane Bernard',
-        'Ariel Hart Nyt': 'Ariel Hart',
-        'Avi Salzman Nyt': 'Avi Salzman',
-        'Baradan Kuppusamy Nyt': 'Baradan Kuppusamy',
-        'Barbara Crossette Nyt': 'Barbara Crossette',
-        'Barbara Novovitch Nyt': 'Barbara Novovitch',
-        'Barbara Stewart Nyt': 'Barbara Stewart',
-        'Barbara Whitaker Nyt': 'Barbara Whitaker',
-        'Barnaby Feder Nyt': 'Barnaby Feder',
-        'Barney Feder Nyt': 'Barney Feder',
-        'Barry Bearak Nyt': 'Barry Bearak',
-        'Barry Meier Nyt': 'Barry Meier',
-        'Becky Gaylord Nyt': 'Becky Gaylord',
-        'Ben Bergman Nyt': 'Ben Bergman',
-        'Ben Lefebvre Nyt': 'Ben Lefebvre',
-        'Ben Shpigel Nyt': 'Ben Shpigel',
-        'Benedict Carey Nyt': 'Benedict Carey',
-        'Benjamin Jones Nyt': 'Benjamin Jones',
-        'Benjamin Weiser Nyt': 'Benjamin Weiser',
-        'Bernard Simon Nyt': 'Bernard Simon',
-        'Bernard Weinraub Nyt': 'Bernard Weinraub',
-        'Bernie Beglane Nyt': 'Bernie Beglane',
-        'Bill Carter Nyt': 'Bill Carter',
-        'Bill Dawson Nyt': 'Bill Dawson',
-        'Bill Dedman Nyt': 'Bill Dedman',
-        'Bill Finley Nyt': 'Bill Finley',
-        'Bill Pennington Nyt': 'Bill Pennington',
-        'Birgit Brauer Nyt': 'Birgit Brauer',
-        'Blaine Harden Nyt': 'Blaine Harden',
-        'Bob Tedeschi Nyt': 'Bob Tedeschi',
-        'Borzou Daragahi Nyt': 'Borzou Daragahi',
-        'Braden Phillips Nyt': 'Braden Phillips',
-        'Brenda Goodman Nyt': 'Brenda Goodman',
-        'Brian Alexander Nyt': 'Brian Alexander',
-        'Brian Ellsworth Nyt': 'Brian Ellsworth',
-        'Brian Knowlton Nyt': 'Brian Knowlton',
-        'Brian Lavery Nyt': 'Brian Lavery',
-        'Brian Wingfield Nyt': 'Brian Wingfield',
-        'Bruce Lambert Nyt': 'Bruce Lambert',
-        'Bud Norman Nyt': 'Bud Norman',
-        'Caitlin Nish Nyt': 'Caitlin Nish',
-        'Calvin Sims Nyt': 'Calvin Sims',
-        'Campbell Robertson Nyt': 'Campbell Robertson',
-        'Cara Buckley Nyt': 'Cara Buckley',
-        'Carey Goldberg Nyt': 'Carey Goldberg',
-        'Carl Hulse Nyt': 'Carl Hulse',
-        'Carla Baranauckas Nyt': 'Carla Baranauckas',
-        'Carla Bass Nyt': 'Carla Bass',
-        'Carlo Piano Nyt': 'Carlo Piano',
-        'Carlotta Gall Nyt': 'Carlotta Gall',
-        'Carol Pogash Nyt': 'Carol Pogash',
-        'Carol Vogel Nyt': 'Carol Vogel',
-        'Carolyn Marshall Nyt': 'Carolyn Marshall',
-        'Cassi Feldman Nyt': 'Cassi Feldman',
-        'Catherine Billey Nyt': 'Catherine Billey',
-        'Catherine Greenman Nyt': 'Catherine Greenman',
-        'Celestine Bohlen Nyt': 'Celestine Bohlen',
-        'Charles Bagli Nyt': 'Charles Bagli',
-        'Charlie Leduff Nyt': 'Charlie Leduff',
-        'Chris Buckley Nyt': 'Chris Buckley',
-        'Chris Dixon Nyt': 'Chris Dixon',
-        'Chris Gaither Nyt': 'Chris Gaither',
-        'Chris Mason Nyt': 'Chris Mason',
-        'Christine Haughney Nyt': 'Christine Haughney',
-        'Christine Hauser Nyt': 'Christine Hauser',
-        'Christine Whitehouse Nyt': 'Christine Whitehouse',
-        'Christopher Drew Nyt': 'Christopher Drew',
-        'Christopher Elliott Nyt': 'Christopher Elliott',
-        'Christopher Maag Nyt': 'Christopher Maag',
-        'Christopher Marquis Nyt': 'Christopher Marquis',
-        'Christopher Mason Nyt': 'Christopher Mason',
-        'Christopher Pala Nyt': 'Christopher Pala',
-        'Cindy Chang Nyt': 'Cindy Chang',
-        'Claire Hoffman Nyt': 'Claire Hoffman',
-        'Clifford Krauss Nyt': 'Clifford Krauss',
-        'Clifton Brown Nyt': 'Clifton Brown',
-        'Clyde Haberman Nyt': 'Clyde Haberman',
-        'Colin Campbell Nyt': 'Colin Campbell',
-        'Colin Moynihan Nyt': 'Colin Moynihan',
-        'Conrad Mulcahy Nyt': 'Conrad Mulcahy',
-        'Corey Kilgannon Nyt': 'Corey Kilgannon',
-        'Cornelia Dean Nyt': 'Cornelia Dean',
-        'Craig Smith Nyt': 'Craig Smith',
-        'Cybele Sack Nyt': 'Cybele Sack',
-        'Daisy Hernandez Nyt': 'Daisy Hernandez',
-        'Daisy Hernández Nyt': 'Daisy Hernández',
-        'Dale Fuchs Nyt': 'Dale Fuchs',
-        'Damien Cave Nyt': 'Damien Cave',
-        'Damon Hack Nyt': 'Damon Hack',
-        'Dan Barry Nyt': 'Dan Barry',
-        'Dan Heyman Nyt': 'Dan Heyman',
-        'Dana Bayerle Nyt': 'Dana Bayerle',
-        'Dana Beyerle Nyt': 'Dana Beyerle',
-        'Dana Byerele Nyt': 'Dana Byerele',
-        'Dana Canedy Nyt': 'Dana Canedy',
-        'Daniel Simpson Nyt': 'Daniel Simpson',
-        'Danny Hakim Nyt': 'Danny Hakim',
-        'Daryl Khan Nyt': 'Daryl Khan',
-        'Dave Caldwell Nyt': 'Dave Caldwell',
-        'David Barboza Nyt': 'David Barboza',
-        'David Barstow Nyt': 'David Barstow',
-        'David Bernstein Nyt': 'David Bernstein',
-        'David Binder Nyt': 'David Binder',
-        'David Carr Nyt': 'David Carr',
-        'David Enders Nyt': 'David Enders',
-        'David Firestone Nyt': 'David Firestone',
-        'David Gonzalez Nyt': 'David Gonzalez',
-        'David Halbfinger Nyt': 'David Halbfinger',
-        'David Herszenhorn Nyt': 'David Herszenhorn',
-        'David Johnston Nyt': 'David Johnston',
-        'David Kirpatrick Nyt': 'David Kirpatrick',
-        'David Kocienewski Nyt': 'David Kocienewski',
-        'David Kocieniewski Nyt': 'David Kocieniewski',
-        'David Montero Nyt': 'David Montero',
-        'David Picker Nyt': 'David Picker',
-        'David Rohde Nyt': 'David Rohde',
-        'David Scharfenberg Nyt': 'David Scharfenberg',
-        'David Staba Nyt': 'David Staba',
-        'David Stout Nyt': 'David Stout',
-        'David Winzelberg Nyt': 'David Winzelberg',
-        'Dean Murphy Nyt': 'Dean Murphy',
-        'Deborah Sontag Nyt': 'Deborah Sontag',
-        'Debra West Nyt': 'Debra West',
-        'Denise Grady Nyt': 'Denise Grady',
-        'Dennis Blank Nyt': 'Dennis Blank',
-        'Dennis Overbye Nyt': 'Dennis Overbye',
-        'Denny Lee Nyt': 'Denny Lee',
-        'Desmond Butler Nyt': 'Desmond Butler',
-        'Dexter Filkins Nyt': 'Dexter Filkins',
-        'Dhruba Adhikary Nyt': 'Dhruba Adhikary',
-        'Dian Saputra Nyt': 'Dian Saputra',
-        'Diane Cardwell Nyt': 'Diane Cardwell',
-        'Dina Kraft Nyt': 'Dina Kraft',
-        'Dinitia Smith Nyt': 'Dinitia Smith',
-        'Don Kirk Nyt': 'Don Kirk',
-        'Donald Kirk Nyt': 'Donald Kirk',
-        'Doug Frantz Nyt': 'Doug Frantz',
-        'Doug Mcinnis Nyt': 'Doug McInnis',
-        'Douglas Frantz Nyt': 'Douglas Frantz',
-        'Douglas Jehl Nyt': 'Douglas Jehl',
-        'Dylan Mcclain Nyt': 'Dylan Mcclain',
-        'Eamon Quinn Nyt': 'Eamon Quinn',
-        'Ed Andrews Nyt': 'Ed Andrews',
-        'Eddy Ramirez Nyt': 'Eddy Ramirez',
-        'Eddy Ramírez Nyt': 'Eddy Ramírez',
-        'Eduardo Castillo Nyt': 'Eduardo Castillo',
-        'Edward Wong Nyt': 'Edward Wong',
-        'Edward Wyatt Nyt': 'Edward Wyatt',
-        'Elaine Sciolino Nyt': 'Elaine Sciolino',
-        'Eli Sanders Nyt': 'Eli Sanders',
-        'Elisabeth Becker Nyt': 'Elisabeth Becker',
-        'Elisabeth Bumiller Nyt': 'Elisabeth Bumiller',
-        'Elisabeth Malkin Nyt': 'Elisabeth Malkin',
-        'Elisabeth Rosenthal Nyt': 'Elisabeth Rosenthal',
-        'Elisabetta Povoledo Nyt': 'Elisabetta Povoledo',
-        'Elissa Gootman Nyt': 'Elissa Gootman',
-        'Elizabeth Ahlin Nyt': 'Elizabeth Ahlin',
-        'Elizabeth Becker Nyt': 'Elizabeth Becker',
-        'Elizabeth Nash Nyt': 'Elizabeth Nash',
-        'Elizabeth Olsen Nyt': 'Elizabeth Olsen',
-        'Elizabeth Olson Nyt': 'Elizabeth Olson',
-        'Elizabeth Stanton Nyt': 'Elizabeth Stanton',
-        'Eman Wahby Nyt': 'Eman Wahby',
-        'Emily Vasquez Nyt': 'Emily Vasquez',
-        'Emily Yellin Nyt': 'Emily Yellin',
-        'Emma Daley Nyt': 'Emma Daley',
-        'Emma Daly Nyt': 'Emma Daly',
-        'Eric Dash Nyt': 'Eric Dash',
-        'Eric Ferkenhoff Nyt': 'Eric Ferkenhoff',
-        'Eric Lichtblau Nyt': 'Eric Lichtblau',
-        'Eric Lipton Nyt': 'Eric Lipton',
-        "Eric O'keefe Nyt": "Eric O'Keefe",
-        'Eric Schmitt Nyt': 'Eric Schmitt',
-        'Eric Sylver Nyt': 'Eric Sylver',
-        'Eric Sylvers Nyt': 'Eric Sylvers',
-        'Eric Wilson Nyt': 'Eric Wilson',
-        'Erica Goode Nyt': 'Erica Goode',
-        'Erik Eckholm Nyt': 'Erik Eckholm',
-        'Erika Kinetz Nyt': 'Erika Kinetz',
-        'Ernie Beglane Nyt': 'Ernie Beglane',
-        'Ethan Wilensky-lanford Nyt': 'Ethan Wilensky-Lanford',
-        'Evelyn Nieves Nyt': 'Evelyn Nieves',
-        'Evelyn Rusli Nyt': 'Evelyn Rusli',
-        'Faiza Akhtar Nyt': 'Faiza Akhtar',
-        'Fatou Diakhaté Nyt': 'Fatou Diakhaté',
-        'Felicity Barringer Nyt': 'Felicity Barringer',
-        'Fernanda Santos Nyt': 'Fernanda Santos',
-        'Fiona Fleck Nyt': 'Fiona Fleck',
-        'Florence Fabricant Nyt': 'Florence Fabricant',
-        'Floyd Norris Nyt': 'Floyd Norris',
-        'Ford Burkhart Nyt': 'Ford Burkhart',
-        'Ford Fessenden Nyt': 'Ford Fessenden',
-        'Fox Butterfield Nyt': 'Fox Butterfield',
-        'Frank Bruni Nyt': 'Frank Bruni',
-        'Frank Litsky Nyt': 'Frank Litsky',
-        'Gardiner Harris Nyt': 'Gardiner Harris',
-        'Gary Fineout Nyt': 'Gary Fineout',
-        'Gary Gately Nyt': 'Gary Gately',
-        'Gary Rivlin Nyt': 'Gary Rivlin',
-        'Geraldine Fabrikant Nyt': 'Geraldine Fabrikant',
-        'Gina Kolata Nyt': 'Gina Kolata',
-        'Ginger Thompson Nyt': 'Ginger Thompson',
-        'Glen Justice Nyt': 'Glen Justice',
-        'Glenn Collins Nyt': 'Glenn Collins',
-        'Glenn Fleishman Nyt': 'Glenn Fleishman',
-        'Glenn Justice Nyt': 'Glenn Justice',
-        'Graham Bowley Nyt': 'Graham Bowley',
-        'Graham Gori Nyt': 'Graham Gori',
-        'Greg Myer Nyt': 'Greg Myer',
-        'Greg Myre Nyt': 'Greg Myre',
-        'Greg Retsinas Nyt': 'Greg Retsinas',
-        'Greg Winter Nyt': 'Greg Winter',
-        'Gregory Crouch Nyt': 'Gregory Crouch',
-        'Gretchen Reuthling Nyt': 'Gretchen Reuthling',
-        'Gretchen Ruethling Nyt': 'Gretchen Ruethling',
-        'Gustav Niebuhr Nyt': 'Gustav Niebuhr',
-        'Guy Trebay Nyt': 'Guy Trebay',
-        'Hari Kumar Nyt': 'Hari Kumar',
-        'Heather Stewart Nyt': 'Heather Stewart',
-        'Heather Timmons Nyt': 'Heather Timmons',
-        'Helene Cooper Nyt': 'Helene Cooper',
-        'Helene Fouquet Nyt': 'Helene Fouquet',
-        'Henri Cauvin Nyt': 'Henri Cauvin',
-        'Hope Reeves Nyt': 'Hope Reeves',
-        'Howard Beck Nyt': 'Howard Beck',
-        'Howard French Nyt': 'Howard French',
-        'Hugh Eakin Nyt': 'Hugh Eakin',
-        'Hélène Fouquet Nyt': 'Hélène Fouquet',
-        'Ian Austen Nyt': 'Ian Austen',
-        'Ian Fisher Nyt': 'Ian Fisher',
-        'Ian Urbina Nyt': 'Ian Urbina',
-        'Ilan Greenberg Nyt': 'Ilan Greenberg',
-        'Iver Peterson Nyt': 'Iver Peterson',
-        'Jack Bell Nyt': 'Jack Bell',
-        'Jack Curry Nyt': 'Jack Curry',
-        'Jacob Fries Nyt': 'Jacob Fries',
-        'Jacques Steinberg Nyt': 'Jacques Steinberg',
-        'James Barron Nyt': 'James Barron',
-        'James Brooke Nyt': 'James Brooke',
-        'James Dao Nyt': 'James Dao',
-        'James Glanz Nyt': 'James Glanz',
-        'James Gorman Nyt': 'James Gorman',
-        'James Risen Nyt': 'James Risen',
-        'James Sterngold Nyt': 'James Sterngold',
-        'James Willhite Nyt': 'James Willhite',
-        'Jane Allande-hession Nyt': 'Jane Allande-Hession',
-        'Jane Fritsch Nyt': 'Jane Fritsch',
-        'Jane Levere Nyt': 'Jane Levere',
-        'Jane Perlez Nyt': 'Jane Perlez',
-        'Janny Scott Nyt': 'Janny Scott',
-        'Janon Fisher Nyt': 'Janon Fisher',
-        'Jason Begay Nyt': 'Jason Begay',
-        'Jason Diamos Nyt': 'Jason Diamos',
-        'Jason George Nyt': 'Jason George',
-        'Jason Horowitz Nyt': 'Jason Horowitz',
-        'Jayson Blair Nyt': 'Jayson Blair',
-        'Jed Stevenson Nyt': 'Jed Stevenson',
-        'Jeff Leeds Nyt': 'Jeff Leeds',
-        'Jeff Zeleny Nyt': 'Jeff Zeleny',
-        'Jeffrey Gettleman Nyt': 'Jeffrey Gettleman',
-        'Jenna Payne Nyt': 'Jenna Payne',
-        'Jennifer Dunning Nyt': 'Jennifer Dunning',
-        'Jennifer Medina Nyt': 'Jennifer Medina',
-        'Jennifer Rich Nyt': 'Jennifer Rich',
-        'Jennifer Steinhauer Nyt': 'Jennifer Steinhauer',
-        'Jennnifer Steinhauer Nyt': 'Jennnifer Steinhauer',
-        'Jenny Hontz Nyt': 'Jenny Hontz',
-        'Jenny Medina Nyt': 'Jenny Medina',
-        'Jeremy Peters Nyt': 'Jeremy Peters',
-        'Jess Wisloski Nyt': 'Jess Wisloski',
-        'Jesse Mckinley Nyt': 'Jesse McKinley',
-        'Jessica Bruder Nyt': 'Jessica Bruder',
-        'Jim Dwyer Nyt': 'Jim Dwyer',
-        'Jim Noles Nyt': 'Jim Noles',
-        "Jim O'grady Nyt": "Jim O'Grady",
-        'Jim Robbins Nyt': 'Jim Robbins',
-        'Jim Rutenberg Nyt': 'Jim Rutenberg',
-        'Jim Yardley Nyt': 'Jim Yardley',
-        'Jo Napolitano Nyt': 'Jo Napolitano',
-        'Jo Thomas Nyt': 'Jo Thomas',
-        'Jodi Rudoren Nyt': 'Jodi Rudoren',
-        'Jodi Wilgoren Nyt': 'Jodi Wilgoren',
-        'Joe Brescia Nyt': 'Joe Brescia',
-        'Joe Drape Nyt': 'Joe Drape',
-        'Joe Follick Nyt': 'Joe Follick',
-        'Joe Sharkey Nyt': 'Joe Sharkey',
-        'Joe Ward Nyt': 'Joe Ward',
-        'Joel Brinkley Nyt': 'Joel Brinkley',
-        'Joel Greenberg Nyt': 'Joel Greenberg',
-        'Johanna Jainchill Nyt': 'Johanna Jainchill',
-        'John Biggs Nyt': 'John Biggs',
-        'John Branch Nyt': 'John Branch',
-        'John Branston Nyt': 'John Branston',
-        'John Broder Nyt': 'John Broder',
-        'John Carpenter Nyt': 'John Carpenter',
-        'John Desantis Nyt': 'John Desantis',
-        'John Eligon Nyt': 'John Eligon',
-        'John Files Nyt': 'John Files',
-        'John Harney Nyt': 'John Harney',
-        'John Holl Nyt': 'John Holl',
-        'John Holusha Nyt': 'John Holusha',
-        'John Kifner Nyt': 'John Kifner',
-        'John Markoff Nyt': 'John Markoff',
-        'John Moody Nyt': 'John Moody',
-        'John Rather Nyt': 'John Rather',
-        'John Schwartz Nyt': 'John Schwartz',
-        'John Shaw Nyt': 'John Shaw',
-        'John Sullivan Nyt': 'John Sullivan',
-        'John Tagliabue Nyt': 'John Tagliabue',
-        'Jon Pareles Nyt': 'Jon Pareles',
-        'Jonathan Fuerbringer Nyt': 'Jonathan Fuerbringer',
-        'Jonathan Glater Nyt': 'Jonathan Glater',
-        'Jonathan Hicks Nyt': 'Jonathan Hicks',
-        'Jonathan Marino Nyt': 'Jonathan Marino',
-        'Jonathan Miller Nyt': 'Jonathan Miller',
-        'Joseph Berger Nyt': 'Joseph Berger',
-        'Joseph Kahn Nyt': 'Joseph Kahn',
-        'Joseph Kolb Nyt': 'Joseph Kolb',
-        'Joseph Treaster Nyt': 'Joseph Treaster',
-        'Josh Barbanel Nyt': 'Josh Barbanel',
-        'Josh Benson Nyt': 'Josh Benson',
-        'José Ramírez Nyt': 'José Ramírez',
-        'Joya Rajadhyaksha Nyt': 'Joya Rajadhyaksha',
-        'Joyce Wadler Nyt': 'Joyce Wadler',
-        'Juan Forero Nyt': 'Juan Forero',
-        'Judith Berck Nyt': 'Judith Berck',
-        'Judith Miller Nyt': 'Judith Miller',
-        'Judy Battista Nyt': 'Judy Battista',
-        'Judy Berck Nyt': 'Judy Berck',
-        'Julia Mead Nyt': 'Julia Mead',
-        'Julia Moskin Nyt': 'Julia Moskin',
-        'Julia Preston Nyt': 'Julia Preston',
-        'Julie Bosman Nyt': 'Julie Bosman',
-        'Julie Dunn Nyt': 'Julie Dunn',
-        'Julie Flaherty Nyt': 'Julie Flaherty',
-        'Juliet Macur Nyt': 'Juliet Macur',
-        'Justo Casal Nyt': 'Justo Casal',
-        'Kareem Fahim Nyt': 'Kareem Fahim',
-        'Karen Arenson Nyt': 'Karen Arenson',
-        'Karen Crouse Nyt': 'Karen Crouse',
-        'Karen Demasters Nyt': 'Karen Demasters',
-        'Kari Haskell Nyt': 'Kari Haskell',
-        'Kate Hammer Nyt': 'Kate Hammer',
-        'Kate Phillips Nyt': 'Kate Phillips',
-        'Kate Zernike Nyt': 'Kate Zernike',
-        'Katherine Boas Nyt': 'Katherine Boas',
-        'Katherine Zezima Nyt': 'Katherine Zezima',
-        'Katherine Zoepf Nyt': 'Katherine Zoepf',
-        'Kathryn Shattuck Nyt': 'Kathryn Shattuck',
-        'Katie Kelley Nyt': 'Katie Kelley',
-        'Katie Zezima Nyt': 'Katie Zezima',
-        'Katrin Bennhold Nyt': 'Katrin Bennhold',
-        'Katy Reckdahl Nyt': 'Katy Reckdahl',
-        'Keith Bradsher Nyt': 'Keith Bradsher',
-        'Ken Belsen Nyt': 'Ken Belsen',
-        'Ken Belson Nyt': 'Ken Belson',
-        'Kenneth Chang Nyt': 'Kenneth Chang',
-        'Kerri Shaw Nyt': 'Kerri Shaw',
-        'Kerry Shaw Nyt': 'Kerry Shaw',
-        'Kevin Flynn Nyt': 'Kevin Flynn',
-        'Kevin Sack Nyt': 'Kevin Sack',
-        'Kimberly Chase Nyt': 'Kimberly Chase',
-        'Kirk Johnson Nyt': 'Kirk Johnson',
-        'Kirk Semple Nyt': 'Kirk Semple',
-        'Kirsten Grieshaber Nyt': 'Kirsten Grieshaber',
-        'Larry Rohter Nyt': 'Larry Rohter',
-        'Larry Zuckerman Nyt': 'Larry Zuckerman',
-        'Laura Holson Nyt': 'Laura Holson',
-        'Laura Lee Nyt': 'Laura Lee',
-        'Laura Mansnerus Nyt': 'Laura Mansnerus',
-        'Laurie Goodstein Nyt': 'Laurie Goodstein',
-        'Lee Jenkins Nyt': 'Lee Jenkins',
-        'Leena Saidi Nyt': 'Leena Saidi',
-        'Leslie Eaton Nyt': 'Leslie Eaton',
-        'Leslie Kaufman Nyt': 'Leslie Kaufman',
-        'Lia Miller Nyt': 'Lia Miller',
-        'Libby Sander Nyt': 'Libby Sander',
-        'Lily Koppel Nyt': 'Lily Koppel',
-        'Linda Greenhouse Nyt': 'Linda Greenhouse',
-        'Lisa Bacon Nyt': 'Lisa Bacon',
-        'Lisa Foderaro Nyt': 'Lisa Foderaro',
-        'Lisa Guernsey Nyt': 'Lisa Guernsey',
-        'Liz Robbins Nyt': 'Liz Robbins',
-        'Lizette Alvarez Nyt': 'Lizette Alvarez',
-        'Lloyd Dunkeberger Nyt': 'Lloyd Dunkeberger',
-        'Lloyd Dunkelberger Nyt': 'Lloyd Dunkelberger',
-        'Lola Ogunnaike Nyt': 'Lola Ogunnaike',
-        'Louise Story Nyt': 'Louise Story',
-        'Lydia Polgreen Nyt': 'Lydia Polgreen',
-        'Lynette Clemetson Nyt': 'Lynette Clemetson',
-        'Lynette Holloway Nyt': 'Lynette Holloway',
-        'Lynn Waddell Nyt': 'Lynn Waddell',
-        'Lynn Zinser Nyt': 'Lynn Zinser',
-        'Lynnley Browning Nyt': 'Lynnley Browning',
-        'Manny Fernandez Nyt': 'Manny Fernandez',
-        'Marc Lacey Nyt': 'Marc Lacey',
-        'Marc Santora Nyt': 'Marc Santora',
-        'Marcin Skomial Nyt': 'Marcin Skomial',
-        'Marcos Mocine-mcqueen Nyt': 'Marcos Mocine-McQueen',
-        'Marek Fuchs Nyt': 'Marek Fuchs',
-        'Maria Newman Nyt': 'Maria Newman',
-        'Marian Burros Nyt': 'Marian Burros',
-        'Marian Smith Nyt': 'Marian Smith',
-        'Marina Harss Nyt': 'Marina Harss',
-        'Marina Harssome Nyt': 'Marina Harssome',
-        'Marjorie Connelly Nyt': 'Marjorie Connelly',
-        'Mark Glassman Nyt': 'Mark Glassman',
-        'Mark Landler Nyt': 'Mark Landler',
-        'Marlise Simons Nyt': 'Marlise Simons',
-        'Martin Fackler Nyt': 'Martin Fackler',
-        'Martin Stolz Nyt': 'Martin Stolz',
-        'Marty Katz Nyt': 'Marty Katz',
-        'Mary Reinholz Nyt': 'Mary Reinholz',
-        'Mary Spicuzza Nyt': 'Mary Spicuzza',
-        'Matt Birkbeck Nyt': 'Matt Birkbeck',
-        'Matt Richtel Nyt': 'Matt Richtel',
-        'Matt Viser Nyt': 'Matt Viser',
-        'Matthew Healey Nyt': 'Matthew Healey',
-        'Matthew Preusch Nyt': 'Matthew Preusch',
-        'Matthew Sweeney Nyt': 'Matthew Sweeney',
-        'Maureen Balleza Nyt': 'Maureen Balleza',
-        'Melena Ryzik Nyt': 'Melena Ryzik',
-        'Melinda Henneberger Nyt': 'Melinda Henneberger',
-        'Merri Rosenberg Nyt': 'Merri Rosenberg',
-        'Mery Galanternick Nyt': 'Mery Galanternick',
-        'Michael Amon Nyt': 'Michael Amon',
-        'Michael Brick Nyt': 'Michael Brick',
-        'Michael Cooper Nyt': 'Michael Cooper',
-        'Michael Janofsky Nyt': 'Michael Janofsky',
-        'Michael Kamber Nyt': 'Michael Kamber',
-        'Michael Luo Nyt': 'Michael Luo',
-        'Michael Mcintire Nyt': 'Michael McIntire',
-        'Michael Moss Nyt': 'Michael Moss',
-        'Michael Schwirtz Nyt': 'Michael Schwirtz',
-        'Michael Slackman Nyt': 'Michael Slackman',
-        'Michael Weinreb Nyt': 'Michael Weinreb',
-        'Michael Wilson Nyt': 'Michael Wilson',
-        'Michael Wines Nyt': 'Michael Wines',
-        'Michele Kayal Nyt': 'Michele Kayal',
-        'Micheline Maynard Nyt': 'Micheline Maynard',
-        'Michelle Kayal Nyt': 'Michelle Kayal',
-        "Michelle O'donnell Nyt": "Michelle O'Donnell",
-        'Michelle York Nyt': 'Michelle York',
-        "Michelleo'donnell Nyt": "Michelleo'donnell",
-        'Mick Meenan Nyt': 'Mick Meenan',
-        'Mike Mcintire Nyt': 'Mike McIntire',
-        'Miki Tanikawa Nyt': 'Miki Tanikawa',
-        'Milt Freudenheim Nyt': 'Milt Freudenheim',
-        'Mindy Sink Nyt': 'Mindy Sink',
-        'Mireya Navarro Nyt': 'Mireya Navarro',
-        'Mirta Ojito Nyt': 'Mirta Ojito',
-        'Mitch Abramson Nyt': 'Mitch Abramson',
-        'Mohammad Khan Nyt': 'Mohammad Khan',
-        'Mohammed Khan Nyt': 'Mohammed Khan',
-        'Mona Al-naggar Nyt': 'Mona Al-naggar',
-        'Mona El-naggar Nyt': 'Mona El-Naggar',
-        'Monica Davey Nyt': 'Monica Davey',
-        'Monica Potts Nyt': 'Monica Potts',
-        'Monte Williams Nyt': 'Monte Williams',
-        'Motoko Rich Nyt': 'Motoko Rich',
-        'Murray Chass Nyt': 'Murray Chass',
-        'Naila-jean Meyers Nyt': 'Naila-jean Meyers',
-        'Nat Ives Nyt': 'Nat Ives',
-        'Nate Schweber Nyt': 'Nate Schweber',
-        'Nathaniel Vinton Nyt': 'Nathaniel Vinton',
-        'Nazila Fathi Nyt': 'Nazila Fathi',
-        'Neela Banerjee Nyt': 'Neela Banerjee',
-        'Neil Lewis Nyt': 'Neil Lewis',
-        'Neil Macfarquhar Nyt': 'Neil MacFarquhar',
-        'Nicholas Confessore Nyt': 'Nicholas Confessore',
-        'Nicholas Wade Nyt': 'Nicholas Wade',
-        'Nicholas Wood Nyt': 'Nicholas Wood',
-        'Nick Madigan Nyt': 'Nick Madigan',
-        'Nicole Cotroneo Nyt': 'Nicole Cotroneo',
-        'Nicole Itano Nyt': 'Nicole Itano',
-        'Nina Bernstein Nyt': 'Nina Bernstein',
-        'Nora Krug Nyt': 'Nora Krug',
-        'Norimitsu Onishi Nyt': 'Norimitsu Onishi',
-        'Oren Yaniv Nyt': 'Oren Yaniv',
-        'Pam Belluck Nyt': 'Pam Belluck',
-        'Pascale Bonnefoy Nyt': 'Pascale Bonnefoy',
-        'Pat Borzi Nyt': 'Pat Borzi',
-        'Patrick Healy Nyt': 'Patrick Healy',
-        'Patrick Mcgeehan Nyt': 'Patrick McGeehan',
-        'Paul Meller Nyt': 'Paul Meller',
-        'Paul Vitello Nyt': 'Paul Vitello',
-        'Paul Zielbauer Nyt': 'Paul Zielbauer',
-        'Paulo Prada Nyt': 'Paulo Prada',
-        'Pete Thamel Nyt': 'Pete Thamel',
-        'Peter Beller Nyt': 'Peter Beller',
-        'Peter Gelling Nyt': 'Peter Gelling',
-        'Peter Kiefer Nyt': 'Peter Kiefer',
-        'Petra Kappl Nyt': 'Petra Kappl',
-        'Philip Shenon Nyt': 'Philip Shenon',
-        'Rachel Metz Nyt': 'Rachel Metz',
-        'Rachel Swarns Nyt': 'Rachel Swarns',
-        'Rachel Thorner Nyt': 'Rachel Thorner',
-        'Ralph Blumenthal Nyt': 'Ralph Blumenthal',
-        'Randy Kennedy Nyt': 'Randy Kennedy',
-        'Ray Glier Nyt': 'Ray Glier',
-        'Ray Rivera Nyt': 'Ray Rivera',
-        'Raymond Bonner Nyt': 'Raymond Bonner',
-        'Raymond Hernandez Nyt': 'Raymond Hernandez',
-        "Rebecca O'brien Nyt": "Rebecca O'brien",
-        'Reed Abelson Nyt': 'Reed Abelson',
-        'Regan Morris Nyt': 'Regan Morris',
-        'Renwick Mcclean Nyt': 'Renwick Mcclean',
-        'Renwick Mclean Nyt': 'Renwick McLean',
-        'Rich Tucker Nyt': 'Rich Tucker',
-        'Richard Bernstein Nyt': 'Richard Bernstein',
-        'Richard Perez-pena Nyt': 'Richard Perez-Pena',
-        'Richard Pérez-peña Nyt': 'Richard Pérez-Peña',
-        'Richard Sandomir Nyt': 'Richard Sandomir',
-        'Rick Lyman Nyt': 'Rick Lyman',
-        'Rita Farrell Nyt': 'Rita Farrell',
-        'Rob Gunnison Nyt': 'Rob Gunnison',
-        'Robert Hanley Nyt': 'Robert Hanley',
-        'Robert Pear Nyt': 'Robert Pear',
-        'Robert Strauss Nyt': 'Robert Strauss',
-        'Robert Worth Nyt': 'Robert Worth',
-        'Robin Pogrebin Nyt': 'Robin Pogrebin',
-        'Robin Shulman Nyt': 'Robin Shulman',
-        'Roger Cohen Nyt': 'Roger Cohen',
-        'Ronald Smothers Nyt': 'Ronald Smothers',
-        'Ross Milloy Nyt': 'Ross Milloy',
-        'Ruhullah Khapalwak Nyt': 'Ruhullah Khapalwak',
-        'Ruthie Ackerman Nyt': 'Ruthie Ackerman',
-        'Sabrina Tavernise Nyt': 'Sabrina Tavernise',
-        'Salman Masood Nyt': 'Salman Masood',
-        'Sam Dillon Nyt': 'Sam Dillon',
-        'Sam Len Nyt': 'Sam Len',
-        'Sam Roberts Nyt': 'Sam Roberts',
-        'Samar Aboul-fotouh Nyt': 'Samar Aboul-Fotouh',
-        'Samuel Abt Nyt': 'Samuel Abt',
-        'Samuel Len Nyt': 'Samuel Len',
-        'Sandra Blakeslee Nyt': 'Sandra Blakeslee',
-        'Sandra Harwitt Nyt': 'Sandra Harwitt',
-        'Sarah Garland Nyt': 'Sarah Garland',
-        'Sarah Kershaw Nyt': 'Sarah Kershaw',
-        'Sarah Lyall Nyt': 'Sarah Lyall',
-        'Sarah Plass Nyt': 'Sarah Plass',
-        'Saritha Rai Nyt': 'Saritha Rai',
-        'Sasha Cavender Nyt': 'Sasha Cavender',
-        'Saul Hansell Nyt': 'Saul Hansell',
-        'Scott Shane Nyt': 'Scott Shane',
-        'Scott Veale Nyt': 'Scott Veale',
-        'Sebnem Arsu Nyt': 'Sebnem Arsu',
-        'Sebnen Arsu Nyt': 'Sebnen Arsu',
-        'Serge Schmemann Nyt': 'Serge Schmemann',
-        'Seth Mydans Nyt': 'Seth Mydans',
-        'Seth Mydens Nyt': 'Seth Mydens',
-        'Seth Schiesel Nyt': 'Seth Schiesel',
-        'Sewell Chan Nyt': 'Sewell Chan',
-        'Shadi Rahimi Nyt': 'Shadi Rahimi',
-        'Shaila Dewan Nyt': 'Shaila Dewan',
-        'Sharon Lafraniere Nyt': 'Sharon LaFraniere',
-        'Sharon Waxman Nyt': 'Sharon Waxman',
-        'Sherri Day Nyt': 'Sherri Day',
-        'Shimali Senanayake Nyt': 'Shimali Senanayake',
-        'Simon Romero Nyt': 'Simon Romero',
-        'Simon Shifrin Nyt': 'Simon Shifrin',
-        'Somini Sengupta Nyt': 'Somini Sengupta',
-        'Sonia Kishkovsky Nyt': 'Sonia Kishkovsky',
-        'Sophia Chang Nyt': 'Sophia Chang',
-        'Sophia Kishkovsky Nyt': 'Sophia Kishkovsky',
-        'Stacey Stowe Nyt': 'Stacey Stowe',
-        'Stacy Albin Nyt': 'Stacy Albin',
-        'Stacy Stowe Nyt': 'Stacy Stowe',
-        'Stefano Coledan Nyt': 'Stefano Coledan',
-        'Stephanie Flanders Nyt': 'Stephanie Flanders',
-        'Stephanie Saul Nyt': 'Stephanie Saul',
-        'Stephanie Strom Nyt': 'Stephanie Strom',
-        'Stephen Labaton Nyt': 'Stephen Labaton',
-        'Steve Barnes Nyt': 'Steve Barnes',
-        'Steve Friess Nyt': 'Steve Friess',
-        'Steve Lohr Nyt': 'Steve Lohr',
-        'Steve Strunksy Nyt': 'Steve Strunksy',
-        'Steve Strunsky Nyt': 'Steve Strunsky',
-        'Steven Erlanger Nyt': 'Steven Erlanger',
-        'Steven Greenhouse Nyt': 'Steven Greenhouse',
-        'Stuart Elliot': 'Stuart Elliott',        # typo variant of the advertising columnist
-        'Stuart Elliot Nyt': 'Stuart Elliott',
-        # Accent mark variants (API inconsistently strips/preserves diacritics)
-        'Richard Perez-Pena': 'Richard Pérez-Peña',
-        'Jere Longman': 'Jeré Longman',
-        'Ceylan Yeğinsu': 'Ceylan Yeginsu',
-        'Orlando Mayorquin': 'Orlando Mayorquín',
-        'Stuart Elliott Nyt': 'Stuart Elliott',
-        'Sual Hansell Nyt': 'Sual Hansell',
-        'Suha Maayeh Nyt': 'Suha Maayeh',
-        'Susan Catto Nyt': 'Susan Catto',
-        'Susan Gotthelf Nyt': 'Susan Gotthelf',
-        'Susan Sachs Nyt': 'Susan Sachs',
-        'Susan Saulny Nyt': 'Susan Saulny',
-        'Susan Stellin Nyt': 'Susan Stellin',
-        'Suzanne Daley Nyt': 'Suzanne Daley',
-        'Suzanne Kapner Nyt': 'Suzanne Kapner',
-        'Tamar Lewin Nyt': 'Tamar Lewin',
-        'Tara Bahrampour Nyt': 'Tara Bahrampour',
-        'Terry Aguayo Nyt': 'Terry Aguayo',
-        'Terry Aquayo Nyt': 'Terry Aquayo',
-        'Terry Prisitn Nyt': 'Terry Prisitn',
-        'Terry Pristin Nyt': 'Terry Pristin',
-        'Thayer Evans Nyt': 'Thayer Evans',
-        'Theo Emery Nyt': 'Theo Emery',
-        'Thom Shanker Nyt': 'Thom Shanker',
-        'Thomas Crampton Nyt': 'Thomas Crampton',
-        'Thomas Fuller Nyt': 'Thomas Fuller',
-        'Thomas Lueck Nyt': 'Thomas Lueck',
-        'Tim Eaton Nyt': 'Tim Eaton',
-        'Tim Golden Nyt': 'Tim Golden',
-        'Tim Weiner Nyt': 'Tim Weiner',
-        'Timothy Egan Nyt': 'Timothy Egan',
-        'Timothy Pritchard Nyt': 'Timothy Pritchard',
-        'Timothy Williams Nyt': 'Timothy Williams',
-        'Tina Kelley Nyt': 'Tina Kelley',
-        'Todd Benson Nyt': 'Todd Benson',
-        'Todd Halvorson Nyt': 'Todd Halvorson',
-        'Todd Zaun Nyt': 'Todd Zaun',
-        'Tom Wright Nyt': 'Tom Wright',
-        'Tom Zeller Nyt': 'Tom Zeller',
-        'Toni Whitt Nyt': 'Toni Whitt',
-        'Tony Smith Nyt': 'Tony Smith',
-        'Tracie Rozhon Nyt': 'Tracie Rozhon',
-        'Tracy Rozhon Nyt': 'Tracy Rozhon',
-        'Tyler Kepner Nyt': 'Tyler Kepner',
-        'Tyrone Richardson Nyt': 'Tyrone Richardson',
-        'Vicki Vila Nyt': 'Vicki Vila',
-        'Victor Homola Nyt': 'Victor Homola',
-        'Victor Homolo Nyt': 'Victor Homolo',
-        'Victoria Shannon Nyt': 'Victoria Shannon',
-        'Viv Bernstein Nyt': 'Viv Bernstein',
-        'Wade Rawlins Nyt': 'Wade Rawlins',
-        'Walter Gibbs Nyt': 'Walter Gibbs',
-        'Warren Hoge Nyt': 'Warren Hoge',
-        'Warren Leary Nyt': 'Warren Leary',
-        'Wayne Arnold Nyt': 'Wayne Arnold',
-        'Wendy Ginsberg Nyt': 'Wendy Ginsberg',
-        'William Beaver Nyt': 'William Beaver',
-        'William Glaberson Nyt': 'William Glaberson',
-        'William Neuman Nyt': 'William Neuman',
-        'William Yardley Nyt': 'William Yardley',
-        'Winnie Hu Nyt': 'Winnie Hu',
-        'Yaniv Gafner Nyt': 'Yaniv Gafner',
-        'Yilu Zhao Nyt': 'Yilu Zhao',
-        'Zulfiqar Shah Nyt': 'Zulfiqar Shah',
-
-        # Manual corrections: dropped middle names/initials not caught by auto-dedup
-        # (both short and full forms had >10 articles, so the conservative threshold didn't fire)
-        # Verified via beats, section, year range, and where available Wikipedia/LinkedIn.
-        'Roni Rabin': 'Roni Caryn Rabin',
-        'Jeremy Peters': 'Jeremy W. Peters',
-        'Barnaby Feder': 'Barnaby J. Feder',
-        'Claudia Deutsch': 'Claudia H. Deutsch',
-        'Eric Taub': 'Eric A. Taub',
-        'Mallery Lane': 'Mallery Roberts Lane',
-        'Fred Bernstein': 'Fred A. Bernstein',
-        'Chris Nicholson': 'Chris V. Nicholson',
-        'Joyce Lau': 'Joyce Hor-chung Lau',
-        'Jonah Bromwich': 'Jonah Engel Bromwich',
-        'Adam Kepler': 'Adam W. Kepler',
-        'Rachel Harris': 'Rachel Lee Harris',
-        'Andrew Kramer': 'Andrew E. Kramer',       # Business/oil early career → Russia/World
-        'Robert Worth': 'Robert F. Worth',         # Metro desk start → Middle East correspondent (Wikipedia)
-        'Elizabeth Harris': 'Elizabeth A. Harris', # Metro → Business → Culture → Books (Wikipedia)
-        'Pedro Rosado': 'Pedro Rafael Rosado',     # Same audio/video producer (MuckRack)
-        'Natalia Osipova': 'Natalia V. Osipova',   # Same NYT video journalist (LinkedIn)
-        # NOT merging: 'Robert Frank' / 'Robert H. Frank' — different people
-        # (Robert H. Frank = Cornell economist/columnist; Robert Frank = wealth/lifestyle reporter)
-        # Middle name present in most bylines but occasionally dropped (user-confirmed same person)
-        'Michael Shear': 'Michael D. Shear',
-        # Middle-initial variants confirmed same person (count > 10 so auto-dedup skips them)
-        'David Sanger':         'David E. Sanger',
-        'Andrew Kramer':        'Andrew E. Kramer',
-        'Michael Grynbaum':     'Michael M. Grynbaum',
-        'Michael Gordon':       'Michael R. Gordon',
-        'David Kirkpatrick':    'David D. Kirkpatrick',
-        'David Halbfinger':     'David M. Halbfinger',
-        'Julian Barnes':        'Julian E. Barnes',
-        'John Broder':          'John M. Broder',
-        'Sheryl Stolberg':      'Sheryl Gay Stolberg',
-        'Matthew Wald':         'Matthew L. Wald',
-        'Robert Worth':         'Robert F. Worth',
-        'Howard French':        'Howard W. French',
-        'Craig Smith':          'Craig S. Smith',
-        'Evelyn Rusli':         'Evelyn M. Rusli',
-        'Jonathan Glater':      'Jonathan D. Glater',
-        'Barnaby Feder':        'Barnaby J. Feder',
-        'Carlos Conde':         'Carlos H. Conde',
-        'Lisa Foderaro':        'Lisa W. Foderaro',
-        'Nelson Schwartz':      'Nelson D. Schwartz',
-        'Rebecca Ruiz':         'Rebecca R. Ruiz',
-        'Timothy Williams':     'Timothy Williams',   # keep as-is; R. variant is the rare one
-        'Dylan Mcclain':        'Dylan Loeb McClain',
-        'Laura Holson':         'Laura M. Holson',
-        'Emily Hager':          'Emily B. Hager',
-        'Richard Chang':        'Richard S. Chang',
-        'Jane Levere':          'Jane L. Levere',
-        'Laurie Flynn':         'Laurie J. Flynn',
-        'Deborah B. Solomon':   'Deborah Solomon',    # shorter form is canonical
-        'Christopher Shea':     'Christopher D. Shea',
-        'Ellen L. Rosen':       'Ellen Rosen',
-        'Sheila Yasmin Marikar':'Sheila Marikar',
-        'Jeffrey J. Selingo':   'Jeffrey Selingo',
-        'George Gustines':      'George Gene Gustines',
-        'Alan S. Blinder':      'Alan Blinder',       # shorter form is canonical
-        'Scott L. Malcomson':   'Scott Malcomson',
-        # Bare-s prefix artifacts (mis-split possessive in byline string)
-        's Marilyn Stasio':     'Marilyn Stasio',
-        's Aurore de La Morinerie': 'Aurore de La Morinerie',
-        's Julie Just':         'Julie Just',
-        's Alison McCulloch':   'Alison McCulloch',
-        's Agnes Lee':          'Agnes Lee',
-        's Dave Itzkoff':       'Dave Itzkoff',
-        's Tara McKelvey':      'Tara McKelvey',
-        's Steven Heller':      'Steven Heller',
-        's Terrence Rafferty':  'Terrence Rafferty',
-        's Amy Virshup':        'Amy Virshup',
-        's Mick Sussman':       'Mick Sussman',
-        's Joseph Salvatore':   'Joseph Salvatore',
-        's Peter Dizikes':      'Peter Dizikes',
-        's Andrew Ervin':       'Andrew Ervin',
-        's Matthew Price':      'Matthew Price',
-        's Jeff Turrentine':    'Jeff Turrentine',
-        's Blake Wilson':       'Blake Wilson',
-        's Janet Maslin':       'Janet Maslin',
-        's J. Courtney':        'J. Courtney',
-        's Damien Florébert':   'Damien Florébert',
-        's Tomi Um':            'Tomi Um',
-    }
+    # Author name overrides loaded from data/author_overrides.json at module level.
+    # See data/author_overrides_notes.md for rationale and negative assertions.
 
     # Apply overrides iteratively (handles chains like "X Nyt" → "X" → "X Y. X")
     for _ in range(3):
@@ -1355,8 +565,6 @@ def process_articles(raw_articles):
 
 def build_author_stats(articles):
     """Build per-author statistics with precise annual productivity."""
-    from datetime import date as date_cls
-
     author_data = defaultdict(lambda: {
         "article_count": 0,
         "total_words": 0,
@@ -1438,8 +646,8 @@ def build_author_stats(articles):
         # When first_year == last_year the whole period is one partial year; normalize over actual days span.
         annual_words_norm = {}
         if years and first_date and last_date:
-            fd = date_cls.fromisoformat(first_date)
-            ld = date_cls.fromisoformat(last_date)
+            fd = date.fromisoformat(first_date)
+            ld = date.fromisoformat(last_date)
 
             for y in years:
                 raw = d["annual_words"][y]
@@ -1449,12 +657,12 @@ def build_author_stats(articles):
                     annual_words_norm[y] = round(raw * 365 / span_days)
                 elif y == years[0]:
                     # First year: days from first article to Dec 31
-                    year_end = date_cls(y, 12, 31)
+                    year_end = date(y, 12, 31)
                     active_days = max((year_end - fd).days + 1, 1)
                     annual_words_norm[y] = round(raw * 365 / active_days)
                 elif y == years[-1]:
                     # Last year: days from Jan 1 to last article
-                    year_start = date_cls(y, 1, 1)
+                    year_start = date(y, 1, 1)
                     active_days = max((ld - year_start).days + 1, 1)
                     annual_words_norm[y] = round(raw * 365 / active_days)
                 else:
@@ -1482,8 +690,8 @@ def build_author_stats(articles):
         # be wildly inflated when the first/last article falls in a short window).
         avg_words_per_year = 0
         if first_date and last_date and d["total_words"]:
-            fd = date_cls.fromisoformat(first_date)
-            ld = date_cls.fromisoformat(last_date)
+            fd = date.fromisoformat(first_date)
+            ld = date.fromisoformat(last_date)
             span_days = max((ld - fd).days, 1)
             # Don't compute for very short tenures — inflated by small denominator
             if span_days >= 90:
@@ -1496,9 +704,11 @@ def build_author_stats(articles):
             y: ctr.most_common(1)[0][0]
             for y, ctr in d["annual_sections"].items() if ctr
         }
-        all_sections = sorted(set(annual_primary.values()))
-        if primary_section and primary_section not in all_sections:
-            all_sections.insert(0, primary_section)
+        # Sort sections by total article count desc, limit to 6 most frequent
+        sec_counts = {s: d["sections"][s] for s in set(annual_primary.values())}
+        if primary_section and primary_section not in sec_counts:
+            sec_counts[primary_section] = d["sections"].get(primary_section, 0)
+        all_sections = [s for s, _ in sorted(sec_counts.items(), key=lambda x: -x[1])][:6]
 
         article_count = d["article_count"]
         shared_count = d["shared_byline_count"]
@@ -1669,8 +879,6 @@ def build_beats(articles, authors_list):
       beats_json    — dict to write as beats.json
       author_beats_map — {name: [subject, ...]} top beats per author
     """
-    import math
-
     author_section = {a['name']: a.get('primary_section', '') for a in authors_list}
 
     # Corpus subject frequency: docs per subject (deduplicated per article)
@@ -1724,7 +932,8 @@ def build_beats(articles, authors_list):
                 continue
             score = ratio * math.log(count + 1)
             scored.append((subj, score))
-        scored.sort(key=lambda x: x[1], reverse=True)
+        # Sort by article count desc (user-visible order = most-written-about first)
+        scored.sort(key=lambda x: -freq[x[0]])
         author_beats_map[name] = [s for s, _ in scored[:7]]
 
     # Sort each subject's reporters by count desc
@@ -2724,14 +1933,18 @@ def build_dashboard_data(articles, authors):
         "wc_hist_by_year": dict(all_wc_hist_by_year),
         "is_aggregate": True,
     }
-    # Build section_trend for All Sections (articles, avg, median per year)
+    # Build section_trend for All Sections (articles, avg, median per year).
+    # Group by year in one pass to avoid scanning all articles once per year.
+    _wcs_by_year = defaultdict(list)
+    for a in articles:
+        _wcs_by_year[str(a["year"])].append(a["word_count"])
     all_trend = []
     for y in all_years:
-        yr_articles = [a for a in articles if str(a["year"]) == y]
-        cnt = len(yr_articles)
-        wc_list = sorted(a["word_count"] for a in yr_articles if a["word_count"] > 0)
+        wcs = _wcs_by_year.get(y, [])
+        cnt = len(wcs)
+        wc_list = sorted(wc for wc in wcs if wc > 0)
         n = len(wc_list)
-        words = sum(a["word_count"] for a in yr_articles)
+        words = sum(wcs)
         avg = round(words / cnt) if cnt else 0
         median = round(wc_list[n // 2] if n % 2 else (wc_list[n // 2 - 1] + wc_list[n // 2]) / 2) if wc_list else 0
         all_trend.append({"year": y, "count": cnt, "avg_words": avg, "median_words": median})
@@ -3059,7 +2272,16 @@ def build_dashboard_data(articles, authors):
 
 
 def _normalize_subject_name(name):
-    """Title-case ALL CAPS names; leave acronyms (no spaces/commas) alone."""
+    """Title-case ALL CAPS names; normalize known capitalization variants."""
+    # Known capitalization inconsistencies (e.g. 'Amazon.Com Inc' vs 'Amazon.com Inc')
+    CANONICAL = {
+        'amazon.com inc': 'Amazon.com Inc',
+        'meta platforms inc': 'Meta Platforms Inc',
+        'alphabet inc': 'Alphabet Inc',
+    }
+    lower = name.lower()
+    if lower in CANONICAL:
+        return CANONICAL[lower]
     alpha = [c for c in name if c.isalpha()]
     if alpha and all(c.isupper() for c in alpha) and (' ' in name or ',' in name):
         return name.title()
@@ -3191,9 +2413,12 @@ def main():
             "pp": a["print_page"],     # print page
         }
         if a.get("glocations"):
-            # Normalize geolocation names to match world_coverage location_trends keys
-            # so the country popup filter (a.glocations.includes(country)) works correctly.
-            rec["g"] = [_normalize_loc(g) for g in a["glocations"]]
+            # Store raw glocations for sublocation detection (city/region parentheticals)
+            rec["g"] = a["glocations"]
+            # Also store normalized top-level names for country/state matching
+            normed = list(dict.fromkeys(_normalize_loc(g) for g in a["glocations"]))
+            if normed != a["glocations"]:  # only add if normalization changed anything
+                rec["gn"] = normed
         if a.get("canonical_states"):
             rec["st"] = a["canonical_states"]  # canonical US state names
         if a.get("subsection"):
