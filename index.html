@@ -3851,12 +3851,12 @@ function selectBeat(subject) {
       });
     });
     reporters = Object.entries(countMap)
-      .filter(([, n]) => n >= 3)
+      .filter(([name, n]) => n >= 3 && !INSTITUTIONAL_BYLINES.has(name))
       .sort(([, a], [, b]) => b - a)
       .slice(0, 30)
       .map(([name, count]) => ({ name, count, section: sectionMap[name] || '' }));
   } else {
-    reporters = (subjectIndex[subject] || []).slice(0, 30);
+    reporters = (subjectIndex[subject] || []).filter(r => !INSTITUTIONAL_BYLINES.has(r.name)).slice(0, 30);
   }
 
   // Use precomputed co-occurrences from beats.json
@@ -5710,10 +5710,16 @@ function openCountryDetail(country) {
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('countryDetailPanel').style.display='none';destroyChart('chartCountryDetail')">Close</button>
       <h3>${escapeHtml(country)}</h3>
-      <div class="timeline-meta">${total.toLocaleString()} articles in World section · ${years[0]}–${years[years.length-1]}</div>
+      <div class="timeline-meta">${total.toLocaleString()} articles in World section</div>
       <div style="margin-top:10px">
-        <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
-        <canvas id="chartCountryDetail" style="max-height:180px"></canvas>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span class="seg" id="countryChartModeSeg">
+            <button type="button" id="countryChartModeArticles" data-val="articles" class="on" onclick="setCountryChartMode('articles')">Articles/year</button>
+            <button type="button" id="countryChartModeReporters" data-val="reporters" onclick="setCountryChartMode('reporters')">Unique reporters/year</button>
+          </span>
+        </div>
+        <div id="countryArticlesWrap" style="position:relative"><canvas id="chartCountryDetail" style="max-height:180px"></canvas></div>
+        <div id="countryReportersWrap" style="position:relative;display:none"><canvas id="chartCountryReporters" style="max-height:180px"></canvas></div>
         ${blogTrends ? `<div style="margin-top:5px;font-size:11px;color:#888;display:flex;gap:14px">
           <span><span style="display:inline-block;width:10px;height:10px;background:rgba(50,104,145,0.75);border-radius:2px;margin-right:4px"></span>Standard articles</span>
           <span><span style="display:inline-block;width:10px;height:10px;background:rgba(60,160,140,0.75);border-radius:2px;margin-right:4px"></span>Blog articles (${country === 'India' ? 'India Ink' : country === 'Hong Kong' ? 'Sinosphere' : 'Sinosphere'} blog)</span>
@@ -5885,6 +5891,50 @@ function openCountryDetail(country) {
     });
   }
   renderCountryArticles(countryArticles);
+
+  // Store context for unique reporters toggle
+  window._currentCountryDetail = { country, years, artCounts: years.map(y => trend[y] || 0) };
+  window._countryChartMode = 'articles';
+}
+
+let _uniqueRepByCountry = null;
+function setCountryChartMode(mode) {
+  window._countryChartMode = mode;
+  document.querySelectorAll('#countryChartModeSeg button').forEach(b => b.classList.toggle('on', b.dataset.val === mode));
+  const aw = document.getElementById('countryArticlesWrap');
+  const rw = document.getElementById('countryReportersWrap');
+  if (mode === 'articles') { if(aw) aw.style.display=''; if(rw) rw.style.display='none'; }
+  else { if(aw) aw.style.display='none'; if(rw) rw.style.display=''; _renderCountryReportersChart(); }
+}
+function _renderCountryReportersChart() {
+  const ctx = window._currentCountryDetail;
+  if (!ctx) return;
+  const { country, years, artCounts } = ctx;
+  const load = _uniqueRepByCountry
+    ? Promise.resolve(_uniqueRepByCountry)
+    : fetch('data/unique_reporters_by_country.json').then(r=>r.json()).then(d => { _uniqueRepByCountry = d; return d; });
+  load.then(data => {
+    const repByYear = data[country] || {};
+    const repCounts = years.map(y => repByYear[y] || 0);
+    const avgPerRep = years.map((y,i) => repCounts[i] > 0 ? +(artCounts[i]/repCounts[i]).toFixed(1) : null);
+    destroyChart('chartCountryReporters');
+    chartInstances['chartCountryReporters'] = new Chart(document.getElementById('chartCountryReporters'), {
+      data: { labels: years, datasets: [
+        { type:'bar',  label:'Unique reporters',      data:repCounts, backgroundColor:'rgba(100,140,80,0.7)', yAxisID:'y' },
+        { type:'line', label:'Avg articles/reporter', data:avgPerRep,
+          borderColor:'rgba(50,104,145,0.85)', backgroundColor:'transparent',
+          borderWidth:2, pointRadius:2, tension:0.3, yAxisID:'y2' },
+      ]},
+      options: { responsive:true, plugins: {
+        legend: { position:'top', labels:{ font:{size:10}, boxWidth:10 } },
+        tooltip: { callbacks: { label: c => c.datasetIndex===0 ? `Unique reporters: ${c.parsed.y}` : `Avg articles/reporter: ${c.parsed.y?.toFixed(1)}` }}
+      }, scales: {
+        y:  { beginAtZero:true, ticks:{font:{size:10},color:'rgba(100,140,80,1)'}, title:{display:true,text:'Unique reporters',font:{size:9},color:'rgba(100,140,80,1)'} },
+        y2: { position:'right', beginAtZero:true, grid:{drawOnChartArea:false}, ticks:{font:{size:10},color:'rgba(50,104,145,0.85)'}, title:{display:true,text:'Avg articles/reporter',font:{size:9},color:'rgba(50,104,145,0.85)'} },
+        x:  { ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:14}, grid:{display:false} },
+      }}
+    });
+  }).catch(e => console.warn('country reporters data failed', e));
 }
 
 // --- STATES ---
@@ -6328,7 +6378,7 @@ function openStateDetail(state) {
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('stateDetailPanel').style.display='none';destroyChart('chartStateDetail')">Close</button>
       <h3>${escapeHtml(state)}</h3>
-      <div class="timeline-meta">${total.toLocaleString()} articles · ${years[0]}–${years[years.length-1]}</div>
+      <div class="timeline-meta">${total.toLocaleString()} articles</div>
       <div style="margin-top:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
           <span class="seg" id="stateChartModeSeg">
