@@ -2271,6 +2271,36 @@ def build_dashboard_data(articles, authors):
     }
 
 
+# Subject keyword continuity merges — NYT changed tag names over time,
+# causing abrupt gaps in beat coverage. Map old → new canonical form.
+_SUBJECT_KW_MERGES = {
+    'Housing': 'Real Estate and Housing (Residential)',
+    'ATOMIC WEAPONS': 'Nuclear Weapons',
+    'RECORDINGS (AUDIO)': 'Recordings and Downloads (Audio)',
+    'RECORDINGS (VIDEO)': 'Recordings and Downloads (Video)',
+    'APPAREL': 'Fashion and Apparel',
+    'LABOR': 'Labor and Jobs',
+    'IMMIGRATION AND REFUGEES': 'Immigration and Emigration',
+    'UNITED STATES ARMAMENT AND DEFENSE': 'Armament, Defense and Military Forces',
+    'ADVERTISING': 'Advertising and Marketing',
+}
+
+_ORG_KW_MERGES = {
+    'NEW YORK KNICKERBOCKERS': 'New York Knicks',
+}
+
+def _normalize_subject_kw(name):
+    """Merge discontinued NYT subject tags to their current equivalents."""
+    if name in _SUBJECT_KW_MERGES:
+        return _SUBJECT_KW_MERGES[name]
+    return name
+
+def _normalize_org_kw(name):
+    """Merge discontinued NYT organization tags to their current equivalents."""
+    if name in _ORG_KW_MERGES:
+        return _ORG_KW_MERGES[name]
+    return name
+
 def _normalize_subject_name(name):
     """Title-case ALL CAPS names; normalize known capitalization variants."""
     # Known capitalization inconsistencies (e.g. 'Amazon.Com Inc' vs 'Amazon.com Inc')
@@ -2424,11 +2454,11 @@ def main():
         if a.get("subsection"):
             rec["ss"] = a["subsection"]  # subsection
         if a.get("subjects"):
-            rec["sb"] = a["subjects"]  # subject keywords
+            rec["sb"] = [_normalize_subject_kw(s) for s in a["subjects"]]  # subject keywords
         if a.get("persons"):
             rec["pe"] = a["persons"]   # persons keywords
         if a.get("organizations"):
-            rec["og"] = a["organizations"]  # organizations keywords
+            rec["og"] = [_normalize_org_kw(o) for o in a["organizations"]]  # organizations keywords
         if a.get("print_headline"):
             rec["ph"] = a["print_headline"]  # print headline (omit if empty to save space)
         if a.get("kicker"):
