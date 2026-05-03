@@ -12,6 +12,7 @@ Resumable via cache/corrections/<slug>.html (skip if cached).
 """
 import json, os, re, sys, time, glob, hashlib, urllib.request, gzip
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import date, timedelta
 from bs4 import BeautifulSoup
 
 CACHE_DIR = 'cache/corrections'
@@ -241,7 +242,6 @@ def parse_correction_page(html, page_url, page_pub_date):
         #   1. "on Sunday" / "on Monday" → most recent matching weekday before page_date
         #   2. "last Sunday" / "last Monday" → same logic; Times uses "last" interchangeably
         #   3. "this weekend" / "last weekend" → most recent Sunday before page_date
-        from datetime import date, timedelta
         if not ref_date and page_pub_date:
             dm = RE_DAY_OF_WEEK.search(text) or RE_LAST_DAY.search(text)
             target_day = None
@@ -314,9 +314,25 @@ def main():
     print(f'Years: {sorted(years)}, URLs: {len(urls)}')
     fetch_all(urls)
     items = parse_all(urls)
+
+    # SAFE MERGE: load existing data and merge rather than overwrite.
+    # This prevents running a single-year scrape from destroying all other years' data.
+    existing = []
+    if os.path.exists(OUT_PATH):
+        try:
+            with open(OUT_PATH) as fh:
+                existing = json.load(fh)
+        except (json.JSONDecodeError, ValueError):
+            existing = []
+
+    # Remove existing entries for the years being re-scraped, then add new ones
+    keep = [c for c in existing if c.get('page_date', '')[:4] not in years]
+    merged = keep + items
+    merged.sort(key=lambda c: c.get('page_date', ''))
+
     with open(OUT_PATH, 'w') as fh:
-        json.dump(items, fh, separators=(',', ':'))
-    print(f'Saved {OUT_PATH} ({os.path.getsize(OUT_PATH):,} bytes)')
+        json.dump(merged, fh, separators=(',', ':'))
+    print(f'Saved {OUT_PATH}: {len(merged):,} total ({len(items):,} new, {len(keep):,} retained)')
 
 
 if __name__ == '__main__':

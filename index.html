@@ -4103,8 +4103,15 @@ function showAuthorTimeline(name, opts = {}) {
           <canvas id="${chartId}" style="max-height:160px"></canvas>
         </div>
         <div style="display:flex;flex-direction:column">
-          <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px">Word count per article</div>
-          <canvas id="${chartId}_hist" style="max-height:160px"></canvas>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Word count per article</span>
+            <span class="seg" id="${chartId}-wcmode">
+              <button type="button" data-val="dist" class="on" onclick="_setWcMode('${chartId}','dist')">Distribution</button>
+              <button type="button" data-val="time" onclick="_setWcMode('${chartId}','time')">Over time</button>
+            </span>
+          </div>
+          <div id="${chartId}-hist-wrap"><canvas id="${chartId}_hist" style="max-height:160px"></canvas></div>
+          <div id="${chartId}-time-wrap" style="display:none"><canvas id="${chartId}_time" style="max-height:160px"></canvas></div>
           <div id="${chartId}-hist-note" style="font-size:10px;color:#bbb;margin-top:2px"></div>
         </div>
       </div>
@@ -4408,6 +4415,47 @@ function showAuthorTimeline(name, opts = {}) {
       if (histChart) histChart._activeHistBin = null;
       renderHistArticles(null, true);   // resets visual highlight
       _applyAllFilters();               // re-renders article list with no filters
+    });
+  }
+
+  // ── Word count mode toggle: Distribution | Over time ─────────────────────
+  window[`_wcMode_${chartId}`] = 'dist';
+  function _setWcMode(cid, mode) {
+    if (cid !== chartId) return;
+    window[`_wcMode_${cid}`] = mode;
+    document.querySelectorAll(`#${cid}-wcmode button`).forEach(b => b.classList.toggle('on', b.dataset.val === mode));
+    document.getElementById(`${cid}-hist-wrap`).style.display = mode === 'dist' ? '' : 'none';
+    document.getElementById(`${cid}-time-wrap`).style.display = mode === 'time' ? '' : 'none';
+    if (mode === 'time') _renderWcOverTime();
+  }
+  function _renderWcOverTime() {
+    // Compute avg words/article per year from annual_words_norm ÷ yearly article count
+    // Only include years with ≥ 5 standard articles (meaningful signal)
+    const MIN_ARTS = 5;
+    const yearArts = {};
+    Object.entries(authorInfo.monthly_counts || {}).forEach(([ym, n]) => {
+      const y = ym.slice(0,4);
+      yearArts[y] = (yearArts[y] || 0) + n;
+    });
+    const wn = authorInfo.annual_words_norm || {};
+    const pts = Object.keys(wn).sort().filter(y => (yearArts[y] || 0) >= MIN_ARTS);
+    const vals = pts.map(y => {
+      const n = yearArts[y] || 0;
+      return n > 0 ? Math.round(wn[y] / n) : null;
+    });
+    const canvas = document.getElementById(`${chartId}_time`);
+    if (!canvas) return;
+    destroyChart(`${chartId}_time`);
+    chartInstances[`${chartId}_time`] = new Chart(canvas, {
+      type: 'line',
+      data: { labels: pts, datasets: [{ label: 'Avg words/article', data: vals,
+        borderColor: 'rgba(100,60,160,0.85)', backgroundColor: 'rgba(100,60,160,0.1)',
+        tension: 0.3, pointRadius: 3, fill: true }] },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false },
+          tooltip: { callbacks: { label: c => `${c.parsed.y?.toLocaleString()} words/article (avg, ${MIN_ARTS}+ articles that year)` }} },
+        scales: { x: { ticks: { font:{size:9}, maxRotation:0, autoSkip:true, maxTicksLimit:12 } },
+                  y: { beginAtZero: true, ticks: { font:{size:9} } } } }
     });
   }
 
@@ -8486,7 +8534,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 4:24pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 5:09pm</span>
 </div>
 </body>
 </html>
