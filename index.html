@@ -555,6 +555,7 @@
 
       <h4>Words</h4>
       <p>The API includes a word count of each article, but has some anomalies. Interactive and multimedia pieces including data visualizations and photo essays are typically indexed with a word count of zero, even when they contain substantial reporting. Interactives make up roughly 10% of New York Times Magazine items in the API and a growing share of digital-native journalism. Word-count statistics for sections with heavy interactive output (Magazine, Upshot, Visual Investigations) and for individual authors who shifted toward multimedia formats therefore understate actual editorial output. Articles with a word count of 0 are excluded from average word count calculations per reporter and per section, on the assumption that they represent missing data rather than genuinely empty articles.</p>
+      <p>In reporter profiles, blog posts (hosted at <code>*.blogs.nytimes.com</code> subdomains, DealBook, and the 2014–2016 First Draft political blog at <code>/politics/first-draft/</code>) and <code>/live/</code> news-blog updates — short real-time entries contributed to breaking-news live streams, averaging ~500 words — are tracked separately from standard articles and shown in distinct colors on the Articles per Year chart. Both are also excluded from average word count calculations, since they reflect different writing modes from a reporter's standard output.</p>
       <p>The NYT has also indexed podcasts inconsistently over time and across shows: some episodes are entered with a full transcript as the article body, while others appear only as short landing pages. The same show can switch policies — The Ezra Klein Show, for example, was indexed as ~400-word descriptions through 2023 and then as full transcripts beginning in 2024, while The Daily has remained short summaries throughout. Word-count trends for podcast contributors are therefore often not comparable between reporters or across years. For purposes of the reporter profiles in this dashboard, a podcast episode is identified by any of: the article's section being "Podcasts," a URL path containing <code>/podcasts/</code> or <code>/audio/</code>, or the article's kicker matching a known NYT show title — separating true episodes from news articles that merely reference a podcast.</p>
 
       <h4>Beats</h4>
@@ -4123,13 +4124,14 @@ function showAuthorTimeline(name, opts = {}) {
     // ── Build legend HTML ─────────────────────────────────────────────────────
     function buildLegend(mode) {
       const parts = [];
-      if (hasBlog || hasPodcast) {
+      if (hasBlog || hasPodcast || hasLive) {
         parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+STANDARD_COLOR+';display:inline-block;border-radius:1px"></span>Standard</span>');
         if (hasBlog) {
           parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+BLOG_COLOR+';display:inline-block;border-radius:1px"></span>Blog</span>');
         }
         if (hasPodcast) {
           parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+PODCAST_COLOR+';display:inline-block;border-radius:1px"></span>Podcast</span>');
+        }
         if (hasLive) {
           parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+LIVE_COLOR+';display:inline-block;border-radius:1px"></span>Live</span>');
         }
@@ -4338,8 +4340,11 @@ function showAuthorTimeline(name, opts = {}) {
           c.style.color = c.classList.contains('author-beat-chip') ? '#326891' : '#777';
         });
       });
-      // Clear wc histogram highlight
-      renderHistArticles(null, true);
+      // Reset histogram highlight AND year bar highlight
+      const histChart = chartInstances[chartId + '_hist'];
+      if (histChart) histChart._activeHistBin = null;
+      renderHistArticles(null, true);   // resets visual highlight
+      _applyAllFilters();               // re-renders article list with no filters
     });
   }
 
