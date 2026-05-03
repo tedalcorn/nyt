@@ -5822,13 +5822,6 @@ function openCountryDetail(country) {
           }
         }
       },
-      onClick: (evt, els) => {
-        if (!els.length) return;
-        const yr = years[els[0].index];
-        const filtered = yr === window._countryYrFilter ? null : countryArticles.filter(a => (a.pub_date||'').startsWith(yr));
-        window._countryYrFilter = filtered ? yr : null;
-        renderCountryArticles(filtered || countryArticles);
-      },
       scales: {
         x: { stacked: !!blogTrends },
         y: { beginAtZero: true, stacked: !!blogTrends }
@@ -5870,7 +5863,7 @@ function openCountryDetail(country) {
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
        >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
-    ).join('');
+    }).join('');
     document.getElementById('countryTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
       `<div style="font-size:13px;line-height:2;display:flex;flex-wrap:wrap">${rhtml}</div>`;
@@ -5978,7 +5971,7 @@ function openCountryDetail(country) {
   // Store context for unique reporters toggle
   window._currentCountryDetail = { country, years, artCounts: years.map(y => trend[y] || 0) };
   window._countryChartMode = 'articles';
-}
+} // end openCountryDetail
 
 let _uniqueRepByCountry = null;
 function setCountryChartMode(mode) {
@@ -6557,7 +6550,7 @@ function openStateDetail(state) {
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
        >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
-    ).join('');
+    }).join('');
     document.getElementById('stateTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
       `<div style="font-size:13px;line-height:2;display:flex;flex-wrap:wrap">${rhtml}</div>`;
@@ -8417,7 +8410,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 7:43am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 8:19am</span>
 </div>
 </body>
 </html>
