@@ -4065,8 +4065,11 @@ function showAuthorTimeline(name, opts = {}) {
     const podCounts = authorInfo.annual_podcast_counts || {};
     const podWordNorm = authorInfo.annual_podcast_words_norm || {};
     const hasPodcast = Object.values(podCounts).reduce((s,v)=>s+v,0) > 0;
+    const liveCounts = authorInfo.annual_live_counts || {};
+    const liveWordNorm = authorInfo.annual_live_words_norm || {};
+    const hasLive = Object.values(liveCounts).reduce((s,v)=>s+v,0) > 0;
     const spanYears = (authorInfo.last_year||0) - (authorInfo.first_year||0) + 1;
-    const useAnnual = hasBlog || hasPodcast || spanYears > 10;
+    const useAnnual = hasBlog || hasPodcast || hasLive || spanYears > 10;
     const granLabel = useAnnual ? 'per year' : 'per month';
     const thisYear = String(new Date().getFullYear());
     const avgWordsPerYear = authorInfo.avg_words_per_year || 0;
@@ -4081,6 +4084,7 @@ function showAuthorTimeline(name, opts = {}) {
     const STANDARD_COLOR = 'rgba(50,104,145,0.75)';
     const BLOG_COLOR     = 'rgba(60,160,140,0.75)';
     const PODCAST_COLOR  = 'rgba(140,90,175,0.78)';
+    const LIVE_COLOR     = 'rgba(210,175,50,0.82)';  // light yellow for live blogs
 
     // ── Build annual article data ──────────────────────────────────────────────
     const byMonth = authorInfo.monthly_counts || {};
@@ -4126,6 +4130,8 @@ function showAuthorTimeline(name, opts = {}) {
         }
         if (hasPodcast) {
           parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+PODCAST_COLOR+';display:inline-block;border-radius:1px"></span>Podcast</span>');
+        if (hasLive) {
+          parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+LIVE_COLOR+';display:inline-block;border-radius:1px"></span>Live</span>');
         }
       }
       if (useAnnual) {
@@ -4161,13 +4167,15 @@ function showAuthorTimeline(name, opts = {}) {
         const solidBlue = 'rgba(50,104,145,0.7)';
         const isEdge = (i, arr) => arr.length > 1 && (i === 0 || (i === arr.length-1 && arr[i] === thisYear));
 
-        if ((hasBlog || hasPodcast) && mode === 'articles') {
-          const nonStd = years.map(y => Math.max(0, (annualArtTotals[y]||0) - (blogCounts[y]||0) - (podCounts[y]||0)));
+        if ((hasBlog || hasPodcast || hasLive) && mode === 'articles') {
+          const nonStd = years.map(y => Math.max(0, (annualArtTotals[y]||0) - (blogCounts[y]||0) - (podCounts[y]||0) - (liveCounts[y]||0)));
           const blog   = years.map(y => blogCounts[y] || 0);
           const pod    = years.map(y => podCounts[y]  || 0);
+          const live   = years.map(y => liveCounts[y]  || 0);
           const datasets = [{ label:'Standard', data:nonStd, backgroundColor:STANDARD_COLOR, stack:'a' }];
           if (hasBlog)    datasets.push({ label:'Blog',    data:blog, backgroundColor:BLOG_COLOR,    stack:'a' });
           if (hasPodcast) datasets.push({ label:'Podcast', data:pod,  backgroundColor:PODCAST_COLOR, stack:'a' });
+          if (hasLive)    datasets.push({ label:'Live',    data:live, backgroundColor:LIVE_COLOR,    stack:'a' });
           if (avgArtsPerYear) datasets.push({ label:'Avg', data:years.map(()=>avgArtsPerYear), type:'line',
             borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3], borderWidth:1.5, pointRadius:0, fill:false });
           chartInstances[chartId] = new Chart(canvas, {

@@ -579,6 +579,8 @@ def build_author_stats(articles):
         "annual_blog_words": defaultdict(int),   # year -> words from blog articles
         "annual_podcast_counts": defaultdict(int),  # year -> podcast article count
         "annual_podcast_words": defaultdict(int),   # year -> words from podcast articles
+        "annual_live_counts": defaultdict(int),   # year -> /live/ article count
+        "annual_live_words": defaultdict(int),    # year -> words from /live/ articles
         "shared_byline_count": 0,
         "monthly_shared_counts": defaultdict(int),  # YYYY-MM -> shared article count
         "coauthors": Counter(),
@@ -607,6 +609,9 @@ def build_author_stats(articles):
             if is_blog_url(art.get("web_url", "")):
                 d["annual_blog_counts"][year] += 1
                 d["annual_blog_words"][year] += author_words
+            if is_live_url(art.get("web_url", "")):
+                d["annual_live_counts"][year] += 1
+                d["annual_live_words"][year] += author_words
             if is_podcast_article(art.get("section"), art.get("web_url", ""), art.get("kicker", "")):
                 d["annual_podcast_counts"][year] += 1
                 d["annual_podcast_words"][year] += author_words
@@ -685,6 +690,14 @@ def build_author_stats(articles):
             if raw_total > 0 and raw_pod > 0 and y in annual_words_norm:
                 annual_podcast_words_norm[y] = round(annual_words_norm[y] * raw_pod / raw_total)
 
+        # Same normalization for live blog words
+        annual_live_words_norm = {}
+        for y in years:
+            raw_total = d["annual_words"].get(y, 0)
+            raw_live = d["annual_live_words"].get(y, 0)
+            if raw_total > 0 and raw_live > 0 and y in annual_words_norm:
+                annual_live_words_norm[y] = round(annual_words_norm[y] * raw_live / raw_total)
+
         # avg_words_per_year: total words / actual date span in fractional years.
         # This avoids the distortion of averaging annualized edge years (which can
         # be wildly inflated when the first/last article falls in a short window).
@@ -714,11 +727,13 @@ def build_author_stats(articles):
         shared_count = d["shared_byline_count"]
         zero_word_rate = d["zero_word_articles"] / article_count if article_count else 0
         shared_rate = shared_count / article_count if article_count else 0
-        # Exclude zero-word articles from avg so interactives/videos don't
-        # pull the average down — 0 words means the API didn't index the text,
-        # not that the article has no words.
-        nonzero_count = article_count - d["zero_word_articles"]
-        avg_words = round(d["total_words"] / nonzero_count) if nonzero_count else 0
+        # Exclude zero-word articles AND /live/ entries from avg — the latter
+        # are short real-time updates that don't reflect a reporter's article length.
+        live_count = sum(d["annual_live_counts"].values())
+        live_words = sum(d["annual_live_words"].values())
+        nonzero_count = article_count - d["zero_word_articles"] - live_count
+        nonzero_words = d["total_words"] - live_words
+        avg_words = round(nonzero_words / nonzero_count) if nonzero_count else 0
         # Likely non-editorial / collaborative byline: photographers, video producers,
         # podcast staff, crossword constructors, illustrators, etc.
         # Five routes to flagging:
@@ -780,6 +795,8 @@ def build_author_stats(articles):
             "annual_blog_words_norm": annual_blog_words_norm if annual_blog_words_norm else {},
             "annual_podcast_counts": dict(d["annual_podcast_counts"]) if any(d["annual_podcast_counts"].values()) else {},
             "annual_podcast_words_norm": annual_podcast_words_norm if annual_podcast_words_norm else {},
+            "annual_live_counts": dict(d["annual_live_counts"]) if any(d["annual_live_counts"].values()) else {},
+            "annual_live_words_norm": annual_live_words_norm if annual_live_words_norm else {},
             "shared_byline_count": shared_count,
             "monthly_shared_counts": dict(d["monthly_shared_counts"]),
             "coauthors": top_coauthors,
@@ -972,14 +989,37 @@ def build_beats(articles, authors_list):
 
 
 def is_blog_url(url):
-    """Return True if the URL is a blog post (*.blogs.nytimes.com or dealbook.nytimes.com)."""
+    """Return True if the URL is a blog post."""
     if not url:
         return False
     try:
         domain = url.split('/')[2]
     except IndexError:
         return False
-    return domain.endswith('.blogs.nytimes.com') or domain == 'dealbook.nytimes.com'
+    if domain.endswith('.blogs.nytimes.com') or domain == 'dealbook.nytimes.com':
+        return True
+    # First Draft: NYT's political blog 2014-2016 (filed under U.S. section,
+    # not detected by subdomain check)
+    if '/politics/first-draft/' in url:
+        return True
+    return False
+
+
+def is_live_url(url):
+    """Return True if the URL is a /live/ news-blog entry (2015+).
+
+    Pattern: nytimes.com/live/YYYY/MM/DD/section/slug[#entry]
+    Distinct from standard articles — short individual updates (~400-550w avg)
+    contributed by reporters to a breaking-news live blog stream.
+    """
+    if not url:
+        return False
+    # Must have /live/ as the first path segment after the domain
+    try:
+        path = url.split('/', 3)[-1]  # everything after https://www.nytimes.com/
+        return path.startswith('live/')
+    except (IndexError, AttributeError):
+        return False
 
 
 # Kicker strings (case-insensitive, stripped) used to label NYT podcast episodes
