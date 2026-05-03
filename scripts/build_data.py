@@ -409,7 +409,8 @@ def process_articles(raw_articles):
             if kw_name in ("glocations", "Location"):
                 glocations.append(kw["value"])
             elif kw_name in ("subject", "Subject"):
-                subjects.append(SUBJECT_RENAMES.get(kw["value"], kw["value"]))
+                # Apply continuity merges at ingestion so beats + compact format stay in sync
+                subjects.append(_normalize_subject_kw(SUBJECT_RENAMES.get(kw["value"], kw["value"])))
             elif kw_name in ("persons", "Persons"):
                 persons_kw.append(kw["value"])
             elif kw_name in ("organizations", "Organizations"):
@@ -440,6 +441,7 @@ def process_articles(raw_articles):
             "subsection": subsection,
             "news_desk": news_desk,
             "type": doc_type,
+            "type_of_material": mat,
             "web_url": web_url,
             "print_section": print_section,
             "print_page": print_page,
@@ -579,8 +581,8 @@ def build_author_stats(articles):
         "annual_blog_words": defaultdict(int),   # year -> words from blog articles
         "annual_podcast_counts": defaultdict(int),  # year -> podcast article count
         "annual_podcast_words": defaultdict(int),   # year -> words from podcast articles
-        "annual_live_counts": defaultdict(int),   # year -> /live/ article count
-        "annual_live_words": defaultdict(int),    # year -> words from /live/ articles
+        "annual_live_counts": defaultdict(int),   # year -> /live/ and Brief article count
+        "annual_live_words": defaultdict(int),    # year -> words from /live/ and Brief articles
         "shared_byline_count": 0,
         "monthly_shared_counts": defaultdict(int),  # YYYY-MM -> shared article count
         "coauthors": Counter(),
@@ -609,7 +611,7 @@ def build_author_stats(articles):
             if is_blog_url(art.get("web_url", "")):
                 d["annual_blog_counts"][year] += 1
                 d["annual_blog_words"][year] += author_words
-            if is_live_url(art.get("web_url", "")):
+            if is_live_url(art.get("web_url", "")) or art.get("type_of_material") == "Brief":
                 d["annual_live_counts"][year] += 1
                 d["annual_live_words"][year] += author_words
             if is_podcast_article(art.get("section"), art.get("web_url", ""), art.get("kicker", "")):
@@ -727,8 +729,8 @@ def build_author_stats(articles):
         shared_count = d["shared_byline_count"]
         zero_word_rate = d["zero_word_articles"] / article_count if article_count else 0
         shared_rate = shared_count / article_count if article_count else 0
-        # Exclude zero-word articles AND /live/ entries from avg — the latter
-        # are short real-time updates that don't reflect a reporter's article length.
+        # Exclude zero-word articles, /live/ entries, and Brief items from avg —
+        # all three are short-form content that doesn't reflect standard article length.
         live_count = sum(d["annual_live_counts"].values())
         live_words = sum(d["annual_live_words"].values())
         nonzero_count = article_count - d["zero_word_articles"] - live_count
@@ -2330,9 +2332,20 @@ _ORG_KW_MERGES = {
 }
 
 def _normalize_subject_kw(name):
-    """Merge discontinued NYT subject tags to their current equivalents."""
+    """Merge discontinued NYT subject tags to their current equivalents.
+    Also title-cases ALL-CAPS tags so e.g. 'ADVERTISING AND MARKETING'
+    (all-caps variant) maps to the same form as 'Advertising and Marketing'.
+    """
     if name in _SUBJECT_KW_MERGES:
         return _SUBJECT_KW_MERGES[name]
+    # Title-case all-caps tags, then check merges again for variants
+    alpha = [c for c in name if c.isalpha()]
+    if alpha and all(c.isupper() for c in alpha) and (' ' in name or ',' in name):
+        title = name.title()
+        # Fix common prepositions that title() capitalizes incorrectly
+        for word in (' And ', ' Or ', ' The ', ' Of ', ' In ', ' For ', ' To ', ' A '):
+            title = title.replace(word, word.lower())
+        return title
     return name
 
 def _normalize_org_kw(name):

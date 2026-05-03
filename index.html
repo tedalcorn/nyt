@@ -555,7 +555,7 @@
 
       <h4>Words</h4>
       <p>The API includes a word count of each article, but has some anomalies. Interactive and multimedia pieces including data visualizations and photo essays are typically indexed with a word count of zero, even when they contain substantial reporting. Interactives make up roughly 10% of New York Times Magazine items in the API and a growing share of digital-native journalism. Word-count statistics for sections with heavy interactive output (Magazine, Upshot, Visual Investigations) and for individual authors who shifted toward multimedia formats therefore understate actual editorial output. Articles with a word count of 0 are excluded from average word count calculations per reporter and per section, on the assumption that they represent missing data rather than genuinely empty articles.</p>
-      <p>In reporter profiles, blog posts (hosted at <code>*.blogs.nytimes.com</code> subdomains, DealBook, and the 2014–2016 First Draft political blog at <code>/politics/first-draft/</code>) and <code>/live/</code> news-blog updates — short real-time entries contributed to breaking-news live streams, averaging ~500 words — are tracked separately from standard articles and shown in distinct colors on the Articles per Year chart. Both are also excluded from average word count calculations, since they reflect different writing modes from a reporter's standard output.</p>
+      <p>In reporter profiles, three short-form content types are tracked separately, shown in <strong>light yellow</strong> on the Articles per Year chart, and excluded from average word count: <strong>blog posts</strong> (hosted at <code>*.blogs.nytimes.com</code> subdomains, DealBook, and the 2014–2016 First Draft political blog); <strong>/live/ news-blog updates</strong> — short real-time entries contributed to breaking-news live streams, averaging ~500 words; and <strong>briefs</strong> — identified by the API's <code>type_of_material="Brief"</code> tag, used 2006–2018 for World Briefing, Arts Briefly, National Briefing, and similar short dispatches averaging ~130 words.</p>
       <p>The NYT has also indexed podcasts inconsistently over time and across shows: some episodes are entered with a full transcript as the article body, while others appear only as short landing pages. The same show can switch policies — The Ezra Klein Show, for example, was indexed as ~400-word descriptions through 2023 and then as full transcripts beginning in 2024, while The Daily has remained short summaries throughout. Word-count trends for podcast contributors are therefore often not comparable between reporters or across years. For purposes of the reporter profiles in this dashboard, a podcast episode is identified by any of: the article's section being "Podcasts," a URL path containing <code>/podcasts/</code> or <code>/audio/</code>, or the article's kicker matching a known NYT show title — separating true episodes from news articles that merely reference a podcast.</p>
 
       <h4>Beats</h4>
@@ -3065,7 +3065,7 @@ function _renderStateDetailArticlesChart() {
     options: { responsive: true, plugins: { legend: { display: false },
       tooltip: { callbacks: { afterLabel: ctx => {
         const y = years[ctx.dataIndex];
-        const note = annotations[y] ? 'Notable: ' + annotations[y] : '';
+        const note = annotations[y] ? 'Notable event: ' + annotations[y] : '';
         const dcNote = isDC && DC_BAD.has(y) ? '⚠ API over-tagging suspected (post-9/11)' : '';
         return [note, dcNote].filter(Boolean).join('\n');
       }}}},
@@ -4085,7 +4085,7 @@ function showAuthorTimeline(name, opts = {}) {
     const STANDARD_COLOR = 'rgba(50,104,145,0.75)';
     const BLOG_COLOR     = 'rgba(60,160,140,0.75)';
     const PODCAST_COLOR  = 'rgba(140,90,175,0.78)';
-    const LIVE_COLOR     = 'rgba(210,175,50,0.82)';  // light yellow for live blogs
+    const LIVE_COLOR     = 'rgba(210,175,50,0.82)';  // light yellow for live blogs and briefs
 
     // ── Build annual article data ──────────────────────────────────────────────
     const byMonth = authorInfo.monthly_counts || {};
@@ -4133,7 +4133,7 @@ function showAuthorTimeline(name, opts = {}) {
           parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+PODCAST_COLOR+';display:inline-block;border-radius:1px"></span>Podcast</span>');
         }
         if (hasLive) {
-          parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+LIVE_COLOR+';display:inline-block;border-radius:1px"></span>Live</span>');
+          parts.push('<span style="display:inline-flex;align-items:center;gap:3px"><span style="width:10px;height:10px;background:'+LIVE_COLOR+';display:inline-block;border-radius:1px"></span>Live/Brief</span>');
         }
       }
       if (useAnnual) {
@@ -4177,7 +4177,7 @@ function showAuthorTimeline(name, opts = {}) {
           const datasets = [{ label:'Standard', data:nonStd, backgroundColor:STANDARD_COLOR, stack:'a' }];
           if (hasBlog)    datasets.push({ label:'Blog',    data:blog, backgroundColor:BLOG_COLOR,    stack:'a' });
           if (hasPodcast) datasets.push({ label:'Podcast', data:pod,  backgroundColor:PODCAST_COLOR, stack:'a' });
-          if (hasLive)    datasets.push({ label:'Live',    data:live, backgroundColor:LIVE_COLOR,    stack:'a' });
+          if (hasLive)    datasets.push({ label:'Live/Brief',    data:live, backgroundColor:LIVE_COLOR,    stack:'a' });
           if (avgArtsPerYear) datasets.push({ label:'Avg', data:years.map(()=>avgArtsPerYear), type:'line',
             borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3], borderWidth:1.5, pointRadius:0, fill:false });
           chartInstances[chartId] = new Chart(canvas, {
@@ -4550,6 +4550,8 @@ function showAuthorTimeline(name, opts = {}) {
     function _wireChip(containerEl, chipClass, fsKey, getVal, activeBg, activeColor) {
       if (!containerEl) return;
       containerEl.querySelectorAll('.' + chipClass).forEach(chip => {
+        if (chip.dataset.wired === '1') return;  // prevent double-wiring on second fillArticleDetails call
+        chip.dataset.wired = '1';
         chip.addEventListener('click', () => {
           const wasActive = chip.dataset.active === '1';
           // Clear all chips of same type
@@ -5751,7 +5753,6 @@ function openCountryDetail(country) {
           <span><span style="display:inline-block;width:10px;height:10px;background:rgba(60,160,140,0.75);border-radius:2px;margin-right:4px"></span>Blog articles (${country === 'India' ? 'India Ink' : country === 'Hong Kong' ? 'Sinosphere' : 'Sinosphere'} blog)</span>
         </div>` : ''}
       </div>
-      ${eventsHtml}
       <div id="countryTopReporters" style="margin-top:12px"></div>
       <div id="countryArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
     </div>
@@ -5778,7 +5779,7 @@ function openCountryDetail(country) {
             afterLabel: ctx => {
               const note = annotations[years[ctx.dataIndex]];
               if (!note) return '';
-              return `Notable: ${note.replace('[blog] ', '')}`;
+              return `Notable event: ${note.replace('[blog] ', '')}`;
             }
           }
         }
@@ -5806,13 +5807,24 @@ function openCountryDetail(country) {
       if (!INSTITUTIONAL_BYLINES.has(name)) reporterCounts[name] = (reporterCounts[name] || 0) + 1;
     });
   });
-  const topReporters = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topReporters = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   if (topReporters.length) {
-    const rhtml = topReporters.map(([rname, count]) =>
-      `<span class="country-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
+    const repYearsC = {};
+    countryArticles.forEach(a => {
+      const yr = a.pub_date ? a.pub_date.slice(0,4) : null;
+      if (!yr) return;
+      (a.authors || []).forEach(rname => {
+        if (!repYearsC[rname]) repYearsC[rname] = { min: yr, max: yr };
+        else { if (yr < repYearsC[rname].min) repYearsC[rname].min = yr; if (yr > repYearsC[rname].max) repYearsC[rname].max = yr; }
+      });
+    });
+    const rhtml = topReporters.map(([rname, count]) => {
+      const yrs = repYearsC[rname];
+      const period = yrs ? (yrs.min === yrs.max ? yrs.min : `${yrs.min}–${yrs.max}`) : '';
+      return `<span class="country-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
-       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${count}</span></span>`
+       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
     ).join('');
     document.getElementById('countryTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
@@ -6414,7 +6426,6 @@ function openStateDetail(state) {
         </div>
         <div id="stateChartWrap" style="position:relative;height:180px"><canvas id="chartStateDetail" style="max-height:180px"></canvas></div>
       </div>
-      ${eventsHtml}
       <div id="stateTopReporters" style="margin-top:12px"></div>
       <div id="stateArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
     </div>
@@ -6457,13 +6468,25 @@ function openStateDetail(state) {
         stateReporterCounts[name] = (stateReporterCounts[name] || 0) + 1;
     });
   });
-  const topStateReporters = Object.entries(stateReporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topStateReporters = Object.entries(stateReporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   if (topStateReporters.length) {
-    const rhtml = topStateReporters.map(([rname, count]) =>
-      `<span class="state-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
+    // Compute first and last year each reporter appears in stateArticles
+    const repYears = {};
+    stateArticles.forEach(a => {
+      const yr = a.pub_date ? a.pub_date.slice(0,4) : null;
+      if (!yr) return;
+      (a.authors || []).forEach(rname => {
+        if (!repYears[rname]) repYears[rname] = { min: yr, max: yr };
+        else { if (yr < repYears[rname].min) repYears[rname].min = yr; if (yr > repYears[rname].max) repYears[rname].max = yr; }
+      });
+    });
+    const rhtml = topStateReporters.map(([rname, count]) => {
+      const yrs = repYears[rname];
+      const period = yrs ? (yrs.min === yrs.max ? yrs.min : `${yrs.min}–${yrs.max}`) : '';
+      return `<span class="state-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
-       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${count}</span></span>`
+       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
     ).join('');
     document.getElementById('stateTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
