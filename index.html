@@ -2196,7 +2196,7 @@ function renderDecadeChart() {
           formatter: v => `${v} words/article (median)`,
         },
       }, {
-        label: 'Total words (excluding blogs and podcasts)',
+        label: 'Total* words',
         data: wordsM,
         type: 'line',
         borderColor: 'rgba(170,120,80,0.9)',
@@ -2208,7 +2208,7 @@ function renderDecadeChart() {
         order: 0,
         datalabels: { display: false },
       }, {
-        label: 'Articles (excluding blogs and podcasts)',
+        label: 'Total* articles',
         data: articles,
         backgroundColor: 'rgba(50,104,145,0.75)',
         borderWidth: 0,
@@ -2299,6 +2299,8 @@ const INSTITUTIONAL_BYLINES = new Set([
   'The Headlines Team', 'The Serial Team', 'The Sunday Special Team',
   'The Watching Team', 'The Modern Love Podcast Team',
   'The New York Times Trust Team', '\'The Run-Up\' Team',
+  // Wire-service passthrough bylines (typos and alternative forms)
+  'Via Retuers', 'Via Reuters', 'Via Youtube', 'Via Storyful', 'Via Facebook', 'Via Cnbc',
 ]);
 
 // Filter out junk author entries (HTML fragments, wire service artifacts from old byline parsing)
@@ -2307,6 +2309,7 @@ function isValidAuthorName(name) {
   if (name[0] === '!' || name[0] === '-' || name[0] === '(' || name[0] === "'") return false;
   if (name.includes('<') || name.includes('&#') || name.includes('|')) return false;
   if (/^compiled by/i.test(name) || /^special to/i.test(name) || /^interviews[\s:]/i.test(name)) return false;
+  if (/^via\s+/i.test(name)) return false;  // "Via Reuters", "Via Storyful" etc.
   return true;
 }
 
@@ -3912,13 +3915,35 @@ function selectBeat(subject) {
     html += `</div>`;
   }
 
-  html += `<div style="margin-bottom:6px;font-size:12px;color:#888;font-weight:600">Top reporters${yearLabel}</div>`;
+  // Build per-reporter period from article data when available
+  const beatPeriod = {};
+  if (articlesReady) {
+    const yearRange = beatYr ? { start: beatYr.start, end: beatYr.end } : null;
+    articles.forEach(a => {
+      const yr = parseInt((a.pub_date || '').slice(0, 4));
+      if (yearRange && (yr < yearRange.start || yr > yearRange.end)) return;
+      if (!(a.subjects || []).includes(subject)) return;
+      (a.authors || []).forEach(n => {
+        if (!beatPeriod[n]) beatPeriod[n] = { min: yr, max: yr };
+        else { if (yr < beatPeriod[n].min) beatPeriod[n].min = yr; if (yr > beatPeriod[n].max) beatPeriod[n].max = yr; }
+      });
+    });
+  }
+
+  html += `<div style="display:flex;margin-bottom:4px;font-size:11px;color:#aaa;font-weight:600;padding:0 0 4px;border-bottom:1px solid #eee">
+    <span style="width:28px"></span>
+    <span style="flex:1">Reporter</span>
+    <span style="font-size:11px;margin-right:12px">Primary Section</span>
+    <span style="white-space:nowrap">Articles</span>
+  </div>`;
   if (!reporters.length) {
     html += `<div style="font-size:13px;color:#aaa;padding:8px 0">No reporters with ≥3 articles on this subject in the selected years.</div>`;
   }
-  html += reporters.map((r, i) =>
-    `<div class="beat-reporter"><span class="rank">${i + 1}.</span><span class="name"><a href="#" class="beat-author-link" data-author="${escapeHtml(r.name)}" style="color:#326891;text-decoration:none">${escapeHtml(r.name)}</a></span><span class="section">${r.section}</span><span class="articles">${r.count} articles</span></div>`
-  ).join('');
+  html += reporters.map((r, i) => {
+    const p = beatPeriod[r.name];
+    const periodStr = p ? (p.min === p.max ? String(p.min) : `${p.min}–${String(p.max).slice(-2)}`) : '';
+    return `<div class="beat-reporter"><span class="rank">${i + 1}.</span><span class="name"><a href="#" class="beat-author-link" data-author="${escapeHtml(r.name)}" style="color:#326891;text-decoration:none">${escapeHtml(r.name)}</a>${periodStr ? `<span style="color:#bbb;font-size:11px;margin-left:5px">${periodStr}</span>` : ''}</span><span class="section">${escapeHtml(r.section || '')}</span><span class="articles">${r.count}</span></div>`;
+  }).join('');
 
   resultsBox.innerHTML = html;
 
@@ -4056,7 +4081,7 @@ function showAuthorTimeline(name, opts = {}) {
       <h3>${escapeHtml(name)}</h3>
       ${_classLine ? `<div class="timeline-meta" style="margin-bottom:2px">${_classLine}</div>` : ''}
       <div class="timeline-meta">
-        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · ${authorInfo.avg_words.toLocaleString()} avg words/article${authorInfo.avg_words_per_year ? ' · ' + authorInfo.avg_words_per_year.toLocaleString() + ' avg words/year' : ''}
+        ${authorInfo.article_count.toLocaleString()} articles · ${authorInfo.total_words.toLocaleString()} total words · <span title="Average computed for standard articles only — excludes blogs, live posts, briefs, and podcast transcripts">${authorInfo.avg_words.toLocaleString()} avg words/article*</span>${authorInfo.avg_words_per_year ? " · " + authorInfo.avg_words_per_year.toLocaleString() + " avg words/year" : ""}
       </div>
       ${subjectNote}
       <div id="${listId}-sections" style="font-size:13px;color:#555;margin-top:6px">${sections.length
@@ -5858,7 +5883,7 @@ function openCountryDetail(country) {
     });
     const rhtml = topReporters.map(([rname, count]) => {
       const yrs = repYearsC[rname];
-      const period = yrs ? (yrs.min === yrs.max ? yrs.min : `${yrs.min}–${yrs.max}`) : '';
+      const period = yrs ? (yrs.min === yrs.max ? yrs.min : `${yrs.min}–${yrs.max.slice(-2)}`) : '';
       return `<span class="country-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
@@ -6296,9 +6321,9 @@ function renderStatesTable(states, years, combined) {
   const ind = col => stateTableSort.col === col ? (stateTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
     { key: 'name', label: 'State' },
-    { key: 'count', label: 'Articles', cls: 'num' },
-    { key: '_sparkline', label: 'Trend' },
     { key: 'perCapita', label: 'Articles/million residents/year', cls: 'num percap-hdr' },
+    { key: '_sparkline', label: 'Trend' },
+    { key: 'count', label: 'Articles', cls: 'num' },
   ];
 
   let html = `<table class="author-table"><thead><tr>`;
@@ -6545,7 +6570,7 @@ function openStateDetail(state) {
     });
     const rhtml = topStateReporters.map(([rname, count]) => {
       const yrs = repYears[rname];
-      const period = yrs ? (yrs.min === yrs.max ? yrs.min : `${yrs.min}–${yrs.max}`) : '';
+      const period = yrs ? (yrs.min === yrs.max ? yrs.min : `${yrs.min}–${yrs.max.slice(-2)}`) : '';
       return `<span class="state-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
@@ -8139,6 +8164,8 @@ function openSubjectDetail(rawName, type) {
   const allYearsForChart = subjectsAllYears;
   const total = Object.values(entry.annual).reduce((s, v) => s + v, 0);
 
+  let _subjYearFilter = null;
+  let _subjAllArticles = null;
   const panel = document.getElementById('subjectDetailPanel');
   panel.style.display = 'block';
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -8146,13 +8173,14 @@ function openSubjectDetail(rawName, type) {
     <div class="author-timeline">
       <button class="close-btn" onclick="document.getElementById('subjectDetailPanel').style.display='none';if(window._subjectDetailChart){window._subjectDetailChart.destroy();window._subjectDetailChart=null;}">Close</button>
       <h3>${escapeHtml(displayName)}</h3>
-      <div class="timeline-meta">${total.toLocaleString()} articles · ${allYearsForChart[0]}–${allYearsForChart[allYearsForChart.length-1]}</div>
+      <div class="timeline-meta">${total.toLocaleString()} articles</div>
       <div style="margin-top:10px">
         <div style="font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">Articles per year</div>
         <canvas id="chartSubjectDetail" style="max-height:180px"></canvas>
       </div>
       <div id="subjectDetailReporters" style="margin-top:12px"></div>
-      <div id="subjectDetailArticles" style="margin-top:16px;max-height:360px;overflow-y:auto;font-size:13px"></div>
+      <div id="subjFilterBadge" style="display:none;margin-top:8px;padding:4px 0;border-top:1px solid #eee"></div>
+      <div id="subjectDetailArticles" style="margin-top:8px;max-height:360px;overflow-y:auto;font-size:13px"></div>
     </div>
   `;
 
@@ -8163,7 +8191,28 @@ function openSubjectDetail(rawName, type) {
       labels: allYearsForChart,
       datasets: [{ label: 'Articles', data: allYearsForChart.map(y => entry.annual[y] || 0), backgroundColor: 'rgba(50,104,145,0.7)' }]
     },
-    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    options: { responsive: true, plugins: { legend: { display: false } },
+      onClick: (evt, els) => {
+        if (!els.length) return;
+        const yr = allYearsForChart[els[0].index];
+        _subjYearFilter = (_subjYearFilter === yr) ? null : yr;
+        const badge = document.getElementById('subjFilterBadge');
+        if (badge) {
+          badge.style.display = _subjYearFilter ? '' : 'none';
+          badge.innerHTML = _subjYearFilter
+            ? `<span style="color:#888;font-size:11px">Year: <strong>${_subjYearFilter}</strong> · </span><a href="#" id="subjYrClear" style="color:#326891;font-size:11px">Clear</a>`
+            : '';
+          document.getElementById('subjYrClear')?.addEventListener('click', e => {
+            e.preventDefault(); _subjYearFilter = null; badge.style.display = 'none';
+            if (_subjAllArticles) renderArticleList('subjectDetailArticles', _subjAllArticles, subjRowFmt);
+          });
+          if (_subjYearFilter && _subjAllArticles)
+            renderArticleList('subjectDetailArticles', _subjAllArticles.filter(a => (a.pub_date||'').startsWith(_subjYearFilter)), subjRowFmt);
+          else if (!_subjYearFilter && _subjAllArticles)
+            renderArticleList('subjectDetailArticles', _subjAllArticles, subjRowFmt);
+        }
+      },
+      scales: { y: { beginAtZero: true } } }
   });
 
   if (!articlesReady) {
@@ -8183,27 +8232,54 @@ function openSubjectDetail(rawName, type) {
       if (!INSTITUTIONAL_BYLINES.has(name)) reporterCounts[name] = (reporterCounts[name] || 0) + 1;
     });
   });
-  const topReporters = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topReporters = Object.entries(reporterCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   if (topReporters.length) {
-    const rhtml = topReporters.map(([name, count]) =>
-      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="subj-reporter-link" data-author="${escapeHtml(name)}" style="color:#326891;text-decoration:none">${escapeHtml(name)}</a> <span style="color:#aaa;font-size:11px">${count}</span></span>`
-    ).join('');
+    const subjRepYears = {};
+    subjectArticles.forEach(a => {
+      const yr = a.pub_date ? a.pub_date.slice(0,4) : null;
+      if (!yr) return;
+      (a.authors || []).forEach(rname => {
+        if (!subjRepYears[rname]) subjRepYears[rname] = { min: yr, max: yr };
+        else { if (yr < subjRepYears[rname].min) subjRepYears[rname].min = yr; if (yr > subjRepYears[rname].max) subjRepYears[rname].max = yr; }
+      });
+    });
+    const rhtml = topReporters.map(([rname, count]) => {
+      const p = subjRepYears[rname];
+      const period = p ? (p.min === p.max ? p.min : `${p.min}–${p.max.slice(-2)}`) : '';
+      return `<span class="subj-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
+        style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
+               font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
+      >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
+    }).join('');
     document.getElementById('subjectDetailReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
-      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
-    document.getElementById('subjectDetailReporters').querySelectorAll('.subj-reporter-link').forEach(el => {
-      el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
+      `<div style="font-size:13px;line-height:2;display:flex;flex-wrap:wrap">${rhtml}</div>`;
+    document.getElementById('subjectDetailReporters').querySelectorAll('.subj-reporter-selector').forEach(el => {
+      el.addEventListener('click', () => {
+        const wasActive = el.dataset.active === '1';
+        document.querySelectorAll('#subjectDetailReporters .subj-reporter-selector').forEach(c => {
+          c.dataset.active = '0'; c.style.background = '#eef6ee'; c.style.color = '#5a8a3e';
+        });
+        if (wasActive) {
+          if (_subjAllArticles) renderArticleList('subjectDetailArticles', _subjAllArticles, subjRowFmt);
+        } else {
+          el.dataset.active = '1'; el.style.background = '#5a8a3e'; el.style.color = '#fff';
+          if (_subjAllArticles) renderArticleList('subjectDetailArticles', _subjAllArticles.filter(a => (a.authors||[]).includes(el.dataset.reporter)), subjRowFmt);
+        }
+      });
     });
   }
 
-  renderArticleList('subjectDetailArticles', subjectArticles, a => {
+  _subjAllArticles = subjectArticles;
+  function subjRowFmt(a) {
     const byline = escapeHtml((a.authors || []).join(', ') || 'No byline');
     return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
       <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
       <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
       <span style="color:#aaa;font-size:11px"> · ${byline}</span>
     </div>`;
-  });
+  }
+  renderArticleList('subjectDetailArticles', subjectArticles, subjRowFmt);
 }
 
 // ── Authors year-range dual slider ───────────────────────────────────────────
@@ -8410,7 +8486,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 8:42am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 4:24pm</span>
 </div>
 </body>
 </html>

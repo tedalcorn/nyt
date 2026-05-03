@@ -31,7 +31,7 @@
   },
   {
     "canonical": "A. O. Scott",
-    "canonical_count": 3505,
+    "canonical_count": 3504,
     "merged": [
       {
         "name": "A. O. SCOTT",
@@ -2141,7 +2141,7 @@
   },
   {
     "canonical": "Brian Knowlton",
-    "canonical_count": 972,
+    "canonical_count": 970,
     "merged": [
       {
         "name": "Brian K. Knowlton",
@@ -2463,7 +2463,7 @@
   },
   {
     "canonical": "Carl S. Kaplan",
-    "canonical_count": 38,
+    "canonical_count": 37,
     "merged": [
       {
         "name": "Carl Kaplan",
@@ -2637,7 +2637,7 @@
   },
   {
     "canonical": "Cathy Horyn",
-    "canonical_count": 1985,
+    "canonical_count": 1982,
     "merged": [
       {
         "name": "Cathy B. Horyn",
@@ -4379,7 +4379,7 @@
   },
   {
     "canonical": "David Koeppel",
-    "canonical_count": 70,
+    "canonical_count": 69,
     "merged": [
       {
         "name": "David S. Koeppel",
@@ -8629,7 +8629,7 @@
   },
   {
     "canonical": "Jeffrey Rosen",
-    "canonical_count": 106,
+    "canonical_count": 103,
     "merged": [
       {
         "name": "Jeffrey A. Rosen",
@@ -11011,7 +11011,7 @@
   },
   {
     "canonical": "Karen W. Arenson",
-    "canonical_count": 955,
+    "canonical_count": 951,
     "merged": [
       {
         "name": "Karen Arenson",
@@ -11193,7 +11193,7 @@
   },
   {
     "canonical": "Katharine Q. Seelye",
-    "canonical_count": 3465,
+    "canonical_count": 3462,
     "merged": [
       {
         "name": "Katharine Seelye",
@@ -11727,7 +11727,7 @@
   },
   {
     "canonical": "Kirk Johnson",
-    "canonical_count": 1268,
+    "canonical_count": 1266,
     "merged": [
       {
         "name": "Kirk W. Johnson",
@@ -13701,7 +13701,7 @@
   },
   {
     "canonical": "Michael Janofsky",
-    "canonical_count": 847,
+    "canonical_count": 843,
     "merged": [
       {
         "name": "Michael K. Janofsky",
@@ -15428,12 +15428,12 @@
     ]
   },
   {
-    "canonical": "Paul Zielbauer",
-    "canonical_count": 380,
+    "canonical": "Paul von Zielbauer",
+    "canonical_count": 379,
     "merged": [
       {
-        "name": "Paul von Zielbauer",
-        "count": 379
+        "name": "Paul Zielbauer",
+        "count": 375
       },
       {
         "name": "PAUL von ZIELBAUER",
@@ -16295,7 +16295,7 @@
   },
   {
     "canonical": "Rebecca S. Weiner",
-    "canonical_count": 11,
+    "canonical_count": 9,
     "merged": [
       {
         "name": "Rebecca Weiner",
@@ -17093,7 +17093,7 @@
   },
   {
     "canonical": "Robert D. McFadden",
-    "canonical_count": 1101,
+    "canonical_count": 1098,
     "merged": [
       {
         "name": "ROBERT D. McFADDEN",
@@ -17701,7 +17701,7 @@
   },
   {
     "canonical": "Ruth Ellen Gruber",
-    "canonical_count": 26,
+    "canonical_count": 25,
     "merged": [
       {
         "name": "Ruth Gruber",
@@ -18417,7 +18417,7 @@
   },
   {
     "canonical": "Sheryl Gay Stolberg",
-    "canonical_count": 3472,
+    "canonical_count": 3468,
     "merged": [
       {
         "name": "SHERYL GAY STOLBERG",
@@ -19775,11 +19775,11 @@
   },
   {
     "canonical": "The New York Times",
-    "canonical_count": 37255,
+    "canonical_count": 37247,
     "merged": [
       {
         "name": "THE NEW YORK TIMES",
-        "count": 1891
+        "count": 1890
       },
       {
         "name": "The New Y ork Times",
@@ -20229,7 +20229,7 @@
   },
   {
     "canonical": "Todd S. Purdum",
-    "canonical_count": 609,
+    "canonical_count": 601,
     "merged": [
       {
         "name": "Todd Purdum",
@@ -20621,7 +20621,7 @@
   },
   {
     "canonical": "Warren E. Leary",
-    "canonical_count": 595,
+    "canonical_count": 594,
     "merged": [
       {
         "name": "Warren Leary",
@@ -20869,7 +20869,7 @@
   },
   {
     "canonical": "William C. Rhoden",
-    "canonical_count": 1891,
+    "canonical_count": 1890,
     "merged": [
       {
         "name": "William Rhoden",

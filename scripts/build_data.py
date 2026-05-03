@@ -367,6 +367,12 @@ def process_articles(raw_articles):
         if section == "Archives" or mat == "Paid Death Notice":
             skipped += 1
             continue
+        # Exclude /college/ syndication URLs (Times Wire Service re-publications
+        # to student newspapers — indexed as separate articles but duplicate content)
+        web_url_raw = doc.get("web_url", "") or ""
+        if "/college/" in web_url_raw:
+            skipped += 1
+            continue
 
         # Merge renamed sections
         section = SECTION_MERGES.get(section, section)
@@ -1841,22 +1847,26 @@ def build_dashboard_data(articles, authors):
     monthly_podcast = Counter()
     monthly_podcast_words = defaultdict(int)
     monthly_standard = Counter()
-    annual_wc_hist = defaultdict(lambda: [0] * 21)  # for median computation
+    annual_wc_hist = defaultdict(lambda: [0] * 21)  # standard articles only, for median
     for art in articles:
         ym = art["year_month"]
         wc = art["word_count"]
         monthly[ym] += 1
         monthly_words[ym] += wc
-        if is_blog_url(art["web_url"]):
+        is_blog = is_blog_url(art["web_url"])
+        is_pod = is_podcast_article(art.get("section"), art.get("web_url", ""), art.get("kicker", ""))
+        is_live = is_live_url(art.get("web_url", "")) or art.get("type_of_material") == "Brief"
+        if is_blog:
             monthly_blog[ym] += 1
             monthly_blog_words[ym] += wc
-        elif is_podcast_article(art.get("section"), art.get("web_url", ""), art.get("kicker", "")):
+        elif is_pod:
             monthly_podcast[ym] += 1
             monthly_podcast_words[ym] += wc
         else:
             monthly_standard[ym] += 1
-        # Accumulate annual wc histogram (all articles including blogs)
-        if wc > 0:
+        # Accumulate annual wc histogram for STANDARD articles only (no blogs/podcasts/live/briefs)
+        # Used for computing median words/article in the carousel chart
+        if wc > 0 and not is_blog and not is_pod and not is_live:
             annual_wc_hist[ym[:4]][min(wc // 200, 20)] += 1
 
     # Compute annual median words from histogram
