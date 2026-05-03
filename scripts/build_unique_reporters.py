@@ -136,3 +136,33 @@ with open(out_path, 'w') as f:
     json.dump(state_result, f, separators=(',', ':'))
 print(f'  → {len(state_result)} states → {os.path.basename(out_path)}')
 print('Done.')
+
+
+# ── Unique reporters by country (World section) ───────────────────────────────
+print('Building unique reporters by country...')
+
+INSTITUTIONAL = {'The New York Times','Reuters','Agence France-Presse','AP','Bloomberg News','The Associated Press'}
+
+country_data = defaultdict(lambda: defaultdict(set))
+for f in sorted(glob.glob(os.path.join(DATA_DIR, 'articles_*.json'))):
+    year = os.path.basename(f)[-9:-5]
+    with open(f) as fh:
+        arts = json.load(fh)
+    for a in arts:
+        if a.get('s') != 'World':
+            continue
+        locs = a.get('gn') or a.get('g') or []
+        for author in (a.get('a') or []):
+            if author and author not in INSTITUTIONAL and len(author) > 3:
+                for loc in locs:
+                    country_data[loc][year].add(author)
+
+country_result = {
+    loc: {yr: len(reporters) for yr, reporters in years.items()}
+    for loc, years in country_data.items()
+    if len(years) >= 3 and max(len(r) for r in years.values()) >= 3
+}
+out_path = os.path.join(DATA_DIR, 'unique_reporters_by_country.json')
+with open(out_path, 'w') as f:
+    json.dump(country_result, f, separators=(',', ':'))
+print(f'  → {len(country_result)} countries → {os.path.basename(out_path)}')

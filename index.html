@@ -3964,13 +3964,20 @@ function showAuthorTimeline(name, opts = {}) {
   // Phase 2: fill article list (needs year files; loaded on-demand)
 
   const sections = (authorInfo.all_sections && authorInfo.all_sections.length ? authorInfo.all_sections : [authorInfo.primary_section]).filter(Boolean);
-  const beatsHtml = (!subjectFilter && authorInfo.beats && authorInfo.beats.length)
+  const subjectInBeats = subjectFilter && authorInfo.beats && authorInfo.beats.includes(subjectFilter);
+  const showBeats = authorInfo.beats && authorInfo.beats.length && (!subjectFilter || subjectInBeats);
+  const beatsHtml = showBeats
     ? `<strong style="font-size:12px;color:#666">Beats:</strong> ` +
-      authorInfo.beats.map(b =>
-        `<span class="author-beat-chip" data-beat="${escapeHtml(b)}" style="display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;background:#eef3f7;border-radius:10px;font-size:12px;color:#326891;cursor:pointer">${escapeHtml(toTitleCase(b))}</span>`
-      ).join('')
+      authorInfo.beats.map(b => {
+        const isActive = b === subjectFilter;
+        return `<span class="author-beat-chip" data-beat="${escapeHtml(b)}" data-active="${isActive?'1':'0'}"
+          style="display:inline-block;margin:2px 4px 2px 0;padding:2px 9px;border-radius:10px;font-size:12px;cursor:pointer;
+                 background:${isActive?'#326891':'#eef3f7'};color:${isActive?'#fff':'#326891'}"
+        >${escapeHtml(toTitleCase(b))}</span>`;
+      }).join('')
     : '';
-  const subjectNote = subjectFilter
+  // Only show "filtered" note when subject is NOT in this reporter's beats (unusual case)
+  const subjectNote = (subjectFilter && !subjectInBeats)
     ? `<div style="font-size:12px;color:#326891;margin-top:4px">Filtered to articles tagged "${toTitleCase(subjectFilter)}"</div>`
     : '';
 
@@ -4037,7 +4044,8 @@ function showAuthorTimeline(name, opts = {}) {
           <div id="${chartId}-hist-note" style="font-size:10px;color:#bbb;margin-top:2px"></div>
         </div>
       </div>
-      <div id="${listId}" style="margin-top:16px;max-height:300px;overflow-y:auto;font-size:13px">
+      <div id="${listId}-filter-badge" style="display:none;margin-top:10px;padding:4px 0;border-top:1px solid #eee"></div>
+      <div id="${listId}" style="margin-top:8px;max-height:300px;overflow-y:auto;font-size:13px">
         ${articlesReady ? '' : IS_MOBILE ? '<div style="color:#888;padding:8px 0">Article lists are available on desktop.</div>' : '<div style="color:#888;padding:8px 0">Article list loading…</div>'}
       </div>
     </div>
@@ -4282,26 +4290,57 @@ function showAuthorTimeline(name, opts = {}) {
   // --- Word count histogram: rendered immediately from precomputed wc_hist ---
   let allAuthorArticles = null;  // set by fillArticleDetails when loaded
 
-  let _activeYearFilter = null;
-  function _toggleYearFilter(yr, allYears) {
+  // ── Unified filter state ────────────────────────────────────────────────────
+  const _fs = { year: null, wcBin: null, beat: null, section: null };
+
+  function _applyAllFilters() {
     if (!allAuthorArticles) return;
-    const noteEl = document.getElementById(chartId + '-hist-note');
-    if (_activeYearFilter === yr) {
-      // Toggle off
-      _activeYearFilter = null;
-      renderHistArticles(null);
-      return;
+    let result = allAuthorArticles;
+    if (_fs.year)   result = result.filter(a => (a.pub_date||'').startsWith(_fs.year));
+    if (_fs.wcBin !== null) {
+      const lo = _fs.wcBin * 200, hi = _fs.wcBin === 20 ? Infinity : lo + 200;
+      result = result.filter(a => { const w = a.word_count||0; return w>=lo && w<hi; });
     }
-    _activeYearFilter = yr;
-    const filtered = allAuthorArticles.filter(a => (a.pub_date || '').startsWith(yr));
-    if (noteEl) noteEl.innerHTML = `<strong>${yr}</strong> · ${filtered.length} articles · <a href="#" style="color:#326891" id="${chartId}-yr-clear">show all</a>`;
-    document.getElementById(chartId + '-yr-clear')?.addEventListener('click', e => {
-      e.preventDefault(); _activeYearFilter = null; renderHistArticles(null);
-    });
-    renderArticleList(listId, filtered, articleRowFormatter);
+    if (_fs.beat)    result = result.filter(a => (a.subjects||[]).includes(_fs.beat));
+    if (_fs.section) result = result.filter(a => a.section === _fs.section);
+    renderArticleList(listId, result, articleRowFormatter);
+    _updateFilterBadge();
   }
 
-  function renderHistArticles(binIdx) {
+  function _updateFilterBadge() {
+    const badge = document.getElementById(listId + '-filter-badge');
+    if (!badge) return;
+    const parts = [];
+    if (_fs.year)       parts.push(_fs.year);
+    if (_fs.wcBin !== null) parts.push(`${_fs.wcBin*200}–${_fs.wcBin===20?'∞':_fs.wcBin*200+200} words`);
+    if (_fs.beat)       parts.push(toTitleCase(_fs.beat));
+    if (_fs.section)    parts.push(_fs.section);
+    badge.style.display = parts.length ? '' : 'none';
+    badge.innerHTML = parts.length
+      ? `<span style="color:#888;font-size:11px">Showing: ${parts.map(p=>`<strong>${escapeHtml(p)}</strong>`).join(' · ')} · </span><a href="#" style="color:#326891;font-size:11px" id="${listId}-show-all">Show all</a>`
+      : '';
+    document.getElementById(listId + '-show-all')?.addEventListener('click', e => {
+      e.preventDefault();
+      _fs.year = _fs.wcBin = _fs.beat = _fs.section = null;
+      // Clear chip active states
+      [listId+'-beats', listId+'-sections'].forEach(id => {
+        document.getElementById(id)?.querySelectorAll('[data-active]').forEach(c => {
+          c.dataset.active = '0';
+          c.style.background = c.classList.contains('author-beat-chip') ? '#eef3f7' : '#f0f0ee';
+          c.style.color = c.classList.contains('author-beat-chip') ? '#326891' : '#777';
+        });
+      });
+      // Clear wc histogram highlight
+      renderHistArticles(null, true);
+    });
+  }
+
+  function _toggleYearFilter(yr) {
+    _fs.year = (_fs.year === yr) ? null : yr;
+    _applyAllFilters();
+  }
+
+  function renderHistArticles(binIdx, skipApply) {
     const histCanvas = document.getElementById(chartId + '_hist');
     const noteEl = document.getElementById(chartId + '-hist-note');
     const wcHist = authorInfo.wc_hist || [];
@@ -4319,33 +4358,18 @@ function showAuthorTimeline(name, opts = {}) {
       chart.update('none');
     }
 
+    // Update note below histogram
     if (binIdx === null) {
       if (noteEl) noteEl.textContent = IS_MOBILE
         ? `avg ${authorInfo.avg_words.toLocaleString()} words · n=${total}`
         : `avg ${authorInfo.avg_words.toLocaleString()} words · n=${total} · click a bar to filter`;
-      if (allAuthorArticles && !IS_MOBILE) {
-        const _csv = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_articles.csv';
-        renderArticleList(listId, allAuthorArticles, articleRowFormatter, { csvFilename: _csv });
-      }
-      return;
+    } else {
+      const lo = binIdx * BIN, rangeStr = binIdx===20 ? '4000+ words' : `${lo}–${lo+BIN} words`;
+      if (noteEl) noteEl.textContent = rangeStr;
     }
-
-    const lo = binIdx * BIN, hi = lo + BIN;
-    if (!allAuthorArticles) {
-      if (noteEl) noteEl.textContent = IS_MOBILE
-        ? 'Article filter available on desktop'
-        : 'Loading articles…';
-      return;
-    }
-    const filtered = allAuthorArticles.filter(a => (a.word_count||0) >= lo && (a.word_count||0) < (binIdx===20?Infinity:hi));
-    const pct = ((filtered.length / total) * 100).toFixed(1);
-    const rangeStr = binIdx === 20 ? '4000+ words' : `${lo}–${hi} words`;
-    if (noteEl) noteEl.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" style="color:#326891" id="${chartId}-hist-clear">show all</a>`;
-    document.getElementById(chartId + '-hist-clear')?.addEventListener('click', e => {
-      e.preventDefault(); renderHistArticles(null);
-    });
-    const _csvBin = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_articles.csv';
-    renderArticleList(listId, filtered, articleRowFormatter, { csvFilename: _csvBin });
+    // Update unified filter state and re-apply all filters
+    _fs.wcBin = binIdx;
+    if (!skipApply) _applyAllFilters();
   }
 
   function articleRowFormatter(a) {
@@ -4488,13 +4512,20 @@ function showAuthorTimeline(name, opts = {}) {
       }
     }
 
-    // Histogram already rendered from precomputed wc_hist; populate article list now
-    if (!subjectFilter) {
-      renderHistArticles(null);
+    // If opened from beats tab with a subject, pre-set that beat filter
+    if (subjectFilter && subjectInBeats) {
+      _fs.beat = subjectFilter;
+    } else if (subjectFilter && !subjectInBeats) {
+      // Rare: subject not in reporter's beats — filter articles directly
+      _fs.beat = subjectFilter;
     }
 
+    // Histogram already rendered from precomputed wc_hist; populate article list now
+    renderHistArticles(null, true);  // skipApply=true, we call _applyAllFilters below
+    _applyAllFilters();
+
     // Beats (subject-filtered only; unfiltered beats already shown from authors.json)
-    if (subjectFilter) {
+    if (subjectFilter && !subjectInBeats) {
       const beats = extractBeats(allAuthorArticles);
       const beatsEl = document.getElementById(listId + '-beats');
       if (beatsEl && beats.length) {
@@ -4502,62 +4533,44 @@ function showAuthorTimeline(name, opts = {}) {
       }
     }
 
-    // Wire beat and section chip clicks — filter article list
-    function _wireFilterChips(containerEl, chipClass, filterFn, activeColor, activeBg) {
+    // Wire beat and section chip clicks — additive with year/wc filters
+    function _wireChip(containerEl, chipClass, fsKey, getVal, activeBg, activeColor) {
       if (!containerEl) return;
       containerEl.querySelectorAll('.' + chipClass).forEach(chip => {
         chip.addEventListener('click', () => {
           const wasActive = chip.dataset.active === '1';
-          // Clear all chips across both containers
-          [listId + '-beats', listId + '-sections'].forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.querySelectorAll('.author-beat-chip,.author-section-chip').forEach(c => {
-              c.dataset.active = '0';
-              const isBeat = c.classList.contains('author-beat-chip');
-              c.style.background = isBeat ? '#eef3f7' : '#f0f0ee';
-              c.style.color = isBeat ? '#326891' : '#777';
-            });
+          // Clear all chips of same type
+          containerEl.querySelectorAll('.' + chipClass).forEach(c => {
+            c.dataset.active = '0';
+            c.style.background = chipClass === 'author-beat-chip' ? '#eef3f7' : '#f0f0ee';
+            c.style.color = chipClass === 'author-beat-chip' ? '#326891' : '#777';
           });
           if (wasActive) {
-            renderHistArticles(null);
+            _fs[fsKey] = null;
           } else {
             chip.dataset.active = '1';
             chip.style.background = activeBg;
             chip.style.color = activeColor;
-            if (allAuthorArticles) {
-              const filtered = allAuthorArticles.filter(filterFn(chip));
-              const _csv = name.replace(/[^a-z0-9]/gi,'_').toLowerCase() + '_articles.csv';
-              renderArticleList(listId, filtered, articleRowFormatter, { csvFilename: _csv });
-            }
+            _fs[fsKey] = getVal(chip);
           }
+          // Clear the other chip type's filter (beat vs section are mutually exclusive;
+          // but year and wc-bin remain active)
+          const otherKey = fsKey === 'beat' ? 'section' : 'beat';
+          _fs[otherKey] = null;
+          const otherId = listId + (fsKey === 'beat' ? '-sections' : '-beats');
+          document.getElementById(otherId)?.querySelectorAll('[data-active]').forEach(c => {
+            c.dataset.active = '0';
+            c.style.background = c.classList.contains('author-beat-chip') ? '#eef3f7' : '#f0f0ee';
+            c.style.color = c.classList.contains('author-beat-chip') ? '#326891' : '#777';
+          });
+          _applyAllFilters();
         });
       });
     }
-    _wireFilterChips(
-      document.getElementById(listId + '-beats'), 'author-beat-chip',
-      chip => (a => (a.subjects || []).includes(chip.dataset.beat)),
-      '#fff', '#326891'
-    );
-    _wireFilterChips(
-      document.getElementById(listId + '-sections'), 'author-section-chip',
-      chip => (a => a.section === chip.dataset.section),
-      '#fff', '#888'
-    );
-
-    // Article list — subject-filtered path only (unfiltered handled via renderHistArticles above)
-    if (subjectFilter) {
-      const csvFilename = name.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_articles.csv';
-      renderArticleList(listId, authorArticles, a => {
-        const coauthors = a.authors.filter(n => n !== name);
-        const coauthorStr = coauthors.length ? ` · with ${escapeHtml(coauthors.join(', '))}` : '';
-        return `<div style="padding:4px 0;border-bottom:1px solid #f0f0f0">
-          <span style="color:#888;font-size:11px;min-width:80px;display:inline-block">${a.pub_date}</span>
-          <a href="${a.web_url}" target="_blank" style="color:#567;text-decoration:none">${escapeHtml(a.headline || '(no headline)')}</a>
-          <span style="color:#aaa;font-size:11px">${coauthorStr} · ${escapeHtml(a.section)} · ${a.word_count.toLocaleString()} words</span>
-        </div>`;
-      }, { csvFilename });
-    }
+    _wireChip(document.getElementById(listId+'-beats'),    'author-beat-chip',    'beat',    c => c.dataset.beat,    '#326891', '#fff');
+    _wireChip(document.getElementById(listId+'-sections'), 'author-section-chip', 'section', c => c.dataset.section, '#888',    '#fff');
+    // If beat was pre-set (from beats tab), update the badge
+    if (_fs.beat || _fs.section) _updateFilterBadge();
 
     // Scroll to timeline
     const container2 = document.getElementById(containerId);
