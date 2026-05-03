@@ -782,7 +782,7 @@ def build_author_stats(articles):
             "name": name,
             "article_count": article_count,
             "total_words": d["total_words"],
-            "avg_words": round(d["total_words"] / nonzero_count) if nonzero_count else 0,
+            "avg_words": avg_words,  # uses nonzero_words / nonzero_count (excludes blogs/live/briefs/podcasts)
             "avg_words_per_year": avg_words_per_year,
             "primary_section": primary_section,
             "secondary_section": secondary_section,
