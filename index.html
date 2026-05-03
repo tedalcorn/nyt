@@ -510,7 +510,7 @@
         <section class="slide" data-dl-canvas-only="true">
           <div class="slide-inner">
             <h4 class="slide-title">Fewer, longer articles</h4>
-            <p class="slide-caption">Over the last decade, the number of articles published by <em>The New York Times</em> has diminished and the average word count per article has increased.</p>
+            <p class="slide-caption">Over the last decade, the number of articles published by <em>The New York Times</em> has diminished and the median word count per article has increased.</p>
             <div class="slide-chart-wrap"><canvas id="chartDecade"></canvas></div>
           </div>
         </section>
@@ -2160,12 +2160,13 @@ function renderDecadeChart() {
     byYear[y].articles += m.nonblog != null ? m.nonblog : m.count;
     const stdWords = (m.words || 0) - (m.blog_words || 0) - (m.podcast_words || 0);
     byYear[y].words += Math.max(0, stdWords);
+    byYear[y].medianWords = m.median_words || 0;  // take last month's value (annual median)
   });
 
-  const years    = Object.keys(byYear).sort();
-  const articles = years.map(y => byYear[y].articles);
-  const wordsM   = years.map(y => Math.round(byYear[y].words / 1e4) / 100);  // millions, 2 dp
-  const avgWords = years.map(y => byYear[y].articles > 0 ? Math.round(byYear[y].words / byYear[y].articles) : 0);
+  const years      = Object.keys(byYear).sort();
+  const articles   = years.map(y => byYear[y].articles);
+  const wordsM     = years.map(y => Math.round(byYear[y].words / 1e4) / 100);  // millions, 2 dp
+  const medianWords = years.map(y => byYear[y].medianWords || 0);
 
   destroyChart('chartDecade');
   chartInstances['chartDecade'] = new Chart(document.getElementById('chartDecade'), {
@@ -2173,8 +2174,8 @@ function renderDecadeChart() {
     data: {
       labels: years,
       datasets: [{
-        label: 'Avg words/article',
-        data: avgWords,
+        label: 'Median words/article',
+        data: medianWords,
         type: 'line',
         showLine: false,          // no connecting line — markers only
         pointStyle: 'dash',
@@ -2192,7 +2193,7 @@ function renderDecadeChart() {
           offset: 4,
           color: 'rgba(100,60,160,0.9)',
           font: { size: 10, weight: '600' },
-          formatter: v => `${v} words/article`,
+          formatter: v => `${v} words/article (median)`,
         },
       }, {
         label: 'Total words (excluding blogs and podcasts)',
@@ -2765,7 +2766,7 @@ function renderSectionsTable() {
     { key: 'period', label: 'Period Active' },
     { key: '_spark', label: '', cls: 'sec-spark' },
     { key: 'count', label: 'Articles', cls: 'num' },
-    { key: 'avg_words', label: 'Avg Words/Article', cls: 'num sec-avg' },
+    { key: 'avg_words', label: 'Avg Words/Article*', cls: 'num sec-avg', title: 'Average computed for standard articles only — excludes blogs, live posts, briefs, and podcast transcripts' },
     ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared Bylines', cls: 'num' }] : []),
   ];
 
@@ -2800,7 +2801,7 @@ function renderSectionsTable() {
     if (c.key === '_spark') {
       html += `<th class="${c.cls||''}"></th>`;
     } else {
-      html += `<th class="${c.cls||''}" data-sort="${c.key}">${c.label}${ind(c.key)}</th>`;
+      html += `<th class="${c.cls||''}" data-sort="${c.key}"${c.title ? ' title="'+c.title+'"' : ""}>${c.label}${ind(c.key)}</th>`;
     }
   });
   html += `</tr></thead><tbody>`;
@@ -2854,7 +2855,49 @@ function renderSectionsTable() {
   });
 }
 
+// ── Section popup unified filter state ──────────────────────────────────────
+let _secFilters = { year: null, wcBin: null };
+function _applySecFilters() {
+  const ctx = window._currentSectionDetail;
+  if (!ctx) return;
+  const { sectionName } = ctx;
+  if (!window._articlesBySection) window._articlesBySection = {};
+  if (!window._articlesBySection[sectionName])
+    window._articlesBySection[sectionName] = articles.filter(a => a.section === sectionName);
+  let src = window._articlesBySection[sectionName];
+  if (_secFilters.year) src = src.filter(a => (a.pub_date||'').startsWith(_secFilters.year));
+  if (_secFilters.wcBin !== null) {
+    const lo = _secFilters.wcBin * 200, hi = _secFilters.wcBin === 20 ? Infinity : lo + 200;
+    src = src.filter(a => { const w = a.word_count||0; return w>=lo && w<hi; });
+  }
+  fillSectionArticleList(sectionName, src);
+  _updateSecFilterBadge();
+}
+function _updateSecFilterBadge() {
+  const el = document.getElementById('secFilterBadge');
+  if (!el) return;
+  const parts = [];
+  if (_secFilters.year) parts.push(_secFilters.year);
+  if (_secFilters.wcBin !== null) parts.push(`${_secFilters.wcBin*200}–${_secFilters.wcBin===20?'∞':_secFilters.wcBin*200+200}w`);
+  el.style.display = parts.length ? '' : 'none';
+  el.innerHTML = parts.length
+    ? `<span style="color:#888;font-size:11px">Showing: <strong>${parts.join(' · ')}</strong> · </span><a href="#" id="secShowAll" style="color:#326891;font-size:11px">Show all</a>`
+    : '';
+  document.getElementById('secShowAll')?.addEventListener('click', e => {
+    e.preventDefault();
+    _secFilters.year = _secFilters.wcBin = null;
+    const chart = chartInstances['chartSectionDetail'];
+    if (chart) chart._activeHistBin = null;
+    _applySecFilters();
+  });
+}
+function _toggleSecYear(yr) {
+  _secFilters.year = (_secFilters.year === yr) ? null : yr;
+  _applySecFilters();
+}
+
 function openSectionDetail(sectionName) {
+  _secFilters = { year: null, wcBin: null };  // reset on new section open
   _writeHash({ tab: 'sections', section: sectionName });
   const panel = document.getElementById('sectionDetailPanel');
   const currentYear = String(new Date().getFullYear());
@@ -2915,7 +2958,8 @@ function openSectionDetail(sectionName) {
         </div>
       </div>
       <div id="sectionDetailReporters" style="margin-top:12px"></div>
-      ${isAllSections ? '' : `<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:14px;margin-bottom:4px">Recent articles</div>
+      ${isAllSections ? '' : `<div id="secFilterBadge" style="display:none;margin-top:8px;padding:4px 0;border-top:1px solid #eee"></div>
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin-top:8px;margin-bottom:4px">Recent articles</div>
       <div id="sectionDetailArticleList" style="max-height:300px;overflow-y:auto;font-size:13px">
         ${articlesReady ? '' : IS_MOBILE ? '<p style="color:#888;font-size:13px">Article lists are available on desktop.</p>' : '<p style="color:#888;font-size:13px">Loading article data…</p>'}
       </div>`}
@@ -2990,6 +3034,7 @@ function _renderSectionDetailArticlesChart() {
   chartInstances['chartSectionDetail'] = new Chart(document.getElementById('chartSectionDetail'), {
     type: 'bar', data: { labels: allYears, datasets: sdDatasets },
     options: { responsive: true, plugins: { legend: { display: false } },
+      onClick: (evt, els) => { if (els.length) _toggleSecYear(allYears[els[0].index]); },
       scales: { x: { stacked:true, ticks: { font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:14 } },
                 y: { stacked:true, beginAtZero:true, ticks: { font:{size:10} } } } }
   });
@@ -3069,6 +3114,7 @@ function _renderStateDetailArticlesChart() {
         const dcNote = isDC && DC_BAD.has(y) ? '⚠ API over-tagging suspected (post-9/11)' : '';
         return [note, dcNote].filter(Boolean).join('\n');
       }}}},
+      onClick: (evt, els) => { if (els.length) _toggleStateYear(years[els[0].index]); },
       scales: { y: { beginAtZero: true } } }
   });
 }
@@ -3261,24 +3307,16 @@ function renderSectionHistBinFromArticles(sectionName, binIdx, wcHist, histTotal
   }
   if (binIdx === null) {
     if (histNote) histNote.textContent = `avg ${(avgWords||0).toLocaleString()} words · n=${histTotal.toLocaleString()} · click a bar to filter`;
-    fillSectionArticleList(sectionName, null);
+    _secFilters.wcBin = null;
+    _applySecFilters();
     return;
   }
   const lo = binIdx * BIN;
-  if (!window._articlesBySection) window._articlesBySection = {};
-  if (!window._articlesBySection[sectionName])
-    window._articlesBySection[sectionName] = articles.filter(a => a.section === sectionName);
-  const secArts = window._articlesBySection[sectionName];
-  const filtered = secArts.filter(a => binIdx===20 ? (a.word_count||0)>=4000 : (a.word_count||0)>=lo && (a.word_count||0)<lo+BIN);
-  const pct = histTotal > 0 ? ((filtered.length/histTotal)*100).toFixed(1) : '0';
   const rangeStr = binIdx===20 ? '4000+ words' : `${lo}–${lo+BIN} words`;
-  if (histNote) histNote.innerHTML = `<strong>${rangeStr}</strong> · ${filtered.length} articles (${pct}%) · <a href="#" id="secHistClear2" style="color:#326891">show all</a>`;
-  document.getElementById('secHistClear2')?.addEventListener('click', e => {
-    e.preventDefault();
-    if (chart) chart._activeHistBin = null;
-    renderSectionHistBinFromArticles(sectionName, null, wcHist, histTotal, avgWords);
-  });
-  fillSectionArticleList(sectionName, filtered);
+  if (histNote) histNote.textContent = rangeStr;
+  // Update unified filter state and re-apply
+  _secFilters.wcBin = binIdx;
+  _applySecFilters();
 }
 
 function fillSectionArticleList(sectionName, filteredArts) {
@@ -3660,7 +3698,7 @@ function renderAuthors() {
     { key: 'primary_section', label: SHOW_MULTI_SECTIONS ? 'Primary Section(s)' : 'Primary Section', mob: true },
     { key: 'article_count', label: 'Articles' + rangeLabel, cls: 'num' },
     { key: 'total_words', label: 'Total Words' + rangeLabel, cls: 'num', mob: true },
-    { key: 'avg_words', label: 'Avg Words/Article', cls: 'num', mob: true },
+    { key: 'avg_words', label: 'Avg Words/Article*', cls: 'num', mob: true, title: 'Average computed for standard articles only — excludes blogs, live posts, briefs, and podcast transcripts' },
     { key: '_avg_words_per_year', label: 'Avg Words/Year', cls: 'num' },
     ...(hasSharedData ? [{ key: '_sharedPct', label: '% Shared Byline', cls: 'num', mob: true }] : []),
   ];
@@ -3670,7 +3708,7 @@ function renderAuthors() {
   let html = `<table class="author-table"><thead><tr>`;
   cols.forEach(c => {
     const cls = [c.cls || '', c.mob ? 'mob-hide' : ''].filter(Boolean).join(' ');
-    html += `<th class="${cls}" data-sort="${c.key}">${c.label}${indicator(c.key)}</th>`;
+    html += `<th class="${cls}" data-sort="${c.key}"${c.title ? ' title="'+c.title+'"' : ""}>${c.label}${indicator(c.key)}</th>`;
   });
   html += `</tr></thead><tbody>`;
 
@@ -5784,6 +5822,13 @@ function openCountryDetail(country) {
           }
         }
       },
+      onClick: (evt, els) => {
+        if (!els.length) return;
+        const yr = years[els[0].index];
+        const filtered = yr === window._countryYrFilter ? null : countryArticles.filter(a => (a.pub_date||'').startsWith(yr));
+        window._countryYrFilter = filtered ? yr : null;
+        renderCountryArticles(filtered || countryArticles);
+      },
       scales: {
         x: { stacked: !!blogTrends },
         y: { beginAtZero: true, stacked: !!blogTrends }
@@ -6388,7 +6433,31 @@ const STATE_ANNOTATIONS = {
   'New Mexico':   { '2021':'Alec Baldwin Rust shooting' },
 };
 
+let _stateYearFilter = null;
+let _stateAllArticles = null;  // full set for current state (for year filter)
+function _toggleStateYear(yr) {
+  _stateYearFilter = (_stateYearFilter === yr) ? null : yr;
+  const badge = document.getElementById('stateYearBadge');
+  if (badge) {
+    badge.style.display = _stateYearFilter ? '' : 'none';
+    if (_stateYearFilter) {
+      badge.innerHTML = `<span style="color:#888;font-size:11px">Year: <strong>${_stateYearFilter}</strong> · </span><a href="#" id="stateYrClear" style="color:#326891;font-size:11px">Clear</a>`;
+      document.getElementById('stateYrClear')?.addEventListener('click', e => {
+        e.preventDefault(); _stateYearFilter = null; badge.style.display = 'none';
+        if (_stateAllArticles) renderArticleList('stateArticleList', _stateAllArticles, window._stateRowFmtFn);
+      });
+      if (_stateAllArticles) {
+        const filtered = _stateAllArticles.filter(a => (a.pub_date||'').startsWith(_stateYearFilter));
+        renderArticleList('stateArticleList', filtered, window._stateRowFmtFn);
+      }
+    } else if (_stateAllArticles) {
+      renderArticleList('stateArticleList', _stateAllArticles, window._stateRowFmtFn);
+    }
+  }
+}
+
 function openStateDetail(state) {
+  _stateYearFilter = null; _stateAllArticles = null;
   lastOpenedState = state;
   _writeHash({ tab: 'states', state });
   const sc = dashboard.us_state_coverage;
@@ -6427,7 +6496,8 @@ function openStateDetail(state) {
         <div id="stateChartWrap" style="position:relative;height:180px"><canvas id="chartStateDetail" style="max-height:180px"></canvas></div>
       </div>
       <div id="stateTopReporters" style="margin-top:12px"></div>
-      <div id="stateArticleList" style="margin-top:16px;max-height:320px;overflow-y:auto;font-size:13px"></div>
+      <div id="stateYearBadge" style="display:none;margin-top:8px;padding:4px 0;border-top:1px solid #eee"></div>
+      <div id="stateArticleList" style="margin-top:8px;max-height:320px;overflow-y:auto;font-size:13px"></div>
     </div>
   `;
 
@@ -6723,6 +6793,9 @@ function openStateDetail(state) {
       <span style="color:#aaa;font-size:11px"> · ${byline} · ${a.word_count.toLocaleString()} words</span>
     </div>`;
   }
+  // Store for year-filter access
+  _stateAllArticles = stateArticles;
+  window._stateRowFmtFn = stateRowFmt;
   renderArticleList('stateArticleList', stateArticles, stateRowFmt);
 }
 
@@ -8344,7 +8417,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/1/26 11:40am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 7:43am</span>
 </div>
 </body>
 </html>

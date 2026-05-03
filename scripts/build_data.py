@@ -414,7 +414,7 @@ def process_articles(raw_articles):
             elif kw_name in ("persons", "Persons"):
                 persons_kw.append(kw["value"])
             elif kw_name in ("organizations", "Organizations"):
-                organizations_kw.append(kw["value"])
+                organizations_kw.append(_normalize_org_kw(kw["value"]))
 
         # Canonical state names — computed for both "U.S." and "New York" sections
         canonical_states = []
@@ -729,12 +729,14 @@ def build_author_stats(articles):
         shared_count = d["shared_byline_count"]
         zero_word_rate = d["zero_word_articles"] / article_count if article_count else 0
         shared_rate = shared_count / article_count if article_count else 0
-        # Exclude zero-word articles, /live/ entries, and Brief items from avg —
-        # all three are short-form content that doesn't reflect standard article length.
+        # Exclude zero-word articles, /live/ entries, Brief items, AND podcasts from avg —
+        # all these are non-standard formats that don't reflect a reporter's article writing.
         live_count = sum(d["annual_live_counts"].values())
         live_words = sum(d["annual_live_words"].values())
-        nonzero_count = article_count - d["zero_word_articles"] - live_count
-        nonzero_words = d["total_words"] - live_words
+        pod_count = sum(d["annual_podcast_counts"].values())
+        pod_words = sum(d["annual_podcast_words"].values())
+        nonzero_count = article_count - d["zero_word_articles"] - live_count - pod_count
+        nonzero_words = d["total_words"] - live_words - pod_words
         avg_words = round(nonzero_words / nonzero_count) if nonzero_count else 0
         # Likely non-editorial / collaborative byline: photographers, video producers,
         # podcast staff, crossword constructors, illustrators, etc.
@@ -1839,6 +1841,7 @@ def build_dashboard_data(articles, authors):
     monthly_podcast = Counter()
     monthly_podcast_words = defaultdict(int)
     monthly_standard = Counter()
+    annual_wc_hist = defaultdict(lambda: [0] * 21)  # for median computation
     for art in articles:
         ym = art["year_month"]
         wc = art["word_count"]
@@ -1852,6 +1855,22 @@ def build_dashboard_data(articles, authors):
             monthly_podcast_words[ym] += wc
         else:
             monthly_standard[ym] += 1
+        # Accumulate annual wc histogram (all articles including blogs)
+        if wc > 0:
+            annual_wc_hist[ym[:4]][min(wc // 200, 20)] += 1
+
+    # Compute annual median words from histogram
+    def hist_median(hist, bin_width=200):
+        total = sum(hist)
+        if not total: return 0
+        half = total / 2
+        cum = 0
+        for i, n in enumerate(hist):
+            cum += n
+            if cum >= half:
+                return i * bin_width + bin_width // 2
+        return len(hist) * bin_width
+    annual_median_words = {y: hist_median(h) for y, h in annual_wc_hist.items()}
 
     months_sorted = sorted(monthly.keys())
     articles_per_month = [
@@ -1865,6 +1884,7 @@ def build_dashboard_data(articles, authors):
             "podcast_words": monthly_podcast_words[m],
             # `nonblog` retained for backward compatibility — it now means "non-blog AND non-podcast"
             "nonblog": monthly_standard[m],
+            "median_words": annual_median_words.get(m[:4], 0),
         }
         for m in months_sorted
     ]
@@ -2316,19 +2336,37 @@ def build_dashboard_data(articles, authors):
 # Subject keyword continuity merges — NYT changed tag names over time,
 # causing abrupt gaps in beat coverage. Map old → new canonical form.
 _SUBJECT_KW_MERGES = {
+    # Housing
     'Housing': 'Real Estate and Housing (Residential)',
+    # Weapons/defense
     'ATOMIC WEAPONS': 'Nuclear Weapons',
+    'UNITED STATES ARMAMENT AND DEFENSE': 'Armament, Defense and Military Forces',
+    # Media/recordings
     'RECORDINGS (AUDIO)': 'Recordings and Downloads (Audio)',
     'RECORDINGS (VIDEO)': 'Recordings and Downloads (Video)',
+    # Retail/fashion
     'APPAREL': 'Fashion and Apparel',
+    'RETAIL STORES AND TRADE': 'Shopping and Retail',
+    # Labor/immigration
     'LABOR': 'Labor and Jobs',
     'IMMIGRATION AND REFUGEES': 'Immigration and Emigration',
-    'UNITED STATES ARMAMENT AND DEFENSE': 'Armament, Defense and Military Forces',
+    # Advertising
     'ADVERTISING': 'Advertising and Marketing',
+    # Social issues — old ALLCAPS/abbrev forms to current descriptive forms
+    'Children and Youth': 'Children and Childhood',
+    'Demonstrations and Riots': 'Demonstrations, Protests and Riots',
+    'Demonstrations, Protests, and Riots': 'Demonstrations, Protests and Riots',  # comma variant
+    'Murders and Attempted Murders': 'Murders, Attempted Murders and Homicides',
+    'Education and Schools': 'Education (K-12)',
+    'Banks and Banking': 'Banking and Financial Institutions',
+    'Freedom and Human Rights': 'Human Rights and Human Rights Violations',
+    'Suspensions, Dismissals and Resignations': 'Dismissals, Suspensions and Resignations',
 }
 
 _ORG_KW_MERGES = {
     'NEW YORK KNICKERBOCKERS': 'New York Knicks',
+    # All-caps → mixed-case merges (same normalization as subjects)
+    # Applied at ingestion so subjects.json stays consistent
 }
 
 def _normalize_subject_kw(name):
