@@ -1193,30 +1193,51 @@ def extract_gender(name, full_text):
     return (None, None)
 
 
-def extract_profession(headline):
-    if not headline: return None
-    h = re.sub(r'^Overlooked No More:\s*', '', headline, flags=re.I)
-    h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
-    parts = h.split(',')
-    if len(parts) < 2: return None
-    role = parts[1].strip()
-    # Drop subordinate clauses
+_RE_AGE_PART = re.compile(r'^\d{2,3}$')
+_RE_DIES_SEMI = re.compile(
+    r'\b(?:dies?\s+at\s+\d+|is\s+dead\s+at\s+\d+|dead\s+at\s+\d+|dies?|is\s+dead)\s*;\s*(.+)',
+    re.I,
+)
+
+
+def _clean_role(raw):
+    role = raw.strip()
     role = re.sub(r'\s+(?:who|that|whose|which)\b.*$', '', role, flags=re.I)
     role = re.sub(r'\b(?:is\s+|was\s+)?(?:dies|dead|died|is\s+dead)\b.*$', '', role, flags=re.I).strip()
-    # Strip leading "Who/That/Of " when role begins with relative-clause continuation
     role = re.sub(r'^(?:who|that|whose|of|with|by)\s+', '', role, flags=re.I).strip()
     role = clean_smart_quotes(role)
     role = role.rstrip('.,;:').strip()
-    # Strip leading article ("A "/"An "/"The ") — many headlines say
-    # "Sandy Berger, a Top National Security Aide, …" which yields a role
-    # of "a Top National Security Aide". The article is grammatical noise;
-    # drop it.
     role = re.sub(r'^(?:[Aa]n?|[Tt]he)\s+', '', role)
     if not role or role.isdigit(): return None
     if len(role) < 3 or len(role) > 80: return None
     return role
 
 
+def extract_profession(headline):
+    if not headline: return None
+    h = re.sub(r'^Overlooked No More:\s*', '', headline, flags=re.I)
+    h = re.sub(r'^OBITUARY\s*:\s*', '', h, flags=re.I)
+    h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
+    parts = h.split(',')
+    if len(parts) < 2: return None
+
+    # Primary pattern: Name, Profession[, Dies at…]
+    if not _RE_AGE_PART.match(parts[1].strip()):
+        role = _clean_role(parts[1])
+        if role: return role
+
+    # Secondary pattern: Name, Age, Profession  (age in parts[1])
+    if len(parts) >= 3 and _RE_AGE_PART.match(parts[1].strip()):
+        role = _clean_role(','.join(parts[2:]))
+        if role: return role
+
+    # Tertiary: Name Dies at N; Short description
+    m = _RE_DIES_SEMI.search(h)
+    if m:
+        role = _clean_role(m.group(1))
+        if role: return role
+
+    return None
 def main():
     files = sorted(glob.glob(os.path.join(RAW_DIR, '*.json')))
     print(f"Scanning {len(files)} monthly raw files...")

@@ -74,6 +74,9 @@ def augment_record(rec):
     rec['dow_match_diff'] = diff
 
 
+WORD = re.compile(r'\w+')
+
+
 def load_articles_by_date():
     """Return ({YYYY-MM-DD: [...]}, {url: art}) from condensed yearly files.
     Each article has all the fields we need plus a precomputed token set.
@@ -104,8 +107,6 @@ def load_articles_by_date():
                 by_url[rec['u']] = rec
     return by_date, by_url
 
-
-WORD = re.compile(r'\w+')
 
 # Lightweight subcategory tags. We track these silently in the data so we can
 # decide later whether to surface them as filters in the UI.
@@ -268,7 +269,8 @@ def main():
             no_match += 1
             _emit_unmatched(c, score)
 
-    print(f'Matched: {matched_n}/{len(corrections)} ({100*matched_n/len(corrections):.0f}%)')
+    pct = f'{100*matched_n/len(corrections):.0f}%' if corrections else 'n/a'
+    print(f'Matched: {matched_n}/{len(corrections)} ({pct})')
     print(f'  via inline URL: {inline_n}')
     print(f'  via tokens:     {matched_n - inline_n}')
     print(f'  no ref_date: {no_ref}')

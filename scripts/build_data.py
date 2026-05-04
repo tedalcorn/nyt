@@ -1847,7 +1847,7 @@ def build_dashboard_data(articles, authors):
     monthly_podcast = Counter()
     monthly_podcast_words = defaultdict(int)
     monthly_standard = Counter()
-    annual_wc_hist = defaultdict(lambda: [0] * 21)  # standard articles only, for median
+    annual_wc_list = defaultdict(list)  # standard articles only, for exact median
     for art in articles:
         ym = art["year_month"]
         wc = art["word_count"]
@@ -1864,23 +1864,18 @@ def build_dashboard_data(articles, authors):
             monthly_podcast_words[ym] += wc
         else:
             monthly_standard[ym] += 1
-        # Accumulate annual wc histogram for STANDARD articles only (no blogs/podcasts/live/briefs)
-        # Used for computing median words/article in the carousel chart
+        # Accumulate annual word counts for STANDARD articles only (no blogs/podcasts/live/briefs)
         if wc > 0 and not is_blog and not is_pod and not is_live:
-            annual_wc_hist[ym[:4]][min(wc // 200, 20)] += 1
+            annual_wc_list[ym[:4]].append(wc)
 
-    # Compute annual median words from histogram
-    def hist_median(hist, bin_width=200):
-        total = sum(hist)
-        if not total: return 0
-        half = total / 2
-        cum = 0
-        for i, n in enumerate(hist):
-            cum += n
-            if cum >= half:
-                return i * bin_width + bin_width // 2
-        return len(hist) * bin_width
-    annual_median_words = {y: hist_median(h) for y, h in annual_wc_hist.items()}
+    # Compute exact annual median words from full word-count lists
+    def exact_median(wc_list):
+        if not wc_list: return 0
+        s = sorted(wc_list)
+        n = len(s)
+        mid = n // 2
+        return s[mid] if n % 2 else (s[mid - 1] + s[mid]) // 2
+    annual_median_words = {y: exact_median(lst) for y, lst in annual_wc_list.items()}
 
     months_sorted = sorted(monthly.keys())
     articles_per_month = [

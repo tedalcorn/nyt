@@ -10,7 +10,7 @@ corrections_automatched_review.json to remove any resolved items.
 """
 import json, os
 
-os.chdir("/Users/tedalcorn/Desktop/claude-projects/nyt")
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 MATCHED_PATH = 'data/corrections_matched.json'
 OVERRIDES_PATH = 'data/corrections_overrides.json'

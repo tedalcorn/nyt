@@ -2,9 +2,9 @@ name: Update NYT Data
 
 on:
   schedule:
-    # Run on the 2nd of each month at 6am UTC
-    - cron: '0 6 2 * *'
-  workflow_dispatch: # Allow manual trigger
+    # Run on the 1st and 15th of each month at 6am UTC
+    - cron: '0 6 1,15 * *'
+  workflow_dispatch: # Allow manual trigger from GitHub UI
 
 jobs:
   update:
@@ -19,13 +19,26 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
+      # Cache data/raw so we only fetch new months on each run.
+      # First run after cache miss re-fetches all months (~40 min); thereafter ~10 min.
+      - name: Cache raw API data
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: nyt-raw-${{ runner.os }}-${{ hashFiles('scripts/fetch_nyt.py') }}
+          restore-keys: |
+            nyt-raw-${{ runner.os }}-
+
       - name: Fetch new data
         env:
           NYT_API_KEY: ${{ secrets.NYT_API_KEY }}
-        run: python fetch_nyt.py
+        run: python scripts/fetch_nyt.py
 
       - name: Build dashboard data
-        run: python build_data.py
+        run: python scripts/build_data.py
+
+      - name: Build unique reporters
+        run: python scripts/build_unique_reporters.py
 
       - name: Commit and push if changed
         run: |
@@ -35,6 +48,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update NYT data ($(date +%Y-%m))"
+            git commit -m "Auto-update: $(date +%Y-%m-%d)"
             git push
           fi

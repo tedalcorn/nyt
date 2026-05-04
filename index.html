@@ -1108,51 +1108,59 @@ function downloadSectionChart(btn, canvasId) {
   btn.textContent = '…';
   const h3 = document.querySelector('#sectionDetailPanel h3');
   const sectionName = h3 ? h3.textContent.trim() : 'Section';
-  const slug = sectionName.replace(/[^a-z0-9]+/gi, '_').toLowerCase();
+  const safeName = sectionName.replace(/[^a-z0-9]+/gi, '_');
   const isHist = canvasId === 'chartSectionHist';
-  const suffix = isHist ? '_wordcounts' : '_trend';
+  const detailMode = window._sectionDetailChartMode || 'articles';
 
-  // Build chart title + caption
-  let title1, title2, legendItems = [];
+  // Determine filename
+  let filename;
+  if (isHist) {
+    const histMode = (window._currentSectionHist?.mode) || 'all';
+    filename = safeName + (histMode === 'year' ? '_wordcount_years' : '_wordcount_full');
+  } else {
+    filename = safeName + (detailMode === 'reporters' ? '_reporters_year' : '_articles_year');
+  }
+
+  // Build title + subtitle; topLegendItems drawn in header (wc-by-year only)
+  let title1, title2, topLegendItems = [];
   if (isHist) {
     const ctx = window._currentSectionHist;
     const mode = ctx?.mode || 'all';
     const n = ctx?.sec ? (ctx.sec.wc_hist || []).reduce((s,v)=>s+v,0) : 0;
     title1 = `New York Times "${sectionName}" section — article word count distribution`;
-    title2 = mode === 'year'
-      ? `Lines = % of each year's articles per 200-word bin · n=${n.toLocaleString()} articles · Data from NYT Archive API`
-      : `Bars = articles per 200-word bin · Red dashed line marks the section average · n=${n.toLocaleString()} articles · Data from NYT Archive API`;
+    title2 = `n=${n.toLocaleString()} articles · Data from NYT Archive API`;
     if (mode === 'year' && ctx) {
       const byYear = ctx.sec.wc_hist_by_year || {};
-      const currentYear = String(new Date().getFullYear());
-      const years = Object.keys(byYear).filter(y => y !== currentYear && byYear[y].some(v => v > 0)).sort();
+      const curY = String(new Date().getFullYear());
+      const years = Object.keys(byYear).filter(y => y !== curY && byYear[y].some(v => v > 0)).sort();
       if (years.length >= 2) {
-        legendItems = [
+        topLegendItems = [
           { color: 'hsl(205,60%,80%)', label: years[0] },
           { color: 'hsl(205,60%,20%)', label: years[years.length - 1] },
         ];
       }
-    } else {
-      legendItems = [
-        { color: 'rgba(50,104,145,0.65)', label: 'Articles' },
-        { color: 'rgba(180,50,50,0.7)', label: 'Section average' },
-      ];
     }
+  } else if (detailMode === 'reporters') {
+    const trend = (dashboard.section_trends && dashboard.section_trends[sectionName]) || [];
+    const total = trend.reduce((s,d) => s + (d.count || 0), 0);
+    title1 = `New York Times "${sectionName}" section — unique reporters by year`;
+    title2 = `n=${total.toLocaleString()} articles · Data from NYT Archive API`;
   } else {
     const trend = (dashboard.section_trends && dashboard.section_trends[sectionName]) || [];
     const yrs = trend.filter(d => d.count > 0).map(d => d.year);
     const range = yrs.length ? `${yrs[0]}–${yrs[yrs.length-1]}` : '';
     const total = trend.reduce((s,d) => s + (d.count || 0), 0);
     title1 = `New York Times "${sectionName}" section — articles by year${range ? ', ' + range : ''}`;
-    title2 = `Bars = articles published in section per year · n=${total.toLocaleString()} articles · Data from NYT Archive API`;
-    legendItems = [{ color: 'rgba(50,104,145,0.7)', label: 'Articles' }];
+    title2 = `n=${total.toLocaleString()} articles · Data from NYT Archive API`;
   }
 
-  // Render title bar above canvas + URL credit below — at 3x for sharpness
+  // Render at 3× for retina sharpness
   const SCALE = 3;
   const W = canvas.width * SCALE;
   const H = canvas.height * SCALE;
-  const TOP = 60 * SCALE, BOT = 40 * SCALE;
+  // TOP expands by one legend line when topLegendItems are present
+  const TOP = (topLegendItems.length ? 78 : 60) * SCALE;
+  const BOT = 28 * SCALE;  // URL credit only
   const out = document.createElement('canvas');
   out.width = W;
   out.height = TOP + H + BOT;
@@ -1162,41 +1170,34 @@ function downloadSectionChart(btn, canvasId) {
   c.fillStyle = '#fff';
   c.fillRect(0, 0, out.width, out.height);
 
+  // Title
   c.fillStyle = '#111';
   c.font = `bold ${14 * SCALE}px Arial,sans-serif`;
   c.fillText(title1, 12 * SCALE, 22 * SCALE);
   c.fillStyle = '#666';
   c.font = `${11 * SCALE}px Arial,sans-serif`;
-  // Wrap title2 if long
-  const maxW = W - 24 * SCALE;
-  if (c.measureText(title2).width <= maxW) {
-    c.fillText(title2, 12 * SCALE, 42 * SCALE);
-  } else {
-    const parts = title2.split(' · ');
-    let line = parts[0], y = 42 * SCALE;
-    for (let i = 1; i < parts.length; i++) {
-      const next = line + ' · ' + parts[i];
-      if (c.measureText(next).width > maxW) { c.fillText(line, 12 * SCALE, y); line = parts[i]; y += 15 * SCALE; }
-      else line = next;
-    }
-    c.fillText(line, 12 * SCALE, y);
+  c.fillText(title2, 12 * SCALE, 40 * SCALE);
+
+  // Top-center legend (wc-by-year only)
+  if (topLegendItems.length) {
+    c.font = `${10 * SCALE}px Arial,sans-serif`;
+    const totalLegW = topLegendItems.reduce((s, { label }) => s + 16 * SCALE + c.measureText(label).width + 14 * SCALE, 0);
+    let lx = (W - totalLegW) / 2;
+    const ly = 60 * SCALE;
+    topLegendItems.forEach(({ color, label }) => {
+      c.fillStyle = color;
+      c.fillRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
+      c.strokeStyle = '#bbb'; c.lineWidth = 0.5 * SCALE;
+      c.strokeRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
+      c.fillStyle = '#333';
+      c.fillText(label, lx + 16 * SCALE, ly);
+      lx += 16 * SCALE + c.measureText(label).width + 14 * SCALE;
+    });
   }
 
   c.drawImage(canvas, 0, TOP, W, H);
 
-  // Legend below chart
-  let lx = 12 * SCALE, ly = TOP + H + 22 * SCALE;
-  legendItems.forEach(({ color, label }) => {
-    c.fillStyle = color;
-    c.fillRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
-    c.strokeStyle = '#bbb'; c.lineWidth = 0.5 * SCALE;
-    c.strokeRect(lx, ly - 10 * SCALE, 12 * SCALE, 12 * SCALE);
-    c.fillStyle = '#333';
-    c.font = `${10 * SCALE}px Arial,sans-serif`;
-    c.fillText(label, lx + 16 * SCALE, ly);
-    lx += 16 * SCALE + c.measureText(label).width + 14 * SCALE;
-  });
-
+  // URL credit
   c.font = `${9 * SCALE}px Arial,sans-serif`;
   c.fillStyle = '#aaa';
   c.textAlign = 'right';
@@ -1204,7 +1205,7 @@ function downloadSectionChart(btn, canvasId) {
   c.textAlign = 'left';
 
   const a = document.createElement('a');
-  a.download = slug + suffix + '.jpg';
+  a.download = filename + '.jpg';
   a.href = out.toDataURL('image/jpeg', 0.92);
   a.click();
   btn.textContent = '↓ JPG';
@@ -2193,7 +2194,7 @@ function renderDecadeChart() {
           offset: 4,
           color: 'rgba(100,60,160,0.9)',
           font: { size: 10, weight: '600' },
-          formatter: v => `${v} words/article (median)`,
+          formatter: v => `${v.toLocaleString()} words (median)`,
         },
       }, {
         label: 'Total* words',
@@ -2244,6 +2245,15 @@ function renderDecadeChart() {
           }
         },
         datalabels: { display: false },  // default off; overridden per-dataset above
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              if (ctx.datasetIndex === 0) return `Median words/article (excl. blogs, live posts, briefs, podcasts): ${ctx.parsed.y.toLocaleString()}`;
+              if (ctx.datasetIndex === 1) return `Total* words (excl. blogs, live posts, briefs, podcasts): ${ctx.parsed.y.toFixed(1)} million words`;
+              if (ctx.datasetIndex === 2) return `Total* articles (excl. blogs, live posts, briefs, podcasts): ${ctx.parsed.y.toLocaleString()}`;
+            }
+          }
+        },
       },
       scales: {
         x: { ticks: { maxRotation: 0, font: { size: 11 } } },
@@ -7322,6 +7332,9 @@ if (!window._obitResizeWired) {
 // Suffix tokens we strip when computing last/first for sort/display.
 // Covers Roman (II/III/IV/V), ordinal (2nd/3rd/4th/5th), and Jr./Sr.
 const _NAME_SUFFIX_RE = /^(?:jr|sr|ii|iii|iv|v|2nd|3rd|4th|5th)\.?$/i;
+function _stripDiacritics(s) {
+  return s.normalize('NFD').replace(/[\u0300-\u036F]/g, '');
+}
 function _lastName(n) {
   if (!n) return '';
   // Bracketed placeholder names (e.g. "[Not yet identified]") sort before all letters
@@ -7331,7 +7344,7 @@ function _lastName(n) {
   while (parts.length > 1 && _NAME_SUFFIX_RE.test(parts[parts.length - 1].replace(/[.,]+$/, ''))) {
     parts.pop();
   }
-  return (parts[parts.length - 1] || '').toLowerCase().replace(/[.,]+$/, '');
+  return _stripDiacritics((parts[parts.length - 1] || '').replace(/[.,]+$/, '')).toLowerCase();
 }
 function _firstName(n) {
   if (!n) return '';
@@ -7340,7 +7353,7 @@ function _firstName(n) {
     parts.pop();
   }
   if (parts.length < 2) return '';
-  return (parts[0] || '').toLowerCase().replace(/[.,]+$/, '');
+  return _stripDiacritics((parts[0] || '').replace(/[.,]+$/, '')).toLowerCase();
 }
 
 let _obitTableSort = { col: 'date', asc: false };
@@ -7383,17 +7396,23 @@ function renderObitsTable() {
     if (c === 'word_count') return o.word_count || 0;
     return o[c];
   };
+  // Pre-compute sort keys once to avoid O(n log n) repeated _lastName() calls
+  const _col = _obitTableSort.col;
+  const _asc = _obitTableSort.asc;
+  const sortKeyMap = new Map(rows.map(o => {
+    let k = keyFor(o, _col);
+    if (typeof k === 'string') k = k.toLowerCase();
+    return [o, k];
+  }));
   rows.sort((a, b) => {
-    let va = keyFor(a, _obitTableSort.col), vb = keyFor(b, _obitTableSort.col);
-    // Push nulls to the bottom regardless of sort direction
+    let va = sortKeyMap.get(a), vb = sortKeyMap.get(b);
     const aNull = va == null || va === '';
     const bNull = vb == null || vb === '';
     if (aNull && bNull) return 0;
     if (aNull) return 1;
     if (bNull) return -1;
-    if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb == null ? '' : String(vb)).toLowerCase(); }
-    if (va < vb) return _obitTableSort.asc ? -1 : 1;
-    if (va > vb) return _obitTableSort.asc ? 1 : -1;
+    if (va < vb) return _asc ? -1 : 1;
+    if (va > vb) return _asc ? 1 : -1;
     return 0;
   });
   document.getElementById('obitsCount').textContent = `${rows.length.toLocaleString()} matching`;

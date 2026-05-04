@@ -10,7 +10,9 @@ Targets the 2026-04-25 /interactive/ audit:
 """
 import json, importlib.util
 
-spec = importlib.util.spec_from_file_location('build_obituaries', 'build_obituaries.py')
+import os
+_HERE = os.path.dirname(os.path.abspath(__file__))
+spec = importlib.util.spec_from_file_location('build_obituaries', os.path.join(_HERE, 'build_obituaries.py'))
 bo = importlib.util.module_from_spec(spec); spec.loader.exec_module(bo)
 NON_OBIT_URLS = bo.NON_OBIT_URLS
 OBIT_OVERRIDES = bo.OBIT_OVERRIDES
