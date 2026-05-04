@@ -1,123 +1,135 @@
 {
-  "total": 10991,
-  "parsed": 12039,
-  "matched": 10806,
+  "total": 17366,
+  "parsed": 18665,
+  "matched": 17126,
   "by_section": [
     [
       "U.S.",
-      1665
-    ],
-    [
-      "Obituaries",
-      1499
+      2249
     ],
     [
       "World",
-      1334
+      2183
+    ],
+    [
+      "Obituaries",
+      2066
     ],
     [
       "Arts",
-      1203
-    ],
-    [
-      "Business",
-      787
+      1846
     ],
     [
       "Sports",
-      703
+      1442
+    ],
+    [
+      "Business",
+      1386
     ],
     [
       "New York",
-      634
-    ],
-    [
-      "Magazine",
-      367
+      1361
     ],
     [
       "Style",
-      351
+      560
+    ],
+    [
+      "Magazine",
+      500
     ],
     [
       "Books",
-      236
-    ],
-    [
-      "Health",
-      233
+      376
     ],
     [
       "Movies",
-      225
+      364
+    ],
+    [
+      "Theater",
+      331
+    ],
+    [
+      "Technology",
+      330
+    ],
+    [
+      "Health",
+      308
+    ],
+    [
+      "Science",
+      262
+    ],
+    [
+      "Travel",
+      260
+    ],
+    [
+      "Opinion",
+      222
+    ],
+    [
+      "Real Estate",
+      221
     ],
     [
       "Climate",
       214
     ],
     [
-      "Theater",
-      209
-    ],
-    [
-      "Technology",
-      201
-    ],
-    [
-      "Opinion",
-      158
-    ],
-    [
-      "Science",
-      148
-    ],
-    [
-      "Travel",
-      132
-    ],
-    [
-      "Real Estate",
-      125
-    ],
-    [
       "Food",
-      100
+      145
     ],
     [
       "T Magazine",
-      67
-    ],
-    [
-      "Well",
-      44
+      116
     ],
     [
       "Your Money",
-      44
+      66
     ],
     [
       "The Upshot",
-      29
+      54
+    ],
+    [
+      "Well",
+      45
+    ],
+    [
+      "Education",
+      41
+    ],
+    [
+      "Automobiles",
+      33
+    ],
+    [
+      "Home & Garden",
+      26
     ],
     [
       "Times Insider",
       18
     ],
     [
-      "Education",
-      9
+      "Sunday Review",
+      17
+    ],
+    [
+      "Giving",
+      11
+    ],
+    [
+      "Crosswords & Games",
+      10
     ],
     [
       "Reader Center",
       9
-    ],
-    [
-      "Sunday Review",
-      8
-    ],
-    [
-      "Crosswords & Games",
-      8
     ],
     [
       "Neediest Cases",
@@ -132,6 +144,10 @@
       6
     ],
     [
+      "Job Market",
+      5
+    ],
+    [
       "Briefing",
       5
     ],
@@ -144,15 +160,23 @@
       4
     ],
     [
+      "NYT Now",
+      3
+    ],
+    [
       "International Home",
       3
     ],
     [
-      "Job Market",
+      "Multimedia/Photos",
       2
     ],
     [
-      "Automobiles",
+      "Blogs",
+      2
+    ],
+    [
+      "Today\u2019s Paper",
       2
     ],
     [
@@ -161,14 +185,6 @@
     ],
     [
       "Corrections",
-      1
-    ],
-    [
-      "Multimedia/Photos",
-      1
-    ],
-    [
-      "Home & Garden",
       1
     ],
     [
@@ -183,58 +199,174 @@
   "by_author": [
     [
       "Sam Roberts",
-      177
+      238
     ],
     [
       "Richard Sandomir",
-      131
-    ],
-    [
-      "Maggie Haberman",
-      89
+      156
     ],
     [
       "Robert D. McFadden",
-      86
+      106
+    ],
+    [
+      "William Grimes",
+      99
     ],
     [
       "Neil Genzlinger",
-      82
+      96
+    ],
+    [
+      "Billy Witz",
+      96
+    ],
+    [
+      "Maggie Haberman",
+      95
+    ],
+    [
+      "Penelope Green",
+      84
+    ],
+    [
+      "David Waldstein",
+      83
+    ],
+    [
+      "Richard Goldstein",
+      83
     ],
     [
       "Clay Risen",
       82
     ],
     [
-      "Richard Goldstein",
+      "Jon Pareles",
+      79
+    ],
+    [
+      "Robin Pogrebin",
+      75
+    ],
+    [
+      "Bruce Weber",
       74
     ],
     [
-      "Penelope Green",
+      "Anita Gates",
+      73
+    ],
+    [
+      "Brooks Barnes",
       71
+    ],
+    [
+      "Katharine Q. Seelye",
+      68
+    ],
+    [
+      "Peter Baker",
+      66
+    ],
+    [
+      "Sheryl Gay Stolberg",
+      66
+    ],
+    [
+      "Alexis Soloski",
+      65
+    ],
+    [
+      "Daniel E. Slotnik",
+      65
+    ],
+    [
+      "Rick Gladstone",
+      64
+    ],
+    [
+      "The Editorial Board",
+      64
+    ],
+    [
+      "Douglas Martin",
+      63
+    ],
+    [
+      "Steven Erlanger",
+      63
+    ],
+    [
+      "David E. Sanger",
+      62
+    ],
+    [
+      "Roberta Smith",
+      60
+    ],
+    [
+      "Jennifer Schuessler",
+      60
+    ],
+    [
+      "Hiroko Tabuchi",
+      60
+    ],
+    [
+      "Michael D. Shear",
+      60
+    ],
+    [
+      "Marc Tracy",
+      60
     ],
     [
       "Lisa Friedman",
       60
     ],
     [
-      "Alexis Soloski",
+      "Coral Davenport",
       58
     ],
     [
-      "Anita Gates",
+      "Ken Belson",
       58
     ],
     [
-      "Jon Pareles",
-      58
+      "Andrew Higgins",
+      57
     ],
     [
-      "Sheryl Gay Stolberg",
-      53
+      "Alan Feuer",
+      55
     ],
     [
-      "Billy Witz",
+      "The New York Times",
+      55
+    ],
+    [
+      "Karen Crouse",
+      54
+    ],
+    [
+      "Alex Williams",
+      54
+    ],
+    [
+      "Ashley Southall",
+      50
+    ],
+    [
+      "Ian Austen",
+      50
+    ],
+    [
+      "Sarah Maslin Nir",
+      49
+    ],
+    [
+      "Victor Mather",
       49
     ],
     [
@@ -242,144 +374,28 @@
       49
     ],
     [
-      "Katharine Q. Seelye",
-      49
+      "Mark Landler",
+      48
     ],
     [
-      "Peter Baker",
+      "Alexandra Stevenson",
       47
     ],
     [
-      "Alex Williams",
-      46
-    ],
-    [
-      "Brooks Barnes",
-      45
-    ],
-    [
-      "Andrew Higgins",
-      43
-    ],
-    [
-      "Alan Feuer",
-      42
-    ],
-    [
-      "Ken Belson",
-      42
-    ],
-    [
-      "Nicholas Fandos",
-      42
-    ],
-    [
-      "David E. Sanger",
-      41
-    ],
-    [
-      "Giovanni Russonello",
-      41
-    ],
-    [
-      "Michael D. Shear",
-      40
-    ],
-    [
-      "Charlie Savage",
-      39
-    ],
-    [
-      "Coral Davenport",
-      39
-    ],
-    [
-      "Annie Karni",
-      39
-    ],
-    [
-      "The Editorial Board",
-      38
-    ],
-    [
-      "Roberta Smith",
-      37
-    ],
-    [
-      "Mark Landler",
-      37
-    ],
-    [
-      "Emily Cochrane",
-      37
-    ],
-    [
-      "Patrick Kingsley",
-      37
-    ],
-    [
-      "Jennifer Schuessler",
-      36
-    ],
-    [
-      "Steven Erlanger",
-      36
-    ],
-    [
-      "Katie Benner",
-      36
-    ],
-    [
-      "Julian E. Barnes",
-      36
-    ],
-    [
-      "Michael Crowley",
-      36
-    ],
-    [
-      "Daniel E. Slotnik",
-      34
-    ],
-    [
-      "David Waldstein",
-      34
-    ],
-    [
-      "Robin Pogrebin",
-      34
-    ],
-    [
-      "Neal E. Boudette",
-      33
-    ],
-    [
-      "Katie Rogers",
-      33
-    ],
-    [
-      "Luke Broadwater",
-      33
+      "Neil MacFarquhar",
+      47
     ],
     [
       "Trip Gabriel",
-      32
+      46
     ],
     [
-      "Marc Tracy",
-      32
+      "J. David Goodman",
+      46
     ],
     [
-      "Gina Kolata",
-      32
-    ],
-    [
-      "Nick Corasaniti",
-      32
-    ],
-    [
-      "Tariq Panja",
-      32
+      "Isabel Kershner",
+      46
     ]
   ]
 }
