@@ -834,6 +834,11 @@ OBIT_OVERRIDES = {
         'gender': 'F', 'gender_src': 'pronoun', 'age': 61,
         'profession': 'Political Activist and Author',
     },
+    # Boseman: headline starts with quoted title "'Black Panther' Star [Name] Dies…"
+    # — profession precedes the name, so the comma-less parser finds nothing.
+    '/2020/08/28/movies/chadwick-boseman-dead.html': {
+        'profession': "'Black Panther' Star",
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -1233,14 +1238,15 @@ def extract_profession(headline):
     h = re.sub(r'^OBITUARY\s*:\s*', '', h, flags=re.I)
     h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
 
-    # Tertiary first when no comma: "Name Dies at N; Short description"
-    # (e.g. "Peter Schrag Dies at 94; Wrote of Dangers…")
+    # "Name Dies at N; Profession" — check BEFORE comma-split so that commas
+    # inside the profession (e.g. "Hello, Dolly!") don't truncate it.
+    m = _RE_DIES_SEMI.search(h)
+    if m:
+        role = _clean_role(m.group(1))
+        if role: return role
+
     parts = h.split(',')
     if len(parts) < 2:
-        m = _RE_DIES_SEMI.search(h)
-        if m:
-            role = _clean_role(m.group(1))
-            if role: return role
         return None
 
     p1s = parts[1].strip()  # stripped second field for pattern matching
@@ -1258,16 +1264,10 @@ def extract_profession(headline):
         if len(parts) >= 3:
             role = _clean_role(','.join(parts[2:]))
             if role: return role
-        # Fall through to semicolon pattern below
+        pass  # fall through — no more patterns to try
     else:
         # Primary pattern: Name, Profession[, …]  (not an age field)
         role = _clean_role(parts[1])
-        if role: return role
-
-    # Tertiary: "Name Dies at N; Short description"
-    m = _RE_DIES_SEMI.search(h)
-    if m:
-        role = _clean_role(m.group(1))
         if role: return role
 
     return None
@@ -1315,6 +1315,7 @@ def main():
     # are actually feature articles about a person, not their death notice.
     NOT_OBIT_URLS = {
         '/2017/07/18/obituaries/the-house-that-did-the-housework.html',  # feature on Frances Gabe's house
+        '/2026/03/13/obituaries/candy-land-creator-eleanor-abbott.html',  # companion feature about the game, not Abbott's obit
     }
 
     for f in files:

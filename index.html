@@ -591,7 +591,7 @@
       <h4>Corrections</h4>
       <p>The Times publishes a digest of its corrections each day at a stable URL under <em>pageoneplus</em>, and this dashboard scrapes every such digest the Archive API has tagged as a Correction since 2017. Each individual correction blurb is pulled out of the digest page, and where the correction itself links to the article it concerns, that link is followed; otherwise the matcher uses topic-keyword overlap and the correction's date phrase to find the most likely article within a few days of when it ran. About 98 percent of the roughly 12,000 corrections in the dataset are linked back to a specific article.</p>
       <p>Each correction is also tagged with a few quality signals. The day of the week the correction cites ("An article on Friday about…") is converted into a likely print date and compared to the matched article's online pub date, which lets the dashboard flag matches where the two dates disagree by more than a few days. The word count of the correction blurb itself is recorded as a way to spot truncated or unusually long entries. These flags surface candidates for manual review and feed back into the matching pipeline.</p>
-      <p>The per-100-articles view divides correction counts by the total number of articles published by that section or reporter in the same year, drawn from the same Archive API used elsewhere on this dashboard. Rates rather than raw counts are what let Obituaries, for example, show up as a relatively correction-prone section despite producing far fewer articles than U.S. or World.</p>
+      <p>The per-100-articles view divides correction counts by the total number of articles published by that section or reporter in the same year, drawn from the same Archive API used elsewhere on this dashboard.</p>
 
       <h4>API anomalies</h4>
       <p>Known quirks in the Archive API data, in chronological order. Where this dashboard applies a correction, it's noted explicitly.</p>
@@ -920,7 +920,7 @@
           </div>
           <!-- Chart with title bar (used for the JPG export) -->
           <div id="corrVizTitleBar" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <div id="corrVizChartTitle" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Corrections by year</div>
+            <div id="corrVizChartTitle" style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em"></div>
             <button onclick="_downloadCorrVizChart(this)" style="font-size:10px;padding:1px 7px;background:#f5f5f5;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#666">↓ JPG</button>
           </div>
           <div style="position:relative;height:280px"><canvas id="chartCorrViz"></canvas></div>
@@ -7713,13 +7713,11 @@ function _renderCorrViz() {
         (_corrDenom.reporter_year_counts || {})[name] || {});
     });
   }
-  // Update chart title (used for both on-screen and JPG export)
+  // Update chart label (only shown when filtering by section/reporter)
   const titleEl = document.getElementById('corrVizChartTitle');
   if (titleEl) {
     if (!_vizSectionChips.length && !_vizReporterChips.length) {
-      titleEl.textContent = _vizMetric === 'rate'
-        ? 'NYT corrections per 100 articles, by year'
-        : 'NYT corrections per year';
+      titleEl.textContent = '';
     } else {
       const parts = [];
       if (_vizSectionChips.length) parts.push(_vizSectionChips.join(', '));

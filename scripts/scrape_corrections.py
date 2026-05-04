@@ -74,44 +74,127 @@ def collect_urls(years):
     return out
 
 
-def wayback_url(orig_url, target_date):
-    """Build a direct Wayback URL — skip the availability API which is slow + flaky.
-    The `id_/` flag returns the original (uninstrumented) HTML, and Wayback
-    auto-redirects to the closest snapshot. Hint with target_date+30 days.
+def cdx_find_ts(url, pub):
+    """Use CDX API to find the nearest 200-status snapshot timestamp.
+
+    Returns a timestamp string like '20160124183045', or None if not found.
+    Useful for pages where the naive pub_date hint misses Wayback's index.
+    CDX is rate-limited too — call this only when id_/ returns 404 or 403.
     """
-    ts = target_date.replace('-', '') if target_date else '20250101'
-    return f'https://web.archive.org/web/{ts}000000id_/{orig_url}'
+    import urllib.parse as _up
+    cdx = (
+        'https://web.archive.org/cdx/search/cdx?url=' + _up.quote(url, safe='')
+        + '&output=json&limit=1&fl=timestamp&filter=statuscode:200'
+        + '&closest=' + (pub.replace('-', '') if pub else '20200101')
+    )
+    try:
+        req = urllib.request.Request(cdx, headers={'User-Agent': 'Mozilla/5.0 (compatible; CorrectionsResearch/1.0)'})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            rows = json.loads(r.read().decode())
+        # rows[0] is the header ['timestamp']; rows[1] is the first result
+        if len(rows) > 1:
+            return rows[1][0]
+    except Exception:
+        pass
+    return None
+
+
+def _read_html(raw, resp_headers):
+    """Decompress and decode raw bytes from Wayback, handling implicit gzip."""
+    enc = (resp_headers.get('Content-Encoding') or '').lower()
+    if enc == 'gzip' or raw[:2] == b'\x1f\x8b':
+        try:
+            raw = gzip.decompress(raw)
+        except Exception:
+            pass
+    return raw.decode('utf-8', errors='replace')
 
 
 def fetch_one(url, pub):
-    """Sync fetch of one URL. Returns (status, url, html_or_None)."""
+    """Sync fetch of one URL from Wayback. Returns (status, url, html_or_None).
+
+    Strategy (in order):
+      1. id_/ URL with pub_date hint → preserves original HTML, no toolbar.
+      2. If 404: CDX lookup to find actual snapshot timestamp, then retry id_/.
+      3. If 403 (recent-content block on id_/): fall back to plain Wayback URL
+         which returns Wayback-instrumented HTML but is still parseable.
+    All three attempts use the same cache path, so a success at any step is
+    permanent.
+    """
     path = os.path.join(CACHE_DIR, slug(url) + '.html')
     if os.path.exists(path) and os.path.getsize(path) > 5000:
         return ('cached', url, None)
-    wb = wayback_url(url, pub)
-    req = urllib.request.Request(wb, headers={'User-Agent': 'Mozilla/5.0 (compatible; CorrectionsResearch/1.0)'})
-    try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+
+    ts = pub.replace('-', '') if pub else '20200101'
+    ua = {'User-Agent': 'Mozilla/5.0 (compatible; CorrectionsResearch/1.0)'}
+
+    def _try_wb(wb_url):
+        req = urllib.request.Request(wb_url, headers=ua)
+        with urllib.request.urlopen(req, timeout=35) as r:
             raw = r.read()
-            if r.headers.get('Content-Encoding') == 'gzip':
-                raw = gzip.decompress(raw)
-        html = raw.decode('utf-8', errors='replace')
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return ('no_snapshot', url, None)
-        return (f'http{e.code}', url, None)
-    except Exception as e:
-        return (f'err:{type(e).__name__}', url, None)
-    if len(html) < 5000:
+            return _read_html(raw, r.headers)
+
+    # Attempt 1: standard id_/ URL with pub_date hint.
+    wb1 = f'https://web.archive.org/web/{ts}000000id_/{url}'
+    try:
+        html = _try_wb(wb1)
+        if len(html) >= 5000:
+            with open(path, 'w') as fh:
+                fh.write(html)
+            return ('ok', url, html)
         return ('too_short', url, None)
-    with open(path, 'w') as fh:
-        fh.write(html)
-    return ('ok', url, html)
+    except urllib.error.HTTPError as e:
+        first_code = e.code
+    except Exception as e:
+        first_code = 0
+
+    # Attempt 2: if 404, CDX-resolve for the true timestamp.
+    if first_code == 404:
+        time.sleep(2)
+        real_ts = cdx_find_ts(url, pub)
+        if real_ts:
+            time.sleep(2)
+            wb2 = f'https://web.archive.org/web/{real_ts}id_/{url}'
+            try:
+                html = _try_wb(wb2)
+                if len(html) >= 5000:
+                    with open(path, 'w') as fh:
+                        fh.write(html)
+                    return ('ok_cdx', url, html)
+                return ('too_short', url, None)
+            except urllib.error.HTTPError as e:
+                second_code = e.code
+            except Exception:
+                second_code = 0
+            if second_code == 404:
+                return ('no_snapshot', url, None)
+        else:
+            return ('no_snapshot', url, None)
+
+    # Attempt 3: if 403 (recent-content `id_/` block), try plain Wayback URL.
+    if first_code == 403:
+        time.sleep(2)
+        wb3 = f'https://web.archive.org/web/{ts}/{url}'
+        try:
+            html = _try_wb(wb3)
+            if len(html) >= 5000:
+                with open(path, 'w') as fh:
+                    fh.write(html)
+                return ('ok_plain', url, html)
+            return ('too_short', url, None)
+        except urllib.error.HTTPError as e:
+            return (f'http{e.code}', url, None)
+        except Exception as e:
+            return (f'err:{type(e).__name__}', url, None)
+
+    return (f'http{first_code}', url, None)
 
 
-def fetch_all(urls, pace=3.5, max_retries=2):
-    """Serial fetch with throttle. Wayback rate-limits aggressively if you go fast.
-    pace = seconds between requests. ~4s/req → ~15/min, the published soft limit.
+def fetch_all(urls, pace=6.0, max_retries=3):
+    """Serial fetch with throttle. Pace is conservative by default.
+
+    Wayback's soft limit: ~15 req/min. 6s/request is safely under that.
+    Exponential backoff on 429 / 503 / connection errors.
     """
     todo = []
     for u, p, h in urls:
@@ -129,14 +212,19 @@ def fetch_all(urls, pace=3.5, max_retries=2):
         delta = time.time() - last
         if delta < pace:
             time.sleep(pace - delta)
-        # Retry transient failures
+        # Retry on transient rate-limit errors with exponential backoff
         for attempt in range(max_retries + 1):
             last = time.time()
             status, _, _ = fetch_one(u, p)
-            if status in ('ok', 'cached', 'no_snapshot', 'too_short'):
+            terminal = status in ('ok', 'ok_cdx', 'ok_plain', 'cached',
+                                  'no_snapshot', 'too_short')
+            if terminal:
                 break
+            # Rate-limited or connection error — back off
+            wait = 20 * (2 ** attempt)
             if attempt < max_retries:
-                time.sleep(8 + 4 * attempt)
+                print(f'    [{attempt+1}/{max_retries}] {status} — backing off {wait}s', flush=True)
+                time.sleep(wait)
         counts[status] = counts.get(status, 0) + 1
         if (i + 1) % 10 == 0 or (i + 1) == len(todo):
             print(f'  [{i+1}/{len(todo)}] {counts}', flush=True)
