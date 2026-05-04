@@ -346,11 +346,12 @@ NON_OBIT_URLS = {
 # - age: republished obits whose source year predates 2000 (no raw-dump record
 #   to cross-reference) and whose abstract carries no age phrase
 OBIT_OVERRIDES = {
-    # Sister Inah Canabarro Lucas: store name without "Sister" — title is
-    # added back via make_display_name from the headline. Keeps internal
-    # name consistent with Dr/Rev/Sir stripping policy.
+    # Sister Inah Canabarro Lucas: headline starts "Brazilian Nun Who Was World's
+    # Oldest Person…" — no comma-delimited profession, so extraction fails. Her
+    # headline also begins with description rather than name, so name comes from
+    # the URL slug. Set profession and keep stored name without "Sister" title.
     '/2025/05/02/world/americas/inah-canabarro-lucas-oldest-person-dead.html': {
-        'name': 'Inah Canabarro Lucas', 'profession': None,
+        'name': 'Inah Canabarro Lucas', 'profession': 'Brazilian Nun',
     },
     # Leslie Edwards (dancer, Royal Ballet) — male; pronoun count in our extracts
     # came out F (likely because the abstract referenced a female partner).
@@ -378,7 +379,14 @@ OBIT_OVERRIDES = {
     # Mum,' A Symbol of Courage, Dies at 101" — birth name is Elizabeth Bowes-
     # Lyon. Use the title-form name commonly used in her obituary tagline.
     '/2002/03/31/world/britain-s-beloved-queen-mum-a-symbol-of-courage-dies-at-101.html': {
-        'name': 'Queen Elizabeth the Queen Mother', 'profession': None,
+        'name': 'Queen Elizabeth the Queen Mother', 'profession': 'Queen Consort of the United Kingdom',
+    },
+    # R. Smith Simpson: headline "Foreign Service Officer R. Smith Simpson Dies
+    # at 103" — "Foreign Service Officer" is the title/profession, not part of
+    # the name. Parser captures it as part of the name.
+    '/2010/09/12/world/12simpson.html': {
+        'name': 'R. Smith Simpson', 'profession': 'Foreign Service Officer',
+        'gender': 'M', 'gender_src': 'manual',
     },
     # Aaron Swartz: headline starts "Internet Activist, a Creator of RSS, Is
     # Dead at 26" — the name is in the URL slug only.
@@ -1303,6 +1311,12 @@ def main():
     # 2011, headline lacks any death verb).
     RE_OBIT_URL_HINT = re.compile(r'-(?:dead|dies|obituary|killed)\b|/obituar(?:y|ies)[/\-]', re.I)
 
+    # URLs that look like obits (section=Obituaries, /obituary/ slug, etc.) but
+    # are actually feature articles about a person, not their death notice.
+    NOT_OBIT_URLS = {
+        '/2017/07/18/obituaries/the-house-that-did-the-housework.html',  # feature on Frances Gabe's house
+    }
+
     for f in files:
         with open(f) as fh:
             try:
@@ -1321,6 +1335,9 @@ def main():
             # daily obit corrections column).
             if tom == 'Correction':
                 skipped_corr += 1
+                continue
+            # Skip known feature articles misfiled under Obituaries section/desk.
+            if url in NOT_OBIT_URLS:
                 continue
             # Identify obits — accept either type tag or Obits desk OR Obituaries section.
             # Also include the 9/11 "Portraits of Grief" series whose desk is
