@@ -2355,6 +2355,17 @@ _SUBJECT_KW_MERGES = {
     # Labor/immigration
     'LABOR': 'Labor and Jobs',
     'IMMIGRATION AND REFUGEES': 'Immigration and Emigration',
+    # Illegal immigration — three successive NYT tag forms → current
+    'Illegal Aliens': 'Illegal Immigration',
+    'Illegal Immigrants': 'Illegal Immigration',
+    # Race/ethnicity — old form → current
+    'Blacks': 'Black People',
+    # LGBTQ — old narrower tags → current inclusive forms
+    'Homosexuality': 'Homosexuality and Bisexuality',
+    'Transgender': 'Transgender and Transsexuals',
+    'Transgender and Transsexual': 'Transgender and Transsexuals',
+    # Drugs — format variant
+    'Fentanyl (Drug)': 'Fentanyl',
     # Advertising
     'ADVERTISING': 'Advertising and Marketing',
     # Social issues — old ALLCAPS/abbrev forms to current descriptive forms

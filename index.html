@@ -271,7 +271,7 @@
 
   /* Segmented control (reusable) */
   .seg { display:inline-flex; border:1px solid #ccc; border-radius:3px; overflow:hidden; font-size:10px; }
-  .seg button { padding:2px 8px; border:none; border-right:1px solid #ccc; cursor:pointer; font-family:inherit; background:#fff; color:#555; white-space:nowrap; }
+  .seg button { padding:2px 8px; border:none; border-right:1px solid #ccc; cursor:pointer; font-family:inherit; font-size:inherit; background:#fff; color:#555; white-space:nowrap; }
   .seg button:last-child { border-right:none; }
   .seg button.on { background:#326891; color:#fff; }
   /* Corrections visualizer */
@@ -4156,14 +4156,15 @@ function showAuthorTimeline(name, opts = {}) {
         </div>
         <div style="display:flex;flex-direction:column">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0px">
-            <span class="seg" id="${chartId}-wcmode" style="font-size:9px">
+            <span class="seg" id="${chartId}-wcmode" style="font-size:10px">
               <button type="button" data-val="dist" class="on" onclick="window['_setWcMode_${chartId}']('dist')">Word count all years</button>
               <button type="button" data-val="time" onclick="window['_setWcMode_${chartId}']('time')">Word count by year</button>
             </span>
             <span id="${chartId}-hist-note" style="font-size:10px;color:#bbb;margin-left:6px"></span>
           </div>
-          <div id="${chartId}-hist-wrap" style="margin-top:4px"><canvas id="${chartId}_hist" style="max-height:160px"></canvas></div>
-          <div id="${chartId}-time-wrap" style="display:none;margin-top:4px"><canvas id="${chartId}_time" style="max-height:160px"></canvas></div>
+          <div id="${chartId}-wc-legend" style="font-size:9px;color:#888;margin-top:2px;display:flex;gap:10px;align-items:center;min-height:14px"></div>
+          <div id="${chartId}-hist-wrap" style="margin-top:2px"><canvas id="${chartId}_hist" style="max-height:160px"></canvas></div>
+          <div id="${chartId}-time-wrap" style="display:none;margin-top:2px"><canvas id="${chartId}_time" style="max-height:160px"></canvas></div>
         </div>
       </div>
       <div id="${listId}-filter-badge" style="display:none;margin-top:10px;padding:4px 0;border-top:1px solid #eee"></div>
@@ -4478,6 +4479,8 @@ function showAuthorTimeline(name, opts = {}) {
     document.querySelectorAll(`#${chartId}-wcmode button`).forEach(b => b.classList.toggle('on', b.dataset.val === mode));
     document.getElementById(`${chartId}-hist-wrap`).style.display = mode === 'dist' ? '' : 'none';
     document.getElementById(`${chartId}-time-wrap`).style.display = mode === 'time' ? '' : 'none';
+    const legEl = document.getElementById(`${chartId}-wc-legend`);
+    if (legEl && mode !== 'time') legEl.innerHTML = '';
     if (mode === 'time') _renderWcOverTime();
   };
   function _renderWcOverTime() {
@@ -4508,17 +4511,27 @@ function showAuthorTimeline(name, opts = {}) {
       const darkness = 0.2 + 0.8 * (i/(n-1||1));  // darkens for recent years
       return { label: yr, data: pct,
         borderColor: `rgba(50,104,145,${darkness})`, backgroundColor: 'transparent',
-        tension: 0.3, pointRadius: 1, borderWidth: 1.5 };
+        tension: 0.3, pointRadius: 0, borderWidth: 1.5 };
     });
+    // Populate year-range legend below toggles
+    const legendEl = document.getElementById(chartId + '-wc-legend');
+    if (legendEl && activeYears.length >= 2) {
+      const firstYr = activeYears[0], lastYr = activeYears[activeYears.length - 1];
+      const firstAlpha = (0.2).toFixed(2);
+      const lastAlpha = (1.0).toFixed(2);
+      legendEl.innerHTML =
+        `<span style="display:inline-flex;align-items:center;gap:4px">` +
+        `<span style="display:inline-block;width:18px;height:2px;background:rgba(50,104,145,${firstAlpha})"></span>${firstYr}</span>` +
+        `<span style="display:inline-flex;align-items:center;gap:4px">` +
+        `<span style="display:inline-block;width:18px;height:2px;background:rgba(50,104,145,${lastAlpha})"></span>${lastYr}</span>`;
+    }
     const canvas = document.getElementById(`${chartId}_time`);
     if (!canvas) return;
     destroyChart(`${chartId}_time`);
     chartInstances[`${chartId}_time`] = new Chart(canvas, {
       type: 'line', data: { labels, datasets },
       options: { responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: activeYears.length <= 8,
-          labels: { font:{size:8}, boxWidth:8 },
-          position: 'right' },
+        plugins: { legend: { display: false },
           tooltip: { callbacks: {
             title: items => `${items[0].label}–${parseInt(items[0].label)+BIN} words`,
             label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}%`

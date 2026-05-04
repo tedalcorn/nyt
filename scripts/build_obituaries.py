@@ -1193,7 +1193,12 @@ def extract_gender(name, full_text):
     return (None, None)
 
 
-_RE_AGE_PART = re.compile(r'^\d{2,3}$')
+# Match a pure age field: digits only, optionally followed by punctuation (. ; ,)
+# Also matches "67" or "86." or "81;" — strips zero-width chars before checking
+_RE_AGE_ONLY = re.compile(r'^[\u200b\u200c\u200d\ufeff]*\d{2,3}[.,;]?$')
+# Match an age-leading field: starts with 2-3 digits then a space and more content
+# e.g. "81 Architecture Critic" or "86. Eyebrow-Raising..."  or "67; Writer and Historian"
+_RE_AGE_LEADING = re.compile(r'^[\u200b\u200c\u200d\ufeff]*(\d{2,3})[.,;]?\s+(.+)$')
 _RE_DIES_SEMI = re.compile(
     r'\b(?:dies?\s+at\s+\d+|is\s+dead\s+at\s+\d+|dead\s+at\s+\d+|dies?|is\s+dead)\s*;\s*(.+)',
     re.I,
@@ -1205,7 +1210,8 @@ def _clean_role(raw):
     role = re.sub(r'\s+(?:who|that|whose|which)\b.*$', '', role, flags=re.I)
     role = re.sub(r'\b(?:is\s+|was\s+)?(?:dies|dead|died|is\s+dead)\b.*$', '', role, flags=re.I).strip()
     role = re.sub(r'^(?:who|that|whose|of|with|by)\s+', '', role, flags=re.I).strip()
-    role = clean_smart_quotes(role)
+    # Convert curly quotes to straight; keep straight apostrophes (e.g. possessives)
+    role = re.sub(r'[\u2018\u2019\u201C\u201D]', '', role)  # strip curly quotes, keep straight apostrophes
     role = role.rstrip('.,;:').strip()
     role = re.sub(r'^(?:[Aa]n?|[Tt]he)\s+', '', role)
     if not role or role.isdigit(): return None
@@ -1218,20 +1224,39 @@ def extract_profession(headline):
     h = re.sub(r'^Overlooked No More:\s*', '', headline, flags=re.I)
     h = re.sub(r'^OBITUARY\s*:\s*', '', h, flags=re.I)
     h = re.sub(r'^[\u2018\u201C\'"][^\u2019\u201D\'"]+[\u2019\u201D\'"]\s*[:,]\s*', '', h)
-    parts = h.split(',')
-    if len(parts) < 2: return None
 
-    # Primary pattern: Name, Profession[, Dies at…]
-    if not _RE_AGE_PART.match(parts[1].strip()):
+    # Tertiary first when no comma: "Name Dies at N; Short description"
+    # (e.g. "Peter Schrag Dies at 94; Wrote of Dangers…")
+    parts = h.split(',')
+    if len(parts) < 2:
+        m = _RE_DIES_SEMI.search(h)
+        if m:
+            role = _clean_role(m.group(1))
+            if role: return role
+        return None
+
+    p1s = parts[1].strip()  # stripped second field for pattern matching
+
+    # Age-leading: "81 Architecture Critic" or "86. Eyebrow-Raising…" (age + text, no comma)
+    m_lead = _RE_AGE_LEADING.match(p1s)
+    if m_lead:
+        remainder = m_lead.group(2)
+        # Strip leading inline semicolons: "67; Writer" → "Writer" (already handled by leading pattern)
+        role = _clean_role(remainder)
+        if role: return role
+
+    # Pure age field: "67" or "67." (age only — profession lives in parts[2])
+    if _RE_AGE_ONLY.match(p1s):
+        if len(parts) >= 3:
+            role = _clean_role(','.join(parts[2:]))
+            if role: return role
+        # Fall through to semicolon pattern below
+    else:
+        # Primary pattern: Name, Profession[, …]  (not an age field)
         role = _clean_role(parts[1])
         if role: return role
 
-    # Secondary pattern: Name, Age, Profession  (age in parts[1])
-    if len(parts) >= 3 and _RE_AGE_PART.match(parts[1].strip()):
-        role = _clean_role(','.join(parts[2:]))
-        if role: return role
-
-    # Tertiary: Name Dies at N; Short description
+    # Tertiary: "Name Dies at N; Short description"
     m = _RE_DIES_SEMI.search(h)
     if m:
         role = _clean_role(m.group(1))
