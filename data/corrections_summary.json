@@ -1,87 +1,87 @@
 {
-  "total": 17366,
-  "parsed": 18665,
-  "matched": 17126,
+  "total": 17703,
+  "parsed": 19013,
+  "matched": 17457,
   "by_section": [
     [
       "U.S.",
-      2249
+      2280
     ],
     [
       "World",
-      2183
+      2237
     ],
     [
       "Obituaries",
-      2066
+      2111
     ],
     [
       "Arts",
-      1846
+      1881
     ],
     [
       "Sports",
-      1442
+      1470
     ],
     [
       "Business",
-      1386
+      1422
     ],
     [
       "New York",
-      1361
+      1392
     ],
     [
       "Style",
-      560
+      566
     ],
     [
       "Magazine",
-      500
+      502
     ],
     [
       "Books",
-      376
+      384
     ],
     [
       "Movies",
-      364
-    ],
-    [
-      "Theater",
-      331
+      369
     ],
     [
       "Technology",
-      330
+      341
+    ],
+    [
+      "Theater",
+      335
     ],
     [
       "Health",
-      308
+      316
     ],
     [
       "Science",
-      262
+      269
     ],
     [
       "Travel",
-      260
+      264
     ],
     [
       "Opinion",
-      222
+      230
     ],
     [
       "Real Estate",
-      221
+      222
     ],
     [
       "Climate",
-      214
+      215
     ],
     [
       "Food",
-      145
+      148
     ],
     [
       "T Magazine",
@@ -89,11 +89,11 @@
     ],
     [
       "Your Money",
-      66
+      67
     ],
     [
       "The Upshot",
-      54
+      55
     ],
     [
       "Well",
@@ -109,7 +109,7 @@
     ],
     [
       "Home & Garden",
-      26
+      27
     ],
     [
       "Times Insider",
@@ -199,78 +199,90 @@
   "by_author": [
     [
       "Sam Roberts",
-      238
+      248
     ],
     [
       "Richard Sandomir",
-      156
+      159
     ],
     [
       "Robert D. McFadden",
-      106
+      107
     ],
     [
       "William Grimes",
-      99
+      106
+    ],
+    [
+      "Billy Witz",
+      98
     ],
     [
       "Neil Genzlinger",
       96
     ],
     [
-      "Billy Witz",
+      "Maggie Haberman",
       96
     ],
     [
-      "Maggie Haberman",
-      95
-    ],
-    [
       "Penelope Green",
-      84
+      86
     ],
     [
       "David Waldstein",
-      83
+      84
     ],
     [
       "Richard Goldstein",
-      83
+      84
     ],
     [
       "Clay Risen",
-      82
+      84
     ],
     [
       "Jon Pareles",
-      79
+      81
     ],
     [
       "Robin Pogrebin",
-      75
+      77
     ],
     [
       "Bruce Weber",
-      74
+      75
     ],
     [
       "Anita Gates",
-      73
+      75
     ],
     [
       "Brooks Barnes",
-      71
+      72
+    ],
+    [
+      "Peter Baker",
+      69
+    ],
+    [
+      "The Editorial Board",
+      69
+    ],
+    [
+      "Daniel E. Slotnik",
+      68
     ],
     [
       "Katharine Q. Seelye",
       68
     ],
     [
-      "Peter Baker",
-      66
+      "Sheryl Gay Stolberg",
+      68
     ],
     [
-      "Sheryl Gay Stolberg",
+      "Steven Erlanger",
       66
     ],
     [
@@ -278,31 +290,39 @@
       65
     ],
     [
-      "Daniel E. Slotnik",
-      65
-    ],
-    [
       "Rick Gladstone",
-      64
-    ],
-    [
-      "The Editorial Board",
-      64
+      65
     ],
     [
       "Douglas Martin",
       63
     ],
     [
-      "Steven Erlanger",
-      63
+      "Roberta Smith",
+      62
     ],
     [
       "David E. Sanger",
       62
     ],
     [
-      "Roberta Smith",
+      "Marc Tracy",
+      62
+    ],
+    [
+      "Ken Belson",
+      61
+    ],
+    [
+      "Hiroko Tabuchi",
+      61
+    ],
+    [
+      "Michael D. Shear",
+      61
+    ],
+    [
+      "Coral Davenport",
       60
     ],
     [
@@ -310,15 +330,7 @@
       60
     ],
     [
-      "Hiroko Tabuchi",
-      60
-    ],
-    [
-      "Michael D. Shear",
-      60
-    ],
-    [
-      "Marc Tracy",
+      "Andrew Higgins",
       60
     ],
     [
@@ -326,19 +338,11 @@
       60
     ],
     [
-      "Coral Davenport",
-      58
-    ],
-    [
-      "Ken Belson",
-      58
-    ],
-    [
-      "Andrew Higgins",
-      57
-    ],
-    [
       "Alan Feuer",
+      56
+    ],
+    [
+      "Karen Crouse",
       55
     ],
     [
@@ -346,23 +350,27 @@
       55
     ],
     [
-      "Karen Crouse",
-      54
-    ],
-    [
       "Alex Williams",
       54
     ],
     [
-      "Ashley Southall",
-      50
+      "Ian Austen",
+      52
     ],
     [
-      "Ian Austen",
-      50
+      "Ashley Southall",
+      51
     ],
     [
       "Sarah Maslin Nir",
+      51
+    ],
+    [
+      "Alexandra Stevenson",
+      49
+    ],
+    [
+      "Neil MacFarquhar",
       49
     ],
     [
@@ -378,23 +386,15 @@
       48
     ],
     [
-      "Alexandra Stevenson",
+      "J. David Goodman",
       47
     ],
     [
-      "Neil MacFarquhar",
+      "Katie Benner",
       47
     ],
     [
       "Trip Gabriel",
-      46
-    ],
-    [
-      "J. David Goodman",
-      46
-    ],
-    [
-      "Isabel Kershner",
       46
     ]
   ]
