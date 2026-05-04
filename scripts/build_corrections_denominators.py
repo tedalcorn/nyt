@@ -14,6 +14,7 @@ Output: data/corrections_denominators.json
 Idempotent. Read-only on inputs.
 """
 import json, glob
+from datetime import date
 from collections import defaultdict
 
 OUT = 'data/corrections_denominators.json'
@@ -35,7 +36,7 @@ def main():
 
     # Year window — corrections data spans 2016-12 → present, but page_date determines
     # the corrections era. Use 2017-present.
-    years = [str(y) for y in range(2017, 2027)]
+    years = [str(y) for y in range(2014, date.today().year + 1)]
 
     section_year = defaultdict(lambda: defaultdict(int))
     reporter_year = defaultdict(lambda: defaultdict(int))
