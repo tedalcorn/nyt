@@ -1,0 +1,33 @@
+{
+  "section_headers": [
+    "\"St.\" compound last names — API drops the second word of the last name.",
+    "Only add entries here when the correct full name is confirmed.",
+    "Middle initial sometimes dropped / capitalization varies",
+    "Trailing \"Photographs\" suffix (byline parsed as \"Name; Photographs by ...\")",
+    "Podcast show names indexed as bylines — merge to the host's personal byline",
+    "\"X Nyt\" suffix — Metro Briefing and wire-style bylines (2001-2006)",
+    "Accent mark variants (API inconsistently strips/preserves diacritics)",
+    "(both short and full forms had >10 articles, so the conservative threshold didn't fire)",
+    "Verified via beats, section, year range, and where available Wikipedia/LinkedIn.",
+    "(Robert H. Frank = Cornell economist/columnist; Robert Frank = wealth/lifestyle reporter)",
+    "Middle name present in most bylines but occasionally dropped (user-confirmed same person)",
+    "Middle-initial variants confirmed same person (count > 10 so auto-dedup skips them)",
+    "Bare-s prefix artifacts (mis-split possessive in byline string)"
+  ],
+  "negative_assertions": [
+    "NOT merging: 'Robert Frank' / 'Robert H. Frank' — different people"
+  ],
+  "per_entry_notes": {
+    "‘The Ezra Klein Show’": "curly-quoted form",
+    "‘The Ezra Klein Show'": "curly-open + straight-close (the actual stored form)",
+    "Stuart Elliot": "typo variant of the advertising columnist",
+    "Andrew Kramer": "Business/oil early career → Russia/World",
+    "Robert Worth": "Metro desk start → Middle East correspondent (Wikipedia)",
+    "Elizabeth Harris": "Metro → Business → Culture → Books (Wikipedia)",
+    "Pedro Rosado": "Same audio/video producer (MuckRack)",
+    "Natalia Osipova": "Same NYT video journalist (LinkedIn)",
+    "Timothy Williams": "keep as-is; R. variant is the rare one",
+    "Deborah B. Solomon": "shorter form is canonical",
+    "Alan S. Blinder": "shorter form is canonical"
+  }
+}

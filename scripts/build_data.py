@@ -2375,6 +2375,9 @@ _SUBJECT_KW_MERGES = {
 
 _ORG_KW_MERGES = {
     'NEW YORK KNICKERBOCKERS': 'New York Knicks',
+    # Company renames — merge old name into current
+    'Facebook Inc': 'Meta Platforms Inc',   # renamed Oct 2021
+    'Facebook.com': 'Meta Platforms Inc',
     # All-caps → mixed-case merges (same normalization as subjects)
     # Applied at ingestion so subjects.json stays consistent
 }

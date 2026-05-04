@@ -2975,13 +2975,53 @@ function openSectionDetail(sectionName) {
     .filter(a => a.primary_section === sectionName && !a.likely_multimedia && a.article_count >= 5)
     .sort((a, b) => b.article_count - a.article_count)
     .slice(0, 8);
-  if (secAuthors.length) {
+  if (secAuthors.length && articlesReady && !isAllSections) {
+    // Build year range per reporter within this section
+    const secRepYears = {};
+    const secArts = window._articlesBySection?.[sectionName] || articles.filter(a => a.section === sectionName);
+    if (!window._articlesBySection) window._articlesBySection = {};
+    window._articlesBySection[sectionName] = secArts;
+    secArts.forEach(a => {
+      const yr = a.pub_date ? a.pub_date.slice(0,4) : null;
+      if (!yr) return;
+      (a.authors || []).forEach(rname => {
+        if (!secRepYears[rname]) secRepYears[rname] = { min: yr, max: yr };
+        else { if (yr < secRepYears[rname].min) secRepYears[rname].min = yr; if (yr > secRepYears[rname].max) secRepYears[rname].max = yr; }
+      });
+    });
+    const rhtml = secAuthors.map(a => {
+      const p = secRepYears[a.name];
+      const period = p ? (p.min === p.max ? p.min : `${p.min}–${p.max.slice(-2)}`) : '';
+      return `<span class="sec-reporter-selector" data-reporter="${escapeHtml(a.name)}" data-active="0"
+        style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
+               font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
+      >${escapeHtml(a.name)}${period ? ` <span style="color:#aaa;font-size:11px">${period}</span>` : ''} <span style="color:#aaa;font-size:11px">(${a.article_count.toLocaleString()})</span></span>`;
+    }).join('');
+    document.getElementById('sectionDetailReporters').innerHTML =
+      `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
+      `<div style="font-size:13px;line-height:2;display:flex;flex-wrap:wrap">${rhtml}</div>`;
+    document.getElementById('sectionDetailReporters').querySelectorAll('.sec-reporter-selector').forEach(el => {
+      el.addEventListener('click', () => {
+        const wasActive = el.dataset.active === '1';
+        document.querySelectorAll('#sectionDetailReporters .sec-reporter-selector').forEach(c => {
+          c.dataset.active = '0'; c.style.background = '#eef6ee'; c.style.color = '#5a8a3e';
+        });
+        if (wasActive) {
+          fillSectionArticleList(sectionName, null);
+        } else {
+          el.dataset.active = '1'; el.style.background = '#5a8a3e'; el.style.color = '#fff';
+          const reporter = el.dataset.reporter;
+          fillSectionArticleList(sectionName, secArts.filter(a => (a.authors||[]).includes(reporter)));
+        }
+      });
+    });
+  } else if (secAuthors.length) {
     const rhtml = secAuthors.map(a =>
-      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="sec-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">${a.article_count.toLocaleString()}</span></span>`
+      `<span style="margin-right:14px;white-space:nowrap"><a href="#" class="sec-author-link" data-author="${escapeHtml(a.name)}" style="color:#326891;text-decoration:none">${escapeHtml(a.name)}</a> <span style="color:#aaa;font-size:11px">(${a.article_count.toLocaleString()})</span></span>`
     ).join('');
     document.getElementById('sectionDetailReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
-      `<div style="font-size:13px;line-height:1.9;display:flex;flex-wrap:wrap">${rhtml}</div>`;
+      `<div style="font-size:13px;line-height:2;display:flex;flex-wrap:wrap">${rhtml}</div>`;
     document.getElementById('sectionDetailReporters').querySelectorAll('.sec-author-link').forEach(el => {
       el.addEventListener('click', e => { e.preventDefault(); openAuthor(el.dataset.author); });
     });
@@ -3685,7 +3725,9 @@ function renderAuthors() {
                 : authorSort.col;
 
   filtered.sort((a, b) => {
-    let va = a[sortKey] ?? a[authorSort.col], vb = b[sortKey] ?? b[authorSort.col];
+    // Name column: sort by last name for intuitive alphabetical ordering
+    let va = sortKey === 'name' ? _lastName(a.name) : (a[sortKey] ?? a[authorSort.col]);
+    let vb = sortKey === 'name' ? _lastName(b.name) : (b[sortKey] ?? b[authorSort.col]);
     if (typeof va === 'string') { va = va.toLowerCase(); vb = (vb || '').toLowerCase(); }
     if (va < vb) return authorSort.asc ? -1 : 1;
     if (va > vb) return authorSort.asc ? 1 : -1;
@@ -4106,8 +4148,8 @@ function showAuthorTimeline(name, opts = {}) {
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <span style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em">Word count per article</span>
             <span class="seg" id="${chartId}-wcmode">
-              <button type="button" data-val="dist" class="on" onclick="_setWcMode('${chartId}','dist')">Distribution</button>
-              <button type="button" data-val="time" onclick="_setWcMode('${chartId}','time')">Over time</button>
+              <button type="button" data-val="dist" class="on" onclick="window['_setWcMode_${chartId}']('dist')">Distribution</button>
+              <button type="button" data-val="time" onclick="window['_setWcMode_${chartId}']('time')">Over time</button>
             </span>
           </div>
           <div id="${chartId}-hist-wrap"><canvas id="${chartId}_hist" style="max-height:160px"></canvas></div>
@@ -4261,13 +4303,15 @@ function showAuthorTimeline(name, opts = {}) {
               onClick: (evt,els) => { if(els.length) _toggleYearFilter(years[els[0].index], years); },
               scales:{ x:{ stacked:true, ticks:{font:{size:10},maxRotation:0,autoSkip:true,maxTicksLimit:14} }, y:{ beginAtZero:true, stacked:true } } }
           });
-        } else if ((hasBlog || hasPodcast) && mode === 'words') {
-          const nonStd = wYears.map(y => Math.max(0,(authorInfo.annual_words_norm[y]||0)-(blogWordNorm[y]||0)-(podWordNorm[y]||0)));
+        } else if ((hasBlog || hasPodcast || hasLive) && mode === 'words') {
+          const live_w = wYears.map(y => liveWordNorm[y] || 0);
+          const nonStd = wYears.map(y => Math.max(0,(authorInfo.annual_words_norm[y]||0)-(blogWordNorm[y]||0)-(podWordNorm[y]||0)-(liveWordNorm[y]||0)));
           const blog   = wYears.map(y => blogWordNorm[y] || 0);
           const pod    = wYears.map(y => podWordNorm[y]  || 0);
           const datasets = [{ label:'Standard', data:nonStd, backgroundColor:STANDARD_COLOR, stack:'w' }];
-          if (hasBlog)    datasets.push({ label:'Blog',    data:blog, backgroundColor:BLOG_COLOR,    stack:'w' });
-          if (hasPodcast) datasets.push({ label:'Podcast', data:pod,  backgroundColor:PODCAST_COLOR, stack:'w' });
+          if (hasBlog)    datasets.push({ label:'Blog',    data:blog,   backgroundColor:BLOG_COLOR,    stack:'w' });
+          if (hasPodcast) datasets.push({ label:'Podcast', data:pod,    backgroundColor:PODCAST_COLOR, stack:'w' });
+          if (hasLive)    datasets.push({ label:'Live/Brief', data:live_w, backgroundColor:LIVE_COLOR, stack:'w' });
           if (avgWordsPerYear) datasets.push({ label:'Avg', data:wYears.map(()=>avgWordsPerYear), type:'line',
             borderColor:'rgba(180,50,50,0.7)', borderDash:[4,3], borderWidth:1.5, pointRadius:0, fill:false });
           chartInstances[chartId] = new Chart(canvas, {
@@ -4419,15 +4463,13 @@ function showAuthorTimeline(name, opts = {}) {
   }
 
   // ── Word count mode toggle: Distribution | Over time ─────────────────────
-  window[`_wcMode_${chartId}`] = 'dist';
-  function _setWcMode(cid, mode) {
-    if (cid !== chartId) return;
-    window[`_wcMode_${cid}`] = mode;
-    document.querySelectorAll(`#${cid}-wcmode button`).forEach(b => b.classList.toggle('on', b.dataset.val === mode));
-    document.getElementById(`${cid}-hist-wrap`).style.display = mode === 'dist' ? '' : 'none';
-    document.getElementById(`${cid}-time-wrap`).style.display = mode === 'time' ? '' : 'none';
+  // Register on window so inline onclick="" can reach it from global scope
+  window[`_setWcMode_${chartId}`] = function(mode) {
+    document.querySelectorAll(`#${chartId}-wcmode button`).forEach(b => b.classList.toggle('on', b.dataset.val === mode));
+    document.getElementById(`${chartId}-hist-wrap`).style.display = mode === 'dist' ? '' : 'none';
+    document.getElementById(`${chartId}-time-wrap`).style.display = mode === 'time' ? '' : 'none';
     if (mode === 'time') _renderWcOverTime();
-  }
+  };
   function _renderWcOverTime() {
     // Compute avg words/article per year from annual_words_norm ÷ yearly article count
     // Only include years with ≥ 5 standard articles (meaningful signal)
@@ -5935,7 +5977,7 @@ function openCountryDetail(country) {
       return `<span class="country-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
-       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
+       >${escapeHtml(rname)}${period ? ` <span style="color:#aaa;font-size:11px">${period}</span>` : ''} <span style="color:#aaa;font-size:11px">(${count})</span></span>`;
     }).join('');
     document.getElementById('countryTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
@@ -6622,7 +6664,7 @@ function openStateDetail(state) {
       return `<span class="state-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
          style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                 font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
-       >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
+       >${escapeHtml(rname)}${period ? ` <span style="color:#aaa;font-size:11px">${period}</span>` : ''} <span style="color:#aaa;font-size:11px">(${count})</span></span>`;
     }).join('');
     document.getElementById('stateTopReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
@@ -8297,7 +8339,7 @@ function openSubjectDetail(rawName, type) {
       return `<span class="subj-reporter-selector" data-reporter="${escapeHtml(rname)}" data-active="0"
         style="display:inline-block;margin:2px 5px 2px 0;padding:3px 11px;background:#eef6ee;border-radius:12px;
                font-size:12px;color:#5a8a3e;cursor:pointer;white-space:nowrap"
-      >${escapeHtml(rname)} <span style="color:#aaa;font-size:11px">${period ? period+', ' : ''}${count}</span></span>`;
+      >${escapeHtml(rname)}${period ? ` <span style="color:#aaa;font-size:11px">${period}</span>` : ''} <span style="color:#aaa;font-size:11px">(${count})</span></span>`;
     }).join('');
     document.getElementById('subjectDetailReporters').innerHTML =
       `<div style="font-size:11px;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em">Lead reporters</div>` +
@@ -8534,7 +8576,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 10:53pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/3/26 11:07pm</span>
 </div>
 </body>
 </html>
