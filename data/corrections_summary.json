@@ -1,31 +1,31 @@
 {
-  "total": 17703,
-  "parsed": 19013,
-  "matched": 17457,
+  "total": 17764,
+  "parsed": 19087,
+  "matched": 17518,
   "by_section": [
     [
       "U.S.",
-      2280
+      2289
     ],
     [
       "World",
-      2237
+      2240
     ],
     [
       "Obituaries",
-      2111
+      2118
     ],
     [
       "Arts",
-      1881
+      1898
     ],
     [
       "Sports",
-      1470
+      1471
     ],
     [
       "Business",
-      1422
+      1426
     ],
     [
       "New York",
@@ -37,31 +37,31 @@
     ],
     [
       "Magazine",
-      502
+      507
     ],
     [
       "Books",
-      384
+      385
     ],
     [
       "Movies",
-      369
+      373
     ],
     [
       "Technology",
-      341
+      342
     ],
     [
       "Theater",
-      335
+      337
     ],
     [
       "Health",
-      316
+      317
     ],
     [
       "Science",
-      269
+      271
     ],
     [
       "Travel",
@@ -69,7 +69,7 @@
     ],
     [
       "Opinion",
-      230
+      232
     ],
     [
       "Real Estate",
@@ -97,7 +97,7 @@
     ],
     [
       "Well",
-      45
+      46
     ],
     [
       "Education",
@@ -144,11 +144,11 @@
       6
     ],
     [
-      "Job Market",
-      5
+      "Briefing",
+      6
     ],
     [
-      "Briefing",
+      "Job Market",
       5
     ],
     [
@@ -203,7 +203,7 @@
     ],
     [
       "Richard Sandomir",
-      159
+      160
     ],
     [
       "Robert D. McFadden",
@@ -215,7 +215,7 @@
     ],
     [
       "Billy Witz",
-      98
+      99
     ],
     [
       "Neil Genzlinger",
@@ -230,15 +230,15 @@
       86
     ],
     [
-      "David Waldstein",
-      84
-    ],
-    [
       "Richard Goldstein",
-      84
+      85
     ],
     [
       "Clay Risen",
+      85
+    ],
+    [
+      "David Waldstein",
       84
     ],
     [
@@ -247,7 +247,7 @@
     ],
     [
       "Robin Pogrebin",
-      77
+      78
     ],
     [
       "Bruce Weber",
@@ -322,15 +322,15 @@
       61
     ],
     [
+      "Andrew Higgins",
+      61
+    ],
+    [
       "Coral Davenport",
       60
     ],
     [
       "Jennifer Schuessler",
-      60
-    ],
-    [
-      "Andrew Higgins",
       60
     ],
     [
@@ -366,15 +366,15 @@
       51
     ],
     [
+      "Victor Mather",
+      50
+    ],
+    [
       "Alexandra Stevenson",
       49
     ],
     [
       "Neil MacFarquhar",
-      49
-    ],
-    [
-      "Victor Mather",
       49
     ],
     [
