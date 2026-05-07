@@ -24,6 +24,11 @@ DATA_DIR = os.path.join(PROJECT_DIR, "data")
 with open(os.path.join(DATA_DIR, "author_overrides.json"), encoding="utf-8") as _f:
     AUTHOR_OVERRIDES = json.load(_f)
 
+# Shared tag configuration: merges, filters, one-time events
+# Used consistently across build_data.py, patch_beats.py, and index.html
+with open(os.path.join(DATA_DIR, "tag_config.json"), encoding="utf-8") as _f:
+    TAG_CONFIG = json.load(_f)
+
 
 def load_all_articles():
     """Load and flatten all raw monthly JSON files."""
@@ -863,13 +868,8 @@ SUBJECT_RENAMES = {
     "Reading and Writing Skills":           "Reading and Writing Skills (Education)",
 }
 
-_GENERIC_SUBJECTS = {
-    'United States Politics and Government', 'Content Type: Personal Profile',
-    'Content Type: Service', 'your-feed-science', 'your-feed-healthcare',
-    'your-feed-internet', 'your-feed-animals', 'your-feed-weather',
-    'States (US)', 'Research',
-}
-_GENERIC_PREFIXES = ('internal-', 'audio-', 'vis-', 'your-feed', 'live-', 'durable-uri')
+_GENERIC_SUBJECTS = set(TAG_CONFIG.get('generic_subjects_always_filter', []))
+_GENERIC_PREFIXES = tuple(TAG_CONFIG.get('generic_prefixes_always_filter', []))
 _INSTITUTIONAL_BYLINES = {
     'The New York Times', 'The Associated Press', 'The Editorial Board',
     'The Learning Network', 'New York Times Games', 'International Herald Tribune',
@@ -2340,75 +2340,83 @@ def build_dashboard_data(articles, authors):
 
 # Subject keyword continuity merges — NYT changed tag names over time,
 # causing abrupt gaps in beat coverage. Map old → new canonical form.
-_SUBJECT_KW_MERGES = {
-    # Housing
-    'Housing': 'Real Estate and Housing (Residential)',
-    # Weapons/defense
-    'ATOMIC WEAPONS': 'Nuclear Weapons',
-    'UNITED STATES ARMAMENT AND DEFENSE': 'Armament, Defense and Military Forces',
-    # Media/recordings
-    'RECORDINGS (AUDIO)': 'Recordings and Downloads (Audio)',
-    'RECORDINGS (VIDEO)': 'Recordings and Downloads (Video)',
-    # Retail/fashion
-    'APPAREL': 'Fashion and Apparel',
-    'RETAIL STORES AND TRADE': 'Shopping and Retail',
-    # Labor/immigration
-    'LABOR': 'Labor and Jobs',
-    'IMMIGRATION AND REFUGEES': 'Immigration and Emigration',
-    # Illegal immigration — three successive NYT tag forms → current
-    'Illegal Aliens': 'Illegal Immigration',
-    'Illegal Immigrants': 'Illegal Immigration',
-    # Race/ethnicity — old form → current
-    'Blacks': 'Black People',
-    # LGBTQ — old narrower tags → current inclusive forms
-    'Homosexuality': 'Homosexuality and Bisexuality',
-    'Transgender': 'Transgender and Transsexuals',
-    'Transgender and Transsexual': 'Transgender and Transsexuals',
-    # Drugs — format variant
-    'Fentanyl (Drug)': 'Fentanyl',
-    # Advertising
-    'ADVERTISING': 'Advertising and Marketing',
-    # Social issues — old ALLCAPS/abbrev forms to current descriptive forms
-    'Children and Youth': 'Children and Childhood',
-    'Demonstrations and Riots': 'Demonstrations, Protests and Riots',
-    'Demonstrations, Protests, and Riots': 'Demonstrations, Protests and Riots',  # comma variant
-    'Murders and Attempted Murders': 'Murders, Attempted Murders and Homicides',
-    'Education and Schools': 'Education (K-12)',
-    'Banks and Banking': 'Banking and Financial Institutions',
-    'Freedom and Human Rights': 'Human Rights and Human Rights Violations',
-    'Suspensions, Dismissals and Resignations': 'Dismissals, Suspensions and Resignations',
-}
+# Use TAG_CONFIG loaded above (defined in data/tag_config.json)
 
-_ORG_KW_MERGES = {
-    'NEW YORK KNICKERBOCKERS': 'New York Knicks',
-    # Company renames — merge old name into current
-    'Facebook Inc': 'Meta Platforms Inc',   # renamed Oct 2021
-    'Facebook.com': 'Meta Platforms Inc',
-    # All-caps → mixed-case merges (same normalization as subjects)
-    # Applied at ingestion so subjects.json stays consistent
-}
+
+_ABBREV_RESTORE_RE = None  # lazy-built regex for restoring state/country abbrevs
+
+def _restore_abbrevs(name):
+    """Convert mangled abbreviations back to all-caps.
+
+    Python's str.title() lowercases letters after non-alpha chars, so
+    'CAPITOL (WASHINGTON, DC)'.title() yields 'Capitol (Washington, Dc)'.
+    This helper reverses that for known state/country abbreviations
+    (DC, US, NY, NJ, etc.) when they appear in a non-letter context like
+    parens or after a comma — the contexts where NYT subject tags use them.
+    """
+    global _ABBREV_RESTORE_RE
+    if _ABBREV_RESTORE_RE is None:
+        abbrevs = TAG_CONFIG.get('abbrev_fixes', [])
+        # Build alternation of title-cased forms (e.g. "Dc|Us|Ny|...").
+        # Sort longer first so 'NYC' wins over 'NY' on overlapping matches.
+        title_forms = sorted({a.title() for a in abbrevs}, key=lambda x: -len(x))
+        if title_forms:
+            pattern = (
+                r'(?<=[\s,(\-])(' +
+                '|'.join(re.escape(t) for t in title_forms) +
+                r')(?=[\s,)\-]|$)'
+            )
+            _ABBREV_RESTORE_RE = re.compile(pattern)
+        else:
+            _ABBREV_RESTORE_RE = re.compile(r'(?!x)x')  # never matches
+    return _ABBREV_RESTORE_RE.sub(lambda m: m.group(1).upper(), name)
+
 
 def _normalize_subject_kw(name):
     """Merge discontinued NYT subject tags to their current equivalents.
-    Also title-cases ALL-CAPS tags so e.g. 'ADVERTISING AND MARKETING'
-    (all-caps variant) maps to the same form as 'Advertising and Marketing'.
+
+    Steps:
+      1. Apply explicit merges from data/tag_config.json (single source of truth)
+      2. Title-case ALL-CAPS tags (single-word OR multi-word). Skip tags with
+         periods (likely true acronyms like 'F.B.I.') or apostrophes
+         ("MACY'S" → Title() yields "Macy'S" which is wrong).
+      3. Restore mangled state/country abbreviations like '(Washington, Dc)'
+         → '(Washington, DC)' that get corrupted by str.title().
+      4. Re-check merges (a demangle may have produced a known merge key).
+
+    Examples handled:
+      'AGRICULTURE'                 → 'Agriculture and Farming' (explicit merge)
+      'ATOMIC WEAPONS'              → 'Nuclear Weapons'         (explicit merge)
+      'JEWS'                        → 'Jews'                    (auto-titlecase)
+      'CAPITOL (WASHINGTON, DC)'    → 'Capitol (Washington, DC)' (titlecase + abbrev restore)
+      'F.B.I.'                      → 'F.B.I.'                  (skipped)
     """
-    if name in _SUBJECT_KW_MERGES:
-        return _SUBJECT_KW_MERGES[name]
-    # Title-case all-caps tags, then check merges again for variants
+    merges = TAG_CONFIG.get('subject_merges', {})
+    if name in merges:
+        return merges[name]
+    # Demangle abbrevs in already-mixed-case tags (e.g. "Capitol (Washington, Dc)")
+    restored = _restore_abbrevs(name)
+    if restored != name:
+        if restored in merges:
+            return merges[restored]
+        name = restored
     alpha = [c for c in name if c.isalpha()]
-    if alpha and all(c.isupper() for c in alpha) and (' ' in name or ',' in name):
+    if alpha and all(c.isupper() for c in alpha) and '.' not in name and "'" not in name and '’' not in name:
         title = name.title()
-        # Fix common prepositions that title() capitalizes incorrectly
         for word in (' And ', ' Or ', ' The ', ' Of ', ' In ', ' For ', ' To ', ' A '):
             title = title.replace(word, word.lower())
+        title = _restore_abbrevs(title)
+        if title in merges:
+            return merges[title]
         return title
     return name
 
 def _normalize_org_kw(name):
-    """Merge discontinued NYT organization tags to their current equivalents."""
-    if name in _ORG_KW_MERGES:
-        return _ORG_KW_MERGES[name]
+    """Merge discontinued NYT organization tags to their current equivalents.
+    Uses merges defined in data/tag_config.json."""
+    merges = TAG_CONFIG.get('org_merges', {})
+    if name in merges:
+        return merges[name]
     return name
 
 def _normalize_subject_name(name):

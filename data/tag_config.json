@@ -1,0 +1,151 @@
+{
+  "_doc": "Single source of truth for NYT subject-tag merging, filtering, and headline-event classification. Used by build_data.py, patch_beats.py, build_state_keywords.py, and index.html. When you change merges/filters here, run scripts/patch_beats.py to propagate them into already-built data files. Keys beginning with '_doc' are ignored by all loaders.",
+  "_doc_subject_merges": "Map of stale/variant subject tags to their canonical form. Single-word ALL-CAPS variants need explicit entries (auto-titlecase rule only fires for multi-word tags). Old NYT terminology gets remapped to current preferred form. Run patch_beats.py after editing.",
+  "_doc_abbrev_fixes": "Restore state/country abbreviations that get mangled by Python's str.title() when applied to multi-word ALL-CAPS tags (e.g. '(Washington, DC)' → '(Washington, Dc)'). Applied as a post-titlecase pass and also as one-time merges for already-corrupted on-disk forms.",
+  "_doc_filters": "generic_subjects_always_filter and generic_prefixes_always_filter apply EVERYWHERE — beats tab, reporter popups, state popups, Excel. state_coverage_generic_subjects is an ADDITIONAL filter applied only in the state coverage view (generic election/government tags every state has).",
+  "_doc_headline_events": "A tag is a 'headline event' (vs. recurring theme) when its NAME structurally indicates a specific dated incident — NOT when its coverage merely clusters in time. We do NOT use statistical year-spike detection because it conflates 'topic that became prominent' (e.g. In Vitro Fertilization in 2024) with 'specific dated event' (e.g. Hurricane Ian 2022). Detection rules: (1) tag contains a single 4-digit year not part of a range, (2) tag matches a substring pattern (named storm, etc.), (3) tag is in the curated list. 'Primaries and Caucuses' is intentionally NOT in headline events — it's a recurring theme for early-primary states.",
+
+  "subject_merges": {
+    "AGRICULTURE": "Agriculture and Farming",
+    "AMISH": "Amish",
+    "MONKEYPOX": "Monkeypox",
+    "PRIMARIES": "Primaries and Caucuses",
+    "REAPPORTIONMENT": "Redistricting and Reapportionment",
+    "ABANDONMENT": "Abandonment (Property)",
+
+    "ATOMIC WEAPONS": "Nuclear Weapons",
+    "UNITED STATES ARMAMENT AND DEFENSE": "Armament, Defense and Military Forces",
+    "RECORDINGS (AUDIO)": "Recordings and Downloads (Audio)",
+    "RECORDINGS (VIDEO)": "Recordings and Downloads (Video)",
+    "APPAREL": "Fashion and Apparel",
+    "RETAIL STORES AND TRADE": "Shopping and Retail",
+    "LABOR": "Labor and Jobs",
+    "IMMIGRATION AND REFUGEES": "Immigration and Emigration",
+    "ADVERTISING": "Advertising and Marketing",
+
+    "Blacks": "Black People",
+    "Eskimos": "Alaska Natives",
+    "Indians, American": "Native Americans",
+    "Illegal Aliens": "Illegal Immigration",
+    "Illegal Immigrants": "Illegal Immigration",
+    "Homosexuality": "Homosexuality and Bisexuality",
+    "Transgender": "Transgender and Transsexuals",
+    "Transgender and Transsexual": "Transgender and Transsexuals",
+
+    "Housing": "Real Estate and Housing (Residential)",
+    "Fentanyl (Drug)": "Fentanyl",
+    "Children and Youth": "Children and Childhood",
+    "Demonstrations and Riots": "Demonstrations, Protests and Riots",
+    "Demonstrations, Protests, and Riots": "Demonstrations, Protests and Riots",
+    "Murders and Attempted Murders": "Murders, Attempted Murders and Homicides",
+    "Education and Schools": "Education (K-12)",
+    "Banks and Banking": "Banking and Financial Institutions",
+    "Freedom and Human Rights": "Human Rights and Human Rights Violations",
+    "Suspensions, Dismissals and Resignations": "Dismissals, Suspensions and Resignations",
+    "Hurricane Katrina (2005)": "Hurricane Katrina",
+    "Katrina (Storm)": "Hurricane Katrina",
+
+    "Capitol (Washington, Dc)": "Capitol Building (Washington, DC)"
+  },
+
+  "abbrev_fixes": [
+    "DC", "US", "UK", "NY", "NJ", "NC", "SC", "NM", "NV", "NH",
+    "PA", "VA", "WV", "CT", "MA", "MD", "ME", "RI",
+    "OH", "OK", "IL", "IN", "IA", "KS", "KY", "LA",
+    "MN", "MS", "MO", "MT", "AL", "AK", "AZ", "AR",
+    "CA", "CO", "DE", "FL", "GA", "HI", "ID", "MI",
+    "ND", "OR", "SD", "TN", "TX", "UT", "VT", "WA",
+    "WI", "WY", "NYC"
+  ],
+
+  "org_merges": {
+    "NEW YORK KNICKERBOCKERS": "New York Knicks",
+    "Facebook Inc": "Meta Platforms Inc",
+    "Facebook.com": "Meta Platforms Inc"
+  },
+
+  "generic_subjects_always_filter": [
+    "United States Politics and Government",
+    "Content Type: Personal Profile",
+    "Content Type: Service",
+    "your-feed-science",
+    "your-feed-healthcare",
+    "your-feed-internet",
+    "your-feed-animals",
+    "your-feed-weather",
+    "States (US)",
+    "Research"
+  ],
+
+  "generic_prefixes_always_filter": [
+    "internal-",
+    "audio-",
+    "vis-",
+    "your-feed",
+    "live-",
+    "durable-uri"
+  ],
+
+  "state_coverage_generic_subjects": [
+    "Politics and Government",
+    "United States Politics and Government",
+    "United States International Relations",
+    "News and News Media",
+    "Law and Legislation",
+    "Decisions and Verdicts",
+    "Deaths (Obituaries)",
+    "Finances",
+    "Economic Conditions and Trends",
+    "States (US)",
+    "Federal-State Relations (US)",
+    "Federal-State Relations",
+    "Elections",
+    "Election Results",
+    "Elections, Secretary of State",
+    "Elections, Attorneys General",
+    "Elections, Courts and the Judiciary",
+    "Elections, Mayors",
+    "Elections, Governors",
+    "Elections, State Legislatures",
+    "Elections, State Legislature",
+    "Elections, House of Representatives",
+    "Elections, Senate",
+    "Elections, Lieutenant Governors",
+    "Elections, City Council",
+    "Elections, Local",
+    "Elections, County Commissioners",
+    "Elections, District Attorneys",
+    "Elections, Sheriff",
+    "Presidential Elections (US)",
+    "Supreme Courts (State)",
+    "Voting Rights, Registration and Requirements",
+    "Voting Machines",
+    "Absentee Voting",
+    "Redistricting and Reapportionment",
+    "District Attorneys",
+    "Mayors",
+    "City Councils",
+    "Governors (US)",
+    "Attorneys General"
+  ],
+
+  "state_coverage_generic_prefixes": [
+    "Midterm Elections (",
+    "Content Type:",
+    "Content type:"
+  ],
+
+  "headline_event_tags": [
+    "Hurricane Katrina",
+    "Hurricane Gustav",
+    "Exxon Valdez (Tanker)",
+    "Arizona Immigration Law"
+  ],
+
+  "headline_event_patterns": [
+    " (Storm)",
+    "Criminal Case Against Trump"
+  ],
+
+  "_doc_year_detection": "A tag is also classified as a headline event if its name contains a 4-digit year (1900–2099) NOT part of a range. Range markers are '-' or '–' immediately after the year. So 'Hurricane Sandy (2012)' → headline (single year), but 'World War II (1939-45)' → recurring (year range = era), 'Iraq War (2003- )' → recurring (open-ended era), 'Coronavirus (2019-nCoV)' → recurring (year is part of identifier, not a single event marker)."
+}

@@ -581,6 +581,7 @@
       <p>Analysis of national coverage draws from articles in the "U.S." section and the "New York" section. Many articles in the latter section lack geographic tags, however, and are not included in the analysis. Locations internal to states (e.g., "Chicago") are mapped to their parent states.</p>
       <p>Analysis of international coverage draws from articles in the "World" section. Articles with geographic tags that appear in other sections (Opinion, Business, etc.) are not included.</p>
       <p>Population data for per-capita calculations come from the 2020 U.S. Census. Country populations come from the Natural Earth 110m Cultural Vectors dataset (the <em>POP_EST</em> field, which aggregates UN and World Bank figures).</p>
+      <p>For each state, the popup lists the subjects that appear disproportionately in that state's coverage compared to the paper as a whole. Generic items every state has — election machinery (<em>Elections, Senate</em>, <em>Elections, Governors</em>, etc.), local government (<em>Mayors</em>, <em>Governors (US)</em>, <em>District Attorneys</em>), and broad federal-government tags (<em>Federal-State Relations (US)</em>) — are excluded, since their presence in a state's coverage is more often driven by an occasional standout race than by anything genuinely recurring. Each remaining tag is then scored by how much more frequently it appears in the state's articles than in the corpus overall. The top ten by score are split into two columns. <strong>Headline events</strong> are subjects whose tag names refer to a specific dated incident (e.g. <em>Hurricane Sandy (2012)</em>, <em>Newtown, Conn, Shooting (2012)</em>, <em>Storming of the US Capitol (Jan, 2021)</em>). <strong>Recurring themes</strong> is everything else, capped at seven. The classification is based on tag-name structure rather than on when coverage clusters — a topic that became prominent in a single year (such as <em>In Vitro Fertilization</em> in 2024 after the Alabama Supreme Court ruling) is still a recurring theme, not a headline event.</p>
 
       <h4>Obituaries</h4>
       <p>A number of steps were taken to identify all obituaries. Records were included if the API tagged them <em>type_of_material</em> as Obituary (in any of its variants), filed them under the Obits desk or Obituaries section, or assigned them to the 9/11 Portraits of Grief series. Year-end roundups, paid memorial notices, and multi-subject features were excluded.</p>
@@ -1484,6 +1485,10 @@ async function loadData() {
       initBeats();
       _applyRestore('beats');
     }).catch(e => console.error('Failed to load beats:', e));
+
+    fetch('data/tag_config.json').then(r => r.json()).then(tagConfig => {
+      window._tagConfig = tagConfig;
+    }).catch(e => console.warn('Failed to load tag_config:', e));
 
     // Phase 2a: tracker files — headline+month only, 226MB (28% of full articles).
     // Loads first so the Headline Frequency tab is usable in ~1/4 the usual wait.
@@ -6744,86 +6749,137 @@ function openStateDetail(state) {
     });
   }
 
-  // Recurring themes: TF-IDF-style scoring of subject tags vs. corpus
-  const STATE_GENERIC = new Set([
-    'Politics and Government','United States Politics and Government',
-    'United States International Relations','News and News Media','Law and Legislation',
-    'Presidential Election of 2020','Presidential Election of 2024',
-    'Presidential Election of 2016','Presidential Election of 2012',
-    'Presidential Election of 2008','Primaries and Caucuses',
-    'Presidential Election (US)','Elections','Decisions and Verdicts',
-    'Deaths (Obituaries)','Finances','Economic Conditions and Trends',
-    'States (US)',
-    'Elections, Secretary of State','Elections, Attorneys General',
-    'Elections, Courts and the Judiciary','Elections, Mayors',
-    'Elections, Governors','Elections, State Legislatures',
-    'Elections, Lieutenant Governors','Supreme Courts (State)',
-    'Voting Rights, Registration and Requirements','Voting Machines',
-    'Primaries','Absentee Voting','Redistricting and Reapportionment',
+  // Outsize subjects: TF-IDF-style scoring of subject tags vs. corpus.
+  // Splits results into "Headline events" (one-time spikes) and "Recurring subjects"
+  // (structural coverage patterns). Filter rules and headline classification are
+  // driven by data/tag_config.json — keep this in sync with patch_beats.py and
+  // build_state_keywords.py. Tag merging happens upstream (build_data.py +
+  // patch_beats.py rewrite article subject arrays), so this code reads already-
+  // canonical tag names and does not need to apply any merge logic.
+  const tagConfig = window._tagConfig || {};
+  const STATE_GENERIC_SET = new Set([
+    ...(tagConfig.generic_subjects_always_filter || []),
+    ...(tagConfig.state_coverage_generic_subjects || []),
   ]);
+  const STATE_GENERIC_PREFIXES = [
+    ...(tagConfig.generic_prefixes_always_filter || []),
+    ...(tagConfig.state_coverage_generic_prefixes || []),
+  ];
+  const HEADLINE_TAG_SET = new Set(tagConfig.headline_event_tags || []);
+  const HEADLINE_PATTERNS = tagConfig.headline_event_patterns || [];
+
   function isStateJunkTag(tag) {
-    // Same logic as extractBeats(), plus Content Type: patterns
-    return GENERIC_SUBJECTS.has(tag) || STATE_GENERIC.has(tag) ||
-           tag.startsWith('internal-') || tag.startsWith('audio-') ||
-           tag.startsWith('vis-') || tag.startsWith('your-feed') ||
-           tag.startsWith('Content Type:') || tag.startsWith('Content type:') ||
-           tag.startsWith('durable-uri') || tag.startsWith('live-') ||
-           tag.startsWith('Midterm Elections (');
+    if (STATE_GENERIC_SET.has(tag)) return true;
+    return STATE_GENERIC_PREFIXES.some(p => tag.startsWith(p));
   }
-  function toTitleCaseTag(tag) {
-    // Only convert tags that are all-uppercase words; leave normal mixed-case alone
-    return tag.replace(/\b[A-Z]{2,}\b/g, w => w.charAt(0) + w.slice(1).toLowerCase());
+  // Year in tag name, NOT part of a range (so '(1939-45)', '(2003- )',
+  // '(2019-nCoV)' don't match — those are eras/identifiers, not single events).
+  const HEADLINE_YEAR_RE = /\b(19|20)\d{2}\b(?!\s*[-–])/;
+
+  function isHeadlineEvent(tag) {
+    // Classification by tag NAME structure, not by statistical clustering.
+    // We deliberately do NOT use year-spike detection — a tag whose
+    // coverage clusters in time (e.g. In Vitro Fertilization 2024) may
+    // still be a topic, not an event. Only the tag name tells us which.
+    if (HEADLINE_TAG_SET.has(tag)) return true;
+    for (const p of HEADLINE_PATTERNS) {
+      if (tag.indexOf(p) !== -1) return true;
+    }
+    return HEADLINE_YEAR_RE.test(tag);
   }
+
   const totalCorpusArticles = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
   const stateTotal = stateArticles.length || 1;
+
   const tagCounts = {};
   stateArticles.forEach(a => {
     (a.subjects || []).forEach(tag => {
-      if (!isStateJunkTag(tag)) tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      if (isStateJunkTag(tag)) return;
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     });
   });
+
   // Score: (tag freq in state / state articles) / (tag freq in corpus / corpus articles)
-  const topTags = Object.entries(tagCounts)
-    .filter(([, cnt]) => cnt >= Math.max(3, stateTotal * 0.005))
+  // SKIP tags missing from corpus instead of defaulting to 1 — that default
+  // caused the AGRICULTURE inflation bug (the all-caps form was in articles
+  // but absent from corpusSubjectFreq, so its score blew up).
+  const minCount = Math.max(3, stateTotal * 0.005);
+  const allTags = Object.entries(tagCounts)
+    .filter(([, cnt]) => cnt >= minCount)
     .map(([tag, cnt]) => {
-      const corpusFreq = (corpusSubjectFreq && corpusSubjectFreq[tag]) || 1;
+      const corpusFreq = corpusSubjectFreq && corpusSubjectFreq[tag];
+      if (!corpusFreq) return null;
       const score = totalCorpusArticles > 0
         ? (cnt / stateTotal) / (corpusFreq / totalCorpusArticles)
         : cnt;
       return { tag, cnt, score };
     })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 7);
+    .filter(x => x !== null)
+    .sort((a, b) => b.score - a.score);
 
-  if (topTags.length) {
-    const tagsHtml = topTags.map(({ tag, cnt }) => {
-      const display = toTitleCaseTag(tag);
-      return `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:#eef3f7;border-radius:10px;font-size:12px;color:#326891;cursor:pointer" class="state-tag-filter" data-tag="${escapeHtml(tag)}" title="${cnt} articles">${escapeHtml(display)}</span>`;
-    }).join('');
+  // Take top 10 candidates, split into headline events and recurring subjects.
+  // Headline events: ALL from top 10 that classify as event-driven.
+  // Recurring subjects: remaining items from top 10, capped at 7.
+  const top10 = allTags.slice(0, 10);
+  const headlineEvents = top10.filter(t => isHeadlineEvent(t.tag));
+  const recurringSubjects = top10.filter(t => !isHeadlineEvent(t.tag)).slice(0, 7);
+
+  if (headlineEvents.length || recurringSubjects.length) {
+    // Two slightly different blue shades to distinguish the columns:
+    //   headline (navy):    text #1f4e7a / bg #dde8f3 / active #1f4e7a
+    //   recurring (medium): text #326891 / bg #eef3f7 / active #326891
+    const COLORS = {
+      headline:  { text: '#1f4e7a', bg: '#dde8f3', activeBg: '#1f4e7a' },
+      recurring: { text: '#326891', bg: '#eef3f7', activeBg: '#326891' },
+    };
+    const buildBtn = (item, kind) => {
+      const c = COLORS[kind];
+      return `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:${c.bg};border-radius:10px;font-size:12px;color:${c.text};cursor:pointer" class="state-tag-filter" data-tag="${escapeHtml(item.tag)}" data-kind="${kind}" title="${item.cnt} articles">${escapeHtml(item.tag)}</span>`;
+    };
+
+    const headlineHtml  = headlineEvents.map(t => buildBtn(t, 'headline')).join('');
+    const recurringHtml = recurringSubjects.map(t => buildBtn(t, 'recurring')).join('');
+
+    const cols = [];
+    if (headlineEvents.length) {
+      cols.push(`<div style="flex:1 1 0;min-width:200px">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Headline events</div>
+        <div>${headlineHtml}</div>
+      </div>`);
+    }
+    if (recurringSubjects.length) {
+      cols.push(`<div style="flex:1 1 0;min-width:200px">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Recurring subjects</div>
+        <div>${recurringHtml}</div>
+      </div>`);
+    }
+
     const tagsContainer = document.createElement('div');
     tagsContainer.style.cssText = 'margin-top:12px';
     tagsContainer.innerHTML =
-      `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Outsize subjects</div>` +
-      `<div id="stateTagsRow">${tagsHtml}</div>` +
-      `<div id="stateTagNote" style="font-size:11px;color:#aaa;margin-top:4px"></div>`;
+      `<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">${cols.join('')}</div>` +
+      `<div id="stateTagNote" style="font-size:11px;color:#aaa;margin-top:6px"></div>`;
     document.getElementById('stateTopReporters').after(tagsContainer);
 
-    // Click tag to filter article list
+    // Click tag to filter article list (resets all buttons; selected goes solid)
     tagsContainer.querySelectorAll('.state-tag-filter').forEach(el => {
       el.addEventListener('click', () => {
         const tag = el.dataset.tag;
-        const isActive = el.style.background === 'rgb(50, 104, 145)';
+        const kind = el.dataset.kind;
+        const c = COLORS[kind];
+        const isActive = el.dataset.active === '1';
         tagsContainer.querySelectorAll('.state-tag-filter').forEach(t => {
-          t.style.background = '#eef3f7'; t.style.color = '#326891';
+          const tc = COLORS[t.dataset.kind];
+          t.style.background = tc.bg; t.style.color = tc.text; t.dataset.active = '0';
         });
         if (!isActive) {
-          el.style.background = '#326891'; el.style.color = '#fff';
+          el.style.background = c.activeBg; el.style.color = '#fff'; el.dataset.active = '1';
           const filtered = stateArticles.filter(a => (a.subjects || []).includes(tag));
           const noteEl = document.getElementById('stateTagNote');
           if (noteEl) noteEl.innerHTML = `<strong>${escapeHtml(tag)}</strong> · ${filtered.length} articles · <a href="#" id="stateTagClear" style="color:#326891">show all</a>`;
           document.getElementById('stateTagClear')?.addEventListener('click', e => {
             e.preventDefault();
-            el.style.background = '#eef3f7'; el.style.color = '#326891';
+            el.style.background = c.bg; el.style.color = c.text; el.dataset.active = '0';
             noteEl.innerHTML = '';
             renderArticleList('stateArticleList', stateArticles, stateRowFmt);
           });
@@ -8641,7 +8697,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/4/26 5:54pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/6/26 11:06pm</span>
 </div>
 </body>
 </html>

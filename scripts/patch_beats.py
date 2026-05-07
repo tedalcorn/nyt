@@ -2,8 +2,8 @@
 
 The NYT changed several subject-tag labels over time (e.g. "Blacks" →
 "Black People", "Illegal Immigrants" → "Illegal Immigration"). build_data.py
-maps these at ingestion via _SUBJECT_KW_MERGES, but the on-disk JSON files
-were generated before those merges were added. This script:
+maps these at ingestion via tag_config.json, but on-disk JSON files may have
+been generated before merges were applied. This script:
 
   1. Applies all merges to the `sb` (subjects) arrays in every articles_YYYY.json
   2. Applies the same merges to the `beats` arrays in authors.json
@@ -17,64 +17,57 @@ from collections import defaultdict, Counter
 
 DATA_DIR = 'data'
 
-# ── Merge maps (keep in sync with build_data.py _SUBJECT_KW_MERGES) ──────────
-_SUBJECT_KW_MERGES = {
-    'Housing': 'Real Estate and Housing (Residential)',
-    'ATOMIC WEAPONS': 'Nuclear Weapons',
-    'UNITED STATES ARMAMENT AND DEFENSE': 'Armament, Defense and Military Forces',
-    'RECORDINGS (AUDIO)': 'Recordings and Downloads (Audio)',
-    'RECORDINGS (VIDEO)': 'Recordings and Downloads (Video)',
-    'APPAREL': 'Fashion and Apparel',
-    'RETAIL STORES AND TRADE': 'Shopping and Retail',
-    'LABOR': 'Labor and Jobs',
-    'IMMIGRATION AND REFUGEES': 'Immigration and Emigration',
-    'Illegal Aliens': 'Illegal Immigration',
-    'Illegal Immigrants': 'Illegal Immigration',
-    'Blacks': 'Black People',
-    'Homosexuality': 'Homosexuality and Bisexuality',
-    'Transgender': 'Transgender and Transsexuals',
-    'Transgender and Transsexual': 'Transgender and Transsexuals',
-    'Fentanyl (Drug)': 'Fentanyl',
-    'ADVERTISING': 'Advertising and Marketing',
-    'Children and Youth': 'Children and Childhood',
-    'Demonstrations and Riots': 'Demonstrations, Protests and Riots',
-    'Demonstrations, Protests, and Riots': 'Demonstrations, Protests and Riots',
-    'Murders and Attempted Murders': 'Murders, Attempted Murders and Homicides',
-    'Education and Schools': 'Education (K-12)',
-    'Banks and Banking': 'Banking and Financial Institutions',
-    'Freedom and Human Rights': 'Human Rights and Human Rights Violations',
-    'Suspensions, Dismissals and Resignations': 'Dismissals, Suspensions and Resignations',
-}
+# Load shared tag configuration (keep in sync with build_data.py)
+with open(os.path.join(DATA_DIR, 'tag_config.json')) as f:
+    TAG_CONFIG = json.load(f)
 
-_ORG_KW_MERGES = {
-    'NEW YORK KNICKERBOCKERS': 'New York Knicks',
-    'Facebook Inc': 'Meta Platforms Inc',
-    'Facebook.com': 'Meta Platforms Inc',
-}
+_SUBJECT_KW_MERGES = TAG_CONFIG.get('subject_merges', {})
+_ORG_KW_MERGES = TAG_CONFIG.get('org_merges', {})
+
+_ABBREVS = TAG_CONFIG.get('abbrev_fixes', [])
+_ABBREV_TITLES = sorted({a.title() for a in _ABBREVS}, key=lambda x: -len(x))
+_ABBREV_RE = re.compile(
+    r'(?<=[\s,(\-])(' + '|'.join(re.escape(t) for t in _ABBREV_TITLES) + r')(?=[\s,)\-]|$)'
+) if _ABBREV_TITLES else None
+
+def _restore_abbrevs(name):
+    if not _ABBREV_RE:
+        return name
+    return _ABBREV_RE.sub(lambda m: m.group(1).upper(), name)
+
 
 def _normalize(name):
+    """Mirror _normalize_subject_kw in build_data.py: explicit merges,
+    auto-titlecase for ALL-CAPS tags (skip periods/apostrophes), then
+    restore state/country abbrevs that str.title() mangles."""
     if name in _SUBJECT_KW_MERGES:
         return _SUBJECT_KW_MERGES[name]
     if name in _ORG_KW_MERGES:
         return _ORG_KW_MERGES[name]
-    # Title-case ALL-CAPS multi-word tags
+    restored = _restore_abbrevs(name)
+    if restored != name:
+        if restored in _SUBJECT_KW_MERGES:
+            return _SUBJECT_KW_MERGES[restored]
+        if restored in _ORG_KW_MERGES:
+            return _ORG_KW_MERGES[restored]
+        name = restored
     alpha = [c for c in name if c.isalpha()]
-    if alpha and all(c.isupper() for c in alpha) and (' ' in name or ',' in name):
+    if alpha and all(c.isupper() for c in alpha) and '.' not in name and "'" not in name and '’' not in name:
         title = name.title()
         for word in (' And ', ' Or ', ' The ', ' Of ', ' In ', ' For ', ' To ', ' A '):
             title = title.replace(word, word.lower())
+        title = _restore_abbrevs(title)
+        if title in _SUBJECT_KW_MERGES:
+            return _SUBJECT_KW_MERGES[title]
+        if title in _ORG_KW_MERGES:
+            return _ORG_KW_MERGES[title]
         return title
     return name
 
 
-# ── Filter helpers (keep in sync with build_data.py) ─────────────────────────
-_GENERIC_SUBJECTS = {
-    'United States Politics and Government', 'Content Type: Personal Profile',
-    'Content Type: Service', 'your-feed-science', 'your-feed-healthcare',
-    'your-feed-internet', 'your-feed-animals', 'your-feed-weather',
-    'States (US)', 'Research',
-}
-_GENERIC_PREFIXES = ('internal-', 'audio-', 'vis-', 'your-feed', 'live-', 'durable-uri')
+# Filter helpers (loaded from tag_config.json)
+_GENERIC_SUBJECTS = set(TAG_CONFIG.get('generic_subjects_always_filter', []))
+_GENERIC_PREFIXES = tuple(TAG_CONFIG.get('generic_prefixes_always_filter', []))
 
 def _is_generic(s):
     return s in _GENERIC_SUBJECTS or any(s.startswith(p) for p in _GENERIC_PREFIXES)
