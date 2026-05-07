@@ -50,9 +50,19 @@ STATE_GENERIC_PREFIXES = tuple(TAG_CONFIG.get('state_coverage_generic_prefixes',
 HEADLINE_TAGS = set(TAG_CONFIG.get('headline_event_tags', []))
 HEADLINE_PATTERNS = TAG_CONFIG.get('headline_event_patterns', [])
 
-# Year in tag name, not part of a range like "1939-45" or "2003- ".
+# Single year in tag name, NOT part of a range like "1939-45" or "2003- ".
 # Range marker: '-' or '–' immediately after the year (with optional whitespace).
 _YEAR_RE = re.compile(r'\b(19|20)\d{2}\b(?!\s*[-–])')
+
+# Year-range tag where the START year is 1990 or later. Catches multi-year
+# wars/conflicts that span our coverage period — e.g. 'Iraq War (2003-11)',
+# 'Afghanistan War (2001- )', 'Israel-Gaza War (2023- )'. Distinguishes
+# real ranges from identifier-style suffixes ('Coronavirus (2019-nCoV)')
+# by requiring the dash to be followed by a digit or close-paren, not a
+# letter. Historical eras like 'World War II (1939-45)' or 'Civil Rights
+# Movement (1954-68)' don't match because they start before 1990 — they
+# stay as recurring (retrospective coverage spread across our years).
+_YEAR_RANGE_RE = re.compile(r'\b(199\d|20\d\d)\s*[-–]\s*[\d)]')
 
 # Correction articles inflate state subject counts with topics unrelated to
 # the state's actual beat (a correction's subject reflects what was being
@@ -101,6 +111,8 @@ def is_headline_event(tag):
         if p in tag:
             return True
     if _YEAR_RE.search(tag):
+        return True
+    if _YEAR_RANGE_RE.search(tag):
         return True
     return False
 

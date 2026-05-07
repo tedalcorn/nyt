@@ -581,7 +581,7 @@
       <p>Analysis of national coverage draws from articles in the "U.S." section and the "New York" section. Many articles in the latter section lack geographic tags, however, and are not included in the analysis. Locations internal to states (e.g., "Chicago") are mapped to their parent states.</p>
       <p>Analysis of international coverage draws from articles in the "World" section. Articles with geographic tags that appear in other sections (Opinion, Business, etc.) are not included.</p>
       <p>Population data for per-capita calculations come from the 2020 U.S. Census. Country populations come from the Natural Earth 110m Cultural Vectors dataset (the <em>POP_EST</em> field, which aggregates UN and World Bank figures).</p>
-      <p>For each state, the popup lists the subjects that appear disproportionately in that state's coverage compared to the paper as a whole. Generic items every state has — election machinery (<em>Elections, Senate</em>, <em>Elections, Governors</em>, etc.), local government (<em>Mayors</em>, <em>Governors (US)</em>, <em>District Attorneys</em>), and broad federal-government tags (<em>Federal-State Relations (US)</em>) — are excluded, since their presence in a state's coverage is more often driven by an occasional standout race than by anything genuinely recurring. Each remaining tag is then scored by how much more frequently it appears in the state's articles than in the corpus overall. The top ten by score are split into two columns. <strong>Headline events</strong> are subjects whose tag names refer to a specific dated incident (e.g. <em>Hurricane Sandy (2012)</em>, <em>Newtown, Conn, Shooting (2012)</em>, <em>Storming of the US Capitol (Jan, 2021)</em>). <strong>Recurring themes</strong> is everything else, capped at seven. The classification is based on tag-name structure rather than on when coverage clusters — a topic that became prominent in a single year (such as <em>In Vitro Fertilization</em> in 2024 after the Alabama Supreme Court ruling) is still a recurring theme, not a headline event.</p>
+      <p>For each state and country, the popup lists the subjects that appear disproportionately in its coverage compared to the paper as a whole. Generic items every state or country has — election machinery (<em>Elections, Senate</em>, etc.), local-government roles (<em>Mayors</em>, <em>Governors (US)</em>, <em>District Attorneys</em>), and broad inter-government tags (<em>Federal-State Relations</em>, <em>International Relations</em>) — are excluded, since their presence is more often driven by an occasional standout incident than by anything genuinely recurring. Standing-feature articles (correction digests, calendar listings, real-estate roundups, daily lottery numbers, Letters to the Editor, Metropolitan Diary, etc.) are also excluded from the score so they can't manufacture phony recurring topics. Each remaining tag is then scored by how much more frequently it appears in the state's or country's articles than in the corpus overall. The top ten by score are split into two columns. <strong>Headline events</strong> are subjects whose tag names refer to a specific dated incident — either a single year (<em>Hurricane Sandy (2012)</em>, <em>Newtown, Conn, Shooting (2012)</em>, <em>Russian Invasion of Ukraine (2022)</em>) or a multi-year war or crisis whose start year falls within the dataset's reporting period (<em>Iraq War (2003-11)</em>, <em>Afghanistan War (2001- )</em>, <em>Israel-Gaza War (2023- )</em>). <strong>Recurring themes</strong> is everything else, capped at seven. The classification is based on tag-name structure rather than on when coverage clusters — a topic that became prominent in a single year (such as <em>In Vitro Fertilization</em> in 2024 after the Alabama Supreme Court ruling) is still a recurring theme, not a headline event. Conversely, historical eras whose tag-name year range ends well before our coverage period (<em>World War II (1939-45)</em>, <em>Civil Rights Movement (1954-68)</em>) are recurring even if their tag carries dates, because the coverage is retrospective rather than event-driven.</p>
 
       <h4>Obituaries</h4>
       <p>A number of steps were taken to identify all obituaries. Records were included if the API tagged them <em>type_of_material</em> as Obituary (in any of its variants), filed them under the Obits desk or Obituaries section, or assigned them to the 9/11 Portraits of Grief series. Year-end roundups, paid memorial notices, and multi-subject features were excluded.</p>
@@ -6150,67 +6150,138 @@ function openCountryDetail(country) {
     });
   }
 
-  // Outsize subjects: TF-IDF-style scoring for this country
-  const WORLD_GENERIC = new Set([
-    'International Relations','United States International Relations',
-    'Politics and Government','United States Politics and Government',
-    'News and News Media','Law and Legislation','Military','Armament, Defense and Military Forces',
-    'Defense and Military Forces','Terrorism','War and Armed Conflicts',
-    'Economic Conditions and Trends','Deaths (Fatalities)','Deaths (Obituaries)',
-    'Embargoes and Sanctions','Foreign Aid','Diplomacy and World Leaders','Suspensions, Dismissals and Resignations',
+  // Outsize subjects (Headline events + Recurring themes) — same logic as the
+  // state popup, scoped to this country. Tag merging is upstream (article 'sb'
+  // arrays are already canonical post-patch_beats), generic filters come from
+  // tag_config.json, and headline/recurring split is by tag-NAME structure.
+  const tagConfigW = window._tagConfig || {};
+  const WORLD_GENERIC_SET = new Set([
+    ...(tagConfigW.generic_subjects_always_filter || []),
+    ...(tagConfigW.world_coverage_generic_subjects || []),
   ]);
+  const WORLD_GENERIC_PREFIXES = [
+    ...(tagConfigW.generic_prefixes_always_filter || []),
+    'Content Type:', 'Content type:', 'Vis-',
+  ];
+  const WORLD_GENERIC_SUBSTRS = tagConfigW.world_coverage_generic_substrings || [];
+  const HEADLINE_TAG_SET_W  = new Set(tagConfigW.headline_event_tags || []);
+  const HEADLINE_PATTERNS_W = tagConfigW.headline_event_patterns || [];
+
   function isWorldJunkTag(tag) {
-    if (WORLD_GENERIC.has(tag) || GENERIC_SUBJECTS.has(tag)) return true;
-    if (tag.startsWith('internal-') || tag.startsWith('Content Type:') ||
-        tag.startsWith('Content type:') || tag.startsWith('audio-') ||
-        tag.startsWith('vis-') || tag.startsWith('Vis-')) return true;
+    if (WORLD_GENERIC_SET.has(tag)) return true;
+    if (WORLD_GENERIC_PREFIXES.some(p => tag.startsWith(p))) return true;
+    if (WORLD_GENERIC_SUBSTRS.some(s => tag.indexOf(s) !== -1)) return true;
     if (tag.toLowerCase() === country.toLowerCase()) return true;
-    // Country-specific international-relations tags (e.g. "France-International Relations-Us")
-    if (/-international.relations-us$/i.test(tag)) return true;
     return false;
   }
-  const countryTotal = countryArticles.length || 1;
+  function isHeadlineEventW(tag) {
+    if (HEADLINE_TAG_SET_W.has(tag)) return true;
+    for (const p of HEADLINE_PATTERNS_W) {
+      if (tag.indexOf(p) !== -1) return true;
+    }
+    if (/\b(19|20)\d{2}\b(?!\s*[-–])/.test(tag)) return true;
+    return /\b(199\d|20\d\d)\s*[-–]\s*[\d)]/.test(tag);
+  }
+
+  // Filter corrections from subject scoring (kept in article list).
+  const CORRECTION_URL_RE_W = /\/(c-)?corrections?-|\/pageoneplus\/corrections-/;
+  const isCorrectionArticleW = a => {
+    const sb = a.subjects || [];
+    if (sb.indexOf('Correction Stories') !== -1) return true;
+    if ((a.section || '') === 'Corrections') return true;
+    return CORRECTION_URL_RE_W.test(a.web_url || '');
+  };
+  const countryArticlesForScoring = countryArticles.filter(a => !isCorrectionArticleW(a));
+
+  const countryTotal = countryArticlesForScoring.length || 1;
   const countryTagCounts = {};
-  countryArticles.forEach(a => {
+  countryArticlesForScoring.forEach(a => {
     (a.subjects || []).forEach(tag => {
       if (!isWorldJunkTag(tag)) countryTagCounts[tag] = (countryTagCounts[tag] || 0) + 1;
     });
   });
   const totalCorpus = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
-  const countryTopTags = Object.entries(countryTagCounts)
+
+  // Score: (tag freq in country / country articles) / (tag freq in corpus / corpus articles)
+  // SKIP tags missing from corpus (defensive — same pattern as state popup).
+  const countryAllTags = Object.entries(countryTagCounts)
     .filter(([, cnt]) => cnt >= Math.max(3, countryTotal * 0.01))
     .map(([tag, cnt]) => {
-      const corpusFreq = (corpusSubjectFreq && corpusSubjectFreq[tag]) || 1;
+      const corpusFreq = corpusSubjectFreq && corpusSubjectFreq[tag];
+      if (!corpusFreq) return null;
       const score = totalCorpus > 0 ? (cnt / countryTotal) / (corpusFreq / totalCorpus) : cnt;
       return { tag, cnt, score };
     })
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 7);
-  if (countryTopTags.length) {
-    const tagsHtml = countryTopTags.map(({ tag, cnt }) => {
-      const display = tag.replace(/\b[A-Z]{2,}\b/g, w => w.charAt(0) + w.slice(1).toLowerCase());
-      return `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:#eef3f7;border-radius:10px;font-size:12px;color:#326891;cursor:pointer" class="country-tag-filter" data-tag="${escapeHtml(tag)}" title="${cnt} articles">${escapeHtml(display)}</span>`;
-    }).join('');
+    .filter(x => x !== null)
+    .sort((a, b) => b.score - a.score);
+
+  // Top 10 split into headline (left) + recurring (right). Pad recurring to 5
+  // from beyond top 10 if needed, with a 10x score floor; cap at 7.
+  const RECURRING_MIN_W = 5, RECURRING_MAX_W = 7, RECURRING_PAD_FLOOR_W = 10;
+  const top10W = countryAllTags.slice(0, 10);
+  const headlineEventsW = top10W.filter(t => isHeadlineEventW(t.tag));
+  let recurringSubjectsW = top10W.filter(t => !isHeadlineEventW(t.tag));
+  if (recurringSubjectsW.length < RECURRING_MIN_W) {
+    for (let i = 10; i < countryAllTags.length && recurringSubjectsW.length < RECURRING_MIN_W; i++) {
+      const t = countryAllTags[i];
+      if (isHeadlineEventW(t.tag)) continue;
+      if (t.score < RECURRING_PAD_FLOOR_W) break;
+      recurringSubjectsW.push(t);
+    }
+  }
+  recurringSubjectsW = recurringSubjectsW.slice(0, RECURRING_MAX_W);
+
+  if (headlineEventsW.length || recurringSubjectsW.length) {
+    const COLORS_W = {
+      headline:  { text: '#1f4e7a', bg: '#dde8f3', activeBg: '#1f4e7a' },
+      recurring: { text: '#326891', bg: '#eef3f7', activeBg: '#326891' },
+    };
+    const buildBtnW = (item, kind) => {
+      const c = COLORS_W[kind];
+      return `<span style="display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;background:${c.bg};border-radius:10px;font-size:12px;color:${c.text};cursor:pointer" class="country-tag-filter" data-tag="${escapeHtml(item.tag)}" data-kind="${kind}" title="${item.cnt} articles">${escapeHtml(item.tag)}</span>`;
+    };
+    const headlineHtmlW  = headlineEventsW.map(t => buildBtnW(t, 'headline')).join('');
+    const recurringHtmlW = recurringSubjectsW.map(t => buildBtnW(t, 'recurring')).join('');
+
+    const colsW = [];
+    if (recurringSubjectsW.length) {
+      colsW.push(`<div style="flex:1 1 0;min-width:200px">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Recurring subjects</div>
+        <div>${recurringHtmlW}</div>
+      </div>`);
+    }
+    if (headlineEventsW.length) {
+      colsW.push(`<div style="flex:1 1 0;min-width:200px">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Headline events</div>
+        <div>${headlineHtmlW}</div>
+      </div>`);
+    }
+
     const tagsContainer = document.createElement('div');
     tagsContainer.style.cssText = 'margin-top:12px';
     tagsContainer.innerHTML =
-      `<div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Outsize subjects</div>` +
-      `<div>${tagsHtml}</div>` +
-      `<div id="countryTagNote" style="font-size:11px;color:#aaa;margin-top:4px"></div>`;
+      `<div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start">${colsW.join('')}</div>` +
+      `<div id="countryTagNote" style="font-size:11px;color:#aaa;margin-top:6px"></div>`;
     document.getElementById('countryTopReporters').after(tagsContainer);
+
     tagsContainer.querySelectorAll('.country-tag-filter').forEach(el => {
       el.addEventListener('click', () => {
         const tag = el.dataset.tag;
-        const isActive = el.style.background === 'rgb(50, 104, 145)';
-        tagsContainer.querySelectorAll('.country-tag-filter').forEach(t => { t.style.background = '#eef3f7'; t.style.color = '#326891'; });
+        const kind = el.dataset.kind;
+        const c = COLORS_W[kind];
+        const isActive = el.dataset.active === '1';
+        tagsContainer.querySelectorAll('.country-tag-filter').forEach(t => {
+          const tc = COLORS_W[t.dataset.kind];
+          t.style.background = tc.bg; t.style.color = tc.text; t.dataset.active = '0';
+        });
         if (!isActive) {
-          el.style.background = '#326891'; el.style.color = '#fff';
+          el.style.background = c.activeBg; el.style.color = '#fff'; el.dataset.active = '1';
           const filtered = countryArticles.filter(a => (a.subjects || []).includes(tag));
           const noteEl = document.getElementById('countryTagNote');
           if (noteEl) noteEl.innerHTML = `<strong>${escapeHtml(tag)}</strong> · ${filtered.length} articles · <a href="#" class="cty-tag-clear" style="color:#326891">show all</a>`;
           tagsContainer.querySelector('.cty-tag-clear')?.addEventListener('click', e => {
             e.preventDefault();
-            el.style.background = '#eef3f7'; el.style.color = '#326891';
+            el.style.background = c.bg; el.style.color = c.text; el.dataset.active = '0';
             noteEl.innerHTML = '';
             renderCountryArticles(countryArticles);
           });
@@ -6861,9 +6932,17 @@ function openStateDetail(state) {
     if (STATE_GENERIC_SET.has(tag)) return true;
     return STATE_GENERIC_PREFIXES.some(p => tag.startsWith(p));
   }
-  // Year in tag name, NOT part of a range (so '(1939-45)', '(2003- )',
-  // '(2019-nCoV)' don't match — those are eras/identifiers, not single events).
+  // Single year in tag name, NOT part of a range. Catches 'Hurricane Sandy
+  // (2012)', 'Storming of the US Capitol (Jan, 2021)'. Skips '(1939-45)',
+  // '(2003- )', '(2019-nCoV)' — those are eras/identifiers, not single events.
   const HEADLINE_YEAR_RE = /\b(19|20)\d{2}\b(?!\s*[-–])/;
+  // Year-range tag where the START year is 1990+. Catches multi-year
+  // conflicts that span our coverage period — 'Iraq War (2003-11)',
+  // 'Afghanistan War (2001- )', 'Israel-Gaza War (2023- )'. Excludes
+  // 'Coronavirus (2019-nCoV)' (letter follows the dash, not a digit).
+  // Historical eras like 'World War II (1939-45)' don't match because
+  // they start before 1990.
+  const HEADLINE_RANGE_RE = /\b(199\d|20\d\d)\s*[-–]\s*[\d)]/;
 
   function isHeadlineEvent(tag) {
     // Classification by tag NAME structure, not by statistical clustering.
@@ -6874,7 +6953,8 @@ function openStateDetail(state) {
     for (const p of HEADLINE_PATTERNS) {
       if (tag.indexOf(p) !== -1) return true;
     }
-    return HEADLINE_YEAR_RE.test(tag);
+    if (HEADLINE_YEAR_RE.test(tag)) return true;
+    return HEADLINE_RANGE_RE.test(tag);
   }
 
   // Exclude correction articles AND standing-feature listing articles from
@@ -8829,7 +8909,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 4:56pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 5:04pm</span>
 </div>
 </body>
 </html>

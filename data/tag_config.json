@@ -147,6 +147,33 @@
     "Criminal Case Against Trump"
   ],
 
+  "_doc_world_filters": "world_coverage_generic_subjects mirrors state_coverage_generic_subjects but for the World section country popup. Catches tags that are generic across all countries (Politics and Government, International Relations, Military, etc.) so they don't show up as 'recurring themes' for every country.",
+  "world_coverage_generic_subjects": [
+    "International Relations",
+    "United States International Relations",
+    "Politics and Government",
+    "United States Politics and Government",
+    "News and News Media",
+    "Law and Legislation",
+    "Military",
+    "Armament, Defense and Military Forces",
+    "Defense and Military Forces",
+    "Terrorism",
+    "War and Armed Conflicts",
+    "Economic Conditions and Trends",
+    "Deaths (Fatalities)",
+    "Deaths (Obituaries)",
+    "Embargoes and Sanctions",
+    "Foreign Aid",
+    "Diplomacy and World Leaders",
+    "Suspensions, Dismissals and Resignations",
+    "Foreign Policy"
+  ],
+  "world_coverage_generic_substrings": [
+    "-International Relations-",
+    "International Relations-"
+  ],
+
   "_doc_year_detection": "A tag is also classified as a headline event if its name contains a 4-digit year (1900–2099) NOT part of a range. Range markers are '-' or '–' immediately after the year. So 'Hurricane Sandy (2012)' → headline (single year), but 'World War II (1939-45)' → recurring (year range = era), 'Iraq War (2003- )' → recurring (open-ended era), 'Coronavirus (2019-nCoV)' → recurring (year is part of identifier, not a single event marker).",
 
   "_doc_state_listings": "Standing-feature headlines (event calendars, real-estate listings, art-review roundups, briefs columns) are excluded from state subject analysis the same way corrections are: kept in the dataset and in state article totals, but dropped from the recurring-themes score so they don't manufacture phony recurring topics. Without this filter Connecticut's top recurring theme was Culture (Arts), driven 97% by 'Events in Connecticut' calendar items.",
