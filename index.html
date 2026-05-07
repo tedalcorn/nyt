@@ -6819,10 +6819,25 @@ function openStateDetail(state) {
 
   // Take top 10 candidates, split into headline events and recurring subjects.
   // Headline events: ALL from top 10 that classify as event-driven.
-  // Recurring subjects: remaining items from top 10, capped at 7.
+  // Recurring subjects: remaining items from top 10, padded up to 5 from
+  // beyond top 10 if needed (only items with score ≥10x national avg
+  // qualify for the padding — so a state with mostly headline events still
+  // gets a meaningful list of recurring themes when they exist). Capped at 7.
+  const RECURRING_MIN = 5;
+  const RECURRING_MAX = 7;
+  const RECURRING_PAD_FLOOR = 10;
   const top10 = allTags.slice(0, 10);
   const headlineEvents = top10.filter(t => isHeadlineEvent(t.tag));
-  const recurringSubjects = top10.filter(t => !isHeadlineEvent(t.tag)).slice(0, 7);
+  let recurringSubjects = top10.filter(t => !isHeadlineEvent(t.tag));
+  if (recurringSubjects.length < RECURRING_MIN) {
+    for (let i = 10; i < allTags.length && recurringSubjects.length < RECURRING_MIN; i++) {
+      const t = allTags[i];
+      if (isHeadlineEvent(t.tag)) continue;
+      if (t.score < RECURRING_PAD_FLOOR) break;  // sorted desc — once below floor, stop
+      recurringSubjects.push(t);
+    }
+  }
+  recurringSubjects = recurringSubjects.slice(0, RECURRING_MAX);
 
   if (headlineEvents.length || recurringSubjects.length) {
     // Two slightly different blue shades to distinguish the columns:
@@ -6840,17 +6855,20 @@ function openStateDetail(state) {
     const headlineHtml  = headlineEvents.map(t => buildBtn(t, 'headline')).join('');
     const recurringHtml = recurringSubjects.map(t => buildBtn(t, 'recurring')).join('');
 
+    // Recurring on left, Headline events on right — putting Recurring first
+    // means the user's eye lands on the always-present column. (When a state
+    // has no headline events, e.g. Maryland, the right column simply omits.)
     const cols = [];
-    if (headlineEvents.length) {
-      cols.push(`<div style="flex:1 1 0;min-width:200px">
-        <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Headline events</div>
-        <div>${headlineHtml}</div>
-      </div>`);
-    }
     if (recurringSubjects.length) {
       cols.push(`<div style="flex:1 1 0;min-width:200px">
         <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Recurring subjects</div>
         <div>${recurringHtml}</div>
+      </div>`);
+    }
+    if (headlineEvents.length) {
+      cols.push(`<div style="flex:1 1 0;min-width:200px">
+        <div style="font-size:11px;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em">Headline events</div>
+        <div>${headlineHtml}</div>
       </div>`);
     }
 
@@ -8697,7 +8715,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/6/26 11:06pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 8:03am</span>
 </div>
 </body>
 </html>

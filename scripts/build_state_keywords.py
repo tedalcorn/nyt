@@ -137,9 +137,24 @@ def analyze(articles):
             })
         scored.sort(key=lambda x: -x['score'])
 
+        # Headline events: all top-10 entries that classify as event-driven.
+        # Recurring subjects: remaining top-10 entries, padded to 5 from
+        # beyond top-10 if needed (only items with score >= 10x national
+        # average qualify for the padding). Capped at 7.
+        RECURRING_MIN, RECURRING_MAX, RECURRING_PAD_FLOOR = 5, 7, 10.0
         top10 = scored[:10]
         headline = [t for t in top10 if is_headline_event(t['tag'])]
-        recurring = [t for t in top10 if not is_headline_event(t['tag'])][:7]
+        recurring = [t for t in top10 if not is_headline_event(t['tag'])]
+        if len(recurring) < RECURRING_MIN:
+            for t in scored[10:]:
+                if len(recurring) >= RECURRING_MIN:
+                    break
+                if is_headline_event(t['tag']):
+                    continue
+                if t['score'] < RECURRING_PAD_FLOOR:
+                    break
+                recurring.append(t)
+        recurring = recurring[:RECURRING_MAX]
         out[state] = {'headline': headline, 'recurring': recurring}
     return out
 
