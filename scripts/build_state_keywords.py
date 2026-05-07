@@ -74,12 +74,15 @@ def is_correction_article(a):
 # 'Events in Connecticut' calendar items.
 _LISTING_EXACT = set(TAG_CONFIG.get('state_listing_headlines_exact', []))
 _LISTING_PREFIXES = tuple(TAG_CONFIG.get('state_listing_headline_prefixes', []))
+_LISTING_KICKERS = set(TAG_CONFIG.get('state_listing_kickers_exact', []))
 
 def is_listing_article(a):
     h = a.get('h') or ''
     if h in _LISTING_EXACT:
         return True
-    return any(h.startswith(p) for p in _LISTING_PREFIXES)
+    if any(h.startswith(p) for p in _LISTING_PREFIXES):
+        return True
+    return (a.get('k') or '') in _LISTING_KICKERS
 
 
 def is_state_junk_tag(tag):

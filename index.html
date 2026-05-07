@@ -2524,7 +2524,7 @@ const FEATURE_META = {
   },
   letters_to_editor: {
     label: 'Letters to the Editor',
-    desc: 'Reader correspondence published as a standalone item, primarily in Opinion, Books, Magazine, and Sports. The bundled letters that often appear under topical headlines (e.g. "Re: Climate Change") are not counted — only items with the literal headline "Letters to the Editor".',
+    desc: 'Section-specific letters columns where readers reply to recent coverage in that section — almost half were Sports, the rest split between Books, Travel, Tech, Science, and Style. Distinct from the Opinion-page letters, which run under topical headlines and aren\'t counted here. Most section columns wound down around 2018–2020; the Book Review still runs one occasionally.',
     period: '2000–2020',
   },
   on_the_market: {
@@ -2534,8 +2534,8 @@ const FEATURE_META = {
   },
   metropolitan_diary: {
     label: 'Metropolitan Diary',
-    desc: 'A long-running NYC reader-submission column — short, often-funny vignettes of life in the city. The column has continued to the present, but the API stopped indexing individual diary entries as standalone records around 2011.',
-    period: '2000–2011 (in API)',
+    desc: 'A long-running NYC reader-submission column — short, often-funny vignettes of life in the city. From around 2011 each entry started getting its own bespoke headline ("A Bagel From a Stranger", etc.) with the column name in the kicker; the count below includes both forms, which together capture the column continuously through the present.',
+    period: '2000–present',
   },
   boldface_names: {
     label: 'Boldface Names',
@@ -2646,7 +2646,11 @@ function isOnTheMarketArticle(a) {
   return (a.headline || '').startsWith('On the Market in');
 }
 function isMetropolitanDiaryArticle(a) {
-  return (a.headline || '') === 'Metropolitan Diary';
+  // From ~2011 onward each entry got its own bespoke headline (e.g. "A Bagel
+  // From a Stranger") with kicker="Metropolitan Diary"; before that the
+  // headline was the column name itself. Match either form.
+  if ((a.headline || '') === 'Metropolitan Diary') return true;
+  return (a.kicker || '').toLowerCase() === 'metropolitan diary';
 }
 function isBoldfaceNamesArticle(a) {
   return (a.headline || '') === 'BOLDFACE NAMES';
@@ -6887,10 +6891,12 @@ function openStateDetail(state) {
   };
   const LISTING_EXACT = new Set(tagConfig.state_listing_headlines_exact || []);
   const LISTING_PREFIXES = tagConfig.state_listing_headline_prefixes || [];
+  const LISTING_KICKERS = new Set(tagConfig.state_listing_kickers_exact || []);
   const isListingArticle = a => {
     const h = a.headline || '';
     if (LISTING_EXACT.has(h)) return true;
-    return LISTING_PREFIXES.some(p => h.startsWith(p));
+    if (LISTING_PREFIXES.some(p => h.startsWith(p))) return true;
+    return LISTING_KICKERS.has(a.kicker || '');
   };
   const stateArticlesForScoring = stateArticles.filter(
     a => !isCorrectionArticle(a) && !isListingArticle(a)
@@ -8823,7 +8829,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 4:45pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 4:56pm</span>
 </div>
 </body>
 </html>

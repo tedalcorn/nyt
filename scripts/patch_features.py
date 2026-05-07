@@ -19,35 +19,41 @@ DATA_DIR = 'data'
 URL_PREFIX_FULL = 'https://www.nytimes.com'
 
 # Each feature definition gives a key (matches FEATURE_META in index.html), a
-# label/desc/period for the registry, and a `match(headline) -> bool` test.
+# label/desc/period for the registry, and a `match(article) -> bool` test.
+# Most match on headline alone; Metropolitan Diary needs kicker-based
+# detection because from 2011 onward each entry gets its own bespoke
+# headline (e.g. "A Bagel From a Stranger") with kicker="Metropolitan Diary".
 FEATURES = [
     {
         'key': 'letters_to_editor',
-        'match': lambda h: h == 'Letters to the Editor',
+        'match': lambda a: a.get('h') == 'Letters to the Editor',
     },
     {
         'key': 'on_the_market',
-        'match': lambda h: h.startswith('On the Market in'),
+        'match': lambda a: (a.get('h') or '').startswith('On the Market in'),
     },
     {
         'key': 'metropolitan_diary',
-        'match': lambda h: h == 'Metropolitan Diary',
+        'match': lambda a: (
+            a.get('h') == 'Metropolitan Diary' or
+            (a.get('k') or '').lower() == 'metropolitan diary'
+        ),
     },
     {
         'key': 'boldface_names',
-        'match': lambda h: h == 'BOLDFACE NAMES',
+        'match': lambda a: a.get('h') == 'BOLDFACE NAMES',
     },
     {
         'key': 'names_of_the_dead',
-        'match': lambda h: h == 'Names of the Dead',
+        'match': lambda a: a.get('h') == 'Names of the Dead',
     },
     {
         'key': 'coronavirus_briefing',
-        'match': lambda h: h.startswith('Coronavirus Briefing'),
+        'match': lambda a: (a.get('h') or '').startswith('Coronavirus Briefing'),
     },
     {
         'key': 'arts_briefly',
-        'match': lambda h: h == 'Arts, Briefly',
+        'match': lambda a: a.get('h') == 'Arts, Briefly',
     },
 ]
 
@@ -68,12 +74,10 @@ def main():
         with open(fp) as fh:
             arts = json.load(fh)
         for a in arts:
-            h = a.get('h') or ''
-            if not h:
-                continue
             for feat in FEATURES:
-                if not feat['match'](h):
+                if not feat['match'](a):
                     continue
+                h = a.get('h') or ''
                 key = feat['key']
                 year = (a.get('d') or '')[:4]
                 if year:

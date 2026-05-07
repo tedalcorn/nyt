@@ -174,12 +174,20 @@
     "TRANSACTIONS",
     "NEWS SUMMARY",
     "News Summary",
-    "Footnotes"
+    "Footnotes",
+    "Letters to the Editor",
+    "Metropolitan Diary",
+    "Names of the Dead"
   ],
   "state_listing_headline_prefixes": [
     "Events in ",
     "Events on ",
     "Things to Do",
-    "Spare Times for"
+    "Spare Times for",
+    "Coronavirus Briefing"
+  ],
+  "_doc_state_listing_kickers": "Some standing features (notably Metropolitan Diary from ~2011 onward) give each entry its own bespoke headline with the column name in the kicker. Match those by kicker too.",
+  "state_listing_kickers_exact": [
+    "Metropolitan Diary"
   ]
 }
