@@ -389,6 +389,16 @@ def process_articles(raw_articles):
         if section == "Corrections" and (mat == "Quote" or headline_main.startswith("Quote of the Day")):
             section = "Today's Paper"
 
+        # "Lottery Numbers" column: daily NY/NJ/CT lottery results published as
+        # standalone articles (one per day, ~3,500 total since 2000) with all
+        # three state geocodes attached. They were inflating each state's
+        # "Lotteries" subject share and the New York section count. Treat the
+        # same as Quote of the Day — reassign section, and downstream we'll
+        # also strip the geographic tags (handled in the dataclass step below).
+        is_lottery_numbers = (headline_main == "Lottery Numbers" and section == "New York")
+        if is_lottery_numbers:
+            section = "Today's Paper"
+
         # Override section for obituaries filed under subject sections.
         # 2001-2010: tom was usually "Obituary; Biography" (or "Obituary"/
         # "Biography; Obituary") but section was Arts/Sports/Business/etc.
@@ -2266,6 +2276,35 @@ def build_dashboard_data(articles, authors):
         })
     recent_qotd_articles.sort(key=lambda x: x["d"], reverse=True)
 
+    # --- Lottery Numbers ---
+    # Daily NY/NJ/CT lottery results published as standalone articles. Section
+    # has already been reassigned to "Today's Paper" upstream so they don't
+    # pollute state/section analysis.
+    lotto_by_year = defaultdict(int)
+    recent_lotto_articles = []
+    for art in articles:
+        h = art.get("headline", "") or ""
+        sec = art.get("section", "") or ""
+        # Match the same heuristic used at ingestion (post-reassignment, the
+        # section is "Today's Paper" but the headline still carries the marker).
+        if h != "Lottery Numbers":
+            continue
+        if sec not in ("Today's Paper", "New York"):
+            continue
+        y = str(art["year"])
+        lotto_by_year[y] += 1
+        url = art.get("web_url", "") or ""
+        if url.startswith(URL_PREFIX_FULL):
+            url = url[len(URL_PREFIX_FULL):]
+        recent_lotto_articles.append({
+            "d": art["pub_date"][:10],
+            "h": h,
+            "a": art.get("authors", []),
+            "w": art.get("word_count", 0),
+            "u": url,
+        })
+    recent_lotto_articles.sort(key=lambda x: x["d"], reverse=True)
+
     features_data = {
         "weddings": {
             "by_year": dict(weddings_by_year),
@@ -2284,6 +2323,11 @@ def build_dashboard_data(articles, authors):
             "by_year": dict(qotd_by_year),
             "recent_articles": recent_qotd_articles[:50],
             "total": sum(qotd_by_year.values()),
+        },
+        "lottery_numbers": {
+            "by_year": dict(lotto_by_year),
+            "recent_articles": recent_lotto_articles[:50],
+            "total": sum(lotto_by_year.values()),
         },
     }
 

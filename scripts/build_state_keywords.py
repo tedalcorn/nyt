@@ -54,6 +54,20 @@ HEADLINE_PATTERNS = TAG_CONFIG.get('headline_event_patterns', [])
 # Range marker: '-' or '–' immediately after the year (with optional whitespace).
 _YEAR_RE = re.compile(r'\b(19|20)\d{2}\b(?!\s*[-–])')
 
+# Correction articles inflate state subject counts with topics unrelated to
+# the state's actual beat (a correction's subject reflects what was being
+# corrected, not what the state itself covers). Detect via subject tag,
+# section name, or URL pattern — any one is sufficient.
+_CORR_URL_RE = re.compile(r'/(c-)?corrections?-|/pageoneplus/corrections-')
+
+def is_correction_article(a):
+    sb = a.get('sb') or []
+    if 'Correction Stories' in sb:
+        return True
+    if (a.get('s') or '') == 'Corrections':
+        return True
+    return bool(_CORR_URL_RE.search(a.get('u') or ''))
+
 
 def is_state_junk_tag(tag):
     if tag in STATE_GENERIC or tag in GENERIC_ALWAYS:
@@ -107,6 +121,10 @@ def analyze(articles):
     out = {}
     for state in sorted(state_articles.keys()):
         arts = state_articles[state]
+        # Exclude corrections from subject scoring only (state article totals
+        # in dashboard.json/the state table still include them — this filter
+        # is local to subject overrepresentation).
+        arts = [a for a in arts if not is_correction_article(a)]
         state_total = len(arts)
         if state_total < 50:
             continue

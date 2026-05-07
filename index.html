@@ -2517,6 +2517,11 @@ const FEATURE_META = {
     desc: 'A daily excerpt — typically a line from a news article — that the editors judge to best capture the moment. Published as a standalone item alongside the corrections digest.',
     period: '2020–present',
   },
+  lottery_numbers: {
+    label: 'Lottery Numbers',
+    desc: 'Daily NY, NJ, and Connecticut lottery results published as a standalone item in the New York section. Excluded from state-level coverage analysis since the same item is tagged to all three states each day.',
+    period: '2000–present',
+  },
 };
 
 function renderFeatures() {
@@ -6788,11 +6793,24 @@ function openStateDetail(state) {
     return HEADLINE_YEAR_RE.test(tag);
   }
 
+  // Exclude correction articles from the subject analysis only — they pollute
+  // recurring-theme calculations (a single correction often touches a topic
+  // unrelated to the state's beat). State-level article counts/maps still
+  // include corrections; this filter is local to the score calculation.
+  const CORRECTION_URL_RE = /\/(c-)?corrections?-|\/pageoneplus\/corrections-/;
+  const isCorrectionArticle = a => {
+    const sb = a.subjects || [];
+    if (sb.indexOf('Correction Stories') !== -1) return true;
+    if ((a.section || '') === 'Corrections') return true;
+    return CORRECTION_URL_RE.test(a.web_url || '');
+  };
+  const stateArticlesForScoring = stateArticles.filter(a => !isCorrectionArticle(a));
+
   const totalCorpusArticles = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
-  const stateTotal = stateArticles.length || 1;
+  const stateTotal = stateArticlesForScoring.length || 1;
 
   const tagCounts = {};
-  stateArticles.forEach(a => {
+  stateArticlesForScoring.forEach(a => {
     (a.subjects || []).forEach(tag => {
       if (isStateJunkTag(tag)) return;
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
@@ -8715,7 +8733,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 8:03am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 3:20pm</span>
 </div>
 </body>
 </html>
