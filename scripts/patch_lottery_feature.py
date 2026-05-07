@@ -39,9 +39,29 @@ URL_PREFIX_FULL = 'https://www.nytimes.com'
 
 
 def is_lottery_numbers(article):
-    """Match the heuristic in build_data.py: exact headline + NY section."""
-    return (article.get('h') == 'Lottery Numbers'
-            and article.get('s') == 'New York')
+    """Daily NY/NJ/CT lottery results — multiple headline forms over the
+    years. Section guard avoids matching unrelated articles in Sports/Opinion
+    etc. Patterns observed:
+      'Lottery Numbers'                        (2002-2007)
+      'Lottery Numbers for [date]'             (2008-2011 era)
+      'Lottery Numbers for New York, NJ, CT'   (2009-2013)
+      'Lottery Numbers | March 17, 2008'       (occasional pipe variant)
+      'Winning Lottery Numbers'                (492 occurrences, dominant)
+      'Winning Lottery numbers'                (1, capitalization variant)
+      'Winnings Lottery Numbers'               (typo variant)
+      'Winning Powerball and Mega Millions'    (Powerball-only days)
+      'Powerball and Lottery Numbers'
+    """
+    sec = article.get('s') or ''
+    if sec not in ('New York', "Today's Paper"):
+        return False
+    h = article.get('h') or ''
+    if h.startswith('Lottery Numbers'): return True
+    if h.startswith('Winning Lottery'): return True
+    if h.startswith('Winnings Lottery'): return True
+    if h.startswith('Winning Powerball'): return True
+    if h == 'Powerball and Lottery Numbers': return True
+    return False
 
 
 def main():

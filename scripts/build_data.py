@@ -389,13 +389,21 @@ def process_articles(raw_articles):
         if section == "Corrections" and (mat == "Quote" or headline_main.startswith("Quote of the Day")):
             section = "Today's Paper"
 
-        # "Lottery Numbers" column: daily NY/NJ/CT lottery results published as
-        # standalone articles (one per day, ~3,500 total since 2000) with all
+        # "Lottery Numbers" daily-results articles: NY/NJ/CT lottery numbers
+        # published as standalone items (~3,500+ total since 2002) with all
         # three state geocodes attached. They were inflating each state's
-        # "Lotteries" subject share and the New York section count. Treat the
-        # same as Quote of the Day — reassign section, and downstream we'll
-        # also strip the geographic tags (handled in the dataclass step below).
-        is_lottery_numbers = (headline_main == "Lottery Numbers" and section == "New York")
+        # "Lotteries" subject share and the New York section count. Headline
+        # forms have varied: "Lottery Numbers", "Lottery Numbers for [date]",
+        # "Winning Lottery Numbers", "Winning Powerball and Mega Millions",
+        # etc. Treat same as Quote of the Day — reassign section, and
+        # canonical_states stays empty since the section check below fails.
+        is_lottery_numbers = section == "New York" and (
+            headline_main.startswith("Lottery Numbers") or
+            headline_main.startswith("Winning Lottery") or
+            headline_main.startswith("Winnings Lottery") or
+            headline_main.startswith("Winning Powerball") or
+            headline_main == "Powerball and Lottery Numbers"
+        )
         if is_lottery_numbers:
             section = "Today's Paper"
 
@@ -2279,17 +2287,20 @@ def build_dashboard_data(articles, authors):
     # --- Lottery Numbers ---
     # Daily NY/NJ/CT lottery results published as standalone articles. Section
     # has already been reassigned to "Today's Paper" upstream so they don't
-    # pollute state/section analysis.
+    # pollute state/section analysis. Match the same expanded headline set
+    # used in the ingestion check.
     lotto_by_year = defaultdict(int)
     recent_lotto_articles = []
     for art in articles:
         h = art.get("headline", "") or ""
         sec = art.get("section", "") or ""
-        # Match the same heuristic used at ingestion (post-reassignment, the
-        # section is "Today's Paper" but the headline still carries the marker).
-        if h != "Lottery Numbers":
-            continue
         if sec not in ("Today's Paper", "New York"):
+            continue
+        if not (h.startswith("Lottery Numbers") or
+                h.startswith("Winning Lottery") or
+                h.startswith("Winnings Lottery") or
+                h.startswith("Winning Powerball") or
+                h == "Powerball and Lottery Numbers"):
             continue
         y = str(art["year"])
         lotto_by_year[y] += 1

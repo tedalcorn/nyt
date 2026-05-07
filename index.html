@@ -2590,6 +2590,17 @@ function isLORArticle(a) {
 function isQOTDArticle(a) {
   return (a.headline || '').toLowerCase().startsWith('quote of the day');
 }
+function isLotteryNumbersArticle(a) {
+  // Daily NY/NJ/CT lottery results — multiple headline forms over the years.
+  // Section guard avoids matching unrelated articles in Sports/Opinion etc.
+  const sec = a.section || '';
+  if (sec !== 'New York' && sec !== "Today's Paper") return false;
+  const h = a.headline || '';
+  return h.startsWith('Lottery Numbers')
+      || h.startsWith('Winning Lottery')
+      || h.startsWith('Winning Powerball')
+      || h === 'Powerball and Lottery Numbers';
+}
 
 let currentFeatureKey = 'weddings';
 let featureArticleOrder = 'newest';
@@ -2684,6 +2695,7 @@ function fillFeatureArticleList() {
   const isWeddings = currentFeatureKey === 'weddings';
   const filterFn = isWeddings ? isWeddingArticle
     : currentFeatureKey === 'quote_of_the_day' ? isQOTDArticle
+    : currentFeatureKey === 'lottery_numbers' ? isLotteryNumbersArticle
     : isLORArticle;
   const oldest = featureArticleOrder === 'oldest';
   let filtered = articles.filter(filterFn);
@@ -8733,7 +8745,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 3:20pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 3:40pm</span>
 </div>
 </body>
 </html>
