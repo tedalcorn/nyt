@@ -36,10 +36,15 @@ def _restore_abbrevs(name):
     return _ABBREV_RE.sub(lambda m: m.group(1).upper(), name)
 
 
+_LEGACY_UNDERSCORE_RE = re.compile(r'^[a-z][a-z_]*$')
+
 def _normalize(name):
-    """Mirror _normalize_subject_kw in build_data.py: explicit merges,
-    auto-titlecase for ALL-CAPS tags (skip periods/apostrophes), then
-    restore state/country abbrevs that str.title() mangles."""
+    """Mirror _normalize_subject_kw in build_data.py: drop legacy underscore
+    tags, apply explicit merges, auto-titlecase for ALL-CAPS tags (skip
+    periods/apostrophes), then restore state/country abbrevs that
+    str.title() mangles."""
+    if _LEGACY_UNDERSCORE_RE.match(name) and '_' in name:
+        return None  # drop legacy underscore-style tags
     if name in _SUBJECT_KW_MERGES:
         return _SUBJECT_KW_MERGES[name]
     if name in _ORG_KW_MERGES:
@@ -113,6 +118,8 @@ for fpath in article_files:
         seen = set()
         for s in raw:
             n = _normalize(s)
+            if n is None:  # legacy underscore tag — drop
+                continue
             if n not in seen:
                 normed.append(n)
                 seen.add(n)
@@ -144,6 +151,8 @@ for a in authors:
     seen = set()
     for b in beats:
         n = _normalize(b)
+        if n is None:
+            continue
         if n not in seen:
             normed.append(n)
             seen.add(n)

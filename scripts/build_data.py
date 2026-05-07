@@ -2427,10 +2427,17 @@ def _restore_abbrevs(name):
     return _ABBREV_RESTORE_RE.sub(lambda m: m.group(1).upper(), name)
 
 
+_LEGACY_UNDERSCORE_RE = re.compile(r'^[a-z][a-z_]*$')
+
 def _normalize_subject_kw(name):
     """Merge discontinued NYT subject tags to their current equivalents.
 
     Steps:
+      0. Drop legacy underscore-style tags (e.g. 'budgets_and_budgeting',
+         'transit_systems') — these are 50-some all-lowercase API artifacts
+         from an early pre-2008 tagging scheme; the canonical Title-Case
+         forms exist as separate tags and these stragglers just pollute
+         small-state subject scoring.
       1. Apply explicit merges from data/tag_config.json (single source of truth)
       2. Title-case ALL-CAPS tags (single-word OR multi-word). Skip tags with
          periods (likely true acronyms like 'F.B.I.') or apostrophes
@@ -2446,6 +2453,8 @@ def _normalize_subject_kw(name):
       'CAPITOL (WASHINGTON, DC)'    → 'Capitol (Washington, DC)' (titlecase + abbrev restore)
       'F.B.I.'                      → 'F.B.I.'                  (skipped)
     """
+    if _LEGACY_UNDERSCORE_RE.match(name) and '_' in name:
+        return None  # drop legacy underscore tags entirely
     merges = TAG_CONFIG.get('subject_merges', {})
     if name in merges:
         return merges[name]
