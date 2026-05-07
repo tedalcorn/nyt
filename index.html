@@ -6805,10 +6805,11 @@ function openStateDetail(state) {
     return HEADLINE_YEAR_RE.test(tag);
   }
 
-  // Exclude correction articles from the subject analysis only — they pollute
-  // recurring-theme calculations (a single correction often touches a topic
-  // unrelated to the state's beat). State-level article counts/maps still
-  // include corrections; this filter is local to the score calculation.
+  // Exclude correction articles AND standing-feature listing articles from
+  // subject scoring only — both pollute recurring-theme calculations
+  // (corrections touch topics unrelated to the state's beat; calendar/
+  // listings inflate Culture/Arts/Real Estate). State-level article counts
+  // on the table/map still include them; this filter is local to scoring.
   const CORRECTION_URL_RE = /\/(c-)?corrections?-|\/pageoneplus\/corrections-/;
   const isCorrectionArticle = a => {
     const sb = a.subjects || [];
@@ -6816,7 +6817,16 @@ function openStateDetail(state) {
     if ((a.section || '') === 'Corrections') return true;
     return CORRECTION_URL_RE.test(a.web_url || '');
   };
-  const stateArticlesForScoring = stateArticles.filter(a => !isCorrectionArticle(a));
+  const LISTING_EXACT = new Set(tagConfig.state_listing_headlines_exact || []);
+  const LISTING_PREFIXES = tagConfig.state_listing_headline_prefixes || [];
+  const isListingArticle = a => {
+    const h = a.headline || '';
+    if (LISTING_EXACT.has(h)) return true;
+    return LISTING_PREFIXES.some(p => h.startsWith(p));
+  };
+  const stateArticlesForScoring = stateArticles.filter(
+    a => !isCorrectionArticle(a) && !isListingArticle(a)
+  );
 
   const totalCorpusArticles = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
   const stateTotal = stateArticlesForScoring.length || 1;
@@ -8745,7 +8755,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 3:40pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 4:40pm</span>
 </div>
 </body>
 </html>

@@ -68,6 +68,19 @@ def is_correction_article(a):
         return True
     return bool(_CORR_URL_RE.search(a.get('u') or ''))
 
+# Standing-feature listing headlines (event calendars, briefs, real-estate
+# listings, art-review roundups) inflate state subject scores by manufacturing
+# phony recurring themes — e.g. CT's 304 'Culture (Arts)' articles were 97%
+# 'Events in Connecticut' calendar items.
+_LISTING_EXACT = set(TAG_CONFIG.get('state_listing_headlines_exact', []))
+_LISTING_PREFIXES = tuple(TAG_CONFIG.get('state_listing_headline_prefixes', []))
+
+def is_listing_article(a):
+    h = a.get('h') or ''
+    if h in _LISTING_EXACT:
+        return True
+    return any(h.startswith(p) for p in _LISTING_PREFIXES)
+
 
 def is_state_junk_tag(tag):
     if tag in STATE_GENERIC or tag in GENERIC_ALWAYS:
@@ -121,10 +134,12 @@ def analyze(articles):
     out = {}
     for state in sorted(state_articles.keys()):
         arts = state_articles[state]
-        # Exclude corrections from subject scoring only (state article totals
-        # in dashboard.json/the state table still include them — this filter
-        # is local to subject overrepresentation).
-        arts = [a for a in arts if not is_correction_article(a)]
+        # Exclude corrections AND standing-feature listings from subject
+        # scoring only — state article totals on the table/map still include
+        # them. Both inflate recurring-theme scores with topics that aren't
+        # actually a state's beat.
+        arts = [a for a in arts if not is_correction_article(a)
+                and not is_listing_article(a)]
         state_total = len(arts)
         if state_total < 50:
             continue

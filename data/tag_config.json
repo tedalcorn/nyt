@@ -147,5 +147,39 @@
     "Criminal Case Against Trump"
   ],
 
-  "_doc_year_detection": "A tag is also classified as a headline event if its name contains a 4-digit year (1900–2099) NOT part of a range. Range markers are '-' or '–' immediately after the year. So 'Hurricane Sandy (2012)' → headline (single year), but 'World War II (1939-45)' → recurring (year range = era), 'Iraq War (2003- )' → recurring (open-ended era), 'Coronavirus (2019-nCoV)' → recurring (year is part of identifier, not a single event marker)."
+  "_doc_year_detection": "A tag is also classified as a headline event if its name contains a 4-digit year (1900–2099) NOT part of a range. Range markers are '-' or '–' immediately after the year. So 'Hurricane Sandy (2012)' → headline (single year), but 'World War II (1939-45)' → recurring (year range = era), 'Iraq War (2003- )' → recurring (open-ended era), 'Coronavirus (2019-nCoV)' → recurring (year is part of identifier, not a single event marker).",
+
+  "_doc_state_listings": "Standing-feature headlines (event calendars, real-estate listings, art-review roundups, briefs columns) are excluded from state subject analysis the same way corrections are: kept in the dataset and in state article totals, but dropped from the recurring-themes score so they don't manufacture phony recurring topics. Without this filter Connecticut's top recurring theme was Culture (Arts), driven 97% by 'Events in Connecticut' calendar items.",
+
+  "state_listing_headlines_exact": [
+    "BOLDFACE NAMES",
+    "Arts, Briefly",
+    "Footlights",
+    "FOOTLIGHTS",
+    "Spare Times",
+    "SPARE TIMES",
+    "GOING OUT",
+    "CALENDAR",
+    "THE GUIDE",
+    "WHAT'S ON TONIGHT",
+    "MOVIES: CRITIC'S CHOICE",
+    "Dance Listings",
+    "Calendar of Events",
+    "Art in Review",
+    "On the Market in New York City",
+    "On the Market in the New York Region",
+    "Residential Sales",
+    "Recent Commercial Real Estate Transactions",
+    "INSIDE",
+    "TRANSACTIONS",
+    "NEWS SUMMARY",
+    "News Summary",
+    "Footnotes"
+  ],
+  "state_listing_headline_prefixes": [
+    "Events in ",
+    "Events on ",
+    "Things to Do",
+    "Spare Times for"
+  ]
 }
