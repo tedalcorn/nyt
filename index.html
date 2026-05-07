@@ -2522,6 +2522,41 @@ const FEATURE_META = {
     desc: 'Daily NY, NJ, and Connecticut lottery results published as a standalone item in the New York section. Excluded from state-level coverage analysis since the same item is tagged to all three states each day.',
     period: '2000–present',
   },
+  letters_to_editor: {
+    label: 'Letters to the Editor',
+    desc: 'Reader correspondence published as a standalone item, primarily in Opinion, Books, Magazine, and Sports. The bundled letters that often appear under topical headlines (e.g. "Re: Climate Change") are not counted — only items with the literal headline "Letters to the Editor".',
+    period: '2000–2020',
+  },
+  on_the_market: {
+    label: 'On the Market',
+    desc: 'A weekly Real Estate listing of newly available homes, split between two recurring titles: "On the Market in New York City" and the suburban variant "On the Market in the New York Region".',
+    period: '2006–2022',
+  },
+  metropolitan_diary: {
+    label: 'Metropolitan Diary',
+    desc: 'A long-running NYC reader-submission column — short, often-funny vignettes of life in the city. The column has continued to the present, but the API stopped indexing individual diary entries as standalone records around 2011.',
+    period: '2000–2011 (in API)',
+  },
+  boldface_names: {
+    label: 'Boldface Names',
+    desc: 'A daily Manhattan celebrity-gossip column run primarily by James Barron and Joyce Wadler (2001–2005) — short who-was-spotted-where dispatches in the Metro section, the paper\'s answer to Page Six.',
+    period: '2001–2005',
+  },
+  names_of_the_dead: {
+    label: 'Names of the Dead',
+    desc: 'Periodic Pentagon-supplied roster of U.S. service members killed in Iraq and Afghanistan, published as a standalone item with each casualty\'s name, rank, age, hometown, and circumstances of death.',
+    period: '2003–2016',
+  },
+  coronavirus_briefing: {
+    label: 'Coronavirus Briefing',
+    desc: 'A daily pandemic-era news roundup — case counts, policy moves, and key developments — published every weekday from March 2020 through the briefing\'s wind-down in early 2022.',
+    period: '2020–2022',
+  },
+  arts_briefly: {
+    label: 'Arts, Briefly',
+    desc: 'A short-takes column compiling small arts-world items (gallery openings, casting announcements, music-business notes) into a single daily Metro/Arts page item — a wire-style omnibus that ran through the late-aughts era of the Times print edition.',
+    period: '2004–2010',
+  },
 };
 
 function renderFeatures() {
@@ -2600,6 +2635,30 @@ function isLotteryNumbersArticle(a) {
       || h.startsWith('Winning Lottery')
       || h.startsWith('Winning Powerball')
       || h === 'Powerball and Lottery Numbers';
+}
+// Standing features added in patch_features.py — match heuristics must stay
+// in sync with that script so the Features-table count matches the rendered
+// article list count.
+function isLettersToEditorArticle(a) {
+  return (a.headline || '') === 'Letters to the Editor';
+}
+function isOnTheMarketArticle(a) {
+  return (a.headline || '').startsWith('On the Market in');
+}
+function isMetropolitanDiaryArticle(a) {
+  return (a.headline || '') === 'Metropolitan Diary';
+}
+function isBoldfaceNamesArticle(a) {
+  return (a.headline || '') === 'BOLDFACE NAMES';
+}
+function isNamesOfTheDeadArticle(a) {
+  return (a.headline || '') === 'Names of the Dead';
+}
+function isCoronavirusBriefingArticle(a) {
+  return (a.headline || '').startsWith('Coronavirus Briefing');
+}
+function isArtsBrieflyArticle(a) {
+  return (a.headline || '') === 'Arts, Briefly';
 }
 
 let currentFeatureKey = 'weddings';
@@ -2693,10 +2752,19 @@ function fillFeatureArticleList() {
   }
 
   const isWeddings = currentFeatureKey === 'weddings';
+  const FEATURE_FILTERS = {
+    quote_of_the_day:     isQOTDArticle,
+    lottery_numbers:      isLotteryNumbersArticle,
+    letters_to_editor:    isLettersToEditorArticle,
+    on_the_market:        isOnTheMarketArticle,
+    metropolitan_diary:   isMetropolitanDiaryArticle,
+    boldface_names:       isBoldfaceNamesArticle,
+    names_of_the_dead:    isNamesOfTheDeadArticle,
+    coronavirus_briefing: isCoronavirusBriefingArticle,
+    arts_briefly:         isArtsBrieflyArticle,
+  };
   const filterFn = isWeddings ? isWeddingArticle
-    : currentFeatureKey === 'quote_of_the_day' ? isQOTDArticle
-    : currentFeatureKey === 'lottery_numbers' ? isLotteryNumbersArticle
-    : isLORArticle;
+    : (FEATURE_FILTERS[currentFeatureKey] || isLORArticle);
   const oldest = featureArticleOrder === 'oldest';
   let filtered = articles.filter(filterFn);
   if (isWeddings && featureVowsOnly) filtered = filtered.filter(isVowsColumnArticle);
@@ -8755,7 +8823,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 4:40pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 4:45pm</span>
 </div>
 </body>
 </html>
