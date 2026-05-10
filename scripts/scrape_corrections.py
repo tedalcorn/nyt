@@ -115,11 +115,18 @@ def fetch_one(url, pub):
 
     Strategy (in order):
       1. id_/ URL with pub_date hint → preserves original HTML, no toolbar.
-      2. If 404: CDX lookup to find actual snapshot timestamp, then retry id_/.
-      3. If 403 (recent-content block on id_/): fall back to plain Wayback URL
-         which returns Wayback-instrumented HTML but is still parseable.
-    All three attempts use the same cache path, so a success at any step is
-    permanent.
+      2. If 404 OR 403: CDX lookup filtered to statuscode:200 → finds any
+         "real content" snapshot, skipping DataDome-blocked archives. Then
+         retry id_/ at that timestamp.
+      3. If still 403 (only DataDome-blocked archives exist): terminal —
+         classify as `archived_403_only` so the outer retry loop doesn't
+         waste cycles on it. The cache is intentionally not written, so a
+         future run can re-check Wayback once a non-blocked snapshot exists.
+
+    NYT enabled DataDome on /pageoneplus/ pages somewhere between mid-2025
+    and Jan 2026. For URLs in that window, Wayback's crawler gets the same
+    403 a casual scraper would, and faithfully archives that 403 page —
+    so id_/ returns 403 even when CDX shows snapshots exist.
     """
     path = os.path.join(CACHE_DIR, slug(url) + '.html')
     if os.path.exists(path) and os.path.getsize(path) > 5000:
@@ -145,44 +152,39 @@ def fetch_one(url, pub):
         return ('too_short', url, None)
     except urllib.error.HTTPError as e:
         first_code = e.code
-    except Exception as e:
+    except Exception:
         first_code = 0
 
-    # Attempt 2: if 404, CDX-resolve for the true timestamp.
-    if first_code == 404:
+    # Attempt 2: if 404 / 403 / network-level failure, ask CDX for ANY
+    # statuscode:200 snapshot. Filtering to 200 automatically skips
+    # DataDome-blocked archives that return 403 at the origin and were
+    # faithfully recorded as 403 by Wayback. first_code == 0 means a
+    # connection/socket error on attempt 1 — also worth a CDX shot before
+    # giving up.
+    if first_code in (0, 403, 404):
         time.sleep(2)
         real_ts = cdx_find_ts(url, pub)
-        if real_ts:
-            time.sleep(2)
-            wb2 = f'https://web.archive.org/web/{real_ts}id_/{url}'
-            try:
-                html = _try_wb(wb2)
-                if len(html) >= 5000:
-                    with open(path, 'w') as fh:
-                        fh.write(html)
-                    return ('ok_cdx', url, html)
-                return ('too_short', url, None)
-            except urllib.error.HTTPError as e:
-                second_code = e.code
-            except Exception:
-                second_code = 0
-            if second_code == 404:
-                return ('no_snapshot', url, None)
-        else:
-            return ('no_snapshot', url, None)
-
-    # Attempt 3: if 403 (recent-content `id_/` block), try plain Wayback URL.
-    if first_code == 403:
+        if not real_ts:
+            # No 200-status snapshot exists. Could be:
+            #   - Wayback hasn't crawled the URL yet (recent, will retry next run)
+            #   - Every snapshot is a DataDome 403 (will not improve without
+            #     Wayback re-crawling from a different vantage point)
+            # Either way: terminal for this run. Don't cache so we re-check later.
+            return ('no_good_snapshot', url, None)
         time.sleep(2)
-        wb3 = f'https://web.archive.org/web/{ts}/{url}'
+        wb2 = f'https://web.archive.org/web/{real_ts}id_/{url}'
         try:
-            html = _try_wb(wb3)
+            html = _try_wb(wb2)
             if len(html) >= 5000:
                 with open(path, 'w') as fh:
                     fh.write(html)
-                return ('ok_plain', url, html)
+                return ('ok_cdx', url, html)
             return ('too_short', url, None)
         except urllib.error.HTTPError as e:
+            # CDX promised a 200 but the snapshot fetch fails. Rare —
+            # treat as no_good_snapshot so we re-check next run.
+            if e.code in (403, 404):
+                return ('no_good_snapshot', url, None)
             return (f'http{e.code}', url, None)
         except Exception as e:
             return (f'err:{type(e).__name__}', url, None)
@@ -216,8 +218,11 @@ def fetch_all(urls, pace=6.0, max_retries=3):
         for attempt in range(max_retries + 1):
             last = time.time()
             status, _, _ = fetch_one(u, p)
-            terminal = status in ('ok', 'ok_cdx', 'ok_plain', 'cached',
-                                  'no_snapshot', 'too_short')
+            # Retry only on transient rate-limit / availability codes
+            # (429 / 503). Everything else is terminal — including
+            # connection errors (err:*) and other HTTP errors that
+            # already went through the CDX fallback in fetch_one.
+            terminal = status not in ('http429', 'http503')
             if terminal:
                 break
             # Rate-limited or connection error — back off
