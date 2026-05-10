@@ -575,10 +575,12 @@
         <li>"Critic's Choice" → <strong>Arts</strong></li>
       </ul>
       <p>Technical categories, product sections, branded-content labels, and small stubs — newsletter and podcast aggregators, discontinued apps, TV tie-ins, blogs without a clear section home — are excluded entirely from the Sections tab. This includes "Archives" (predominantly paid death notices), "Booming" (a 2012–2014 baby-boomer lifestyle blog), "UrbanEye" (a NYC events newsletter), and "Guide" (a going-out listings service).</p>
+      <p>Daily New York / New Jersey / Connecticut lottery-numbers entries — roughly 3,500 short standalone records published 2002–2015 with all three state geocodes attached — are excluded from every section's totals. They are surfaced separately in the Features panel. Their original section assignment was usually "New York" or "Today's Paper"; including them inflated those sections by hundreds of articles a year through 2014 and made historical comparisons misleading. Articles in other sections that happen to be <em>about</em> lotteries (feature stories, business coverage, briefings) are unaffected and remain in their assigned section.</p>
       <p>Authors are assigned a primary section based on where they have published the most articles over their full career in the dataset; this is used to sort and filter the Reporters table. Author profiles also list every section in which the author has published, reflecting the full range of their work. Primary section is a rough proxy for desk assignment and may be inaccurate for reporters whose focus shifts across years.</p>
 
       <h4>Geography</h4>
       <p>Analysis of national coverage draws from articles in the "U.S." section and the "New York" section. Many articles in the latter section lack geographic tags, however, and are not included in the analysis. Locations internal to states (e.g., "Chicago") are mapped to their parent states.</p>
+      <p>The daily NY/NJ/CT lottery-numbers entries described in the Sections note above are also excluded from per-state article totals and from the recurring-topic scoring. They had been the dominant "Lotteries" subject hit in all three states' coverage and accounted for a large share of New York and Connecticut's pre-2015 article counts; they belong with the Features panel, not the per-state coverage view.</p>
       <p>Analysis of international coverage draws from articles in the "World" section. Articles with geographic tags that appear in other sections (Opinion, Business, etc.) are not included.</p>
       <p>Population data for per-capita calculations come from the 2020 U.S. Census. Country populations come from the Natural Earth 110m Cultural Vectors dataset (the <em>POP_EST</em> field, which aggregates UN and World Bank figures).</p>
       <p>For each state and country, the popup lists the subjects that appear disproportionately in its coverage compared to the paper as a whole. Generic items every state or country has — election machinery (<em>Elections, Senate</em>, etc.), local-government roles (<em>Mayors</em>, <em>Governors (US)</em>, <em>District Attorneys</em>), and broad inter-government tags (<em>Federal-State Relations</em>, <em>International Relations</em>) — are excluded, since their presence is more often driven by an occasional standout incident than by anything genuinely recurring. Standing-feature articles (correction digests, calendar listings, real-estate roundups, daily lottery numbers, Letters to the Editor, Metropolitan Diary, etc.) are also excluded from the score so they can't manufacture phony recurring topics. Each remaining tag is then scored by how much more frequently it appears in the state's or country's articles than in the corpus overall. The top ten by score are split into two columns. <strong>Headline events</strong> are subjects whose tag names refer to a specific dated incident — either a single year (<em>Hurricane Sandy (2012)</em>, <em>Newtown, Conn, Shooting (2012)</em>, <em>Russian Invasion of Ukraine (2022)</em>) or a multi-year war or crisis whose start year falls within the dataset's reporting period (<em>Iraq War (2003-11)</em>, <em>Afghanistan War (2001- )</em>, <em>Israel-Gaza War (2023- )</em>). <strong>Recurring themes</strong> is everything else, capped at seven. The classification is based on tag-name structure rather than on when coverage clusters — a topic that became prominent in a single year (such as <em>In Vitro Fertilization</em> in 2024 after the Alabama Supreme Court ruling) is still a recurring theme, not a headline event. Conversely, historical eras whose tag-name year range ends well before our coverage period (<em>World War II (1939-45)</em>, <em>Civil Rights Movement (1954-68)</em>) are recurring even if their tag carries dates, because the coverage is retrospective rather than event-driven.</p>
@@ -6920,6 +6922,7 @@ function openStateDetail(state) {
   const STATE_GENERIC_SET = new Set([
     ...(tagConfig.generic_subjects_always_filter || []),
     ...(tagConfig.state_coverage_generic_subjects || []),
+    ...(tagConfig.single_venue_tags || []),
   ]);
   const STATE_GENERIC_PREFIXES = [
     ...(tagConfig.generic_prefixes_always_filter || []),
@@ -8909,7 +8912,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/7/26 6:16pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/10/26 8:46am</span>
 </div>
 </body>
 </html>

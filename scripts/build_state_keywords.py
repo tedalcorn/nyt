@@ -95,8 +95,12 @@ def is_listing_article(a):
     return (a.get('k') or '') in _LISTING_KICKERS
 
 
+SINGLE_VENUE = set(TAG_CONFIG.get('single_venue_tags', []))
+
 def is_state_junk_tag(tag):
     if tag in STATE_GENERIC or tag in GENERIC_ALWAYS:
+        return True
+    if tag in SINGLE_VENUE:
         return True
     return (any(tag.startswith(p) for p in STATE_GENERIC_PREFIXES) or
             any(tag.startswith(p) for p in GENERIC_PREFIXES))
@@ -115,6 +119,29 @@ def is_headline_event(tag):
     if _YEAR_RANGE_RE.search(tag):
         return True
     return False
+
+
+YEAR_BURST_THRESHOLD = 0.85   # 2-consecutive-year share
+
+def is_year_burst_state(years_counter):
+    """For a (state, tag) year distribution, return True if >=85% of the
+    coverage is concentrated in any pair of consecutive years. Catches
+    state-specific event surges that the tag NAME doesn't reveal — e.g.
+    'Serial Murders' in MD/VA (DC Sniper 2002-3), 'Fourteenth Amendment'
+    in CO (Trump ballot case 2023-4)."""
+    if not years_counter:
+        return False
+    total = sum(years_counter.values())
+    if total < 5:
+        return False
+    sorted_yrs = sorted(years_counter.keys())
+    max_pair = 0
+    for i in range(len(sorted_yrs) - 1):
+        if int(sorted_yrs[i + 1]) == int(sorted_yrs[i]) + 1:
+            pair = years_counter[sorted_yrs[i]] + years_counter[sorted_yrs[i + 1]]
+            if pair > max_pair:
+                max_pair = pair
+    return max_pair / total > YEAR_BURST_THRESHOLD
 
 
 def load_articles():
@@ -149,10 +176,6 @@ def analyze(articles):
     out = {}
     for state in sorted(state_articles.keys()):
         arts = state_articles[state]
-        # Exclude corrections AND standing-feature listings from subject
-        # scoring only — state article totals on the table/map still include
-        # them. Both inflate recurring-theme scores with topics that aren't
-        # actually a state's beat.
         arts = [a for a in arts if not is_correction_article(a)
                 and not is_listing_article(a)]
         state_total = len(arts)
@@ -160,12 +183,18 @@ def analyze(articles):
             continue
 
         tag_counts = Counter()
+        # Per-tag year distribution within this state — used to detect
+        # year-burst topics that are state-specific event surges.
+        tag_years = defaultdict(Counter)
         for a in arts:
             seen = set()
+            yr = (a.get('d') or '')[:4]
             for tag in (a.get('sb') or []):
                 if is_state_junk_tag(tag) or tag in seen:
                     continue
                 tag_counts[tag] += 1
+                if yr:
+                    tag_years[tag][yr] += 1
                 seen.add(tag)
 
         min_count = max(3, int(state_total * 0.005))
@@ -185,19 +214,24 @@ def analyze(articles):
             })
         scored.sort(key=lambda x: -x['score'])
 
+        # Helper: is this (state, tag) event-bound by either name structure
+        # or a state-specific year burst?
+        def _is_event(tag):
+            return (is_headline_event(tag)
+                    or is_year_burst_state(tag_years.get(tag)))
+
         # Headline events: all top-10 entries that classify as event-driven.
-        # Recurring subjects: remaining top-10 entries, padded to 5 from
-        # beyond top-10 if needed (only items with score >= 10x national
-        # average qualify for the padding). Capped at 7.
+        # Recurring subjects: remaining top-10, padded to 5 from beyond
+        # top-10 if needed (>= 10x national average required for padding).
         RECURRING_MIN, RECURRING_MAX, RECURRING_PAD_FLOOR = 5, 7, 10.0
         top10 = scored[:10]
-        headline = [t for t in top10 if is_headline_event(t['tag'])]
-        recurring = [t for t in top10 if not is_headline_event(t['tag'])]
+        headline = [t for t in top10 if _is_event(t['tag'])]
+        recurring = [t for t in top10 if not _is_event(t['tag'])]
         if len(recurring) < RECURRING_MIN:
             for t in scored[10:]:
                 if len(recurring) >= RECURRING_MIN:
                     break
-                if is_headline_event(t['tag']):
+                if _is_event(t['tag']):
                     continue
                 if t['score'] < RECURRING_PAD_FLOOR:
                     break

@@ -138,8 +138,10 @@
   "headline_event_tags": [
     "Hurricane Katrina",
     "Hurricane Gustav",
+    "Hurricane Ike",
     "Exxon Valdez (Tanker)",
-    "Arizona Immigration Law"
+    "American Airlines Flight 5342",
+    "Keystone Pipeline System"
   ],
 
   "headline_event_patterns": [
@@ -216,5 +218,36 @@
   "_doc_state_listing_kickers": "Some standing features (notably Metropolitan Diary from ~2011 onward) give each entry its own bespoke headline with the column name in the kicker. Match those by kicker too.",
   "state_listing_kickers_exact": [
     "Metropolitan Diary"
+  ],
+
+  "_doc_single_venue_tags": "Tags that refer to a specific named place, institution, or group whose existence is geographically restricted to one state (or a small region). They inflate state-level overrepresentation scores because the corpus baseline is essentially zero outside their home state — so seeing them as 'recurring themes' is uninformative (it just says 'this thing is here'). Filtered from state subject scoring same way as corrections and listings. Tribal-name tags are included because each tribe's coverage is locked to its ancestral state(s); the broader 'Native Americans' tag still surfaces the theme where appropriate.",
+  "single_venue_tags": [
+    "Arizona Immigration Law",
+    "Arizona Immigration Law (SB 1070)",
+    "Superdome (New Orleans)",
+    "Sixteenth Street Baptist Church (Birmingham, Ala)",
+    "Logan International Airport (Boston)",
+    "Hanford Nuclear Reservation (Wash)",
+    "Murrah, Alfred P, Federal Building (Oklahoma City, Okla)",
+    "Murrah Federal Office Building (Oklahoma City)",
+    "National Mall (Washington, DC)",
+    "Hula Bowl",
+    "Vermiculite",
+    "Bethpage Black Course (NY)",
+    "Pentagon Building",
+    "Capitol Building (Washington, DC)",
+    "White House (Washington, DC)",
+    "White House Building (Washington, DC)",
+    "US Federal Takeover of Metropolitan Police Dept (DC)",
+    "World Trade Center (NYC)",
+    "Special Sections",
+    "Native Hawaiians",
+    "Alaska Natives",
+    "Spirit Lake Tribe (Sioux)",
+    "Narragansett Indians",
+    "Nez Perce Indians",
+    "Greeneville (Submarine)",
+    "Ehime Maru (Ship)",
+    "Kursk (Submarine)"
   ]
 }

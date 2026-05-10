@@ -391,12 +391,17 @@ def process_articles(raw_articles):
 
         # "Lottery Numbers" daily-results articles: NY/NJ/CT lottery numbers
         # published as standalone items (~3,500+ total since 2002) with all
-        # three state geocodes attached. They were inflating each state's
-        # "Lotteries" subject share and the New York section count. Headline
-        # forms have varied: "Lottery Numbers", "Lottery Numbers for [date]",
-        # "Winning Lottery Numbers", "Winning Powerball and Mega Millions",
-        # etc. Treat same as Quote of the Day — reassign section, and
-        # canonical_states stays empty since the section check below fails.
+        # three state geocodes attached. They inflated each state's article
+        # totals and Today's Paper section count. Headline forms have varied:
+        # "Lottery Numbers", "Lottery Numbers for [date]", "Winning Lottery
+        # Numbers", "Winning Powerball and Mega Millions", etc.
+        #
+        # Treatment: reassign section to "Today's Paper" AND set the
+        # is_lottery_numbers flag. State analysis skips them via empty
+        # canonical_states (the state check below fails when section is no
+        # longer "New York"). Section counts skip them via the flag — see the
+        # section_counts and section_time aggregation loops below. The lottery
+        # feature page surfaces them on their own.
         is_lottery_numbers = section == "New York" and (
             headline_main.startswith("Lottery Numbers") or
             headline_main.startswith("Winning Lottery") or
@@ -435,15 +440,25 @@ def process_articles(raw_articles):
         organizations_kw = []
         for kw in (doc.get("keywords") or []):
             kw_name = kw.get("name", "")
+            kw_val = kw.get("value")
+            # Skip malformed keyword entries with null/empty values — they
+            # appear occasionally in 2026 raw data and crash downstream
+            # string ops in feature detectors and tag classifiers.
+            if not kw_val:
+                continue
             if kw_name in ("glocations", "Location"):
-                glocations.append(kw["value"])
+                glocations.append(kw_val)
             elif kw_name in ("subject", "Subject"):
-                # Apply continuity merges at ingestion so beats + compact format stay in sync
-                subjects.append(_normalize_subject_kw(SUBJECT_RENAMES.get(kw["value"], kw["value"])))
+                # Apply continuity merges at ingestion so beats + compact format stay in sync.
+                # _normalize_subject_kw returns None for dropped tags (legacy underscore
+                # style); skip those rather than letting None enter the subjects list.
+                norm = _normalize_subject_kw(SUBJECT_RENAMES.get(kw_val, kw_val))
+                if norm:
+                    subjects.append(norm)
             elif kw_name in ("persons", "Persons"):
-                persons_kw.append(kw["value"])
+                persons_kw.append(kw_val)
             elif kw_name in ("organizations", "Organizations"):
-                organizations_kw.append(_normalize_org_kw(kw["value"]))
+                organizations_kw.append(_normalize_org_kw(kw_val))
 
         # Canonical state names — computed for both "U.S." and "New York" sections
         canonical_states = []
@@ -480,6 +495,7 @@ def process_articles(raw_articles):
             "persons": persons_kw,
             "organizations": organizations_kw,
             "canonical_states": canonical_states,
+            "is_lottery_numbers": is_lottery_numbers,
         })
 
     print(f"  {len(articles):,} processed, {skipped} skipped")
@@ -912,6 +928,8 @@ _INSTITUTIONAL_BYLINES = {
 
 
 def _is_generic_subject(s):
+    if not s:
+        return True
     if s in _GENERIC_SUBJECTS:
         return True
     return any(s.startswith(p) for p in _GENERIC_PREFIXES)
@@ -1912,12 +1930,16 @@ def build_dashboard_data(articles, authors):
         for m in months_sorted
     ]
 
-    # Section stats
+    # Section stats. Daily lottery-numbers articles (~3,500 since 2002,
+    # NY/NJ/CT) are excluded — they get their own Features bucket so they
+    # don't pollute Today's Paper or any other section's totals.
     section_counts = Counter()
     section_words = defaultdict(int)
     section_wc_hist = defaultdict(lambda: [0] * 21)   # 21 bins × 200 words, last = 4000+
     section_nonzero = defaultdict(int)                 # articles with word_count > 0
     for art in articles:
+        if art.get("is_lottery_numbers"):
+            continue
         s = art["section"] or "(none)"
         section_counts[s] += 1
         section_words[s] += art["word_count"]
@@ -1937,10 +1959,12 @@ def build_dashboard_data(articles, authors):
             "wc_hist": section_wc_hist[s],
         })
 
-    # Words per section over time (all sections)
+    # Words per section over time (all sections). Same lottery exclusion as above.
     top_sections = [s["name"] for s in sections if s["name"] not in ("", "(none)")]
     section_time = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0, "wc_list": [], "wc_hist": [0] * 21}))
     for art in articles:
+        if art.get("is_lottery_numbers"):
+            continue
         s = art["section"]
         if s in top_sections:
             y = str(art["year"])
