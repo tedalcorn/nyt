@@ -487,6 +487,17 @@
             <p class="slide-more"><a onclick="showView('states')">Explore U.S. states coverage →</a></p>
           </div>
         </section>
+        <!-- SLIDE: 50-state map -->
+        <section class="slide">
+          <div class="slide-inner">
+            <h4 class="slide-title">How <em>The New York Times</em> looks at America</h4>
+            <p class="slide-caption">Keywords that <em>The New York Times</em> assigns to its articles show which recurring subjects are covered in each state out of proportion to national coverage as a whole.</p>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;border-radius:4px;margin:4px 0" onclick="window.open('graphics/state-map-hires.png','_blank')">
+              <img src="graphics/state-map.jpg" alt="How The New York Times looks at every U.S. state" style="max-width:100%;max-height:380px;object-fit:contain;border-radius:4px" loading="lazy">
+            </div>
+            <p class="slide-more" style="font-size:11px;color:#888;margin-top:6px"><a onclick="window.open('graphics/state-map-hires.png','_blank');event.stopPropagation()" style="color:#326891;cursor:pointer">Open full resolution →</a></p>
+          </div>
+        </section>
         <!-- SLIDE 4: Global gaps -->
         <section class="slide">
           <div class="slide-inner">
@@ -1240,6 +1251,10 @@ function downloadObitChart(canvasId, baseName, btn) {
     title1 = `The share of New York Times obituaries for women${range ? ' (' + range.replace('–','-') + ')' : ''}`;
     title2 = `n = ${known.toLocaleString()} obituaries w/ identified gender · Data from NYT Archive API`;
     // (Chart.js draws "% Female" inside the chart canvas; no extra strip.)
+  } else if (canvasId === 'chartObitByYear') {
+    title1 = `New York Times obituaries published per year${range ? ' (' + range.replace('–','-') + ')' : ''}`;
+    title2 = `n = ${total.toLocaleString()} obituaries · Data from NYT Archive API`;
+    // (Chart.js draws the M/F/Non-binary legend inside the canvas; no extra strip.)
   } else {
     title1 = 'New York Times obituaries';
     title2 = `n=${total.toLocaleString()} · Data from NYT Archive API`;
@@ -7473,12 +7488,12 @@ function setObitChartMode(mode) {
   if (mode === 'gender') {
     genderWrap.style.display = '';
     countWrap.style.display = 'none';
-    dlBtn.style.display = '';
+    dlBtn.onclick = function() { downloadObitChart('chartObitGender', 'obit-gender-over-time', this); };
     renderObitGenderChart();
   } else {
     genderWrap.style.display = 'none';
     countWrap.style.display = '';
-    dlBtn.style.display = 'none';
+    dlBtn.onclick = function() { downloadObitChart('chartObitByYear', 'obit-over-time', this); };
     renderObitByYearChart();
   }
 }

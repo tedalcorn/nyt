@@ -27,6 +27,7 @@ data/.DS_Store
 
 # Local automation log
 nightly_update.log
+logs/
 
 # Working prototypes / scratch files
 *_prototype*.html

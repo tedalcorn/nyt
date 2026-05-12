@@ -2499,6 +2499,30 @@ def _normalize_subject_kw(name):
         return title
     return name
 
+# RNC/DNC tags occur on a 4-year cycle and rotate by host state each cycle.
+# Treating them as a single recurring tag falsely promotes "Republican National
+# Convention" into a state's recurring top-5 wherever the convention happened
+# to land that cycle (e.g. NC 2020, WI 2024). Append the convention year so
+# the existing year-detection rule in build_state_keywords.py classifies each
+# as a distinct headline event. The convention year is the closest election
+# year to the article's pub year; ties forward (mid-cycle coverage is almost
+# always anticipatory).
+_ELECTION_YEARS = (2000, 2004, 2008, 2012, 2016, 2020, 2024)
+_CONV_TAGS = {'Republican National Convention', 'Democratic National Convention'}
+
+
+def _rewrite_conv_year(tag, article_year):
+    if tag not in _CONV_TAGS:
+        return tag
+    best = _ELECTION_YEARS[0]
+    for ey in _ELECTION_YEARS[1:]:
+        d_new = abs(ey - article_year)
+        d_old = abs(best - article_year)
+        if d_new < d_old or (d_new == d_old and ey > best):
+            best = ey
+    return f'{tag} ({best})'
+
+
 def _normalize_org_kw(name):
     """Merge discontinued NYT organization tags to their current equivalents.
     Uses merges defined in data/tag_config.json."""
@@ -2660,7 +2684,8 @@ def main():
         if a.get("subsection"):
             rec["ss"] = a["subsection"]  # subsection
         if a.get("subjects"):
-            rec["sb"] = [_normalize_subject_kw(s) for s in a["subjects"]]  # subject keywords
+            rec["sb"] = [_rewrite_conv_year(_normalize_subject_kw(s), a["year"])
+                         for s in a["subjects"]]  # subject keywords
         if a.get("persons"):
             rec["pe"] = a["persons"]   # persons keywords
         if a.get("organizations"):
