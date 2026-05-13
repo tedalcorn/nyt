@@ -233,6 +233,18 @@ STATE_ALIASES = {
     "New York State": "New York",
     "Washington State": "Washington",
     "District of Columbia": "D.C.",
+    "Virgin Islands (US)": "U.S. Virgin Islands",
+}
+
+# U.S. territories — treated like states for the States tab so coverage of them
+# in the U.S. and New York sections is reachable. Surfaced separately from the
+# 50 states + D.C. in the frontend so they don't sort into the state rankings.
+US_TERRITORIES = {
+    "Puerto Rico",
+    "Guam",
+    "Virgin Islands (US)",
+    "Northern Mariana Islands",
+    "American Samoa",
 }
 ABBREV_TO_STATE = {
     "Ala": "Alabama", "ALA": "Alabama",
@@ -301,10 +313,18 @@ _NYC_LOCS = {
 }
 
 def glocation_to_state(loc):
-    """Return canonical state name for a glocation string, or None."""
+    """Return canonical state-or-territory name for a glocation string, or None.
+
+    Returns the canonical name for any of the 50 states, D.C., or one of the
+    five U.S. territories (Puerto Rico, Guam, USVI, Northern Mariana Islands,
+    American Samoa). The frontend separates territories from states using
+    `us_state_coverage.territories`.
+    """
     if loc in _NYC_LOCS:
         return "New York"
     if loc in US_STATES:
+        return STATE_ALIASES.get(loc, loc)
+    if loc in US_TERRITORIES:
         return STATE_ALIASES.get(loc, loc)
     if loc == "Washington (State)":
         return "Washington"
@@ -2157,12 +2177,19 @@ def build_dashboard_data(articles, authors):
                 ny_state_year[state][y] += 1
                 ny_state_total[state] += 1
 
-    top_states = [s for s, _ in state_total.most_common()]
-    # All states that appear in either section
-    all_states_combined = sorted(set(list(state_total.keys()) + list(ny_state_total.keys())))
+    # Canonical territory names after STATE_ALIASES is applied (matches what
+    # glocation_to_state returns and what's stored in canonical_states).
+    TERRITORY_DISPLAY = {STATE_ALIASES.get(t, t) for t in US_TERRITORIES}
+    top_states_with_terr = state_total.most_common()
+    top_states = [s for s, _ in top_states_with_terr if s not in TERRITORY_DISPLAY]
+    top_territories = [s for s, _ in top_states_with_terr if s in TERRITORY_DISPLAY]
+    # Backfill territories that appear only in NY-section coverage
+    for t in (ny_state_total.keys() & TERRITORY_DISPLAY) - set(top_territories):
+        top_territories.append(t)
     us_state_coverage = {
         "states": top_states,
-        "state_trends": {s: dict(state_year[s]) for s in top_states},
+        "territories": top_territories,
+        "state_trends": {s: dict(state_year[s]) for s in top_states + top_territories},
         "ny_state_trends": {s: dict(ny_state_year[s]) for s in ny_state_total.keys()},
         "ny_state_totals": dict(ny_state_total),
         "years": all_years,

@@ -591,7 +591,7 @@
       <p>Authors are assigned a primary section based on where they have published the most articles over their full career in the dataset; this is used to sort and filter the Reporters table. Author profiles also list every section in which the author has published, reflecting the full range of their work. Primary section is a rough proxy for desk assignment and may be inaccurate for reporters whose focus shifts across years.</p>
 
       <h4>Geography</h4>
-      <p>Analysis of national coverage draws from articles in the "U.S." section and the "New York" section. Many articles in the latter section lack geographic tags, however, and are not included in the analysis. Locations internal to states (e.g., "Chicago") are mapped to their parent states.</p>
+      <p>Analysis of national coverage draws from articles in the "U.S." section and the "New York" section. Many articles in the latter section lack geographic tags, however, and are not included in the analysis. Locations internal to states (e.g., "Chicago") are mapped to their parent states. The five U.S. territories — Puerto Rico, Guam, the U.S. Virgin Islands, the Northern Mariana Islands, and American Samoa — are surfaced in a separate group beneath the 50 states and D.C. in the States table, drawing from the same U.S./New York-section pool. They are excluded from the state map's color quintiles (only the 50 states have map polygons) so a territory's coverage volume can't skew the state scale. Puerto Rico also appears as a standalone entry in the World tab, drawing on a different article pool — the small set of World-section pieces that carry its geographic tag — so the two views surface different aspects of NYT coverage.</p>
       <p>The daily NY/NJ/CT lottery-numbers entries described in the Sections note above are also excluded from per-state article totals and from the recurring-topic scoring. They had been the dominant "Lotteries" subject hit in all three states' coverage and accounted for a large share of New York and Connecticut's pre-2015 article counts; they belong with the Features panel, not the per-state coverage view.</p>
       <p>Analysis of international coverage draws from articles in the "World" section. Articles with geographic tags that appear in other sections (Opinion, Business, etc.) are not included.</p>
       <p>Population data for per-capita calculations come from the 2020 U.S. Census. Country populations come from the Natural Earth 110m Cultural Vectors dataset (the <em>POP_EST</em> field, which aggregates UN and World Bank figures).</p>
@@ -6385,6 +6385,9 @@ const STATE_POP_M = {
   'New Hampshire':1.4,'Maine':1.4,'Montana':1.1,'Rhode Island':1.1,'Delaware':1.0,
   'South Dakota':0.9,'North Dakota':0.8,'Alaska':0.7,'D.C.':0.7,
   'Vermont':0.6,'Wyoming':0.6,
+  // U.S. territories — 2020 Census figures (millions of residents)
+  'Puerto Rico':3.29,'Guam':0.169,'U.S. Virgin Islands':0.105,
+  'American Samoa':0.049,'Northern Mariana Islands':0.047,
 };
 
 
@@ -6413,20 +6416,29 @@ function initStates() {
   const includeNY = document.getElementById('includeNYSection')?.checked;
   const combined = getStateCounts(sc, includeNY);
 
-  // States list: always include NY and NJ (they're meaningful when NY section included)
-  const states = Object.keys(combined).filter(s => Object.values(combined[s]).some(n => n > 0));
-  states.sort((a, b) => {
+  // Split states from territories. Territories render in their own section
+  // below the 50 states + D.C. and don't sort into the state ranking.
+  const territorySet = new Set(sc.territories || []);
+  const states = (sc.states || Object.keys(combined).filter(s => !territorySet.has(s)))
+    .filter(s => Object.values(combined[s] || {}).some(n => n > 0));
+  const territories = (sc.territories || []).filter(s =>
+    Object.values(combined[s] || {}).some(n => n > 0)
+  );
+  // Sort both groups independently by total in current year range
+  const sortByTotal = (a, b) => {
     const ta = allYears.reduce((s, y) => s + (combined[a]?.[y] || 0), 0);
     const tb = allYears.reduce((s, y) => s + (combined[b]?.[y] || 0), 0);
     return tb - ta;
-  });
+  };
+  states.sort(sortByTotal);
+  territories.sort(sortByTotal);
 
   // Populate trend selector — alphabetical order, 4 specific defaults
   const select = document.getElementById('stateSelect');
   const prevSelected = new Set(Array.from(select.selectedOptions).map(o => o.value));
   select.innerHTML = '';
   const defaultStates = new Set(['Arizona', 'Georgia', 'South Carolina', 'Missouri']);
-  [...states].sort().forEach(s => {
+  [...states, ...territories].sort().forEach(s => {
     const opt = document.createElement('option');
     opt.value = s; opt.textContent = s;
     if (prevSelected.size ? prevSelected.has(s) : defaultStates.has(s)) opt.selected = true;
@@ -6435,10 +6447,10 @@ function initStates() {
   select.onchange = () => renderStateTrend(stateYears, combined);
   renderStateTrend(allYears, combined);
 
-  initStateYearSlider(allYears, states, combined);
+  initStateYearSlider(allYears, states, territories, combined);
 }
 
-function initStateYearSlider(allYears, states, combined) {
+function initStateYearSlider(allYears, states, territories, combined) {
   const minY = Number(allYears[0]), maxY = Number(allYears[allYears.length - 1]);
   const sInput = document.getElementById('stateYrStart');
   const eInput = document.getElementById('stateYrEnd');
@@ -6456,7 +6468,7 @@ function initStateYearSlider(allYears, states, combined) {
     document.getElementById('stateYrStartLbl').textContent = s;
     document.getElementById('stateYrEndLbl').textContent = e;
     stateYears = allYears.filter(y => Number(y) >= s && Number(y) <= e);
-    renderStatesTable(states, stateYears, combined);
+    renderStatesTable(states, territories, stateYears, combined);
     if (document.getElementById('stateMapBox').style.display !== 'none') renderStateMap(stateYears);
   }
   sInput.addEventListener('input', update);
@@ -6523,6 +6535,11 @@ function renderStateMap(years) {
   const combined = getStateCounts(sc, includeNY);
   const numYears = years.length || 1;
 
+  // Territories are excluded from the map's quintile thresholds so their
+  // values don't skew the color scale (the map only has GeoJSON polygons
+  // for the 50 states + D.C. anyway).
+  const territorySet = new Set(sc.territories || []);
+
   // Aggregate counts for the selected year range, optionally per-capita per year
   const stateVals = {};
   for (const [state, trend] of Object.entries(combined)) {
@@ -6533,7 +6550,7 @@ function renderStateMap(years) {
 
   // Quintile thresholds (ignore zeros, exclude DC 2001-2003 distortion for per-capita)
   const vals = Object.entries(stateVals)
-    .filter(([s, v]) => v > 0)
+    .filter(([s, v]) => v > 0 && !territorySet.has(s))
     .map(([, v]) => v)
     .sort((a, b) => a - b);
   const q = i => vals[Math.floor(vals.length * i / 5)] || 0;
@@ -6625,12 +6642,17 @@ function renderStateMap(years) {
 
 let stateTableSort = { col: 'count', asc: false };
 
-function renderStatesTable(states, years, combined) {
+function renderStatesTable(states, territories, years, combined) {
+  // Back-compat: allow legacy 3-arg calls (states, years, combined)
+  if (Array.isArray(territories) && territories.length && typeof territories[0] === 'string' && !Array.isArray(years)) {
+    combined = years; years = territories; territories = [];
+  }
+  territories = territories || [];
   const numYears = years.length;
 
   // D.C. 2001-2003 data is unreliable (9/11 over-tagging); exclude from per-capita
   const DC_BAD_YEARS = new Set(['2001', '2002', '2003']);
-  const rows = states.map(s => {
+  const buildRow = s => {
     const trend = combined[s] || {};
     const total = years.reduce((sum, y) => sum + (trend[y] || 0), 0);
     const pop = STATE_POP_M[s];
@@ -6639,9 +6661,11 @@ function renderStatesTable(states, years, combined) {
     const perCapita = pop && pcYears.length ? Math.round(pcTotal / pop / pcYears.length * 10) / 10 : null;
     const dcAdjusted = s === 'D.C.' && pcYears.length < years.length;
     return { name: s, count: total, perCapita, dcAdjusted };
-  });
+  };
+  const stateRows = states.map(buildRow);
+  const territoryRows = territories.map(buildRow);
 
-  rows.sort((a, b) => {
+  const sortRows = arr => arr.sort((a, b) => {
     let va = a[stateTableSort.col], vb = b[stateTableSort.col];
     if (va == null) va = -Infinity;
     if (vb == null) vb = -Infinity;
@@ -6650,6 +6674,8 @@ function renderStatesTable(states, years, combined) {
     if (va > vb) return stateTableSort.asc ? 1 : -1;
     return 0;
   });
+  sortRows(stateRows);
+  sortRows(territoryRows);
 
   const ind = col => stateTableSort.col === col ? (stateTableSort.asc ? ' ▲' : ' ▼') : '';
   const cols = [
@@ -6662,28 +6688,34 @@ function renderStatesTable(states, years, combined) {
   let html = `<table class="author-table"><thead><tr>`;
   cols.forEach(c => { html += `<th class="${c.cls||''}" data-sort="${c.key}">${c.label}${c.key !== '_sparkline' ? ind(c.key) : ''}</th>`; });
   html += `</tr></thead><tbody>`;
-  rows.forEach(r => {
+  const renderRow = r => {
     const trend = combined[r.name] || {};
-    html += `<tr data-state="${escapeHtml(r.name)}">`;
+    let row = `<tr data-state="${escapeHtml(r.name)}">`;
     cols.forEach(c => {
       if (c.key === '_sparkline') {
-        html += `<td style="padding:2px 8px">${makeCountrySparkline(trend, years)}</td>`;
+        row += `<td style="padding:2px 8px">${makeCountrySparkline(trend, years)}</td>`;
         return;
       }
       let v = r[c.key];
       if (c.key === 'name') {
-        html += `<td class="author-name">${escapeHtml(String(v))}</td>`;
+        row += `<td class="author-name">${escapeHtml(String(v))}</td>`;
       } else if (c.key === 'perCapita' && r.dcAdjusted) {
         const disp = typeof v === 'number' ? v.toLocaleString() : '—';
-        html += `<td class="${c.cls||''}" title="D.C. per-capita excludes 2001–2003 due to observed over-tagging in the API following 9/11">${escapeHtml(disp)}*</td>`;
+        row += `<td class="${c.cls||''}" title="D.C. per-capita excludes 2001–2003 due to observed over-tagging in the API following 9/11">${escapeHtml(disp)}*</td>`;
       } else {
         if (c.cls === 'num' && typeof v === 'number') v = v.toLocaleString();
         else if (v == null) v = '—';
-        html += `<td class="${c.cls||''}">${escapeHtml(String(v))}</td>`;
+        row += `<td class="${c.cls||''}">${escapeHtml(String(v))}</td>`;
       }
     });
-    html += `</tr>`;
-  });
+    row += `</tr>`;
+    return row;
+  };
+  stateRows.forEach(r => { html += renderRow(r); });
+  if (territoryRows.length) {
+    html += `<tr class="terr-divider"><td colspan="${cols.length}" style="padding:14px 6px 6px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.06em;border-top:1px solid #ddd;background:#fafafa">U.S. territories</td></tr>`;
+    territoryRows.forEach(r => { html += renderRow(r); });
+  }
   html += `</tbody></table>`;
 
   const container = document.getElementById('stateTableContainer');
@@ -6694,7 +6726,7 @@ function renderStatesTable(states, years, combined) {
       const col = th.dataset.sort;
       if (stateTableSort.col === col) stateTableSort.asc = !stateTableSort.asc;
       else { stateTableSort.col = col; stateTableSort.asc = col === 'name'; }
-      renderStatesTable(states, years, combined);
+      renderStatesTable(states, territories, years, combined);
     });
   });
 
@@ -8932,7 +8964,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/13/26 7:02am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/13/26 7:28am</span>
 </div>
 </body>
 </html>
