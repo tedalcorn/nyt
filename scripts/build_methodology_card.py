@@ -1,7 +1,7 @@
 """Generate the final methodology slide for the state-by-state Twitter thread.
 
 Matches the visual style of the state cards (16:9, cream, serif).
-Output: -documents/top-keyword/-National/methodology.png (also .svg, .pdf)
+Output: outputs/top-keyword/-National/methodology.png (also .svg, .pdf)
 """
 
 import os
@@ -68,7 +68,7 @@ def main():
              'By Ted Alcorn  ·  Data from NYT Archive API',
              fontsize=12, ha='center', family='serif', color=MUTED)
 
-    out_dir = os.path.join(PROJECT_DIR, '-documents', 'top-keyword', '-National')
+    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword', '-National')
     os.makedirs(out_dir, exist_ok=True)
     out_png = os.path.join(out_dir, 'methodology.png')
     plt.savefig(out_png, dpi=100, facecolor=CREAM)

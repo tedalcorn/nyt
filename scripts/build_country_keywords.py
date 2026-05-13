@@ -8,7 +8,7 @@ scoring, and headline/recurring split match the country popup in index.html
 Run:
     python3 scripts/build_country_keywords.py
 
-Produces: country_keywords_analysis.xlsx in the same -documents folder as
+Produces: country_keywords_analysis.xlsx in the same outputs folder as
 the state version, with three sheets:
   1. "Country Outsize Subjects" — every recurring + headline tag shown,
      one row per (country, tag) with count, % of country coverage, score
@@ -224,6 +224,10 @@ def analyze(arts):
             'n_country': n_country,
             'headline': headline,
             'recurring': recurring,
+            # Expose tag_years so downstream consumers (e.g. country cards)
+            # can identify which year a country's Olympic / event-style
+            # coverage clusters in.
+            'tag_years': {t: dict(tag_years[t]) for t in tag_years},
         }
 
     return out
@@ -380,7 +384,7 @@ def write_excel(results):
                 cell.number_format = '0.00%'
 
     out_path = os.path.join(
-        PROJECT_DIR, '-documents', 'top-keyword', '-Tweets',
+        PROJECT_DIR, 'outputs', 'top-keyword', '-Tweets',
         'country_keywords_analysis.xlsx',
     )
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

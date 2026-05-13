@@ -46,7 +46,7 @@ data/bio_photos/Supporting photos/
 data/bio_photos/-Prompt.rtf
 
 # Local working files — never commit
--documents/
+outputs/
 logos/
 *.bak
 *.pre_*

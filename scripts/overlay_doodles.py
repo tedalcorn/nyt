@@ -1,8 +1,8 @@
 """Overlay hand-drawn doodle PNGs onto the master state map.
 
-Reads -documents/doodles/placements.json (the placement registry) and
+Reads outputs/doodles/placements.json (the placement registry) and
 composites the listed transparent-PNG doodles onto state-map.png.
-Output goes to -documents/<output>.png (default: state-map-doodled.png).
+Output goes to outputs/<output>.png (default: state-map-doodled.png).
 
 Re-runnable: every overlay re-applies cleanly to the latest base map.
 Edit placements.json to nudge positions; do not edit this script.
@@ -21,7 +21,7 @@ except ImportError:
     Image = None
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOC_DIR = os.path.join(PROJECT_DIR, '-documents')
+DOC_DIR = os.path.join(PROJECT_DIR, 'outputs')
 DOODLE_DIR = os.path.join(DOC_DIR, 'doodles')
 PLACEMENTS = os.path.join(DOODLE_DIR, 'placements.json')
 
