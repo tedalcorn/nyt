@@ -55,10 +55,31 @@ EUROPEAN_COUNTRIES = {
 
 # geojson NAME → analysis country-name (only when they differ)
 GEOJSON_TO_ANALYSIS = {
-    'United Kingdom': 'Britain',
+    'United Kingdom': 'Great Britain',
     'Czechia': 'Czech Republic',
     'Bosnia and Herz.': 'Bosnia and Herzegovina',
     'North Macedonia': 'North Macedonia',
+}
+
+# Display country name (shorter form used on the map in fine print above
+# the theme — disambiguates dense areas like the Balkans).
+COUNTRY_DISPLAY_NAME = {
+    'United Kingdom': 'UK',
+    'Bosnia and Herz.': 'Bosnia',
+    'North Macedonia': 'N. Macedonia',
+    'Czechia': 'Czechia',
+    'Great Britain': 'UK',
+}
+
+# Countries small enough that their label needs a tiny country-name caption
+# above the theme word (for disambiguation in the dense Balkan / Baltic /
+# Central European clusters).
+ADD_COUNTRY_CAPTION = {
+    'Albania', 'Bosnia and Herz.', 'North Macedonia', 'Macedonia', 'Moldova',
+    'Slovakia', 'Slovenia', 'Estonia', 'Latvia', 'Lithuania',
+    'Czechia', 'Hungary', 'Austria', 'Bulgaria', 'Romania', 'Belarus',
+    'Cyprus', 'Switzerland', 'Belgium', 'Netherlands', 'Denmark',
+    'Ireland', 'Portugal',
 }
 
 # Per-country fit overrides. Mirrors STATE_OVERRIDES in build_state_map.py.
@@ -120,8 +141,10 @@ CALLOUT_OFFSETS = {
     'Vatican':    ( 0.04,  0.01),
 }
 
-# Bbox in lat/lon — what part of Europe shows
-EUROPE_BBOX_LATLON = (-27, 33, 47, 72)  # minx, miny, maxx, maxy
+# Bbox in lat/lon — what part of Europe shows. Tuned so the western
+# (Atlantic), southern (Mediterranean) and eastern (European Russia)
+# borders all sit comfortably inside the frame.
+EUROPE_BBOX_LATLON = (-13, 34, 47, 71)  # minx, miny, maxx, maxy
 
 # Display-name override for forced_text (the override text takes precedence
 # over THEME_DISPLAY since we want the forced wrapping)
@@ -418,6 +441,22 @@ def main():
             callouts.append((gname, label, biggest.representative_point()))
             continue
         cx, cy, fs, rotation, text = fit
+
+        # Tiny country caption: small country-name label above the topic,
+        # in lighter ink, to disambiguate the dense Balkan/Central Europe
+        # cluster. Only applied when the country is in ADD_COUNTRY_CAPTION
+        # and the topic label isn't rotated significantly (a rotated caption
+        # would conflict with the rotated theme).
+        if gname in ADD_COUNTRY_CAPTION and abs(rotation) < 20:
+            country_caption = COUNTRY_DISPLAY_NAME.get(gname, gname)
+            # Offset above the theme by ~0.6× the theme's measured height
+            _, h = measure_text_size(map_ax, fig, text, fs)
+            cap_fs = max(6, int(fs * 0.55))
+            map_ax.text(cx, cy + h * 0.65, country_caption,
+                        ha='center', va='bottom',
+                        fontsize=cap_fs, family='serif', weight='normal',
+                        color=MUTED, zorder=4)
+
         map_ax.text(cx, cy, text,
                     ha='center', va='center',
                     fontsize=fs, family='serif', weight='semibold',
@@ -442,8 +481,9 @@ def main():
                     family='serif', weight='semibold', color=INK, zorder=4)
 
     # ── Methodology paragraph ─────────────────────────────────────────
-    # Placed in the Atlantic Ocean (left-of-UK / north of Spain).
-    # Match the state-map approach with **most** rendered inline-bold.
+    # Placed in the lower-left over the Atlantic Ocean (between Ireland
+    # and the southern map edge — empty water with no countries to
+    # crowd). Matches the state-map approach with **most** inline-bold.
     from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
     METH_FS = 11
     METH_COLOR = '#4a4438'
@@ -462,9 +502,14 @@ def main():
         'storms, crashes, and conferences are',
         'excluded.',
     ]
-    # X position: ~7% in from the left (over the Atlantic)
-    METH_X = 0.04
-    y = (map_h_inches + 0.6) / fig_h - 0.04
+    METH_X = 0.025  # near left edge of figure
+    # Start in lower part of the map area, leave space for the footer
+    n_lines = len(methodology_lines)
+    LINE_SPACING = 0.018
+    block_height = n_lines * LINE_SPACING
+    # Bottom of map area in figure fraction
+    map_bottom = 0.6 / fig_h
+    y = map_bottom + 0.04 + block_height
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
