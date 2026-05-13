@@ -471,8 +471,7 @@ def main():
     # follow in their own subfolders.
     region = os.environ.get('REGION', 'Europe')
     out_dir = os.path.join(PROJECT_DIR, 'outputs', '2026-05-top-keyword',
-                           '2026-05-13-world-country-tweets',
-                           'countries', region)
+                           '2026-05-13-world-country-tweets', region)
     os.makedirs(out_dir, exist_ok=True)
 
     # Per-region country lists (analysis names). 'Britain' is the NYT-side
@@ -491,6 +490,19 @@ def main():
             'Russia', 'San Marino', 'Serbia', 'Slovakia', 'Slovenia',
             'Spain', 'Sweden', 'Switzerland', 'Turkey', 'Ukraine', 'Vatican',
         },
+        'Americas': {
+            # North America (US is excluded — its 50 states are in their own series)
+            'Canada', 'Mexico',
+            # Central America
+            'Belize', 'Guatemala', 'El Salvador', 'Honduras', 'Nicaragua',
+            'Costa Rica', 'Panama',
+            # Caribbean
+            'Cuba', 'Haiti', 'Dominican Republic', 'Jamaica', 'Bahamas',
+            'Trinidad and Tobago', 'Barbados', 'Puerto Rico',
+            # South America
+            'Argentina', 'Brazil', 'Bolivia', 'Chile', 'Colombia', 'Ecuador',
+            'Guyana', 'Paraguay', 'Peru', 'Suriname', 'Uruguay', 'Venezuela',
+        },
     }
     region_filter = REGION_COUNTRIES.get(region, set())
 
@@ -506,18 +518,32 @@ def main():
     # Minimum overrepresentation score required for a card. Matches the
     # MIN_SCORE_TO_LABEL=6.0 the Europe map uses to drop weak signals.
     MIN_SCORE_FOR_CARD = 6.0
+    # Top tag's articles must span at least this many distinct calendar
+    # years. Drops one-cluster signals that aren't really "recurring":
+    # DR's 'Roofs' (all 6 articles April 2025, Jet Set nightclub collapse),
+    # Paraguay's 'Disease Rates' (3 in 2021 = COVID), Colombia's 'Summit
+    # of the Americas' (5 articles all April 2012 = Cartagena), etc.
+    MIN_TAG_YEAR_SPAN = 2
+
+    def _top_recurring(country_res):
+        rec = country_res.get('recurring', [])
+        if not rec:
+            return None
+        years = country_res.get('tag_years', {})
+        for t in rec:
+            if t['score'] < MIN_SCORE_FOR_CARD:
+                return None
+            ty = years.get(t['tag'], {})
+            if len(ty) >= MIN_TAG_YEAR_SPAN:
+                return t
+        return None
 
     if targets is None:
         valid_keys = [c for c in res.keys() if c is not None]
         targets = [c for c in sorted(valid_keys) if c not in SKIP_COUNTRIES]
         if region_filter:
             targets = [c for c in targets if c in region_filter]
-        # Drop countries whose strongest recurring signal is below threshold
-        targets = [
-            c for c in targets
-            if res.get(c, {}).get('recurring')
-            and res[c]['recurring'][0]['score'] >= MIN_SCORE_FOR_CARD
-        ]
+        targets = [c for c in targets if _top_recurring(res.get(c, {}))]
     else:
         targets = [c for c in targets if c not in SKIP_COUNTRIES or c in sys.argv[1:]]
 
@@ -527,6 +553,12 @@ def main():
             continue
         recurring = res[country]['recurring']
         tag_years = res[country].get('tag_years', {})
+        # Filter the displayed top-N to recurring topics only — drop tags
+        # whose articles cluster in a single year (one-event signals).
+        recurring = [
+            t for t in recurring
+            if len(tag_years.get(t['tag'], {})) >= MIN_TAG_YEAR_SPAN
+        ]
         out_path = os.path.join(out_dir, f'{slugify(country)}.png')
         ok = make_card(country, recurring, out_path, world_gdf,
                        tag_years=tag_years)
