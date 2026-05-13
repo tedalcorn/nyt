@@ -1,7 +1,16 @@
-"""Europe map: each European country with NYT coverage above the
-min-articles threshold gets its #1 recurring theme labeled inside the
-country's polygon. Countries below threshold are filled neutral with
-no label. Output mirrors the 50-state national map aesthetic.
+"""Europe map: each European country with sufficient NYT coverage gets its
+#1 recurring theme labeled inside the country's polygon — same aesthetic
+as the 50-state national map (outputs/top-keyword/-National/state-map.png).
+
+Approach (mirrors build_state_map.py):
+  - LAEA Europe projection (EPSG:3035), preserves area
+  - Per-country fit-to-polygon labeling: each label tried at multiple font
+    sizes / rotations / wrap configurations; the largest that fits inside
+    the polygon wins
+  - Hand-tuned EUROPE_OVERRIDES for awkward cases (rotations, forced wraps)
+  - Callouts placed adjacent to tiny countries with short leader lines
+  - Methodology paragraph in an empty area (Atlantic Ocean, west of UK)
+  - High-DPI output (400 DPI PNG + SVG + PDF)
 
 Run:
     python3 scripts/build_europe_map.py
@@ -19,21 +28,19 @@ PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PROJECT_DIR, 'scripts'))
 from build_country_keywords import load_world_articles, analyze
 from build_country_cards import (display_name, COUNTRY_TO_GEOJSON,
-                                 _condense_olympics, OLYMPIC_TAGS)
+                                 _condense_olympics)
 
-# Aesthetic — matches state map
+# ── Aesthetic ─────────────────────────────────────────────────────────
 CREAM = '#f4efe6'
 INK = '#2a2a2a'
 MUTED = '#7a7368'
 COUNTRY_FILL = '#e8e1d2'
-NO_DATA_FILL = '#dfd6c4'
+NO_DATA_FILL = '#ded5c4'
 BORDER = '#5a5447'
+LEADER = '#857c6e'
 TITLE_BLUE = '#326891'
 
-# European countries to consider for labeling. Lists geojson-canonical names
-# (Natural Earth `NAME` field). Russia is included because its European
-# population center is significant, but we'll clip to the visible Europe
-# bbox when rendering — only the European bulk shows.
+# ── European countries (geojson `NAME` values) ────────────────────────
 EUROPEAN_COUNTRIES = {
     'Albania', 'Andorra', 'Austria', 'Belarus', 'Belgium',
     'Bosnia and Herz.', 'Bulgaria', 'Croatia', 'Cyprus', 'Czechia',
@@ -46,17 +53,84 @@ EUROPEAN_COUNTRIES = {
     'Switzerland', 'Turkey', 'Ukraine', 'United Kingdom', 'Vatican',
 }
 
-# Reverse lookup for geojson name → NYT analysis name
-GEOJSON_TO_COUNTRY = {v: k for k, v in COUNTRY_TO_GEOJSON.items()}
+# geojson NAME → analysis country-name (only when they differ)
+GEOJSON_TO_ANALYSIS = {
+    'United Kingdom': 'Britain',
+    'Czechia': 'Czech Republic',
+    'Bosnia and Herz.': 'Bosnia and Herzegovina',
+    'North Macedonia': 'North Macedonia',
+}
 
-# Europe map bbox in LAEA Europe (EPSG:3035) meters, projected from the
-# rough lat/lon bbox (-25 W to 45 E, 34 N to 72 N).
-EUROPE_BBOX_LATLON = (-25, 34, 45, 72)  # minx, miny, maxx, maxy
+# Per-country fit overrides. Mirrors STATE_OVERRIDES in build_state_map.py.
+#   'rotations'    : list of preferred rotations in degrees, tried in order
+#   'fs_max'       : font-size cap (overrides global)
+#   'fs_min'       : floor
+#   'forced_text'  : pre-wrapped string to use instead of the wrap algorithm
+#   'anchor_y_frac': 0..1, vertical position within polygon's bbox
+#   'fit_threshold': min in-polygon area fraction to accept the fit (0..1)
+EUROPE_OVERRIDES = {
+    'Norway':     {'rotations': [70, 90, 0]},
+    'Sweden':     {'rotations': [70, 90, 0]},
+    'Finland':    {'rotations': [80, 90, 0]},
+    'Italy':      {'rotations': [-40, -30, 0], 'forced_text': 'Roman\nCivili-\nzation'},
+    'Portugal':   {'rotations': [70, 90, 0]},
+    'Ireland':    {'forced_text': 'Irish-\nAmericans', 'fs_max': 18},
+    'United Kingdom': {'forced_text': 'Transit\nSystems', 'fs_max': 18},
+    'Switzerland': {'forced_text': 'Alpine\nSkiing', 'fs_max': 14},
+    'Netherlands': {'forced_text': 'Bicycles', 'fs_max': 11},
+    'Belgium':    {'forced_text': 'Diamonds', 'fs_max': 11},
+    'Denmark':    {'forced_text': 'Dog\nSledding', 'fs_max': 12},
+    'Croatia':    {'rotations': [-30, 0]},
+    'Czechia':    {'forced_text': 'Civil War', 'fs_max': 11},
+    'Slovakia':   {'fs_max': 9},
+    'Slovenia':   {'fs_max': 9, 'forced_text': 'Monuments'},
+    'Bosnia and Herz.': {'forced_text': 'War\nCrimes', 'fs_max': 12},
+    'North Macedonia': {'fs_max': 9, 'forced_text': 'Geographic\nNames'},
+    'Macedonia':  {'fs_max': 9, 'forced_text': 'Geographic\nNames'},
+    'Moldova':    {'fs_max': 9, 'forced_text': 'Secession\nMovts.'},
+    'Estonia':    {'fs_max': 9, 'forced_text': 'Memorials'},
+    'Latvia':     {'fs_max': 9, 'forced_text': 'Russian\nLanguage'},
+    'Lithuania':  {'fs_max': 9, 'forced_text': 'WWII'},
+    'Cyprus':     {'fs_max': 8},
+    'Albania':    {'rotations': [80, 0], 'forced_text': 'Sociology', 'fs_max': 10},
+    'Hungary':    {'forced_text': 'Academic\nFreedom', 'fs_max': 13},
+    'Kosovo':     {'fs_max': 9},
+    'Russia':     {'fs_max': 30},
+    'Greece':     {'rotations': [-30, 0], 'forced_text': 'Athens\n2004\nOlympics',
+                   'fs_max': 14},
+    'Serbia':     {'forced_text': 'Chess', 'fs_max': 16},
+    'Bulgaria':   {'forced_text': 'Organized\nCrime', 'fs_max': 11},
+    'Romania':    {'forced_text': 'Human\nTrafficking', 'fs_max': 12},
+    'Poland':     {'forced_text': 'Concentration\nCamps', 'fs_max': 13},
+    'Austria':    {'forced_text': 'Skiing', 'fs_max': 13},
+    'Belarus':    {'forced_text': 'Voter\nFraud', 'fs_max': 11},
+}
+
+# Countries definitely too small even with overrides — use callouts.
+# Each entry: (geojson_name, (dx, dy) offset in map-width fractions)
+CALLOUT_OFFSETS = {
+    # Tiny states near the edge — pull labels off the map to the side
+    'Iceland':    ( 0.00, -0.025),  # already lower-left, label below
+    'Andorra':    (-0.04, -0.05),
+    'Luxembourg': ( 0.03, -0.01),
+    'Liechtenstein': ( 0.03,  0.02),
+    'San Marino': ( 0.04,  0.01),
+    'Monaco':     (-0.03, -0.01),
+    'Malta':      ( 0.03, -0.02),
+    'Vatican':    ( 0.04,  0.01),
+}
+
+# Bbox in lat/lon — what part of Europe shows
+EUROPE_BBOX_LATLON = (-27, 33, 47, 72)  # minx, miny, maxx, maxy
+
+# Display-name override for forced_text (the override text takes precedence
+# over THEME_DISPLAY since we want the forced wrapping)
 
 
 def get_country_polys(world_gdf, target_crs):
-    """Return dict of {country_display_name: list of projected polygons}
-    for European countries only."""
+    """Return dict of {geojson_name: list of projected polygons} for
+    European countries only, with Russia clipped to the European bulk
+    and overseas territories filtered out."""
     name_field = 'NAME' if 'NAME' in world_gdf.columns else 'name'
     out = {}
     for _, row in world_gdf.iterrows():
@@ -64,16 +138,15 @@ def get_country_polys(world_gdf, target_crs):
         if name not in EUROPEAN_COUNTRIES:
             continue
         geom = row.geometry
-        # Russia spans the antimeridian — keep only the European bulk
-        # (longitudes < 70) so the map doesn't get distorted
         raw = list(geom.geoms) if geom.geom_type == 'MultiPolygon' else [geom]
         if name == 'Russia':
-            raw = [p for p in raw if p.bounds[0] < 70 and p.bounds[0] >= 0]
-        # Filter far-flung overseas (kept polys within ~30° of largest)
+            # Keep only the European bulk (longitudes 27-70)
+            raw = [p for p in raw if p.bounds[0] < 70 and p.bounds[0] >= 25]
         if len(raw) > 1:
             biggest = max(raw, key=lambda p: p.area)
             bx0, by0, bx1, by1 = biggest.bounds
-            bcx = (bx0 + bx1) / 2; bcy = (by0 + by1) / 2
+            bcx = (bx0 + bx1) / 2
+            bcy = (by0 + by1) / 2
             raw = [p for p in raw
                    if abs((p.bounds[0]+p.bounds[2])/2 - bcx) <= 25
                    and abs((p.bounds[1]+p.bounds[3])/2 - bcy) <= 25]
@@ -84,24 +157,7 @@ def get_country_polys(world_gdf, target_crs):
     return out
 
 
-def measure_text_size(ax, fig, text, fs):
-    """Estimate text size in data coordinates. Returns (w, h)."""
-    lines = text.split('\n')
-    n_lines = len(lines)
-    max_chars = max(len(l) for l in lines)
-    width_pt = max_chars * fs * 0.62
-    height_pt = n_lines * fs * 1.18
-    dpi = fig.dpi
-    width_px = width_pt * dpi / 72.0
-    height_px = height_pt * dpi / 72.0
-    inv = ax.transData.inverted()
-    (x0, y0) = inv.transform((0, 0))
-    (x1, y1) = inv.transform((width_px, height_px))
-    return abs(x1 - x0), abs(y1 - y0)
-
-
 def wrap_options(label, max_lines=4):
-    """Yield (n_lines, wrapped_text) options. Splits words evenly."""
     words = label.split()
     yield 1, label
     if len(words) <= 1:
@@ -117,24 +173,116 @@ def wrap_options(label, max_lines=4):
         yield n, '\n'.join(out)
 
 
-def fit_label(ax, fig, poly, label, fs_max=22, fs_min=6, max_lines=4):
-    """Try font sizes from fs_max down to fs_min, with various wraps.
-    Return (anchor_x, anchor_y, fs, wrapped_text) of the best fit,
-    or None if nothing fits well."""
-    # Anchor at the polygon's representative interior point
-    rp = poly.representative_point()
-    cx, cy = rp.x, rp.y
+def measure_text_size(ax, fig, text, fs):
+    lines = text.split('\n')
+    n_lines = len(lines)
+    max_chars = max(len(l) for l in lines)
+    width_pt = max_chars * fs * 0.62
+    height_pt = n_lines * fs * 1.18
+    dpi = fig.dpi
+    width_px = width_pt * dpi / 72.0
+    height_px = height_pt * dpi / 72.0
+    inv = ax.transData.inverted()
+    (x0, y0) = inv.transform((0, 0))
+    (x1, y1) = inv.transform((width_px, height_px))
+    return abs(x1 - x0), abs(y1 - y0)
 
+
+def rotated_text_box(cx, cy, w, h, angle_deg):
+    a = math.radians(angle_deg)
+    cos_a, sin_a = math.cos(a), math.sin(a)
+    hw, hh = w / 2, h / 2
+    corners_local = [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]
+    corners = [(cx + x * cos_a - y * sin_a,
+                cy + x * sin_a + y * cos_a) for x, y in corners_local]
+    return ShpPolygon(corners)
+
+
+def candidate_anchors(poly, anchor_y_frac=None):
+    """Yield candidate label-anchor points within poly."""
+    pts = [poly.representative_point(), poly.centroid]
+    minx, miny, maxx, maxy = poly.bounds
+    if anchor_y_frac is not None:
+        cy = miny + (maxy - miny) * anchor_y_frac
+        cx = (minx + maxx) / 2
+        candidate = Point(cx, cy)
+        if poly.contains(candidate):
+            pts.insert(0, candidate)
+    # Along principal axis
+    try:
+        mrr = poly.convex_hull.minimum_rotated_rectangle
+        coords = list(mrr.exterior.coords)
+        edges = [(coords[i], coords[i+1]) for i in range(4)]
+        longest = max(edges, key=lambda e: math.hypot(e[1][0]-e[0][0], e[1][1]-e[0][1]))
+        dx = longest[1][0] - longest[0][0]
+        dy = longest[1][1] - longest[0][1]
+        angle = math.atan2(dy, dx)
+    except Exception:
+        angle = 0
+    cx, cy = poly.centroid.x, poly.centroid.y
+    diag = math.hypot(maxx-minx, maxy-miny)
+    for t in (-0.30, -0.15, 0.15, 0.30):
+        px = cx + t * diag * math.cos(angle)
+        py = cy + t * diag * math.sin(angle)
+        p = Point(px, py)
+        if poly.contains(p):
+            pts.append(p)
+    seen = set()
+    for p in pts:
+        key = (round(p.x, 2), round(p.y, 2))
+        if key in seen:
+            continue
+        seen.add(key)
+        if poly.contains(p):
+            yield p
+
+
+def text_fit_score(rect, poly):
+    if poly.contains(rect):
+        return 1.0
+    inter = poly.intersection(rect)
+    if inter.is_empty:
+        return 0.0
+    return inter.area / rect.area
+
+
+def fit_label(ax, fig, poly, label, override):
+    """Try every (font_size, rotation, wrap) combo. Return (cx, cy, fs,
+    rotation, text) of the best fit, or None if nothing fits."""
+    fs_max = override.get('fs_max', 22)
+    fs_min = override.get('fs_min', 6)
+    rotations = override.get('rotations', [0])
+    anchor_y_frac = override.get('anchor_y_frac')
+    fit_threshold = override.get('fit_threshold', 0.97)
+    forced_text = override.get('forced_text')
+
+    anchors = list(candidate_anchors(poly, anchor_y_frac=anchor_y_frac))
+    if not anchors:
+        return None
+
+    # Build the list of (n_lines, text) options
+    if forced_text:
+        options = [(forced_text.count('\n') + 1, forced_text)]
+    else:
+        options = list(wrap_options(label, max_lines=4))
+
+    best = None  # (fs, rot_idx, score, ...)
     for fs in range(fs_max, fs_min - 1, -1):
-        for n_lines, wrapped in wrap_options(label, max_lines=max_lines):
-            w, h = measure_text_size(ax, fig, wrapped, fs)
-            # Test box centered on rp
-            test_box = ShpPolygon([
-                (cx - w/2, cy - h/2), (cx + w/2, cy - h/2),
-                (cx + w/2, cy + h/2), (cx - w/2, cy + h/2),
-            ])
-            if poly.contains(test_box):
-                return cx, cy, fs, wrapped
+        for n_lines, text in options:
+            w, h = measure_text_size(ax, fig, text, fs)
+            for rot_idx, rotation in enumerate(rotations):
+                for anchor in anchors:
+                    rect = rotated_text_box(anchor.x, anchor.y, w, h, rotation)
+                    score = text_fit_score(rect, poly)
+                    if score >= fit_threshold:
+                        return (anchor.x, anchor.y, fs, rotation, text)
+                    # Track best near-miss for fallback
+                    if best is None or score > best[0]:
+                        best = (score, anchor.x, anchor.y, fs, rotation, text)
+    # If we didn't find a perfect fit, return the best near-miss only if
+    # it's reasonably close. Otherwise let caller fall back to callout.
+    if best and best[0] >= 0.85 and best[3] >= fs_min:
+        return (best[1], best[2], best[3], best[4], best[5])
     return None
 
 
@@ -142,19 +290,18 @@ def main():
     print('Loading country geometries…')
     geo_path = os.path.join(PROJECT_DIR, 'data', 'world_countries.geojson')
     world_gdf = gpd.read_file(geo_path)
-    target_crs = 'EPSG:3035'  # LAEA Europe
+    target_crs = 'EPSG:3035'
 
     print('Running theme analysis…')
     arts = load_world_articles()
     res = analyze(arts)
+    print(f'  {len(res)} countries scored')
 
-    # Map geojson names → analysis names so we can look up themes
-    # Some European country names are identical (Greece, Germany);
-    # others differ (United Kingdom in geojson = Britain in analysis).
     european_polys = get_country_polys(world_gdf, target_crs)
-    print(f'  {len(european_polys)} European countries with geometries')
+    print(f'  {len(european_polys)} European country geometries')
 
-    # Compute bbox in LAEA Europe — project the lat/lon corners
+    # ── Figure ─────────────────────────────────────────────────────────
+    # Compute Europe bbox in projection coords
     bbox_pts = gpd.GeoSeries([
         Point(EUROPE_BBOX_LATLON[0], EUROPE_BBOX_LATLON[1]),
         Point(EUROPE_BBOX_LATLON[2], EUROPE_BBOX_LATLON[1]),
@@ -165,158 +312,206 @@ def main():
     bys = [p.y for p in bbox_pts]
     bbox_minx, bbox_maxx = min(bxs), max(bxs)
     bbox_miny, bbox_maxy = min(bys), max(bys)
-    bbox_aspect = (bbox_maxx - bbox_minx) / (bbox_maxy - bbox_miny)
+    eur_w = bbox_maxx - bbox_minx
+    eur_h = bbox_maxy - bbox_miny
+    bbox_aspect = eur_w / eur_h
 
-    # ── Figure ─────────────────────────────────────────────────────────
-    # Figure aspect matches Europe's natural aspect (1.66:1 in LAEA), plus
-    # extra vertical room for title + footer. Map area is 14 wide.
-    map_w = 14
-    map_h = map_w / bbox_aspect
-    fig_h = map_h + 3.0   # 1.8 top for title, 1.2 bottom for footer
-    fig = plt.figure(figsize=(map_w, fig_h), dpi=120, facecolor=CREAM)
-    # Map axes: full width, vertically positioned so title sits above
-    ax = fig.add_axes([0.02, 0.05 + 1.2/fig_h, 0.96, map_h/fig_h])
-    ax.set_facecolor(CREAM)
-    ax.set_aspect('equal')
-    ax.axis('off')
+    map_w_inches = 18
+    map_h_inches = map_w_inches / bbox_aspect
+    fig_w = map_w_inches
+    fig_h = map_h_inches + 2.0   # 1.4 top for title, 0.6 bottom for footer
+    fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor=CREAM)
 
-    # Title — anchored to the top of the figure
-    title_y_main = 1.0 - 0.35 / fig_h
-    title_y_country = 1.0 - 0.95 / fig_h
-    title_y_sub = 1.0 - 1.40 / fig_h
-    fig.text(0.5, title_y_main, "How The New York Times Looks at",
-             fontsize=24, family='serif', weight='semibold',
-             color=INK, ha='center')
-    fig.text(0.5, title_y_country, "EUROPE",
-             fontsize=44, family='serif', weight='bold',
-             color=TITLE_BLUE, ha='center')
-    fig.text(0.5, title_y_sub,
-             "The subject that each country's NYT World coverage features "
-             "most out of proportion to international coverage as a whole.",
-             fontsize=13, family='serif', color='#4a4438', ha='center')
+    map_ax = fig.add_axes([0.0, 0.6 / fig_h, 1.0, map_h_inches / fig_h])
+    map_ax.set_facecolor(CREAM)
+    map_ax.set_aspect('equal')
+    map_ax.axis('off')
+    map_ax.set_xlim(bbox_minx, bbox_maxx)
+    map_ax.set_ylim(bbox_miny, bbox_maxy)
 
-    ax.set_xlim(bbox_minx, bbox_maxx)
-    ax.set_ylim(bbox_miny, bbox_maxy)
+    # Title — top-left, like the state map
+    title_y = 1.0 - 0.45 / fig_h
+    fig.text(0.02, title_y,
+             "How The New York Times Looks At Europe",
+             fontsize=28, family='serif', weight='semibold',
+             color=INK, ha='left', va='top')
+    fig.text(0.02, title_y - 0.50 / fig_h,
+             "Keywords that The New York Times assigns to its articles "
+             "show which recurring subjects are covered in each country "
+             "out of proportion to international coverage as a whole.",
+             fontsize=12, family='serif', color='#4a4438',
+             ha='left', va='top')
 
-    # Draw all countries first (gray for no-data, fill for has-data)
+    # Draw all countries
     for gname, polys in european_polys.items():
-        analysis_name = GEOJSON_TO_COUNTRY.get(gname, gname)
+        analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
         has_data = analysis_name in res
-        fill_color = COUNTRY_FILL if has_data else NO_DATA_FILL
+        fill = COUNTRY_FILL if has_data else NO_DATA_FILL
 
-        # Drop shadow per polygon (very subtle, paper-on-paper)
+        # Drop shadow
         for poly in polys:
             if not poly.exterior:
                 continue
-            xs2, ys2 = poly.exterior.xy
-            rng_x = max(xs2) - min(xs2)
-            rng_y = max(ys2) - min(ys2)
-            ox = rng_x * 0.005
-            oy = rng_y * 0.005
-            ax.fill([x + ox for x in xs2], [y - oy for y in ys2],
-                    facecolor='#c2b9a3', edgecolor='none',
-                    alpha=0.35, zorder=1)
-
+            xs, ys = poly.exterior.xy
+            rng_x = max(xs) - min(xs)
+            rng_y = max(ys) - min(ys)
+            ox = rng_x * 0.004
+            oy = rng_y * 0.004
+            map_ax.fill([x + ox for x in xs], [y - oy for y in ys],
+                        facecolor='#c2b9a3', edgecolor='none',
+                        alpha=0.30, zorder=1)
         # Fill
         for poly in polys:
-            if not poly.exterior:
-                continue
-            xs2, ys2 = poly.exterior.xy
-            ax.fill(xs2, ys2, facecolor=fill_color, edgecolor='none',
-                    zorder=1.5)
-
+            if not poly.exterior: continue
+            xs, ys = poly.exterior.xy
+            map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
         # Outline
         for poly in polys:
-            if not poly.exterior:
-                continue
-            xs2, ys2 = poly.exterior.xy
-            ax.plot(xs2, ys2, color=BORDER, linewidth=0.8,
-                    solid_joinstyle='round', zorder=3)
+            if not poly.exterior: continue
+            xs, ys = poly.exterior.xy
+            map_ax.plot(xs, ys, color=BORDER, linewidth=0.7,
+                        solid_joinstyle='round', zorder=3)
 
-    # Label each country with its top recurring theme
-    callouts = []  # countries too small for in-polygon labels
+    # ── Labels ─────────────────────────────────────────────────────────
+    callouts = []  # (geojson_name, theme_text, anchor_point)
     for gname, polys in european_polys.items():
-        analysis_name = GEOJSON_TO_COUNTRY.get(gname, gname)
+        analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
         if analysis_name not in res:
             continue
         country_res = res[analysis_name]
         recurring = country_res.get('recurring', [])
-        tag_years = country_res.get('tag_years', {})
         if not recurring:
             continue
-        # Apply Olympic condensation for display consistency with cards
-        recurring = _condense_olympics(recurring, tag_years)
+        recurring = _condense_olympics(recurring, country_res.get('tag_years', {}))
         top = recurring[0]
         label = display_name(top['tag'], analysis_name)
 
-        # Combine all polys into one shape for label placement (use largest).
-        # Clip to the visible bbox so countries that extend beyond Europe
-        # (Russia, Turkey) get labels placed within the European portion only.
+        # Clip polygons to visible bbox so labels stay inside the map area
         bbox_rect = ShpPolygon([
             (bbox_minx, bbox_miny), (bbox_maxx, bbox_miny),
             (bbox_maxx, bbox_maxy), (bbox_minx, bbox_maxy),
         ])
-        clipped = [p.intersection(bbox_rect) for p in polys]
-        clipped = [p for p in clipped if not p.is_empty and p.area > 0]
-        if not clipped:
+        clipped_pieces = []
+        for p in polys:
+            try:
+                c = p.intersection(bbox_rect)
+            except Exception:
+                continue
+            if c.is_empty:
+                continue
+            if c.geom_type == 'Polygon':
+                clipped_pieces.append(c)
+            elif c.geom_type == 'MultiPolygon':
+                clipped_pieces.extend(c.geoms)
+        if not clipped_pieces:
             continue
-        # Take the largest individual polygon piece after clipping
-        all_pieces = []
-        for cp in clipped:
-            if cp.geom_type == 'Polygon':
-                all_pieces.append(cp)
-            elif cp.geom_type == 'MultiPolygon':
-                all_pieces.extend(cp.geoms)
-        biggest = max(all_pieces, key=lambda p: p.area)
-        fit = fit_label(ax, fig, biggest, label,
-                        fs_max=20, fs_min=6, max_lines=3)
+        biggest = max(clipped_pieces, key=lambda p: p.area)
+
+        # If this country is in the callout-only list, skip in-poly fit
+        if gname in CALLOUT_OFFSETS:
+            callouts.append((gname, label, biggest.representative_point()))
+            continue
+
+        override = EUROPE_OVERRIDES.get(gname, {})
+        fit = fit_label(map_ax, fig, biggest, label, override)
         if fit is None:
-            # Too small for in-polygon label — callout instead
-            rp = biggest.representative_point()
-            callouts.append((analysis_name, label, rp.x, rp.y))
+            callouts.append((gname, label, biggest.representative_point()))
             continue
-        cx, cy, fs, wrapped = fit
-        ax.text(cx, cy, wrapped,
-                ha='center', va='center',
-                fontsize=fs, family='serif', weight='semibold',
-                color=INK, zorder=4)
+        cx, cy, fs, rotation, text = fit
+        map_ax.text(cx, cy, text,
+                    ha='center', va='center',
+                    fontsize=fs, family='serif', weight='semibold',
+                    color=INK, rotation=rotation, zorder=4)
 
-    # Render callouts off to the side (right edge of map)
-    if callouts:
-        xmin, xmax = ax.get_xlim()
-        ymin, ymax = ax.get_ylim()
-        # Place callouts in a column down the right side
-        co_x = xmax - (xmax - xmin) * 0.08
-        n = len(callouts)
-        for i, (cname, label, px, py) in enumerate(sorted(callouts)):
-            co_y = ymax - (ymax - ymin) * (0.05 + i * 0.04)
-            ax.annotate(f"{cname}: {label}",
-                        xy=(px, py), xytext=(co_x, co_y),
-                        fontsize=8, family='serif', color=MUTED,
-                        ha='right', va='center',
-                        arrowprops=dict(arrowstyle='-', color=MUTED,
-                                        linewidth=0.5),
-                        zorder=4)
+    # ── Callouts ──────────────────────────────────────────────────────
+    # Adjacent placement — each callout gets a short leader line to a
+    # nearby off-polygon label location.
+    for gname, text, anchor in callouts:
+        dx, dy = CALLOUT_OFFSETS.get(gname, (0.04, 0.02))
+        lx = anchor.x + dx * eur_w
+        ly = anchor.y + dy * eur_h
+        map_ax.plot([anchor.x, lx - eur_w * 0.003],
+                    [anchor.y, ly],
+                    color=LEADER, linewidth=0.7, alpha=0.85, zorder=2.5)
+        analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
+        map_ax.text(lx, ly + eur_h * 0.012, analysis_name,
+                    fontsize=8, ha='left', va='center',
+                    family='serif', color=MUTED, zorder=4)
+        map_ax.text(lx, ly - eur_h * 0.005, text,
+                    fontsize=10, ha='left', va='center',
+                    family='serif', weight='semibold', color=INK, zorder=4)
 
-    # Methods footer
-    fig.text(0.5, 0.025,
-             "Methods: Analysis of NYT-assigned keywords in World coverage, "
-             "2000–2026. Subjects are scored by overrepresentation versus "
-             "World coverage overall.  ·  Data from NYT Archive API  ·  "
-             "tedalcorn.github.io/nyt",
-             fontsize=10, ha='center', family='serif', color=MUTED)
+    # ── Methodology paragraph ─────────────────────────────────────────
+    # Placed in the Atlantic Ocean (left-of-UK / north of Spain).
+    # Match the state-map approach with **most** rendered inline-bold.
+    from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
+    METH_FS = 11
+    METH_COLOR = '#4a4438'
+    methodology_lines = [
+        'This map draws on every article in',
+        'the World section from 2000 to 2026,',
+        'and depicts the subject keyword',
+        'that was (a) attached to at least 1%',
+        'of coverage about each country, and',
+        '(b) was **most** out of proportion',
+        'with the frequency that keyword is',
+        'employed in World coverage overall.',
+        'Subjects that match the country name,',
+        'broad regional or generic-event tags,',
+        'and one-time events such as named',
+        'storms, crashes, and conferences are',
+        'excluded.',
+    ]
+    # X position: ~7% in from the left (over the Atlantic)
+    METH_X = 0.04
+    y = (map_h_inches + 0.6) / fig_h - 0.04
+    for line in methodology_lines:
+        if '**most**' not in line:
+            fig.text(METH_X, y, line, fontsize=METH_FS,
+                     ha='left', family='serif', color=METH_COLOR, zorder=10)
+        else:
+            left, right = line.split('**most**', 1)
+            children = []
+            if left:
+                children.append(TextArea(left, textprops=dict(
+                    fontsize=METH_FS, color=METH_COLOR, family='serif',
+                    weight='normal')))
+            children.append(TextArea('most', textprops=dict(
+                fontsize=METH_FS, color=METH_COLOR, family='serif',
+                weight='bold')))
+            if right:
+                children.append(TextArea(right, textprops=dict(
+                    fontsize=METH_FS, color=METH_COLOR, family='serif',
+                    weight='normal')))
+            packer = HPacker(children=children, align='baseline', pad=0, sep=0)
+            ab = AnnotationBbox(packer, (METH_X, y), xycoords='figure fraction',
+                                box_alignment=(0, 0.5), frameon=False, pad=0)
+            fig.add_artist(ab)
+        y -= 0.018
 
+    # ── Footer ─────────────────────────────────────────────────────────
+    fig.text(0.98, 0.02,
+             'Data from NYT Archive API  •  Full analysis at tedalcorn.github.io/nyt',
+             fontsize=11, ha='right', family='serif', color=MUTED, zorder=10)
+
+    # ── Save ───────────────────────────────────────────────────────────
     out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword', 'World map')
     os.makedirs(out_dir, exist_ok=True)
     out_png = os.path.join(out_dir, 'europe-map.png')
-    plt.savefig(out_png, dpi=120, facecolor=CREAM)
+    out_svg = os.path.join(out_dir, 'europe-map.svg')
+    out_pdf = os.path.join(out_dir, 'europe-map.pdf')
+    plt.savefig(out_png, dpi=400, facecolor=CREAM)
+    plt.savefig(out_svg, facecolor=CREAM)
+    plt.savefig(out_pdf, facecolor=CREAM)
     plt.close()
     print(f'  Saved {out_png}')
+    print(f'  Saved {out_svg}')
+    print(f'  Saved {out_pdf}')
 
     if callouts:
-        print(f'\nCallouts ({len(callouts)} countries too small for in-polygon labels):')
-        for cname, label, _, _ in sorted(callouts):
-            print(f'  {cname}: {label}')
+        print(f'\nCallouts ({len(callouts)}):')
+        for gname, text, _ in callouts:
+            print(f'  {gname}: {text}')
 
 
 if __name__ == '__main__':

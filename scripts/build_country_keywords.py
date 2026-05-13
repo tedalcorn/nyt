@@ -38,7 +38,9 @@ HEADLINE_PATTERNS = TAG_CONFIG.get('headline_event_patterns', [])
 # Match country popup logic in index.html line 6184:
 WORLD_PREFIXES = GENERIC_PREFIXES + ('Content Type:', 'Content type:', 'Vis-')
 
-TOP_N_COUNTRIES = 50
+TOP_N_COUNTRIES = 50          # cap for XLSX output sorting
+MIN_COUNTRY_ARTICLES = 30     # absolute floor — any country with this much
+                              # World-section coverage gets scored
 RECURRING_MIN = 5
 RECURRING_MAX = 7
 RECURRING_PAD_FLOOR = 10.0
@@ -84,7 +86,7 @@ def is_world_junk_tag(tag, country):
         return True
     if any(sub in tag for sub in WORLD_GENERIC_SUBSTRS):
         return True
-    if tag.lower() == country.lower():
+    if country and tag.lower() == country.lower():
         return True
     if tag in COUNTRY_TAG_EXCLUSIONS.get(country, set()):
         return True
@@ -170,7 +172,11 @@ def analyze(arts):
             if loc in SKIP_REGIONS:
                 continue
             country_total[loc] += 1
-    top_countries = [c for c, _ in country_total.most_common(TOP_N_COUNTRIES)]
+    # Score every country with at least MIN_COUNTRY_ARTICLES of coverage.
+    # The XLSX sorts and caps to TOP_N_COUNTRIES downstream; the Europe map
+    # and other regional consumers can use the full set.
+    top_countries = [c for c, n in country_total.most_common()
+                     if n >= MIN_COUNTRY_ARTICLES]
 
     out = {}
     for country in top_countries:
