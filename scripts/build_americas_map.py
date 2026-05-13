@@ -74,7 +74,8 @@ AMERICAS_OVERRIDES = {
                   'anchor_y_frac': 0.30},
     'Mexico':    {'forced_text': 'Drug\nCartels', 'fs_max': 38,
                   'rotations': [-30, 0]},  # tilt to match the country's NW-SE axis
-    'Brazil':    {'forced_text': 'Carnival', 'fs_max': 80},
+    'Brazil':    {'forced_text': 'Carnival', 'fs_max': 80,
+                  'rotations': [-40]},  # tilt clockwise across the top
     'Argentina': {'forced_text': 'Defaulting', 'fs_max': 16,
                   'rotations': [70, 0]},
     'Chile':     {'forced_text': 'Wildfires', 'fs_max': 10,
@@ -116,12 +117,15 @@ AMERICAS_OVERRIDES = {
 #   - Southern islands (Jamaica/Haiti/DR) labeled from BELOW (Caribbean Sea)
 #     so they don't pile up over Cuba's area
 CALLOUT_OFFSETS = {
-    'Haiti':               (-0.02, -0.07),   # south into Caribbean Sea
-    'Dominican Rep.':      ( 0.04, -0.07),   # south-east into Caribbean
-    'Jamaica':             (-0.08, -0.04),   # SW into Caribbean
-    'Trinidad and Tobago': ( 0.05, -0.005),
-    'Barbados':            ( 0.05,  0.005),
-    'Falkland Is.':        (-0.03, -0.02),
+    # Per Ted: just ONE Caribbean callout goes south, the rest fan out
+    # in other directions so labels don't pile up.
+    'Bahamas':             ( 0.06,  0.025),  # NE into Atlantic east of Florida
+    'Haiti':               ( 0.00, -0.08),   # south into Caribbean Sea
+    'Dominican Rep.':      ( 0.07, -0.015),  # east into Atlantic
+    'Jamaica':             (-0.10, -0.015),  # west into Caribbean (clear of Cuba)
+    'Trinidad and Tobago': ( 0.06, -0.005),
+    'Barbados':            ( 0.06,  0.005),
+    'Falkland Is.':        (-0.04, -0.02),
 }
 
 # Bbox in lat/lon — covers Tierra del Fuego (lat -56) up to the Canadian
@@ -324,42 +328,57 @@ def main():
     eur_h = bbox_maxy - bbox_miny
     bbox_aspect = eur_w / eur_h
 
-    # Portrait orientation — the Americas is taller than wide
+    # Portrait orientation. Figure has THREE vertical regions:
+    #   - Top strip: title + subtitle (3.4 inches reserved)
+    #   - Middle: the map (map_h_inches tall)
+    #   - Bottom strip: footer/data note (0.6 inches reserved)
+    # Hard separation: title block ends ABOVE map top; map ends ABOVE footer.
     map_h_inches = 18
     map_w_inches = map_h_inches * bbox_aspect
+    TOP_MARGIN_INCHES = 3.4   # title (~1.4") + subtitle (~1.0") + buffer
+    BOTTOM_MARGIN_INCHES = 0.6
     fig_w = map_w_inches
-    fig_h = map_h_inches + 2.0
+    fig_h = map_h_inches + TOP_MARGIN_INCHES + BOTTOM_MARGIN_INCHES
     fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor=CREAM)
-    map_ax = fig.add_axes([0.0, 0.6 / fig_h, 1.0, map_h_inches / fig_h])
+    map_ax_bottom = BOTTOM_MARGIN_INCHES / fig_h
+    map_ax_height = map_h_inches / fig_h
+    map_ax_top = map_ax_bottom + map_ax_height
+    map_ax = fig.add_axes([0.0, map_ax_bottom, 1.0, map_ax_height])
     map_ax.set_facecolor(CREAM)
     map_ax.set_aspect('equal')
     map_ax.axis('off')
     map_ax.set_xlim(bbox_minx, bbox_maxx)
     map_ax.set_ylim(bbox_miny, bbox_maxy)
 
-    # Title — wrapped to 2 lines (portrait orientation = narrow figure
-    # width). Subtitle also wraps to 2 lines.
-    title_y = 1.0 - 0.45 / fig_h
-    fig.text(0.02, title_y,
-             "How The New York Times",
+    # Title block lives in the top margin. Pixel-position-driven so we can
+    # assert at the end that nothing overlaps the map.
+    title_y = 1.0 - 0.55 / fig_h            # title line 1
+    title_line2_y = title_y - 0.55 / fig_h  # title line 2
+    sub_y1 = title_line2_y - 0.55 / fig_h
+    sub_y2 = sub_y1 - 0.27 / fig_h
+    sub_y3 = sub_y2 - 0.27 / fig_h
+    title_block_bottom_y = sub_y3 - 0.20 / fig_h  # buffer below subtitle
+
+    fig.text(0.02, title_y,         "How The New York Times",
              fontsize=28, family='serif', weight='semibold',
              color=INK, ha='left', va='top')
-    fig.text(0.02, title_y - 0.50 / fig_h,
-             "Looks At The Americas",
+    fig.text(0.02, title_line2_y,   "Looks At The Americas",
              fontsize=28, family='serif', weight='semibold',
              color=INK, ha='left', va='top')
-    fig.text(0.02, title_y - 1.05 / fig_h,
-             "Keywords that The New York Times assigns to its articles show which",
-             fontsize=12, family='serif', color='#4a4438',
-             ha='left', va='top')
-    fig.text(0.02, title_y - 1.30 / fig_h,
-             "recurring subjects are covered in each country out of proportion to",
-             fontsize=12, family='serif', color='#4a4438',
-             ha='left', va='top')
-    fig.text(0.02, title_y - 1.55 / fig_h,
-             "international coverage as a whole.",
-             fontsize=12, family='serif', color='#4a4438',
-             ha='left', va='top')
+    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its articles show which",
+             fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
+    fig.text(0.02, sub_y2, "recurring subjects are covered in each country out of proportion to",
+             fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
+    fig.text(0.02, sub_y3, "international coverage as a whole.",
+             fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
+
+    # Hard assertion: title block must end above the map. Catches future
+    # regressions where title wraps unexpectedly or fig_h shrinks.
+    assert title_block_bottom_y > map_ax_top, (
+        f"Title block ends at y={title_block_bottom_y:.3f}, "
+        f"map top is at y={map_ax_top:.3f} — they overlap! "
+        f"Increase TOP_MARGIN_INCHES."
+    )
 
     # Draw all countries
     from matplotlib.path import Path as MplPath
