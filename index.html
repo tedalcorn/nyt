@@ -6220,16 +6220,38 @@ function openCountryDetail(country) {
       if (!isWorldJunkTag(tag)) countryTagCounts[tag] = (countryTagCounts[tag] || 0) + 1;
     });
   });
-  const totalCorpus = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
 
-  // Score: (tag freq in country / country articles) / (tag freq in corpus / corpus articles)
-  // SKIP tags missing from corpus (defensive — same pattern as state popup).
+  // Build the World-section baseline lazily — country scoring compares
+  // against the pool from which its own articles are drawn, not the whole
+  // NYT corpus. Cached on window so subsequent country popups reuse it.
+  if (!window._worldBaselineFreq) {
+    const wbFreq = {};
+    let wbTotal = 0;
+    for (const a of articles) {
+      if (a.section !== 'World') continue;
+      wbTotal++;
+      const seen = new Set();
+      for (const tag of (a.subjects || [])) {
+        if (seen.has(tag)) continue;
+        seen.add(tag);
+        wbFreq[tag] = (wbFreq[tag] || 0) + 1;
+      }
+    }
+    window._worldBaselineFreq = wbFreq;
+    window._worldBaselineTotal = wbTotal;
+  }
+  const worldBaselineFreq = window._worldBaselineFreq;
+  const worldBaselineTotal = window._worldBaselineTotal;
+
+  // Score: (tag freq in country / country articles) / (tag freq in World pool / pool articles)
+  // SKIP tags missing from the baseline (defensive — same pattern as state popup).
   const countryAllTags = Object.entries(countryTagCounts)
     .filter(([, cnt]) => cnt >= Math.max(3, countryTotal * 0.01))
     .map(([tag, cnt]) => {
-      const corpusFreq = corpusSubjectFreq && corpusSubjectFreq[tag];
-      if (!corpusFreq) return null;
-      const score = totalCorpus > 0 ? (cnt / countryTotal) / (corpusFreq / totalCorpus) : cnt;
+      const baseFreq = worldBaselineFreq[tag];
+      if (!baseFreq) return null;
+      const score = worldBaselineTotal > 0
+        ? (cnt / countryTotal) / (baseFreq / worldBaselineTotal) : cnt;
       return { tag, cnt, score };
     })
     .filter(x => x !== null)
@@ -7035,7 +7057,30 @@ function openStateDetail(state) {
     a => !isCorrectionArticle(a) && !isListingArticle(a)
   );
 
-  const totalCorpusArticles = corpusSubjectFreq ? Object.values(corpusSubjectFreq).reduce((s, v) => s + v, 0) : 0;
+  // Build the state-baseline tag frequency lazily. We compare each state's
+  // tag rates against the *U.S./New York-section pool* (the pool from which
+  // its own articles are drawn), not the whole NYT corpus. The whole-corpus
+  // baseline inflates scores because it includes Sports/Arts/Style/etc.
+  // articles that couldn't plausibly carry geographic tags. Cached on
+  // window so subsequent state popups reuse the same map.
+  if (!window._stateBaselineFreq) {
+    const sbFreq = {};
+    let sbTotal = 0;
+    for (const a of articles) {
+      if (a.section !== 'U.S.' && a.section !== 'New York') continue;
+      sbTotal++;
+      const seen = new Set();
+      for (const tag of (a.subjects || [])) {
+        if (seen.has(tag)) continue;
+        seen.add(tag);
+        sbFreq[tag] = (sbFreq[tag] || 0) + 1;
+      }
+    }
+    window._stateBaselineFreq = sbFreq;
+    window._stateBaselineTotal = sbTotal;
+  }
+  const stateBaselineFreq = window._stateBaselineFreq;
+  const stateBaselineTotal = window._stateBaselineTotal;
   const stateTotal = stateArticlesForScoring.length || 1;
 
   const tagCounts = {};
@@ -7046,18 +7091,16 @@ function openStateDetail(state) {
     });
   });
 
-  // Score: (tag freq in state / state articles) / (tag freq in corpus / corpus articles)
-  // SKIP tags missing from corpus instead of defaulting to 1 — that default
-  // caused the AGRICULTURE inflation bug (the all-caps form was in articles
-  // but absent from corpusSubjectFreq, so its score blew up).
+  // Score: (tag freq in state / state articles) / (tag freq in U.S./NY pool / pool articles)
+  // SKIP tags missing from the baseline instead of defaulting to 1.
   const minCount = Math.max(3, stateTotal * 0.005);
   const allTags = Object.entries(tagCounts)
     .filter(([, cnt]) => cnt >= minCount)
     .map(([tag, cnt]) => {
-      const corpusFreq = corpusSubjectFreq && corpusSubjectFreq[tag];
-      if (!corpusFreq) return null;
-      const score = totalCorpusArticles > 0
-        ? (cnt / stateTotal) / (corpusFreq / totalCorpusArticles)
+      const baseFreq = stateBaselineFreq[tag];
+      if (!baseFreq) return null;
+      const score = stateBaselineTotal > 0
+        ? (cnt / stateTotal) / (baseFreq / stateBaselineTotal)
         : cnt;
       return { tag, cnt, score };
     })
@@ -8989,7 +9032,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/13/26 7:55am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/13/26 10:59am</span>
 </div>
 </body>
 </html>

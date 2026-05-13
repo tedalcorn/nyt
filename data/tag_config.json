@@ -4,66 +4,105 @@
   "_doc_abbrev_fixes": "Restore state/country abbreviations that get mangled by Python's str.title() when applied to multi-word ALL-CAPS tags (e.g. '(Washington, DC)' → '(Washington, Dc)'). Applied as a post-titlecase pass and also as one-time merges for already-corrupted on-disk forms.",
   "_doc_filters": "generic_subjects_always_filter and generic_prefixes_always_filter apply EVERYWHERE — beats tab, reporter popups, state popups, Excel. state_coverage_generic_subjects is an ADDITIONAL filter applied only in the state coverage view (generic election/government tags every state has).",
   "_doc_headline_events": "A tag is a 'headline event' (vs. recurring theme) when its NAME structurally indicates a specific dated incident — NOT when its coverage merely clusters in time. We do NOT use statistical year-spike detection because it conflates 'topic that became prominent' (e.g. In Vitro Fertilization in 2024) with 'specific dated event' (e.g. Hurricane Ian 2022). Detection rules: (1) tag contains a single 4-digit year not part of a range, (2) tag matches a substring pattern (named storm, etc.), (3) tag is in the curated list. 'Primaries and Caucuses' is intentionally NOT in headline events — it's a recurring theme for early-primary states.",
-
   "subject_merges": {
+    "ABANDONMENT": "Abandonment (Property)",
+    "ADVERTISING": "Advertising and Marketing",
     "AGRICULTURE": "Agriculture and Farming",
     "AMISH": "Amish",
-    "MONKEYPOX": "Monkeypox",
-    "PRIMARIES": "Primaries and Caucuses",
-    "REAPPORTIONMENT": "Redistricting and Reapportionment",
-    "ABANDONMENT": "Abandonment (Property)",
-
-    "ATOMIC WEAPONS": "Nuclear Weapons",
-    "UNITED STATES ARMAMENT AND DEFENSE": "Armament, Defense and Military Forces",
-    "RECORDINGS (AUDIO)": "Recordings and Downloads (Audio)",
-    "RECORDINGS (VIDEO)": "Recordings and Downloads (Video)",
     "APPAREL": "Fashion and Apparel",
-    "RETAIL STORES AND TRADE": "Shopping and Retail",
-    "LABOR": "Labor and Jobs",
-    "IMMIGRATION AND REFUGEES": "Immigration and Emigration",
-    "ADVERTISING": "Advertising and Marketing",
-
+    "ATOMIC WEAPONS": "Nuclear Weapons",
+    "Banks and Banking": "Banking and Financial Institutions",
     "Blacks": "Black People",
-    "Eskimos": "Alaska Natives",
-    "Indians, American": "Native Americans",
-    "Illegal Aliens": "Illegal Immigration",
-    "Illegal Immigrants": "Illegal Immigration",
-    "Homosexuality": "Homosexuality and Bisexuality",
-    "Transgender": "Transgender and Transsexuals",
-    "Transgender and Transsexual": "Transgender and Transsexuals",
-
-    "Housing": "Real Estate and Housing (Residential)",
-    "Fentanyl (Drug)": "Fentanyl",
+    "Capitol (Washington, Dc)": "Capitol Building (Washington, DC)",
     "Children and Youth": "Children and Childhood",
     "Demonstrations and Riots": "Demonstrations, Protests and Riots",
     "Demonstrations, Protests, and Riots": "Demonstrations, Protests and Riots",
-    "Murders and Attempted Murders": "Murders, Attempted Murders and Homicides",
     "Education and Schools": "Education (K-12)",
-    "Banks and Banking": "Banking and Financial Institutions",
+    "Eskimos": "Alaska Natives",
+    "Fentanyl (Drug)": "Fentanyl",
     "Freedom and Human Rights": "Human Rights and Human Rights Violations",
-    "Suspensions, Dismissals and Resignations": "Dismissals, Suspensions and Resignations",
+    "Homosexuality": "Homosexuality and Bisexuality",
+    "Housing": "Real Estate and Housing (Residential)",
     "Hurricane Katrina (2005)": "Hurricane Katrina",
+    "Illegal Aliens": "Illegal Immigration",
+    "Illegal Immigrants": "Illegal Immigration",
+    "IMMIGRATION AND REFUGEES": "Immigration and Emigration",
+    "Indians, American": "Native Americans",
+    "Islam": "Muslims and Islam",
     "Katrina (Storm)": "Hurricane Katrina",
-
-    "Capitol (Washington, Dc)": "Capitol Building (Washington, DC)"
+    "LABOR": "Labor and Jobs",
+    "MONKEYPOX": "Monkeypox",
+    "Murders and Attempted Murders": "Murders, Attempted Murders and Homicides",
+    "PRIMARIES": "Primaries and Caucuses",
+    "REAPPORTIONMENT": "Redistricting and Reapportionment",
+    "RECORDINGS (AUDIO)": "Recordings and Downloads (Audio)",
+    "RECORDINGS (VIDEO)": "Recordings and Downloads (Video)",
+    "RETAIL STORES AND TRADE": "Shopping and Retail",
+    "Suspensions, Dismissals and Resignations": "Dismissals, Suspensions and Resignations",
+    "Transgender": "Transgender and Transsexuals",
+    "Transgender and Transsexual": "Transgender and Transsexuals",
+    "UNITED STATES ARMAMENT AND DEFENSE": "Armament, Defense and Military Forces"
   },
-
   "abbrev_fixes": [
-    "DC", "US", "UK", "NY", "NJ", "NC", "SC", "NM", "NV", "NH",
-    "PA", "VA", "WV", "CT", "MA", "MD", "ME", "RI",
-    "OH", "OK", "IL", "IN", "IA", "KS", "KY", "LA",
-    "MN", "MS", "MO", "MT", "AL", "AK", "AZ", "AR",
-    "CA", "CO", "DE", "FL", "GA", "HI", "ID", "MI",
-    "ND", "OR", "SD", "TN", "TX", "UT", "VT", "WA",
-    "WI", "WY", "NYC"
+    "DC",
+    "US",
+    "UK",
+    "NY",
+    "NJ",
+    "NC",
+    "SC",
+    "NM",
+    "NV",
+    "NH",
+    "PA",
+    "VA",
+    "WV",
+    "CT",
+    "MA",
+    "MD",
+    "ME",
+    "RI",
+    "OH",
+    "OK",
+    "IL",
+    "IN",
+    "IA",
+    "KS",
+    "KY",
+    "LA",
+    "MN",
+    "MS",
+    "MO",
+    "MT",
+    "AL",
+    "AK",
+    "AZ",
+    "AR",
+    "CA",
+    "CO",
+    "DE",
+    "FL",
+    "GA",
+    "HI",
+    "ID",
+    "MI",
+    "ND",
+    "OR",
+    "SD",
+    "TN",
+    "TX",
+    "UT",
+    "VT",
+    "WA",
+    "WI",
+    "WY",
+    "NYC"
   ],
-
   "org_merges": {
     "NEW YORK KNICKERBOCKERS": "New York Knicks",
     "Facebook Inc": "Meta Platforms Inc",
     "Facebook.com": "Meta Platforms Inc"
   },
-
   "generic_subjects_always_filter": [
     "United States Politics and Government",
     "Content Type: Personal Profile",
@@ -76,7 +115,6 @@
     "States (US)",
     "Research"
   ],
-
   "generic_prefixes_always_filter": [
     "internal-",
     "audio-",
@@ -85,7 +123,6 @@
     "live-",
     "durable-uri"
   ],
-
   "state_coverage_generic_subjects": [
     "Politics and Government",
     "United States Politics and Government",
@@ -128,13 +165,11 @@
     "Governors (US)",
     "Attorneys General"
   ],
-
   "state_coverage_generic_prefixes": [
     "Midterm Elections (",
     "Content Type:",
     "Content type:"
   ],
-
   "headline_event_tags": [
     "Hurricane Katrina",
     "Hurricane Gustav",
@@ -143,12 +178,10 @@
     "American Airlines Flight 5342",
     "Keystone Pipeline System"
   ],
-
   "headline_event_patterns": [
     " (Storm)",
     "Criminal Case Against Trump"
   ],
-
   "_doc_world_filters": "world_coverage_generic_subjects mirrors state_coverage_generic_subjects but for the World section country popup. Catches tags that are generic across all countries (Politics and Government, International Relations, Military, etc.) so they don't show up as 'recurring themes' for every country.",
   "world_coverage_generic_subjects": [
     "International Relations",
@@ -175,11 +208,8 @@
     "-International Relations-",
     "International Relations-"
   ],
-
   "_doc_year_detection": "A tag is also classified as a headline event if its name contains a 4-digit year (1900–2099) NOT part of a range. Range markers are '-' or '–' immediately after the year. So 'Hurricane Sandy (2012)' → headline (single year), but 'World War II (1939-45)' → recurring (year range = era), 'Iraq War (2003- )' → recurring (open-ended era), 'Coronavirus (2019-nCoV)' → recurring (year is part of identifier, not a single event marker).",
-
   "_doc_state_listings": "Standing-feature headlines (event calendars, real-estate listings, art-review roundups, briefs columns) are excluded from state subject analysis the same way corrections are: kept in the dataset and in state article totals, but dropped from the recurring-themes score so they don't manufacture phony recurring topics. Without this filter Connecticut's top recurring theme was Culture (Arts), driven 97% by 'Events in Connecticut' calendar items.",
-
   "state_listing_headlines_exact": [
     "BOLDFACE NAMES",
     "Arts, Briefly",
@@ -219,7 +249,6 @@
   "state_listing_kickers_exact": [
     "Metropolitan Diary"
   ],
-
   "_doc_single_venue_tags": "Tags that refer to a specific named place, institution, or group whose existence is geographically restricted to one state (or a small region). They inflate state-level overrepresentation scores because the corpus baseline is essentially zero outside their home state — so seeing them as 'recurring themes' is uninformative (it just says 'this thing is here'). Filtered from state subject scoring same way as corrections and listings. Tribal-name tags are included because each tribe's coverage is locked to its ancestral state(s); the broader 'Native Americans' tag still surfaces the theme where appropriate.",
   "single_venue_tags": [
     "Arizona Immigration Law",

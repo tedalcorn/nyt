@@ -155,9 +155,17 @@ def load_articles():
 
 def analyze(articles):
     """Return {state: {'headline': [...], 'recurring': [...]}}."""
+    # Score denominator: U.S./New York-section coverage only. The whole-corpus
+    # baseline used previously systematically inflated state disproportion
+    # scores because it included articles (Sports, Arts, Style, etc.) that
+    # couldn't plausibly carry geographic tags. Using just the state-eligible
+    # pool gives an apples-to-apples comparison: how often does a tag appear
+    # in U.S./New York coverage of *state X* versus that coverage overall.
     corpus_freq = Counter()
     total_corpus = 0
     for art in articles:
+        if (art.get('s') or '') not in ('U.S.', 'New York'):
+            continue
         total_corpus += 1
         seen = set()
         for tag in (art.get('sb') or []):
