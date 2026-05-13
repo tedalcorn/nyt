@@ -131,8 +131,11 @@ EUROPE_OVERRIDES = {
                    'rotations': [-20]},
     'Kosovo':     {'fs_max': 9},
     'Russia':     {'fs_max': 30},
+    # Greece's polygon (mainland) is small; lower fit_threshold so 'Greek
+    # Civilization' can render at a more visible size even if a few
+    # millimeters poke into the Aegean.
     'Greece':     {'rotations': [-30, 0], 'forced_text': 'Greek\nCivilization',
-                   'fs_max': 22},
+                   'fs_max': 22, 'fit_threshold': 0.80},
     'Serbia':     {'forced_text': 'Chess', 'fs_max': 16},
     'Bulgaria':   {'forced_text': 'Organized\nCrime', 'fs_max': 11},
     'Romania':    {'forced_text': 'Human\nTrafficking', 'fs_max': 12},
@@ -537,7 +540,6 @@ def main():
     rounded_articles = f"{round(n_world_articles, -3):,.0f}"
 
     from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
-    METH_FS = 11
     METH_COLOR = '#4a4438'
     # Methodology — Ted's edited text. Slightly wider lines (extends ~3%
     # further right than v8 per Ted's review) so the block fits in fewer
@@ -554,11 +556,9 @@ def main():
         'one-time events such as named storms, major accidents, and specific Olympic Games.',
     ]
     METH_X = 0.025
-    METH_FS = 8           # one point smaller so we can compress vertically
-    LINE_SPACING = 0.0095  # ~33% tighter than v8's 0.0135
-    # Lower the block by 1.5 lines from v8 (0.020 figure-y) per Ted's note
-    # that v8 was 1.5 lines too high.
-    y = 0.720
+    METH_FS = 9
+    LINE_SPACING = 0.012   # ~33% tighter than the previous hardcoded 0.018
+    y = 0.710
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
@@ -581,7 +581,7 @@ def main():
             ab = AnnotationBbox(packer, (METH_X, y), xycoords='figure fraction',
                                 box_alignment=(0, 0.5), frameon=False, pad=0)
             fig.add_artist(ab)
-        y -= 0.018
+        y -= LINE_SPACING
 
     # ── Footer ─────────────────────────────────────────────────────────
     # (No "insufficient coverage" list — methodology text already explains
