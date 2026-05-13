@@ -544,21 +544,23 @@ def main():
     # Methodology — Ted's edited text. Slightly wider lines (extends ~3%
     # further right than v8 per Ted's review) so the block fits in fewer
     # lines, and tighter line spacing so it doesn't bleed into Britain.
+    # 10 lines at fs=10 — slightly bigger font, one extra line.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the World section from 2000 to 2026. The',
-        'New York Times assigns each article subject keywords (separate from tags for',
-        'individual people and organizations, which are not included here). For each',
-        'country with sufficient coverage to identify recurring patterns, the map shows',
-        'the keyword that (a) appeared on at least 1% of the country’s coverage and',
-        '(b) was **most** out of proportion with that keyword’s frequency in World',
-        'coverage overall. The analysis excludes each country’s own name and currency,',
-        'broad topics applied to most countries such as “international relations,” and',
-        'one-time events such as named storms, major accidents, and specific Olympic Games.',
+        f'This map draws on {rounded_articles} articles in the World section from 2000',
+        'to 2026. The New York Times assigns each article subject keywords',
+        '(separate from tags for individual people and organizations, which are',
+        'not included here). For each country with sufficient coverage to',
+        'identify recurring patterns, the map shows the keyword that (a) appeared',
+        'on at least 1% of the country’s coverage and (b) was **most** out of',
+        'proportion with that keyword’s frequency in World coverage overall.',
+        'The analysis excludes each country’s own name and currency, broad topics',
+        'applied to most countries such as “international relations,” and one-time',
+        'events such as named storms, major accidents, and specific Olympic Games.',
     ]
     METH_X = 0.025
-    METH_FS = 9
-    LINE_SPACING = 0.012   # ~33% tighter than the previous hardcoded 0.018
-    y = 0.710
+    METH_FS = 10
+    LINE_SPACING = 0.013
+    y = 0.715
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
