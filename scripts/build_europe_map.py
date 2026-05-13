@@ -100,30 +100,32 @@ EUROPE_OVERRIDES = {
                        'anchor_y_frac': 0.25},  # push into wide lower portion
     'Switzerland': {'forced_text': 'Alpine\nSkiing', 'fs_max': 11},
     'Netherlands': {'forced_text': 'Bicycles', 'fs_max': 11},
-    'Belgium':    {'forced_text': 'Diamonds', 'fs_max': 12,
-                   'rotations': [30, 0]},
+    'Belgium':    {'forced_text': 'Diamonds', 'fs_max': 11,
+                   'rotations': [30]},  # force tilt; no horizontal fallback
     'Denmark':    {'forced_text': 'Dog\nSledding', 'fs_max': 12},
     'Croatia':    {'rotations': [-30, 0]},
     'Czechia':    {'forced_text': 'Civil War', 'fs_max': 11},
-    'Slovakia':   {'fs_max': 11, 'rotations': [-30, 0],
+    'Slovakia':   {'fs_max': 10, 'rotations': [-30],
                    'forced_text': 'Discrimination'},
     'Slovenia':   {'fs_max': 9, 'forced_text': 'Monuments'},
     'Bosnia and Herz.': {'forced_text': 'War\nCrimes', 'fs_max': 12},
-    'North Macedonia': {'fs_max': 9, 'forced_text': 'Geographic\nNames'},
-    'Macedonia':  {'fs_max': 9, 'forced_text': 'Geographic\nNames'},
+    'North Macedonia': {'fs_max': 8, 'forced_text': 'Dispute over\ncountry\nrenaming'},
+    'Macedonia':  {'fs_max': 8, 'forced_text': 'Dispute over\ncountry\nrenaming'},
     'Moldova':    {'fs_max': 9, 'forced_text': 'Secession\nMovts.'},
     'Estonia':    {'fs_max': 9, 'forced_text': 'Memorials'},
     'Latvia':     {'fs_max': 9, 'forced_text': 'Russian\nLanguage'},
     'Lithuania':  {'fs_max': 9, 'forced_text': 'WWII'},
     'Cyprus':     {'fs_max': 8},
-    'Albania':    {'rotations': [80, 0], 'forced_text': 'Sociology', 'fs_max': 10},
+    # Albania intentionally not given any text — its #1 'Sociology' is just
+    # 3 articles from a single 2008 feature series on Albanian sworn virgins;
+    # no meaningful recurring pattern. Country renders no-data fill.
     'Iceland':    {'forced_text': 'Geothermal\nPower', 'fs_max': 11,
                    'anchor_y_frac': 0.35},  # leave room for Iceland: caption above
-    'Hungary':    {'forced_text': 'Academic\nFreedom', 'fs_max': 13,
-                   'rotations': [-20, 0]},
+    'Hungary':    {'forced_text': 'Academic\nFreedom', 'fs_max': 12,
+                   'rotations': [-20]},
     'Kosovo':     {'fs_max': 9},
     'Russia':     {'fs_max': 30},
-    'Greece':     {'rotations': [-30, 0], 'forced_text': 'Athens\n2004\nOlympics',
+    'Greece':     {'rotations': [-30, 0], 'forced_text': 'Greek\nCivilization',
                    'fs_max': 14},
     'Serbia':     {'forced_text': 'Chess', 'fs_max': 16},
     'Bulgaria':   {'forced_text': 'Organized\nCrime', 'fs_max': 11},
@@ -158,6 +160,12 @@ EUROPE_BBOX_LATLON = (-13, 33, 47, 71)  # minx, miny, maxx, maxy
 # from a single 2002 event) get filtered out and the country renders as
 # no-data fill instead.
 MIN_SCORE_TO_LABEL = 6.0
+
+# Countries explicitly excluded from labeling even if they pass the score
+# threshold — typically because their #1 is a thin one-cluster signal that
+# doesn't represent recurring coverage (e.g. Albania's 'Sociology' is just
+# 3 articles from a single 2008 feature series).
+SKIP_COUNTRIES = {'Albania'}
 
 # Display-name override for forced_text (the override text takes precedence
 # over THEME_DISPLAY since we want the forced wrapping)
@@ -414,6 +422,8 @@ def main():
         analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
         if analysis_name not in res:
             continue
+        if analysis_name in SKIP_COUNTRIES:
+            continue
         country_res = res[analysis_name]
         recurring = country_res.get('recurring', [])
         if not recurring:
@@ -536,8 +546,11 @@ def main():
     ]
     METH_X = 0.025
     LINE_SPACING = 0.020
-    title_bottom = title_y - 0.55 / fig_h
-    y = title_bottom - 0.015
+    # Position the methodology block in the Atlantic strip BETWEEN
+    # Iceland (top) and Ireland (bottom). Iceland's south coast sits at
+    # roughly y_fig=0.62 in this figure layout; Ireland's north coast
+    # at roughly y_fig=0.42. 9 lines × 0.020 = 0.18 fits the gap.
+    y = 0.61
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
