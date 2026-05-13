@@ -224,9 +224,12 @@ def analyze(articles):
 
         # Helper: is this (state, tag) event-bound by either name structure
         # or a state-specific year burst?
+        # Headline classification: tag-name structure only. Year-burst
+        # statistical clustering catches multi-year recurring topics
+        # (election cycles, ongoing conflicts) and miscalls them as events.
+        # Same approach as the live state popup, which never used year-burst.
         def _is_event(tag):
-            return (is_headline_event(tag)
-                    or is_year_burst_state(tag_years.get(tag)))
+            return is_headline_event(tag)
 
         # Headline events: all top-10 entries that classify as event-driven.
         # Recurring subjects: remaining top-10, padded to 5 from beyond

@@ -187,8 +187,15 @@ def analyze(arts):
             })
         scored.sort(key=lambda x: -x['score'])
 
+        # Headline classification: tag-name structure only. We deliberately
+        # do NOT use year-burst statistical clustering — a multi-year recurring
+        # topic (Bollywood, Wagner mercenaries, Han Chinese ethnic dynamics,
+        # Indian election cycles, broadcast-decency, the Iraq-era POW/looting
+        # coverage) often clusters in adjacent years and gets miscalled as an
+        # event. Tag-name structure (year in name, year-range pattern, explicit
+        # list) is the cleaner signal — same approach as the live country popup.
         def _event(tag, t_years):
-            return is_headline_event(tag) or is_year_burst(t_years)
+            return is_headline_event(tag)
 
         top10 = scored[:10]
         headline = [t for t in top10 if _event(t['tag'], tag_years.get(t['tag']))]
