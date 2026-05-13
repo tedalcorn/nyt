@@ -7180,6 +7180,24 @@ function openStateDetail(state) {
     ['New York State','Washington (State)','Washington State']));
   const stateAbbrev = STATE_ABBREVS[state] || '';
 
+  // For each territory, the parenthetical forms (uppercased) used by NYT
+  // for sub-locations within it. "VIEQUES (PUERTO RICO)" → PR's popup;
+  // "St Thomas (Virgin Islands)" → USVI's popup; etc.
+  const TERRITORY_PAREN_MATCH = {
+    'Puerto Rico':              ['PUERTO RICO'],
+    'U.S. Virgin Islands':      ['VIRGIN ISLANDS', 'US VIRGIN ISLANDS'],
+    'Guam':                     ['GUAM'],
+    'Northern Mariana Islands': ['NORTHERN MARIANA ISLANDS', 'MARIANA ISLANDS'],
+    'American Samoa':           ['AMERICAN SAMOA'],
+  };
+  // Territory names themselves — exclude from the `(US)` fallback so e.g.
+  // "Virgin Islands (US)" doesn't render as a sub-location of Puerto Rico
+  // when both are tagged on the same article.
+  const TERRITORY_LABELS_EXCLUDE = new Set([
+    'Puerto Rico','Virgin Islands','U.S. Virgin Islands','Guam',
+    'Northern Mariana Islands','Mariana Islands','American Samoa',
+  ]);
+
   // Regional entity names to exclude from sub-locations (broad multi-state regions
   // that don't help narrow coverage to a specific place within a state)
   const REGIONAL_ENTITIES = new Set([
@@ -7203,9 +7221,16 @@ function openStateDetail(state) {
     const abbrev = m[1];
     if (abbrev === 'US') {
       // Multi-state US region — only include if it's NOT a vague regional entity
+      // and not a US territory name (territories are surfaced as their own
+      // rows in the table, not as sub-locations of other places).
       const label = loc.replace(/\s*\(US\)$/, '').trim();
-      return !REGIONAL_ENTITIES.has(label);
+      if (REGIONAL_ENTITIES.has(label)) return false;
+      if (TERRITORY_LABELS_EXCLUDE.has(label)) return false;
+      return true;
     }
+    // Territory parentheticals: "VIEQUES (PUERTO RICO)" under PR's popup, etc.
+    const terrParens = TERRITORY_PAREN_MATCH[state];
+    if (terrParens && terrParens.includes(abbrev.toUpperCase())) return true;
     if (allStateAbbrevs.has(abbrev)) return abbrev === stateAbbrev;
     return false;
   }
@@ -8964,7 +8989,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/13/26 7:33am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/13/26 7:55am</span>
 </div>
 </body>
 </html>

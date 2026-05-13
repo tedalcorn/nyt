@@ -73,19 +73,48 @@ US_STATES = set(ABBREV.values())
 NYC = {'Manhattan (NYC)', 'Queens (NYC)', 'Brooklyn (NYC)', 'Bronx (NYC)',
        'Staten Island (NYC)', 'New York City'}
 
+# U.S. territories — surfaced separately from the 50 states in the dashboard
+# but populated from the same U.S./New York-section glocation pool.
+US_TERRITORIES = {
+    'Puerto Rico':              'Puerto Rico',
+    'Guam':                     'Guam',
+    'Virgin Islands (US)':      'U.S. Virgin Islands',
+    'Northern Mariana Islands': 'Northern Mariana Islands',
+    'American Samoa':           'American Samoa',
+}
+# Parenthetical lookups (case-insensitive) — capture sub-territory tags
+# like "VIEQUES (PUERTO RICO)", "St Thomas (Virgin Islands)".
+TERRITORY_PARENS = {
+    'PUERTO RICO':              'Puerto Rico',
+    'GUAM':                     'Guam',
+    'VIRGIN ISLANDS':           'U.S. Virgin Islands',
+    'US VIRGIN ISLANDS':        'U.S. Virgin Islands',
+    'NORTHERN MARIANA ISLANDS': 'Northern Mariana Islands',
+    'MARIANA ISLANDS':          'Northern Mariana Islands',
+    'AMERICAN SAMOA':           'American Samoa',
+}
+
 
 def loc_to_state(loc):
     if not loc:
         return None
     loc = loc.strip()
+    loc_upper = loc.upper()
     for s in US_STATES:
-        if s.upper() == loc.upper():
+        if s.upper() == loc_upper:
             return s
+    for terr, canon in US_TERRITORIES.items():
+        if terr.upper() == loc_upper:
+            return canon
     if loc in NYC:
         return 'New York'
     m = re.search(r'\(([^)]+)\)', loc)
     if m:
-        return ABBREV.get(m.group(1))
+        paren = m.group(1)
+        if paren in ABBREV:
+            return ABBREV[paren]
+        if paren.upper() in TERRITORY_PARENS:
+            return TERRITORY_PARENS[paren.upper()]
     return None
 
 
