@@ -6,6 +6,7 @@
   "_doc_headline_events": "A tag is a 'headline event' (vs. recurring theme) when its NAME structurally indicates a specific dated incident — NOT when its coverage merely clusters in time. We do NOT use statistical year-spike detection because it conflates 'topic that became prominent' (e.g. In Vitro Fertilization in 2024) with 'specific dated event' (e.g. Hurricane Ian 2022). Detection rules: (1) tag contains a single 4-digit year not part of a range, (2) tag matches a substring pattern (named storm, etc.), (3) tag is in the curated list. 'Primaries and Caucuses' is intentionally NOT in headline events — it's a recurring theme for early-primary states.",
   "subject_merges": {
     "ABANDONMENT": "Abandonment (Property)",
+    "Aborigines": "Indigenous Australians",
     "ADVERTISING": "Advertising and Marketing",
     "Afghanistan War (2001-14)": "Afghanistan War (2001- )",
     "AGRICULTURE": "Agriculture and Farming",
@@ -15,6 +16,7 @@
     "Banks and Banking": "Banking and Financial Institutions",
     "Blacks": "Black People",
     "Capitol (Washington, Dc)": "Capitol Building (Washington, DC)",
+    "Cartels": "Drug Cartels",
     "Children and Youth": "Children and Childhood",
     "Demonstrations and Riots": "Demonstrations, Protests and Riots",
     "Demonstrations, Protests, and Riots": "Demonstrations, Protests and Riots",
@@ -49,7 +51,8 @@
     "Tsunami": "Tidal Waves and Tsunamis",
     "Tsunamis": "Tidal Waves and Tsunamis",
     "Tsunamis and Tidal Waves": "Tidal Waves and Tsunamis",
-    "UNITED STATES ARMAMENT AND DEFENSE": "Armament, Defense and Military Forces"
+    "UNITED STATES ARMAMENT AND DEFENSE": "Armament, Defense and Military Forces",
+    "War Crimes and Criminals": "War Crimes, Genocide and Crimes Against Humanity"
   },
   "abbrev_fixes": [
     "DC",
@@ -181,13 +184,18 @@
   ],
   "headline_event_tags": [
     "American Airlines Flight 5342",
+    "Church of the Nativity (Bethlehem)",
     "Cole (USS)",
     "Exxon Valdez (Tanker)",
     "Hurricane Gustav",
     "Hurricane Ike",
     "Hurricane Katrina",
     "Jeju Air Flight 2216",
-    "Keystone Pipeline System"
+    "Keystone Pipeline System",
+    "Le Constellation Bar Fire (Crans-Montana, Switzerland)",
+    "Malaysia Airlines Flight 17",
+    "St Gotthard Tunnel",
+    "United Nations World Conference Against Racism"
   ],
   "headline_event_patterns": [
     " (Storm)",

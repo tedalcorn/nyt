@@ -183,21 +183,17 @@ def fmt_pct(pct):
 
 
 def pick_projection(geom_centroid_lat, geom_centroid_lon):
-    """Pick a sensible equal-area CRS for a country given its centroid.
-
-    The state cards script uses Albers Equal-Area (EPSG:5070) for CONUS.
-    For other regions we pick a comparable equal-area projection so areas
-    look proportional and shapes stay recognizable.
+    """Per-country Lambert Azimuthal Equal-Area projection centered on the
+    country's centroid. Preserves area and produces accurate local shapes
+    regardless of country size or latitude — works equally well for small
+    Mediterranean countries, sprawling Canada/Russia/China, and equatorial
+    Indonesia. Cylindrical projections (Behrmann) flattened high-latitude
+    countries badly and Conus Albers only works for a narrow longitude
+    band; centering LAEA on each country sidesteps both problems.
     """
-    lat, lon = geom_centroid_lat, geom_centroid_lon
-    if -25 <= lon <= 50 and 30 <= lat <= 75:
-        return 'EPSG:3035'         # LAEA Europe
-    if 25 <= lon <= 180 and -10 <= lat <= 60:
-        return 'ESRI:54017'        # World Behrmann (equal-area cylindrical)
-    if -130 <= lon <= -30 and -60 <= lat <= 15:
-        return 'EPSG:5070'         # NAD83 Conus Albers works for the Americas
-    # Default fallback — Behrmann cylindrical, equal-area, world coverage
-    return 'ESRI:54017'
+    lat = geom_centroid_lat
+    lon = geom_centroid_lon
+    return f'+proj=laea +lat_0={lat} +lon_0={lon} +datum=WGS84 +units=m +no_defs'
 
 
 OLYMPIC_TAGS = {'Olympic Games', 'Summer Games (Olympics)', 'Winter Games (Olympics)'}
