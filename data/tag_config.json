@@ -41,9 +41,14 @@
     "RECORDINGS (AUDIO)": "Recordings and Downloads (Audio)",
     "RECORDINGS (VIDEO)": "Recordings and Downloads (Video)",
     "RETAIL STORES AND TRADE": "Shopping and Retail",
+    "Severe Acute Respiratory Syndrome (Sars)": "SARS (Severe Acute Respiratory Syndrome)",
     "Suspensions, Dismissals and Resignations": "Dismissals, Suspensions and Resignations",
+    "Tidal Waves": "Tidal Waves and Tsunamis",
     "Transgender": "Transgender and Transsexuals",
     "Transgender and Transsexual": "Transgender and Transsexuals",
+    "Tsunami": "Tidal Waves and Tsunamis",
+    "Tsunamis": "Tidal Waves and Tsunamis",
+    "Tsunamis and Tidal Waves": "Tidal Waves and Tsunamis",
     "UNITED STATES ARMAMENT AND DEFENSE": "Armament, Defense and Military Forces"
   },
   "abbrev_fixes": [
@@ -107,16 +112,17 @@
     "Facebook.com": "Meta Platforms Inc"
   },
   "generic_subjects_always_filter": [
-    "United States Politics and Government",
+    "Biographical Information",
     "Content Type: Personal Profile",
     "Content Type: Service",
-    "your-feed-science",
+    "Research",
+    "States (US)",
+    "United States Politics and Government",
+    "your-feed-animals",
     "your-feed-healthcare",
     "your-feed-internet",
-    "your-feed-animals",
-    "your-feed-weather",
-    "States (US)",
-    "Research"
+    "your-feed-science",
+    "your-feed-weather"
   ],
   "generic_prefixes_always_filter": [
     "internal-",
@@ -174,11 +180,13 @@
     "Content type:"
   ],
   "headline_event_tags": [
-    "Hurricane Katrina",
+    "American Airlines Flight 5342",
+    "Cole (USS)",
+    "Exxon Valdez (Tanker)",
     "Hurricane Gustav",
     "Hurricane Ike",
-    "Exxon Valdez (Tanker)",
-    "American Airlines Flight 5342",
+    "Hurricane Katrina",
+    "Jeju Air Flight 2216",
     "Keystone Pipeline System"
   ],
   "headline_event_patterns": [
@@ -209,7 +217,8 @@
   ],
   "world_coverage_generic_substrings": [
     "-International Relations-",
-    "International Relations-"
+    "International Relations-",
+    "(Currency)"
   ],
   "_doc_year_detection": "A tag is also classified as a headline event if its name contains a 4-digit year (1900–2099) NOT part of a range. Range markers are '-' or '–' immediately after the year. So 'Hurricane Sandy (2012)' → headline (single year), but 'World War II (1939-45)' → recurring (year range = era), 'Iraq War (2003- )' → recurring (open-ended era), 'Coronavirus (2019-nCoV)' → recurring (year is part of identifier, not a single event marker).",
   "_doc_state_listings": "Standing-feature headlines (event calendars, real-estate listings, art-review roundups, briefs columns) are excluded from state subject analysis the same way corrections are: kept in the dataset and in state article totals, but dropped from the recurring-themes score so they don't manufacture phony recurring topics. Without this filter Connecticut's top recurring theme was Culture (Arts), driven 97% by 'Events in Connecticut' calendar items.",

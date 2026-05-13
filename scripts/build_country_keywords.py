@@ -139,10 +139,18 @@ def analyze(arts):
             corpus_freq[tag] += 1
             seen.add(tag)
 
+    # Regions to skip — these appear as glocations but are continents/areas,
+    # not individual countries we'd map. Keeps them out of country-cards and
+    # the eventual regional map analyses without removing them from the
+    # World tab (where they remain valid glocations).
+    SKIP_REGIONS = {'Africa', 'Europe'}
+
     # Country coverage by gn = normalized glocations.
     country_total = Counter()
     for a in world:
         for loc in (a.get('gn') or []):
+            if loc in SKIP_REGIONS:
+                continue
             country_total[loc] += 1
     top_countries = [c for c, _ in country_total.most_common(TOP_N_COUNTRIES)]
 
