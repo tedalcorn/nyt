@@ -93,10 +93,11 @@ EUROPE_OVERRIDES = {
     'Norway':     {'rotations': [70, 90, 0]},
     'Sweden':     {'rotations': [70, 90, 0]},
     'Finland':    {'rotations': [80, 90, 0]},
-    'Italy':      {'rotations': [-40, -30, 0], 'forced_text': 'Roman\nCivili-\nzation'},
+    'Italy':      {'rotations': [-40, -30, 0], 'forced_text': 'Roman\nCivilization'},
     'Portugal':   {'rotations': [70, 90, 0]},
     'Ireland':    {'forced_text': 'Irish-\nAmericans', 'fs_max': 18},
-    'United Kingdom': {'forced_text': 'Transit\nSystems', 'fs_max': 18},
+    'United Kingdom': {'forced_text': 'Transit\nSystems', 'fs_max': 26,
+                       'anchor_y_frac': 0.25},  # push into wide lower portion
     'Switzerland': {'forced_text': 'Alpine\nSkiing', 'fs_max': 14},
     'Netherlands': {'forced_text': 'Bicycles', 'fs_max': 11},
     'Belgium':    {'forced_text': 'Diamonds', 'fs_max': 11},
@@ -114,6 +115,7 @@ EUROPE_OVERRIDES = {
     'Lithuania':  {'fs_max': 9, 'forced_text': 'WWII'},
     'Cyprus':     {'fs_max': 8},
     'Albania':    {'rotations': [80, 0], 'forced_text': 'Sociology', 'fs_max': 10},
+    'Iceland':    {'forced_text': 'Geothermal\nPower', 'fs_max': 12},
     'Hungary':    {'forced_text': 'Academic\nFreedom', 'fs_max': 13},
     'Kosovo':     {'fs_max': 9},
     'Russia':     {'fs_max': 30},
@@ -128,10 +130,10 @@ EUROPE_OVERRIDES = {
 }
 
 # Countries definitely too small even with overrides — use callouts.
-# Each entry: (geojson_name, (dx, dy) offset in map-width fractions)
+# Each entry: (geojson_name, (dx, dy) offset in map-width fractions).
+# Iceland is large enough to label in-polygon; microstates without
+# enough coverage to score won't even attempt a label.
 CALLOUT_OFFSETS = {
-    # Tiny states near the edge — pull labels off the map to the side
-    'Iceland':    ( 0.00, -0.025),  # already lower-left, label below
     'Andorra':    (-0.04, -0.05),
     'Luxembourg': ( 0.03, -0.01),
     'Liechtenstein': ( 0.03,  0.02),
@@ -142,9 +144,16 @@ CALLOUT_OFFSETS = {
 }
 
 # Bbox in lat/lon — what part of Europe shows. Tuned so the western
-# (Atlantic), southern (Mediterranean) and eastern (European Russia)
-# borders all sit comfortably inside the frame.
-EUROPE_BBOX_LATLON = (-13, 34, 47, 71)  # minx, miny, maxx, maxy
+# (Atlantic), southern (Mediterranean), and eastern (European Russia)
+# borders all sit comfortably inside the frame. Southern edge dropped
+# to 33° so Sicily and southern Greek islands aren't cropped.
+EUROPE_BBOX_LATLON = (-13, 33, 47, 71)  # minx, miny, maxx, maxy
+
+# Minimum overrepresentation score required for a country to get a label.
+# Weak signals (Cyprus's #1 "Palestinians" at 4.4× — a 6-article cluster
+# from a single 2002 event) get filtered out and the country renders as
+# no-data fill instead.
+MIN_SCORE_TO_LABEL = 6.0
 
 # Display-name override for forced_text (the override text takes precedence
 # over THEME_DISPLAY since we want the forced wrapping)
@@ -407,6 +416,11 @@ def main():
             continue
         recurring = _condense_olympics(recurring, country_res.get('tag_years', {}))
         top = recurring[0]
+        # Drop countries whose strongest signal is below the threshold —
+        # those labels would mislead more than inform (e.g. Cyprus
+        # "Palestinians" at score 4.4 is a 6-article one-event cluster).
+        if top['score'] < MIN_SCORE_TO_LABEL:
+            continue
         label = display_name(top['tag'], analysis_name)
 
         # Clip polygons to visible bbox so labels stay inside the map area
@@ -442,20 +456,30 @@ def main():
             continue
         cx, cy, fs, rotation, text = fit
 
-        # Tiny country caption: small country-name label above the topic,
-        # in lighter ink, to disambiguate the dense Balkan/Central Europe
-        # cluster. Only applied when the country is in ADD_COUNTRY_CAPTION
-        # and the topic label isn't rotated significantly (a rotated caption
-        # would conflict with the rotated theme).
-        if gname in ADD_COUNTRY_CAPTION and abs(rotation) < 20:
-            country_caption = COUNTRY_DISPLAY_NAME.get(gname, gname)
-            # Offset above the theme by ~0.6× the theme's measured height
-            _, h = measure_text_size(map_ax, fig, text, fs)
-            cap_fs = max(6, int(fs * 0.55))
-            map_ax.text(cx, cy + h * 0.65, country_caption,
-                        ha='center', va='bottom',
-                        fontsize=cap_fs, family='serif', weight='normal',
-                        color=MUTED, zorder=4)
+        # Country name caption above the topic — applied for every labeled
+        # country, in "Name:" format, in lighter ink. Helps readers identify
+        # which country each label belongs to (especially in dense clusters).
+        # When the topic is rotated, the caption rotates with it.
+        country_caption = COUNTRY_DISPLAY_NAME.get(gname, gname) + ':'
+        _, h = measure_text_size(map_ax, fig, text, fs)
+        cap_fs = max(8, int(fs * 0.62))
+
+        # Compute caption position relative to the topic's center, taking
+        # rotation into account so the caption sits "above" the topic in
+        # the rotated frame.
+        rot_rad = math.radians(rotation)
+        # Offset is purely "up" in the text's local frame; map to data coords
+        offset = h * 0.65
+        # Rotation matrix: when text is rotated, "up" in local coords maps to
+        # (-sin(rot), cos(rot)) in data coords
+        offset_x = -math.sin(rot_rad) * offset
+        offset_y = math.cos(rot_rad) * offset
+        cap_x = cx + offset_x
+        cap_y = cy + offset_y
+        map_ax.text(cap_x, cap_y, country_caption,
+                    ha='center', va='center',
+                    fontsize=cap_fs, family='serif', weight='normal',
+                    color=MUTED, rotation=rotation, zorder=4)
 
         map_ax.text(cx, cy, text,
                     ha='center', va='center',
@@ -481,35 +505,31 @@ def main():
                     family='serif', weight='semibold', color=INK, zorder=4)
 
     # ── Methodology paragraph ─────────────────────────────────────────
-    # Placed in the lower-left over the Atlantic Ocean (between Ireland
-    # and the southern map edge — empty water with no countries to
-    # crowd). Matches the state-map approach with **most** inline-bold.
+    # Placed in the upper-left over the Atlantic Ocean (NW of Ireland,
+    # south of Iceland) — empty water with no countries to crowd.
+    # Matches the state-map approach with **most** inline-bold.
+    n_world_articles = sum(1 for a in arts if (a.get('s') or '') == 'World')
+    # Round to nearest 1,000 for the methodology copy
+    rounded_articles = f"{round(n_world_articles, -3):,.0f}"
+
     from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
     METH_FS = 11
     METH_COLOR = '#4a4438'
+    # Compact 6-line methodology so it fits in the Atlantic Ocean band
+    # south of Iceland and north of Ireland — only ~0.18 figure-y units
+    # of clear space available, so we need wider lines and fewer of them.
     methodology_lines = [
-        'This map draws on every article in',
-        'the World section from 2000 to 2026,',
-        'and depicts the subject keyword',
-        'that was (a) attached to at least 1%',
-        'of coverage about each country, and',
-        '(b) was **most** out of proportion',
-        'with the frequency that keyword is',
-        'employed in World coverage overall.',
-        'Subjects that match the country name,',
-        'broad regional or generic-event tags,',
-        'and one-time events such as named',
-        'storms, crashes, and conferences are',
-        'excluded.',
+        f'This map draws on {rounded_articles} articles in the World section from 2000 to 2026,',
+        'depicting the subject keyword that (a) appeared on at least 1% of each',
+        'country’s coverage and (b) was **most** out of proportion with that keyword’s',
+        'frequency in World coverage overall. Subjects matching the country name,',
+        'broad regional tags, and one-time events such as named storms, crashes,',
+        'the Olympics, and conferences are excluded.',
     ]
-    METH_X = 0.025  # near left edge of figure
-    # Start in lower part of the map area, leave space for the footer
-    n_lines = len(methodology_lines)
-    LINE_SPACING = 0.018
-    block_height = n_lines * LINE_SPACING
-    # Bottom of map area in figure fraction
-    map_bottom = 0.6 / fig_h
-    y = map_bottom + 0.04 + block_height
+    METH_X = 0.025
+    LINE_SPACING = 0.022
+    # Top of block sits just below Iceland's south coast, in the open ocean
+    y = 0.595
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
