@@ -102,7 +102,10 @@ EUROPE_OVERRIDES = {
     'Netherlands': {'forced_text': 'Bicycles', 'fs_max': 11},
     'Belgium':    {'forced_text': 'Diamonds', 'fs_max': 11,
                    'rotations': [-30]},  # tilt the other direction per Ted
-    'Denmark':    {'forced_text': 'Dog\nSledding', 'fs_max': 12},
+    # Denmark: rotate nearly vertical so 'Dog Sledding' fits as one
+    # continuous line along the country's north-south axis.
+    'Denmark':    {'forced_text': 'Dog Sledding', 'fs_max': 13,
+                   'rotations': [80]},
     'Croatia':    {'rotations': [-30, 0]},
     'Czechia':    {'forced_text': 'Civil War', 'fs_max': 11},
     # Slovakia is east-west elongated; rotate slightly to match the wide
@@ -113,7 +116,8 @@ EUROPE_OVERRIDES = {
     'Bosnia and Herz.': {'forced_text': 'War\nCrimes', 'fs_max': 12},
     'North Macedonia': {'fs_max': 8, 'forced_text': 'Dispute over\ncountry\nrenaming'},
     'Macedonia':  {'fs_max': 8, 'forced_text': 'Dispute over\ncountry\nrenaming'},
-    'Moldova':    {'fs_max': 9, 'forced_text': 'Secession\nMovts.'},
+    'Moldova':    {'fs_max': 10, 'forced_text': 'Secession',
+                   'rotations': [-40]},
     'Estonia':    {'fs_max': 9, 'forced_text': 'Memorials'},
     'Latvia':     {'fs_max': 9, 'forced_text': 'Russian\nLanguage'},
     'Lithuania':  {'fs_max': 9, 'forced_text': 'WWII'},
@@ -553,9 +557,10 @@ def main():
     ]
     METH_X = 0.025
     METH_FS = 9
-    LINE_SPACING = 0.0155
+    LINE_SPACING = 0.0135  # tighter spacing — was 0.0155, too airy
     # Top of methodology block sits just below Iceland's south coast.
-    y = 0.615
+    # Bumped UP from 0.615 — block was sitting too far south of Iceland.
+    y = 0.740
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
@@ -580,35 +585,9 @@ def main():
             fig.add_artist(ab)
         y -= 0.018
 
-    # ── No-data footer note + main footer ──────────────────────────────
-    # Identify European countries we know exist in the geojson but didn't
-    # pass the score threshold (or were explicitly skipped). List them so
-    # readers know they weren't simply missed.
-    labeled_countries = set()
-    for gname in european_polys:
-        analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
-        if analysis_name in res and analysis_name not in SKIP_COUNTRIES:
-            rec = res[analysis_name].get('recurring', [])
-            if rec and rec[0]['score'] >= MIN_SCORE_TO_LABEL:
-                labeled_countries.add(gname)
-    no_data = sorted(set(european_polys) - labeled_countries)
-    if no_data:
-        # Friendlier display: collapse Macedonia/North Macedonia, prefer
-        # 'United Kingdom' → 'UK', use short form for Bosnia.
-        display_no_data = []
-        for n in no_data:
-            if n == 'Bosnia and Herz.':
-                display_no_data.append('Bosnia')
-            elif n in COUNTRY_DISPLAY_NAME:
-                display_no_data.append(COUNTRY_DISPLAY_NAME[n])
-            else:
-                display_no_data.append(n)
-        note_text = ('Insufficient coverage to identify a recurring keyword: '
-                     + ', '.join(display_no_data) + '.')
-        fig.text(0.025, 0.045, note_text,
-                 fontsize=9, ha='left', family='serif', color=MUTED,
-                 wrap=True, zorder=10)
-
+    # ── Footer ─────────────────────────────────────────────────────────
+    # (No "insufficient coverage" list — methodology text already explains
+    # that countries with insufficient coverage are unlabeled.)
     fig.text(0.98, 0.02,
              'Data from NYT Archive API  •  Full analysis at tedalcorn.github.io/nyt',
              fontsize=11, ha='right', family='serif', color=MUTED, zorder=10)
