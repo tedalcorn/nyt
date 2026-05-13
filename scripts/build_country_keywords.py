@@ -59,6 +59,22 @@ def is_correction_article(a):
     return bool(CORRECTION_URL_RE.search(a.get('u') or ''))
 
 
+# Per-country tag exclusions. The 9/11 narrative tags (Pentagon, WTC,
+# Hijacking, Airlines and Airplanes) attach in volume to Afghanistan,
+# Pakistan, and Saudi Arabia and crowd out country-specific recurring
+# themes (Opium, Pashtun, Pilgrimages, etc.). Exclude them from those
+# three countries' scoring so the actual recurring beats surface. The
+# methodology note on the Europe map will indicate the carve-out.
+COUNTRY_TAG_EXCLUSIONS = {
+    'Afghanistan':  {'Pentagon Building', 'World Trade Center (NYC)',
+                     'Hijacking', 'Airlines and Airplanes'},
+    'Pakistan':     {'Pentagon Building', 'World Trade Center (NYC)',
+                     'Hijacking', 'Airlines and Airplanes'},
+    'Saudi Arabia': {'Pentagon Building', 'World Trade Center (NYC)',
+                     'Hijacking', 'Airlines and Airplanes'},
+}
+
+
 def is_world_junk_tag(tag, country):
     if tag in GENERIC_ALWAYS:
         return True
@@ -69,6 +85,8 @@ def is_world_junk_tag(tag, country):
     if any(sub in tag for sub in WORLD_GENERIC_SUBSTRS):
         return True
     if tag.lower() == country.lower():
+        return True
+    if tag in COUNTRY_TAG_EXCLUSIONS.get(country, set()):
         return True
     return False
 

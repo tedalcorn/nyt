@@ -166,7 +166,21 @@ COUNTRY_TO_GEOJSON = {
 }
 
 
-def display_name(tag):
+# Per-(country, tag) display overrides — apply when a generic tag has a
+# country-specific meaning that benefits from a parenthetical clarification.
+# Verified case-by-case from the underlying article headlines, not auto-
+# inferred. Only used for clearly-skewed cases (≥90% of the country's
+# articles for that tag share the same context).
+COUNTRY_TAG_DISPLAY = {
+    ('Indonesia', 'Recording Equipment'): 'Black Boxes (Plane Crashes)',
+}
+
+
+def display_name(tag, country=None):
+    if country is not None:
+        override = COUNTRY_TAG_DISPLAY.get((country, tag))
+        if override:
+            return override
     return THEME_DISPLAY.get(tag, tag)
 
 
@@ -416,7 +430,7 @@ def make_card(country, recurring, output_path, world_gdf, n_themes=5,
             ys = [y_top - i * (y_top - y_bot) / (n - 1) for i in range(n)]
 
         for t, y in zip(items, ys):
-            disp = display_name(t['tag'])
+            disp = display_name(t['tag'], country)
             fig.text(0.48, y, disp,
                      fontsize=title_fs, weight='bold', family='serif', color=INK)
             stats = (f"{int(round(t['score']))}× as common as in international coverage  ·  "
