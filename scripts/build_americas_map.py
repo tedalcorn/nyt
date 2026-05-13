@@ -125,10 +125,15 @@ CALLOUT_OFFSETS = {
     #     Jamaica (out in the Caribbean Sea SW of Cuba)
     #   - Jamaica label moved very tight NW of itself
     'Bahamas':             ( 0.025,  0.012),
-    'Cuba':                (-0.024, -0.035, -15),  # SW of Cuba, rotated -15°
-    'Haiti':               (-0.010,  0.025),        # NORTH (Atlantic above)
-    'Dominican Rep.':      ( 0.030, -0.010),        # east into Atlantic
-    'Jamaica':             (-0.012,  0.005, 0, 'Slavery'),  # tight NW
+    # Cuba label below the WESTERN part of the country, rotated -15°,
+    # text wrapped at the hyphen so the block is narrower.
+    'Cuba':                (-0.040, -0.025, -15, 'Cuban-\nAmericans'),
+    # Haiti: NORTH of the island, label centered + shifted RIGHT so it
+    # clears Cuba/Hispaniola
+    'Haiti':               ( 0.015,  0.025, 0, None, 'center'),
+    'Dominican Rep.':      ( 0.030, -0.010),
+    # Jamaica: SOUTH of itself (was NW; user wants south to avoid overlap)
+    'Jamaica':             ( 0.000, -0.020, 0, 'Slavery'),
     'Trinidad and Tobago': ( 0.025, -0.003),
     'Barbados':            ( 0.025,  0.003),
     'Falkland Is.':        (-0.025, -0.01),
@@ -144,7 +149,7 @@ CALLOUT_OFFSETS = {
 # Arctic (lat 75), and from the Pacific west of Alaska (lon -140) east to
 # the Brazilian coast (lon -33). Slightly extended past prior version so
 # Canada's full northern extent and Mexico's western coast aren't cropped.
-AMERICAS_BBOX_LATLON = (-152, -57, -27, 78)  # minx, miny, maxx, maxy
+AMERICAS_BBOX_LATLON = (-152, -55, -27, 78)  # minx, miny, maxx, maxy
 
 # Threshold for showing a country's label at all
 MIN_SCORE_TO_LABEL = 6.0
@@ -527,21 +532,20 @@ def main():
         cfg = CALLOUT_OFFSETS.get(gname, (0.04, 0.02))
         dx, dy = cfg[0], cfg[1]
         rotation = cfg[2] if len(cfg) > 2 else 0
-        # Per-country forced text override (so Jamaica reads 'Slavery'
-        # not 'Slavery (Historical)' etc.)
+        # Per-country forced text override
         if len(cfg) > 3 and cfg[3]:
             text = cfg[3]
+        # Optional horizontal-alignment override (5th tuple element).
+        # When unset, auto-pick based on dx sign so the label sits on the
+        # ocean side of the leader.
+        ha_override = cfg[4] if len(cfg) > 4 else None
         lx = anchor.x + dx * eur_w
         ly = anchor.y + dy * eur_h
         map_ax.plot([anchor.x, lx - eur_w * 0.003],
                     [anchor.y, ly],
                     color=LEADER, linewidth=0.7, alpha=0.85, zorder=2.5)
         analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
-        # Whether to anchor the label LEFT of the leader-line endpoint
-        # (callouts to the right of the country) or RIGHT of it (callouts
-        # to the left, like Honduras/Guatemala). Determined by dx sign:
-        # negative dx → label to left → text anchored ha='right'.
-        ha = 'right' if dx < 0 else 'left'
+        ha = ha_override if ha_override else ('right' if dx < 0 else 'left')
         map_ax.text(lx, ly + eur_h * 0.005, analysis_name + ':',
                     fontsize=8, ha=ha, va='bottom',
                     family='serif', color=MUTED, rotation=rotation, zorder=4)
@@ -560,32 +564,34 @@ def main():
     # at figure y ≈ 0.10-0.35. That latitude band is open water on the
     # Americas map (Chile's south coast is at lat ~-56°, well below the
     # methodology block; Pacific west of South America is fully empty).
-    # Methodology — bigger font (was 9, now 11), more lines. Block starts
-    # higher (~lat 5°N) and extends down through the south Pacific to ~lat
-    # -40°. Lines width-capped so right edge stays west of Chile's coast.
+    # Methodology — fs raised to 12, line spacing TIGHTENED (was too
+    # loose at 0.018 with fs=11), lines re-wrapped narrower so the right
+    # edge stays well west of South America. Block starts lower so it
+    # doesn't overlap with northern South America.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the',
-        'World section from 2000 to 2026. The New York Times',
-        'assigns each article subject keywords (separate from',
-        'tags for individual people and organizations, which',
-        'are not included here). For each country with',
-        'sufficient coverage to identify recurring patterns,',
-        'the map shows the keyword that (a) appeared on at',
-        'least 1% of the country’s coverage and (b) was **most**',
-        'out of proportion with that keyword’s frequency in',
-        'World coverage overall. The analysis excludes each',
-        'country’s own name and currency, broad topics applied',
-        'to most countries such as “international relations,”',
-        'and one-time events such as named storms, major',
-        'accidents, and specific Olympic Games.',
+        f'This map draws on {rounded_articles} articles in',
+        'the World section from 2000 to 2026. The New',
+        'York Times assigns each article subject keywords',
+        '(separate from tags for individual people and',
+        'organizations, which are not included here).',
+        'For each country with sufficient coverage to',
+        'identify recurring patterns, the map shows the',
+        'keyword that (a) appeared on at least 1% of the',
+        'country’s coverage and (b) was **most** out of',
+        'proportion with that keyword’s frequency in',
+        'World coverage overall. The analysis excludes',
+        'each country’s own name and currency, broad',
+        'topics applied to most countries such as',
+        '“international relations,” and one-time events',
+        'such as named storms, major accidents, and',
+        'specific Olympic Games.',
     ]
     METH_X = 0.025
-    METH_FS = 11
-    LINE_SPACING = 0.018
-    # Top of block at y ≈ 0.43 (north of equator in projection) so the
-    # block ends near y ≈ 0.18 (well above the footer). All in the
-    # Pacific west of South America.
-    y = 0.430
+    METH_FS = 12
+    LINE_SPACING = 0.0135  # tight; ~0.27 inch line at fs=12 in fig_h=20
+    # Top of block at y ≈ 0.34 (lat ~-12°, south of S. American continent
+    # mass). Block runs down to ~ y=0.12 in open Pacific.
+    y = 0.340
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
