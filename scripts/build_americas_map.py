@@ -89,11 +89,9 @@ AMERICAS_OVERRIDES = {
     'Uruguay':   {'fs_max': 8},
     'Guyana':    {'fs_max': 8},
     'Suriname':  {'fs_max': 8},
-    # Cuba is wide but very thin (E-W ~10× the N-S extent in projection).
-    # Single-line label with lower fit_threshold so it can extend slightly
-    # past the polygon into the ocean above/below.
-    'Cuba':      {'forced_text': 'Cuban-Americans', 'fs_max': 11,
-                  'rotations': [-15], 'fit_threshold': 0.65},
+    # Cuba labeled in-polygon doesn't fit cleanly — shifted to a callout
+    # south of the island, keeping the -15° angle.
+    # (Cuba override no longer used; see CALLOUT_OFFSETS below.)
     # Haiti/DR/Jamaica too small for in-polygon; use callouts (see below)
     # Bahamas: rotation matches the archipelago's NW-SE chain
     'Bahamas':   {'forced_text': 'Hurricanes', 'fs_max': 10,
@@ -116,17 +114,24 @@ AMERICAS_OVERRIDES = {
 #   - Northern islands (Cuba/Bahamas) get their leaders pulled NORTH
 #   - Southern islands (Jamaica/Haiti/DR) labeled from BELOW (Caribbean Sea)
 #     so they don't pile up over Cuba's area
+# Callout offsets — tuple is (dx, dy[, rotation_degrees, forced_text]).
+# rotation defaults to 0 (horizontal); forced_text overrides the auto-
+# generated tag display name in the callout label.
 CALLOUT_OFFSETS = {
-    # Caribbean: callouts hug the islands closely (short leaders) and
-    # fan in four different directions so they don't stack. Just one
-    # goes south per Ted's note.
-    'Bahamas':             ( 0.025,  0.012),  # NE into Atlantic east of Florida
-    'Haiti':               ( 0.000, -0.035),  # south into Caribbean Sea
-    'Dominican Rep.':      ( 0.035, -0.005),  # east into Atlantic
-    'Jamaica':             (-0.04,  -0.005),  # west into Caribbean (clear of Cuba)
+    # Caribbean: callouts hug the islands; fan 4 directions; one south.
+    'Bahamas':             ( 0.025,  0.012),
+    'Cuba':                ( 0.00,  -0.025, -15),  # below Cuba, rotated -15°
+    'Haiti':               (-0.01,  -0.035),       # SSW into Caribbean
+    'Dominican Rep.':      ( 0.030, -0.010),       # east into Atlantic
+    'Jamaica':             ( 0.00,  -0.020, 0, 'Slavery'),  # JUST below Jamaica
     'Trinidad and Tobago': ( 0.025, -0.003),
     'Barbados':            ( 0.025,  0.003),
     'Falkland Is.':        (-0.025, -0.01),
+    # Central America: Pacific side (south/SW) labels because polygons too
+    # narrow for in-polygon text
+    'Guatemala': (-0.025, -0.015, 0, 'Mayans'),
+    'Honduras':  (-0.020, -0.020, 0, 'Gangs'),
+    'Panama':    ( 0.020, -0.020, -30, 'Canals'),  # off Pacific coast, tilted
 }
 
 # Bbox in lat/lon — covers Tierra del Fuego (lat -56) up to the Canadian
@@ -336,8 +341,8 @@ def main():
     # Hard separation: title block ends ABOVE map top; map ends ABOVE footer.
     map_h_inches = 18
     map_w_inches = map_h_inches * bbox_aspect
-    TOP_MARGIN_INCHES = 2.4   # title (~1.0") + subtitle (~0.8") + buffer
-    BOTTOM_MARGIN_INCHES = 0.6
+    TOP_MARGIN_INCHES = 2.1   # title (~1.0") + subtitle (~0.7") + buffer
+    BOTTOM_MARGIN_INCHES = 0.4
     fig_w = map_w_inches
     fig_h = map_h_inches + TOP_MARGIN_INCHES + BOTTOM_MARGIN_INCHES
     fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor=CREAM)
@@ -475,6 +480,10 @@ def main():
             continue
         biggest = max(clipped_pieces, key=lambda p: p.area)
 
+        # If country is in CALLOUT_OFFSETS, skip in-polygon fit entirely
+        # and route it to a callout — covers cases where the polygon is
+        # too narrow to label cleanly (Guatemala, Honduras) or where Ted
+        # wants the label outside the polygon for clarity (Cuba).
         if gname in CALLOUT_OFFSETS:
             callouts.append((gname, label, biggest.representative_point()))
             continue
@@ -509,20 +518,31 @@ def main():
     # just outside the polygon. Name and term render TIGHT TOGETHER so
     # they read as one unit (Ted: previously the gap was too wide).
     for gname, text, anchor in callouts:
-        dx, dy = CALLOUT_OFFSETS.get(gname, (0.04, 0.02))
+        cfg = CALLOUT_OFFSETS.get(gname, (0.04, 0.02))
+        dx, dy = cfg[0], cfg[1]
+        rotation = cfg[2] if len(cfg) > 2 else 0
+        # Per-country forced text override (so Jamaica reads 'Slavery'
+        # not 'Slavery (Historical)' etc.)
+        if len(cfg) > 3 and cfg[3]:
+            text = cfg[3]
         lx = anchor.x + dx * eur_w
         ly = anchor.y + dy * eur_h
         map_ax.plot([anchor.x, lx - eur_w * 0.003],
                     [anchor.y, ly],
                     color=LEADER, linewidth=0.7, alpha=0.85, zorder=2.5)
         analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
-        # Tight stacking: name just above term, no visible gap
+        # Whether to anchor the label LEFT of the leader-line endpoint
+        # (callouts to the right of the country) or RIGHT of it (callouts
+        # to the left, like Honduras/Guatemala). Determined by dx sign:
+        # negative dx → label to left → text anchored ha='right'.
+        ha = 'right' if dx < 0 else 'left'
         map_ax.text(lx, ly + eur_h * 0.005, analysis_name + ':',
-                    fontsize=8, ha='left', va='bottom',
-                    family='serif', color=MUTED, zorder=4)
+                    fontsize=8, ha=ha, va='bottom',
+                    family='serif', color=MUTED, rotation=rotation, zorder=4)
         map_ax.text(lx, ly + eur_h * 0.005, text,
-                    fontsize=10, ha='left', va='top',
-                    family='serif', weight='semibold', color=INK, zorder=4)
+                    fontsize=10, ha=ha, va='top',
+                    family='serif', weight='semibold', color=INK,
+                    rotation=rotation, zorder=4)
 
     # Methodology
     n_world_articles = sum(1 for a in arts if (a.get('s') or '') == 'World')
