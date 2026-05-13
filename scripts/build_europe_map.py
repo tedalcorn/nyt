@@ -1,6 +1,6 @@
 """Europe map: each European country with sufficient NYT coverage gets its
 #1 recurring theme labeled inside the country's polygon — same aesthetic
-as the 50-state national map (outputs/top-keyword/2026-05-12-us-state-tweets/-National/state-map.png).
+as the 50-state national map (outputs/2026-05-top-keyword/2026-05-12-us-state-tweets/-National/state-map.png).
 
 Approach (mirrors build_state_map.py):
   - LAEA Europe projection (EPSG:3035), preserves area
@@ -15,7 +15,7 @@ Approach (mirrors build_state_map.py):
 Run:
     python3 scripts/build_europe_map.py
 
-Output: outputs/top-keyword/2026-05-13-world-country-tweets/regional-maps/europe-map.{png,pdf}
+Output: outputs/2026-05-top-keyword/2026-05-13-world-country-tweets/regional-maps/europe-map.{png,pdf}
 """
 import os
 import sys
@@ -593,7 +593,7 @@ def main():
              fontsize=11, ha='right', family='serif', color=MUTED, zorder=10)
 
     # ── Save ───────────────────────────────────────────────────────────
-    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword',
+    out_dir = os.path.join(PROJECT_DIR, 'outputs', '2026-05-top-keyword',
                            '2026-05-13-world-country-tweets', 'regional-maps')
     os.makedirs(out_dir, exist_ok=True)
     out_png = os.path.join(out_dir, 'europe-map.png')

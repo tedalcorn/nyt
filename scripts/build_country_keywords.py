@@ -408,7 +408,7 @@ def write_excel(results):
                 cell.number_format = '0.00%'
 
     out_path = os.path.join(
-        PROJECT_DIR, 'outputs', 'top-keyword',
+        PROJECT_DIR, 'outputs', '2026-05-top-keyword',
         '2026-05-13-world-country-tweets', '-Tweets',
         'country_keywords_analysis.xlsx',
     )

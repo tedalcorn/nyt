@@ -11,7 +11,7 @@ Run:
     python3 scripts/build_country_cards.py Greece Germany Ukraine  # prototype
     python3 scripts/build_country_cards.py                          # all top-50
 
-Output: outputs/top-keyword/2026-05-13-world-country-tweets/countries/<Region>/<country-slug>.png
+Output: outputs/2026-05-top-keyword/2026-05-13-world-country-tweets/countries/<Region>/<country-slug>.png
 """
 import os
 import re
@@ -173,6 +173,8 @@ COUNTRY_TO_GEOJSON = {
 # articles for that tag share the same context).
 COUNTRY_TAG_DISPLAY = {
     ('Indonesia', 'Recording Equipment'): 'Black Boxes (Plane Crashes)',
+    ('North Macedonia', 'Names, Geographical'): 'Dispute over country renaming',
+    ('Macedonia', 'Names, Geographical'): 'Dispute over country renaming',
 }
 
 
@@ -468,7 +470,7 @@ def main():
     # populated; South America / Africa & Middle East / Asia & Oceania will
     # follow in their own subfolders.
     region = os.environ.get('REGION', 'Europe')
-    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword',
+    out_dir = os.path.join(PROJECT_DIR, 'outputs', '2026-05-top-keyword',
                            '2026-05-13-world-country-tweets',
                            'countries', region)
     os.makedirs(out_dir, exist_ok=True)
@@ -492,20 +494,31 @@ def main():
     }
     region_filter = REGION_COUNTRIES.get(region, set())
 
-    # United States surfaces under World coverage because NYT tags any US
-    # location on foreign-affairs stories — but the resulting themes
-    # (Hijacking, Pentagon, World Trade Center, etc.) are 9/11 spillover,
-    # not coherent "how NYT covers the US" content. Excluded by default.
-    SKIP_COUNTRIES = {'United States'}
+    # Countries excluded from card generation. Should mirror the same
+    # exclusions the regional maps apply:
+    #   - United States: 9/11 spillover dominates its World-section tags
+    #   - Albania: top tag 'Sociology' is 3 articles from a single 2008
+    #     feature series — not a recurring pattern
+    #   - Cyprus: top tag 'Palestinians' (score 4.4×, 6 articles) is the
+    #     2002 Bethlehem siege exiles — one-event cluster, not recurring
+    SKIP_COUNTRIES = {'United States', 'Albania', 'Cyprus'}
+
+    # Minimum overrepresentation score required for a card. Matches the
+    # MIN_SCORE_TO_LABEL=6.0 the Europe map uses to drop weak signals.
+    MIN_SCORE_FOR_CARD = 6.0
 
     if targets is None:
         valid_keys = [c for c in res.keys() if c is not None]
         targets = [c for c in sorted(valid_keys) if c not in SKIP_COUNTRIES]
         if region_filter:
             targets = [c for c in targets if c in region_filter]
+        # Drop countries whose strongest recurring signal is below threshold
+        targets = [
+            c for c in targets
+            if res.get(c, {}).get('recurring')
+            and res[c]['recurring'][0]['score'] >= MIN_SCORE_FOR_CARD
+        ]
     else:
-        # Allow explicit override on the command line — pass 'United States'
-        # if you ever want to regenerate it.
         targets = [c for c in targets if c not in SKIP_COUNTRIES or c in sys.argv[1:]]
 
     for country in targets:
