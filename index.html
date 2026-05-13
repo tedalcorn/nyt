@@ -435,7 +435,7 @@
   <button data-view="home" class="active" style="display:none">Home</button>
   <button data-view="beats">Beats</button>
   <button data-view="tracker">Headlines</button>
-  <button data-view="subjects">Subjects</button>
+  <button data-view="newsmakers">Newsmakers</button>
   <button data-view="sections">Sections</button>
   <button data-view="authors">Reporters</button>
   <button data-view="states">U.S. States</button>
@@ -560,7 +560,7 @@
       </div>
 
       <h4>Authors</h4>
-      <p>Author name variants are merged when they likely refer to the same person. For example, "Jonah E. Bromwich" and "Jonah Bromwich" are treated as one byline when first and last names match and middle names are compatible. Cases where the same reporter has many articles under both a shorter and a fuller form are reconciled manually after cross-checking beats, sections, and year ranges.</p>
+      <p>Author name variants are merged when they likely refer to the same person. For example, "Jonah E. Bromwich" and "Jonah Bromwich" are treated as one byline when first and last names match and middle names are compatible. Cases where the same reporter has many articles under both a shorter and a fuller form are reconciled manually after cross-checking beats, sections, and year ranges. A separate manual override list also catches <em>nickname / formal-first-name</em> pairs — e.g. "Rob Mackey" and "Robert Mackey," or "Dave Itzkoff" and "David Itzkoff" — which the automatic merger cannot detect because the first names differ. Where the same reporter has been bylined under both forms, articles are credited to whichever form is overwhelmingly dominant.</p>
       <p>Institutional bylines — The Associated Press, The Editorial Board, Reuters, and similar non-person attributions — are excluded from author rankings, because they don't represent individual reporting output.</p>
       <p>Staff versus freelance status and role (reporter, editor, photographer, critic, etc.) are drawn from each reporter's NYT bio page where available. For reporters who lack a custom bio page, no classification is given.</p>
 
@@ -569,8 +569,9 @@
       <p>In reporter profiles, three short-form content types are tracked separately, shown in <strong>light yellow</strong> on the Articles per Year chart, and excluded from average word count: <strong>blog posts</strong> (hosted at <code>*.blogs.nytimes.com</code> subdomains, DealBook, and the 2014–2016 First Draft political blog); <strong>/live/ news-blog updates</strong> — short real-time entries contributed to breaking-news live streams, averaging ~500 words; and <strong>briefs</strong> — identified by the API's <code>type_of_material="Brief"</code> tag, used 2006–2018 for World Briefing, Arts Briefly, National Briefing, and similar short dispatches averaging ~130 words.</p>
       <p>The NYT has also indexed podcasts inconsistently over time and across shows: some episodes are entered with a full transcript as the article body, while others appear only as short landing pages. The same show can switch policies — The Ezra Klein Show, for example, was indexed as ~400-word descriptions through 2023 and then as full transcripts beginning in 2024, while The Daily has remained short summaries throughout. Word-count trends for podcast contributors are therefore often not comparable between reporters or across years. For purposes of the reporter profiles in this dashboard, a podcast episode is identified by any of: the article's section being "Podcasts," a URL path containing <code>/podcasts/</code> or <code>/audio/</code>, or the article's kicker matching a known NYT show title — separating true episodes from news articles that merely reference a podcast.</p>
 
-      <h4>Beats</h4>
-      <p>The beat topics shown on reporter profiles are derived from the NYT's own subject tags. When a reporter covers a subject twice as frequently (as a share of their overall coverage) as the newspaper as a whole, and has written a minimum of two articles about the subject, it is classified as a beat. Authors with few articles, or few articles carrying subject tags, may have no beats listed.</p>
+      <h4>Keywords</h4>
+      <p>The NYT attaches a controlled vocabulary of keyword tags to each article it publishes, distinguishing between several types. <strong>Subjects</strong> are thematic topics (<em>Immigration</em>, <em>Climate Change</em>, <em>Basketball (College)</em>). <strong>Locations</strong> are geographic places (<em>Boston (Mass)</em>, <em>Syria</em>) and underpin the dashboard's state- and country-level coverage views. <strong>People</strong> (e.g. <em>Trump, Donald J</em>) and <strong>organizations</strong> (e.g. <em>Harvard University</em>) are tagged separately on each article. In January 2025 the NYT renamed all four keyword types — from plural-lowercase (<code>subject</code>, <code>persons</code>, <code>organizations</code>, <code>glocations</code>) to singular-capitalized (<code>Subject</code>, <code>Person</code>, <code>Organization</code>, <code>Location</code>) — but the underlying tagging continued, and this dashboard accepts both forms.</p>
+      <p>On this dashboard, <strong>subject tags</strong> drive the <a onclick="showView('beats')">Beats</a> tab — where you can search for any topic and see which reporters cover it disproportionately — and the recurring-themes lists in the <a onclick="showView('states')">States</a> and <a onclick="showView('world')">World</a> tabs. A subject is classified as a reporter's beat when she covers it at least twice as frequently (as a share of her overall coverage) as the paper as a whole, with a minimum of two articles on it; authors with few articles, or few articles carrying subject tags, may have no beats listed. <strong>People and organizations</strong> are surfaced separately on the <a onclick="showView('newsmakers')">Newsmakers</a> tab, where you can compare coverage of any tagged individual or institution over time. Because beats and state/country recurring themes are restricted to the subject vocabulary, named entities — Harvard, Trump, the Yankees, Cambridge — never enter those analyses; they live exclusively under Newsmakers.</p>
 
       <h4>Sections</h4>
       <p>The NYT has renamed, merged, and discontinued sections over the years. To preserve thematic continuity, this dashboard applies the following merges:</p>
@@ -624,7 +625,7 @@
 
 
   <!-- SUBJECTS -->
-  <div class="view" id="view-subjects">
+  <div class="view" id="view-newsmakers">
     <div id="subjectDetailPanel" style="display:none"></div>
     <div class="chart-box" id="subjectCompareBox" style="display:none">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
@@ -635,7 +636,7 @@
     </div>
     <div class="chart-box">
       <h3>Coverage by Subject</h3>
-      <p style="font-size:13px;color:#666;margin-bottom:10px">Persons and organizations drawn from NYT keyword metadata. Check names to compare coverage over time; click a name to see details. <span id="subjectDataNote" style="color:#999"></span></p>
+      <p style="font-size:13px;color:#666;margin-bottom:10px">People and organizations drawn from NYT keyword metadata. Subject tags (e.g. immigration) are surfaced in the Beats tab. Check names to compare coverage over time; click a name to see details. <span id="subjectDataNote" style="color:#999"></span></p>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:12px;color:#888;white-space:nowrap">Years queried</span>
         <span id="subjectYrStartLbl" style="font-size:12px;font-weight:600;color:#333;min-width:32px;text-align:right"></span>
@@ -1453,13 +1454,13 @@ async function loadData() {
       if (_rTab === 'states' && !statesInitialized) { statesInitialized = true; initStates(); }
       if (_rTab === 'sections' && !sectionsInitialized) { sectionsInitialized = true; initSections(); }
       if (_rTab === 'world' && !worldInitialized) { worldInitialized = true; initWorld(); }
-      if (_rTab === 'subjects' && !subjectsInitialized) { initSubjects(); }
+      if (_rTab === 'newsmakers' && !subjectsInitialized) { initSubjects(); }
       // Open state/country/section detail immediately — these use only dashboard data
       const _rp = _pendingRestore;
       if (_rp?.state) { openStateDetail(_rp.state); _pendingRestore = null; }
       else if (_rp?.country) { openCountryDetail(_rp.country); _pendingRestore = null; }
       else if (_rp?.section) { openSectionDetail(_rp.section); _pendingRestore = null; }
-      // author/beats/tracker/subjects detail are deferred until their data loads
+      // author/beats/tracker/newsmakers detail are deferred until their data loads
     } else {
       showView('home');
     }
@@ -1609,7 +1610,9 @@ function _readHash() {
   const h = location.hash.slice(1);
   if (!h) return {};
   try {
-    return Object.fromEntries(h.split('&').map(p => { const [k, ...v] = p.split('='); return [k, decodeURIComponent(v.join('='))]; }));
+    const parsed = Object.fromEntries(h.split('&').map(p => { const [k, ...v] = p.split('='); return [k, decodeURIComponent(v.join('='))]; }));
+    if (parsed.tab === 'subjects') parsed.tab = 'newsmakers';
+    return parsed;
   } catch (_) { return {}; }
 }
 
@@ -1639,7 +1642,7 @@ function _applyRestore(phase) {
   if (phase === 'articles') {
     if (p.author && authors) { openAuthor(p.author); _pendingRestore = null; }
   }
-  if (phase === 'subjects' && p.subject) {
+  if (phase === 'newsmakers' && p.subject) {
     openSubjectDetail(p.subject, p.stype || 'person');
     _pendingRestore = null;
   }
@@ -7301,13 +7304,13 @@ const sectionsObserver = new MutationObserver(() => {
 });
 sectionsObserver.observe(document.getElementById('view-sections'), { attributes: true });
 
-// Trigger subjects render when tab shown (lazy init)
+// Trigger newsmakers render when tab shown (lazy init)
 const subjectsObserver = new MutationObserver(() => {
-  if (document.getElementById('view-subjects').classList.contains('active') && !subjectsInitialized) {
+  if (document.getElementById('view-newsmakers').classList.contains('active') && !subjectsInitialized) {
     initSubjects();
   }
 });
-subjectsObserver.observe(document.getElementById('view-subjects'), { attributes: true });
+subjectsObserver.observe(document.getElementById('view-newsmakers'), { attributes: true });
 
 // Trigger obituaries tab when shown (lazy init — fetches its own data file)
 let obitsInitialized = false;
@@ -8495,7 +8498,9 @@ function renderSubjectsTable() {
 function initSubjectYearSlider() {
   const years = dashboard.all_years;
   const currentYear = new Date().getFullYear();
-  // Cap at last_year from subjects data (NYT stopped tagging persons/orgs keywords in 2025)
+  // Cap at last_year from subjects data — the last complete year of person/org
+  // tagging. Excluding the current year as well avoids muddling trend lines with
+  // a partial year of data.
   const lastYear = subjectsData.last_year ? Number(subjectsData.last_year) : currentYear - 1;
   subjectsAllYears = years.filter(y => Number(y) !== currentYear && Number(y) <= lastYear);
   const numericYears = subjectsAllYears.map(Number);
@@ -8507,8 +8512,8 @@ function initSubjectYearSlider() {
   sInput.value = minY;
   eInput.value = maxY;
   const noteEl = document.getElementById('subjectDataNote');
-  if (noteEl && lastYear < currentYear - 1) {
-    noteEl.textContent = `Data through ${lastYear} only — the NYT API stopped including persons and organizations keyword tags after that year.`;
+  if (noteEl) {
+    noteEl.textContent = `Data through ${lastYear}; the current year is excluded so partial-year coverage does not skew trends.`;
   }
 
   function update() {
@@ -8531,7 +8536,7 @@ function initSubjects() {
   if (subjectsData) {
     initSubjectYearSlider();
     renderSubjectsTable();
-    _applyRestore('subjects');
+    _applyRestore('newsmakers');
     return;
   }
   if (subjectsInitialized) return;   // fetch already in progress
@@ -8543,7 +8548,7 @@ function initSubjects() {
     initSubjectYearSlider();
     document.getElementById('subjectSearch').addEventListener('input', renderSubjectsTable);
     renderSubjectsTable();
-    _applyRestore('subjects');
+    _applyRestore('newsmakers');
   }).catch(e => {
     console.error('Failed to load subjects:', e);
     container.innerHTML = '<p style="color:#c00;padding:16px">Failed to load subjects data. Try refreshing the page.</p>';
@@ -8600,7 +8605,7 @@ function openSubjectDetail(rawName, type) {
   const entry = (type === 'person' ? subjectsData.persons : subjectsData.organizations)
     .find(e => e.name === rawName);
   if (!entry) return;
-  _writeHash({ tab: 'subjects', subject: rawName, stype: type });
+  _writeHash({ tab: 'newsmakers', subject: rawName, stype: type });
 
   const allYearsForChart = subjectsAllYears;
   const total = Object.values(entry.annual).reduce((s, v) => s + v, 0);
@@ -8927,7 +8932,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/10/26 8:46am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/13/26 7:02am</span>
 </div>
 </body>
 </html>

@@ -32,6 +32,14 @@ it appears in the NYT API. Value = canonical form to use instead.
 - **Middle-initial variants confirmed same person** — count >10 so auto-dedup
   skips them; manually verified.
 
+- **Nickname / formal first-name variants** (added 2026-05-13) — same reporter
+  occasionally bylined under the informal first name (e.g. "Rob Mackey" vs
+  "Robert Mackey", "Dave Itzkoff" vs "David Itzkoff"). The automatic dedup
+  in `build_data.py` only catches prefix-extension variants ("Jonah Bromwich"
+  → "Jonah E. Bromwich"); it cannot match across different first names. Each
+  pair manually verified against beats, sections, year span, and co-authors.
+  Canonical = whichever form is overwhelmingly dominant.
+
 - **Bare-s prefix artifacts** — mis-split possessive in byline string produces
   "s Firstname Lastname".
 

@@ -23,16 +23,32 @@ START_MONTH = 1
 
 
 def get_months_to_fetch():
-    """Return list of (year, month) tuples that haven't been fetched yet."""
+    """Return list of (year, month) tuples that haven't been fetched yet.
+
+    Always re-fetches the current month and the two preceding ones — the NYT
+    Archive API has a 2–4 week indexing lag, so a month fetched too early
+    contains only partial data and must be re-downloaded as the API backfills.
+    """
     os.makedirs(RAW_DIR, exist_ok=True)
     existing = set(f for f in os.listdir(RAW_DIR) if f.endswith(".json"))
 
     today = date.today()
+
+    # Build the set of recent months to force-refetch (current + 2 prior).
+    refetch = set()
+    y, m = today.year, today.month
+    for _ in range(3):
+        refetch.add((y, m))
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+
     months = []
     year, month = START_YEAR, START_MONTH
     while (year, month) <= (today.year, today.month):
         filename = f"{year}-{month:02d}.json"
-        if filename not in existing:
+        if filename not in existing or (year, month) in refetch:
             months.append((year, month))
         year, month = (year + (month // 12), (month % 12) + 1)
     return months

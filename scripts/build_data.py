@@ -430,9 +430,10 @@ def process_articles(raw_articles):
         print_section = doc.get("print_section", "") or ""
         print_page = doc.get("print_page", "") or ""
 
-        # Keywords (geographic, subject)
+        # Keywords (geographic, subject, persons, organizations)
         # Note: keyword field names changed case in 2025
-        # (glocations -> Location, subject -> Subject)
+        # (glocations -> Location, subject -> Subject,
+        #  persons -> Person, organizations -> Organization)
         subsection = doc.get("subsection_name", "") or ""
         glocations = []
         subjects = []
@@ -455,9 +456,9 @@ def process_articles(raw_articles):
                 norm = _normalize_subject_kw(SUBJECT_RENAMES.get(kw_val, kw_val))
                 if norm:
                     subjects.append(norm)
-            elif kw_name in ("persons", "Persons"):
+            elif kw_name in ("persons", "Persons", "Person"):
                 persons_kw.append(kw_val)
-            elif kw_name in ("organizations", "Organizations"):
+            elif kw_name in ("organizations", "Organizations", "Organization"):
                 organizations_kw.append(_normalize_org_kw(kw_val))
 
         # Canonical state names — computed for both "U.S." and "New York" sections
@@ -515,7 +516,11 @@ def process_articles(raw_articles):
             break
 
     # Deduplicate author names: merge variants like "Jonah Engel Bromwich" / "Jonah E. Bromwich" / "Jonah Bromwich"
-    # by mapping all to the most frequent version sharing the same first+last name
+    # by mapping all to the most frequent version sharing the same first+last name.
+    # This catches prefix-extension and middle-initial variants only — nickname/formal
+    # pairs ("Rob Mackey" vs "Robert Mackey", "Dave Itzkoff" vs "David Itzkoff") share
+    # a last name but differ on the first and so are not matched here. Those are
+    # handled explicitly via data/author_overrides.json, applied earlier in this script.
     print("  Deduplicating author names...")
     name_counts = Counter()
     for art in articles:
@@ -2567,8 +2572,11 @@ def build_subjects_data(articles):
 
     MIN_COUNT = 15  # filter rare entries
 
-    # Find last year with meaningful persons/orgs keyword coverage
-    # (NYT stopped tagging persons/orgs keywords in 2025)
+    # Find last year with meaningful persons/orgs keyword coverage.
+    # (In Jan 2025 NYT renamed the keyword types from plural/lowercase
+    # to singular/capitalized — persons→Person, organizations→Organization.
+    # The ingest loop above accepts both forms, so this should now run through
+    # the current year.)
     year_totals = defaultdict(int)
     for by_year in list(persons_annual.values()) + list(orgs_annual.values()):
         for y, c in by_year.items():
