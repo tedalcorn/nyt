@@ -11,7 +11,7 @@ Run from project root:
     python3 scripts/build_state_cards.py Wyoming Iowa     # prototype 2 cards
     python3 scripts/build_state_cards.py                  # all 50 + DC
 
-Output: outputs/top-keyword/<state-slug>.png
+Output: outputs/top-keyword/2026-05-12-us-state-tweets/states/<state-slug>.png
 """
 
 import os
@@ -399,7 +399,8 @@ def main():
     res = analyze(arts)
     print(f'  {len(res)} states scored')
 
-    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword')
+    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword',
+                           '2026-05-12-us-state-tweets', 'states')
     os.makedirs(out_dir, exist_ok=True)
 
     if targets is None:

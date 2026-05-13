@@ -1,7 +1,7 @@
 """Master 50-state map: each state filled with the text of its #1 recurring
 theme, sized and wrapped to fit inside the state's borders.
 
-Output: outputs/top-keyword/-National/state-map.{png,svg,pdf}
+Output: outputs/top-keyword/2026-05-12-us-state-tweets/-National/state-map.{png,svg,pdf}
 
 Approach:
   - Albers Equal-Area projection for CONUS, native scale
@@ -663,7 +663,9 @@ def main():
              'Data from NYT Archive API  •  Full analysis at tedalcorn.github.io/nyt',
              fontsize=12, ha='right', family='serif', color=MUTED, zorder=10)
 
-    out_path = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword', '-National', 'state-map.png')
+    out_path = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword',
+                            '2026-05-12-us-state-tweets', '-National',
+                            'state-map.png')
     plt.savefig(out_path, dpi=400, facecolor=CREAM)   # 4× resolution
     out_svg = out_path.replace('.png', '.svg')
     plt.savefig(out_svg, facecolor=CREAM)

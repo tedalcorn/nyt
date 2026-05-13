@@ -382,7 +382,9 @@ def write_excel(results):
                            end_type='max', end_color='66BB66'),
         )
 
-    out_path = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword', '-Tweets', 'state_keywords_analysis.xlsx')
+    out_path = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword',
+                            '2026-05-12-us-state-tweets', '-Tweets',
+                            'state_keywords_analysis.xlsx')
     wb.save(out_path)
     print(f'  Saved {out_path}')
     return True

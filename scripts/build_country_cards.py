@@ -11,7 +11,7 @@ Run:
     python3 scripts/build_country_cards.py Greece Germany Ukraine  # prototype
     python3 scripts/build_country_cards.py                          # all top-50
 
-Output: -documents/top-keyword/countries/<country-slug>.png
+Output: outputs/top-keyword/2026-05-13-world-country-tweets/countries/<Region>/<country-slug>.png
 """
 import os
 import re
@@ -464,8 +464,33 @@ def main():
     res = analyze(arts)
     print(f'  {len(res)} countries scored')
 
-    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword', 'World map')
+    # Cards are organized by region. Europe is the only region currently
+    # populated; South America / Africa & Middle East / Asia & Oceania will
+    # follow in their own subfolders.
+    region = os.environ.get('REGION', 'Europe')
+    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword',
+                           '2026-05-13-world-country-tweets',
+                           'countries', region)
     os.makedirs(out_dir, exist_ok=True)
+
+    # Per-region country lists (analysis names). 'Britain' is the NYT-side
+    # form for the United Kingdom; 'Czech Republic' is the NYT form for
+    # Czechia.
+    REGION_COUNTRIES = {
+        'Europe': {
+            'Albania', 'Andorra', 'Austria', 'Belarus', 'Belgium',
+            'Bosnia and Herzegovina', 'Bulgaria', 'Croatia', 'Cyprus',
+            'Czech Republic', 'Czechia', 'Denmark', 'Estonia', 'Finland',
+            'France', 'Germany', 'Great Britain', 'Britain', 'Greece',
+            'Hungary', 'Iceland', 'Ireland', 'Italy', 'Kosovo', 'Latvia',
+            'Liechtenstein', 'Lithuania', 'Luxembourg', 'Macedonia', 'Malta',
+            'Moldova', 'Monaco', 'Montenegro', 'Netherlands',
+            'North Macedonia', 'Norway', 'Poland', 'Portugal', 'Romania',
+            'Russia', 'San Marino', 'Serbia', 'Slovakia', 'Slovenia',
+            'Spain', 'Sweden', 'Switzerland', 'Turkey', 'Ukraine', 'Vatican',
+        },
+    }
+    region_filter = REGION_COUNTRIES.get(region, set())
 
     # United States surfaces under World coverage because NYT tags any US
     # location on foreign-affairs stories — but the resulting themes
@@ -474,7 +499,10 @@ def main():
     SKIP_COUNTRIES = {'United States'}
 
     if targets is None:
-        targets = [c for c in sorted(res.keys()) if c not in SKIP_COUNTRIES]
+        valid_keys = [c for c in res.keys() if c is not None]
+        targets = [c for c in sorted(valid_keys) if c not in SKIP_COUNTRIES]
+        if region_filter:
+            targets = [c for c in targets if c in region_filter]
     else:
         # Allow explicit override on the command line — pass 'United States'
         # if you ever want to regenerate it.

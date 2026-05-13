@@ -1,6 +1,6 @@
 """Europe map: each European country with sufficient NYT coverage gets its
 #1 recurring theme labeled inside the country's polygon — same aesthetic
-as the 50-state national map (outputs/top-keyword/-National/state-map.png).
+as the 50-state national map (outputs/top-keyword/2026-05-12-us-state-tweets/-National/state-map.png).
 
 Approach (mirrors build_state_map.py):
   - LAEA Europe projection (EPSG:3035), preserves area
@@ -15,7 +15,7 @@ Approach (mirrors build_state_map.py):
 Run:
     python3 scripts/build_europe_map.py
 
-Output: outputs/top-keyword/World map/europe-map.{png,svg,pdf}
+Output: outputs/top-keyword/2026-05-13-world-country-tweets/regional-maps/europe-map.{png,pdf}
 """
 import os
 import sys
@@ -593,17 +593,15 @@ def main():
              fontsize=11, ha='right', family='serif', color=MUTED, zorder=10)
 
     # ── Save ───────────────────────────────────────────────────────────
-    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword', 'World map')
+    out_dir = os.path.join(PROJECT_DIR, 'outputs', 'top-keyword',
+                           '2026-05-13-world-country-tweets', 'regional-maps')
     os.makedirs(out_dir, exist_ok=True)
     out_png = os.path.join(out_dir, 'europe-map.png')
-    out_svg = os.path.join(out_dir, 'europe-map.svg')
     out_pdf = os.path.join(out_dir, 'europe-map.pdf')
     plt.savefig(out_png, dpi=400, facecolor=CREAM)
-    plt.savefig(out_svg, facecolor=CREAM)
     plt.savefig(out_pdf, facecolor=CREAM)
     plt.close()
     print(f'  Saved {out_png}')
-    print(f'  Saved {out_svg}')
     print(f'  Saved {out_pdf}')
 
     if callouts:
