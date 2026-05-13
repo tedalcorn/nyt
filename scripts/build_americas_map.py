@@ -82,7 +82,7 @@ AMERICAS_OVERRIDES = {
                   'rotations': [80, 0]},
     'Peru':      {'forced_text': 'Incas', 'fs_max': 18},
     'Colombia':  {'fs_max': 14},  # let auto-pick the top non-event tag
-    'Venezuela': {'fs_max': 13},
+    'Venezuela': {'forced_text': 'Venezuelan-\nAmericans', 'fs_max': 16},
     'Ecuador':   {'fs_max': 10},
     'Bolivia':   {'fs_max': 13},
     'Paraguay':  {'fs_max': 10},
@@ -118,20 +118,26 @@ AMERICAS_OVERRIDES = {
 # rotation defaults to 0 (horizontal); forced_text overrides the auto-
 # generated tag display name in the callout label.
 CALLOUT_OFFSETS = {
-    # Caribbean: callouts hug the islands; fan 4 directions; one south.
+    # Caribbean. Per Ted's review:
+    #   - Haiti label moved NORTH of the island (Atlantic between Bahamas
+    #     and Hispaniola) so it doesn't conflict with Jamaica
+    #   - Cuba's label takes the south-of-Cuba position previously used by
+    #     Jamaica (out in the Caribbean Sea SW of Cuba)
+    #   - Jamaica label moved very tight NW of itself
     'Bahamas':             ( 0.025,  0.012),
-    'Cuba':                ( 0.00,  -0.025, -15),  # below Cuba, rotated -15°
-    'Haiti':               (-0.01,  -0.035),       # SSW into Caribbean
-    'Dominican Rep.':      ( 0.030, -0.010),       # east into Atlantic
-    'Jamaica':             ( 0.00,  -0.020, 0, 'Slavery'),  # JUST below Jamaica
+    'Cuba':                (-0.024, -0.035, -15),  # SW of Cuba, rotated -15°
+    'Haiti':               (-0.010,  0.025),        # NORTH (Atlantic above)
+    'Dominican Rep.':      ( 0.030, -0.010),        # east into Atlantic
+    'Jamaica':             (-0.012,  0.005, 0, 'Slavery'),  # tight NW
     'Trinidad and Tobago': ( 0.025, -0.003),
     'Barbados':            ( 0.025,  0.003),
     'Falkland Is.':        (-0.025, -0.01),
-    # Central America: Pacific side (south/SW) labels because polygons too
-    # narrow for in-polygon text
+    # Central America: Pacific side labels (polygons too narrow for inside)
     'Guatemala': (-0.025, -0.015, 0, 'Mayans'),
     'Honduras':  (-0.020, -0.020, 0, 'Gangs'),
-    'Panama':    ( 0.020, -0.020, -30, 'Canals'),  # off Pacific coast, tilted
+    # Panama: off the Pacific shore in the NW portion of the country,
+    # rotated -30° to match Panama's east-west axis
+    'Panama':    (-0.025, -0.015, -30, 'Canals'),
 }
 
 # Bbox in lat/lon — covers Tierra del Fuego (lat -56) up to the Canadian
@@ -341,8 +347,8 @@ def main():
     # Hard separation: title block ends ABOVE map top; map ends ABOVE footer.
     map_h_inches = 18
     map_w_inches = map_h_inches * bbox_aspect
-    TOP_MARGIN_INCHES = 2.1   # title (~1.0") + subtitle (~0.7") + buffer
-    BOTTOM_MARGIN_INCHES = 0.4
+    TOP_MARGIN_INCHES = 2.0   # title (~0.95") + subtitle (~0.66") + buffer
+    BOTTOM_MARGIN_INCHES = 0.2
     fig_w = map_w_inches
     fig_h = map_h_inches + TOP_MARGIN_INCHES + BOTTOM_MARGIN_INCHES
     fig = plt.figure(figsize=(fig_w, fig_h), dpi=120, facecolor=CREAM)
@@ -554,27 +560,32 @@ def main():
     # at figure y ≈ 0.10-0.35. That latitude band is open water on the
     # Americas map (Chile's south coast is at lat ~-56°, well below the
     # methodology block; Pacific west of South America is fully empty).
+    # Methodology — bigger font (was 9, now 11), more lines. Block starts
+    # higher (~lat 5°N) and extends down through the south Pacific to ~lat
+    # -40°. Lines width-capped so right edge stays west of Chile's coast.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the World',
-        'section from 2000 to 2026. The New York Times assigns each',
-        'article subject keywords (separate from tags for individual',
-        'people and organizations, which are not included here). For',
-        'each country with sufficient coverage to identify recurring',
-        'patterns, the map shows the keyword that (a) appeared on at',
-        'least 1% of the country’s coverage and (b) was **most** out',
-        'of proportion with that keyword’s frequency in World coverage',
-        'overall. The analysis excludes each country’s own name and',
-        'currency, broad topics applied to most countries such as',
-        '“international relations,” and one-time events such as named',
-        'storms, major accidents, and specific Olympic Games.',
+        f'This map draws on {rounded_articles} articles in the',
+        'World section from 2000 to 2026. The New York Times',
+        'assigns each article subject keywords (separate from',
+        'tags for individual people and organizations, which',
+        'are not included here). For each country with',
+        'sufficient coverage to identify recurring patterns,',
+        'the map shows the keyword that (a) appeared on at',
+        'least 1% of the country’s coverage and (b) was **most**',
+        'out of proportion with that keyword’s frequency in',
+        'World coverage overall. The analysis excludes each',
+        'country’s own name and currency, broad topics applied',
+        'to most countries such as “international relations,”',
+        'and one-time events such as named storms, major',
+        'accidents, and specific Olympic Games.',
     ]
     METH_X = 0.025
-    METH_FS = 9
-    LINE_SPACING = 0.0145
-    # Lower-left placement: block top at y ≈ 0.30, bottom around 0.12.
-    # That's the south Pacific west of Chile/Patagonia — verified empty
-    # on the Americas LAEA projection.
-    y = 0.295
+    METH_FS = 11
+    LINE_SPACING = 0.018
+    # Top of block at y ≈ 0.43 (north of equator in projection) so the
+    # block ends near y ≈ 0.18 (well above the footer). All in the
+    # Pacific west of South America.
+    y = 0.430
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
