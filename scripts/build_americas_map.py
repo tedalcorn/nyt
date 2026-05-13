@@ -37,7 +37,7 @@ TITLE_BLUE = '#326891'
 # ── Countries on this map (geojson NAME values) ───────────────────────
 # US deliberately excluded — already covered by the 50-state series.
 AMERICAS_COUNTRIES = {
-    'Canada', 'Mexico',
+    'Canada', 'United States of America', 'Mexico',
     'Belize', 'Guatemala', 'El Salvador', 'Honduras', 'Nicaragua',
     'Costa Rica', 'Panama',
     'Cuba', 'Haiti', 'Dominican Rep.', 'Jamaica', 'Bahamas',
@@ -46,6 +46,11 @@ AMERICAS_COUNTRIES = {
     'Guyana', 'Paraguay', 'Peru', 'Suriname', 'Uruguay', 'Venezuela',
     'Falkland Is.',  # for completeness; usually unlabeled
 }
+
+# Countries to render with a distinguishing crosshatch fill but no label —
+# they belong on the map for geographic context but their themes are
+# covered elsewhere in the series (e.g. the US has its own 50-state map).
+HATCHED_COUNTRIES = {'United States of America'}
 
 # geojson NAME → analysis country name (only when they differ)
 GEOJSON_TO_ANALYSIS = {
@@ -107,10 +112,11 @@ CALLOUT_OFFSETS = {
     'Falkland Is.':        (-0.03, -0.02),
 }
 
-# Bbox in lat/lon — covers the Americas from southern Tierra del Fuego
-# to the Canadian Arctic islands; western edge near Aleutians (Alaska
-# excluded) and eastern edge past the Caribbean.
-AMERICAS_BBOX_LATLON = (-130, -56, -33, 75)  # minx, miny, maxx, maxy
+# Bbox in lat/lon — covers Tierra del Fuego (lat -56) up to the Canadian
+# Arctic (lat 75), and from the Pacific west of Alaska (lon -140) east to
+# the Brazilian coast (lon -33). Slightly extended past prior version so
+# Canada's full northern extent and Mexico's western coast aren't cropped.
+AMERICAS_BBOX_LATLON = (-140, -57, -33, 78)  # minx, miny, maxx, maxy
 
 # Threshold for showing a country's label at all
 MIN_SCORE_TO_LABEL = 6.0
@@ -333,10 +339,15 @@ def main():
              ha='left', va='top')
 
     # Draw all countries
+    from matplotlib.path import Path as MplPath
+    from matplotlib.patches import PathPatch
     for gname, polys in americas_polys.items():
         analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
+        hatched = gname in HATCHED_COUNTRIES
         has_data = analysis_name in res
         fill = COUNTRY_FILL if has_data else NO_DATA_FILL
+
+        # Drop shadow
         for poly in polys:
             if not poly.exterior: continue
             xs, ys = poly.exterior.xy
@@ -347,21 +358,43 @@ def main():
             map_ax.fill([x + ox for x in xs], [y - oy for y in ys],
                         facecolor='#c2b9a3', edgecolor='none',
                         alpha=0.30, zorder=1)
+        # Base fill
         for poly in polys:
             if not poly.exterior: continue
             xs, ys = poly.exterior.xy
-            map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
+            if hatched:
+                # Lighter base fill so the hatching reads visibly without
+                # disappearing the country.
+                map_ax.fill(xs, ys, facecolor='#eee6d3', edgecolor='none',
+                            zorder=1.5)
+            else:
+                map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
+        # Hatching for US-style "covered elsewhere" countries
+        if hatched:
+            for poly in polys:
+                if not poly.exterior: continue
+                xs, ys = poly.exterior.xy
+                verts = list(zip(xs, ys))
+                codes = [MplPath.MOVETO] + [MplPath.LINETO] * (len(verts) - 2) + [MplPath.CLOSEPOLY]
+                patch = PathPatch(MplPath(verts, codes),
+                                  facecolor='none',
+                                  edgecolor='#a89d83',
+                                  hatch='////',
+                                  linewidth=0,
+                                  zorder=2)
+                map_ax.add_patch(patch)
+        # Border outline
         for poly in polys:
             if not poly.exterior: continue
             xs, ys = poly.exterior.xy
             map_ax.plot(xs, ys, color=BORDER, linewidth=0.7,
                         solid_joinstyle='round', zorder=3)
 
-    # Labels
+    # Labels — skip hatched countries (US) and explicit skip list
     callouts = []
     for gname, polys in americas_polys.items():
         analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
-        if analysis_name in SKIP_COUNTRIES:
+        if analysis_name in SKIP_COUNTRIES or gname in HATCHED_COUNTRIES:
             continue
         country_res = res.get(analysis_name, {})
         recurring = country_res.get('recurring', [])
@@ -450,24 +483,32 @@ def main():
     rounded_articles = f"{round(n_world_articles, -3):,.0f}"
     from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
     METH_COLOR = '#4a4438'
+    # Methodology — narrower column so lines stay west of Chile/Argentina.
+    # Each line ~50 chars; block sits in the south Pacific (lower-left)
+    # at figure y ≈ 0.10-0.35. That latitude band is open water on the
+    # Americas map (Chile's south coast is at lat ~-56°, well below the
+    # methodology block; Pacific west of South America is fully empty).
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the World section from 2000',
-        'to 2026. The New York Times assigns each article subject keywords',
-        '(separate from tags for individual people and organizations, which are',
-        'not included here). For each country with sufficient coverage to',
-        'identify recurring patterns, the map shows the keyword that (a) appeared',
-        'on at least 1% of the country’s coverage and (b) was **most** out of',
-        'proportion with that keyword’s frequency in World coverage overall.',
-        'The analysis excludes each country’s own name and currency, broad topics',
-        'applied to most countries such as “international relations,” and one-time',
-        'events such as named storms, major accidents, and specific Olympic Games.',
+        f'This map draws on {rounded_articles} articles in the World',
+        'section from 2000 to 2026. The New York Times assigns each',
+        'article subject keywords (separate from tags for individual',
+        'people and organizations, which are not included here). For',
+        'each country with sufficient coverage to identify recurring',
+        'patterns, the map shows the keyword that (a) appeared on at',
+        'least 1% of the country’s coverage and (b) was **most** out',
+        'of proportion with that keyword’s frequency in World coverage',
+        'overall. The analysis excludes each country’s own name and',
+        'currency, broad topics applied to most countries such as',
+        '“international relations,” and one-time events such as named',
+        'storms, major accidents, and specific Olympic Games.',
     ]
     METH_X = 0.025
-    METH_FS = 10
-    LINE_SPACING = 0.013
-    # Position methodology in the open Pacific Ocean to the west of South
-    # America — empty water with no countries in the way.
-    y = 0.55
+    METH_FS = 9
+    LINE_SPACING = 0.0145
+    # Lower-left placement: block top at y ≈ 0.30, bottom around 0.12.
+    # That's the south Pacific west of Chile/Patagonia — verified empty
+    # on the Americas LAEA projection.
+    y = 0.295
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
