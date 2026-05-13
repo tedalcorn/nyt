@@ -69,10 +69,12 @@ COUNTRY_DISPLAY_NAME = {
 
 # Per-country fit overrides. Same shape as EUROPE_OVERRIDES.
 AMERICAS_OVERRIDES = {
-    'Canada':    {'forced_text': 'Oil\nSands', 'fs_max': 26,
-                  'anchor_y_frac': 0.30},  # anchor low to clear Arctic islands
-    'Mexico':    {'forced_text': 'Drug\nCartels', 'fs_max': 22},
-    'Brazil':    {'forced_text': 'Carnival', 'fs_max': 24},
+    # Big countries get much larger fonts to fill their area
+    'Canada':    {'forced_text': 'Oil\nSands', 'fs_max': 90,
+                  'anchor_y_frac': 0.30},
+    'Mexico':    {'forced_text': 'Drug\nCartels', 'fs_max': 38,
+                  'rotations': [-30, 0]},  # tilt to match the country's NW-SE axis
+    'Brazil':    {'forced_text': 'Carnival', 'fs_max': 80},
     'Argentina': {'forced_text': 'Defaulting', 'fs_max': 16,
                   'rotations': [70, 0]},
     'Chile':     {'forced_text': 'Wildfires', 'fs_max': 10,
@@ -86,13 +88,15 @@ AMERICAS_OVERRIDES = {
     'Uruguay':   {'fs_max': 8},
     'Guyana':    {'fs_max': 8},
     'Suriname':  {'fs_max': 8},
-    'Cuba':      {'forced_text': 'Cuban-\nAmericans', 'fs_max': 11,
-                  'rotations': [-10]},
-    'Haiti':     {'forced_text': 'Haitian-\nAmericans', 'fs_max': 9},
-    'Dominican Rep.': {'fs_max': 9, 'tight_caption': True},
-    'Jamaica':   {'forced_text': 'Slavery', 'fs_max': 9},
-    'Bahamas':   {'forced_text': 'Hurricanes', 'fs_max': 9,
-                  'rotations': [-30]},
+    # Cuba is wide but very thin (E-W ~10× the N-S extent in projection).
+    # Single-line label with lower fit_threshold so it can extend slightly
+    # past the polygon into the ocean above/below.
+    'Cuba':      {'forced_text': 'Cuban-Americans', 'fs_max': 11,
+                  'rotations': [-15], 'fit_threshold': 0.65},
+    # Haiti/DR/Jamaica too small for in-polygon; use callouts (see below)
+    # Bahamas: rotation matches the archipelago's NW-SE chain
+    'Bahamas':   {'forced_text': 'Hurricanes', 'fs_max': 10,
+                  'rotations': [-45]},
     'Guatemala': {'forced_text': 'Mayans', 'fs_max': 12},
     'Honduras':  {'forced_text': 'Gangs', 'fs_max': 11},
     'Nicaragua': {'fs_max': 10},
@@ -105,10 +109,18 @@ AMERICAS_OVERRIDES = {
     'Barbados':  {'fs_max': 8},
 }
 
-# Tiny countries that should always go to callout (no in-polygon labeling)
+# Tiny countries that should always go to callout (no in-polygon labeling).
+# Offsets are (dx, dy) as fractions of the visible map width/height. The
+# Caribbean cluster fans out in four directions so callouts don't stack:
+#   - Northern islands (Cuba/Bahamas) get their leaders pulled NORTH
+#   - Southern islands (Jamaica/Haiti/DR) labeled from BELOW (Caribbean Sea)
+#     so they don't pile up over Cuba's area
 CALLOUT_OFFSETS = {
-    'Trinidad and Tobago': ( 0.04, -0.005),
-    'Barbados':            ( 0.04,  0.005),
+    'Haiti':               (-0.02, -0.07),   # south into Caribbean Sea
+    'Dominican Rep.':      ( 0.04, -0.07),   # south-east into Caribbean
+    'Jamaica':             (-0.08, -0.04),   # SW into Caribbean
+    'Trinidad and Tobago': ( 0.05, -0.005),
+    'Barbados':            ( 0.05,  0.005),
     'Falkland Is.':        (-0.03, -0.02),
 }
 
@@ -325,16 +337,27 @@ def main():
     map_ax.set_xlim(bbox_minx, bbox_maxx)
     map_ax.set_ylim(bbox_miny, bbox_maxy)
 
-    # Title
+    # Title — wrapped to 2 lines (portrait orientation = narrow figure
+    # width). Subtitle also wraps to 2 lines.
     title_y = 1.0 - 0.45 / fig_h
     fig.text(0.02, title_y,
-             "How The New York Times Looks At The Americas",
+             "How The New York Times",
              fontsize=28, family='serif', weight='semibold',
              color=INK, ha='left', va='top')
     fig.text(0.02, title_y - 0.50 / fig_h,
-             "Keywords that The New York Times assigns to its articles "
-             "show which recurring subjects are covered in each country "
-             "out of proportion to international coverage as a whole.",
+             "Looks At The Americas",
+             fontsize=28, family='serif', weight='semibold',
+             color=INK, ha='left', va='top')
+    fig.text(0.02, title_y - 1.05 / fig_h,
+             "Keywords that The New York Times assigns to its articles show which",
+             fontsize=12, family='serif', color='#4a4438',
+             ha='left', va='top')
+    fig.text(0.02, title_y - 1.30 / fig_h,
+             "recurring subjects are covered in each country out of proportion to",
+             fontsize=12, family='serif', color='#4a4438',
+             ha='left', va='top')
+    fig.text(0.02, title_y - 1.55 / fig_h,
+             "international coverage as a whole.",
              fontsize=12, family='serif', color='#4a4438',
              ha='left', va='top')
 
