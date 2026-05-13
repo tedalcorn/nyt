@@ -117,22 +117,23 @@ AMERICAS_OVERRIDES = {
 #   - Southern islands (Jamaica/Haiti/DR) labeled from BELOW (Caribbean Sea)
 #     so they don't pile up over Cuba's area
 CALLOUT_OFFSETS = {
-    # Per Ted: just ONE Caribbean callout goes south, the rest fan out
-    # in other directions so labels don't pile up.
-    'Bahamas':             ( 0.06,  0.025),  # NE into Atlantic east of Florida
-    'Haiti':               ( 0.00, -0.08),   # south into Caribbean Sea
-    'Dominican Rep.':      ( 0.07, -0.015),  # east into Atlantic
-    'Jamaica':             (-0.10, -0.015),  # west into Caribbean (clear of Cuba)
-    'Trinidad and Tobago': ( 0.06, -0.005),
-    'Barbados':            ( 0.06,  0.005),
-    'Falkland Is.':        (-0.04, -0.02),
+    # Caribbean: callouts hug the islands closely (short leaders) and
+    # fan in four different directions so they don't stack. Just one
+    # goes south per Ted's note.
+    'Bahamas':             ( 0.025,  0.012),  # NE into Atlantic east of Florida
+    'Haiti':               ( 0.000, -0.035),  # south into Caribbean Sea
+    'Dominican Rep.':      ( 0.035, -0.005),  # east into Atlantic
+    'Jamaica':             (-0.04,  -0.005),  # west into Caribbean (clear of Cuba)
+    'Trinidad and Tobago': ( 0.025, -0.003),
+    'Barbados':            ( 0.025,  0.003),
+    'Falkland Is.':        (-0.025, -0.01),
 }
 
 # Bbox in lat/lon — covers Tierra del Fuego (lat -56) up to the Canadian
 # Arctic (lat 75), and from the Pacific west of Alaska (lon -140) east to
 # the Brazilian coast (lon -33). Slightly extended past prior version so
 # Canada's full northern extent and Mexico's western coast aren't cropped.
-AMERICAS_BBOX_LATLON = (-140, -57, -33, 78)  # minx, miny, maxx, maxy
+AMERICAS_BBOX_LATLON = (-152, -57, -27, 78)  # minx, miny, maxx, maxy
 
 # Threshold for showing a country's label at all
 MIN_SCORE_TO_LABEL = 6.0
@@ -335,7 +336,7 @@ def main():
     # Hard separation: title block ends ABOVE map top; map ends ABOVE footer.
     map_h_inches = 18
     map_w_inches = map_h_inches * bbox_aspect
-    TOP_MARGIN_INCHES = 3.4   # title (~1.4") + subtitle (~1.0") + buffer
+    TOP_MARGIN_INCHES = 2.4   # title (~1.0") + subtitle (~0.8") + buffer
     BOTTOM_MARGIN_INCHES = 0.6
     fig_w = map_w_inches
     fig_h = map_h_inches + TOP_MARGIN_INCHES + BOTTOM_MARGIN_INCHES
@@ -352,12 +353,12 @@ def main():
 
     # Title block lives in the top margin. Pixel-position-driven so we can
     # assert at the end that nothing overlaps the map.
-    title_y = 1.0 - 0.55 / fig_h            # title line 1
-    title_line2_y = title_y - 0.55 / fig_h  # title line 2
-    sub_y1 = title_line2_y - 0.55 / fig_h
-    sub_y2 = sub_y1 - 0.27 / fig_h
-    sub_y3 = sub_y2 - 0.27 / fig_h
-    title_block_bottom_y = sub_y3 - 0.20 / fig_h  # buffer below subtitle
+    title_y = 1.0 - 0.45 / fig_h            # title line 1
+    title_line2_y = title_y - 0.50 / fig_h  # title line 2
+    sub_y1 = title_line2_y - 0.40 / fig_h
+    sub_y2 = sub_y1 - 0.22 / fig_h
+    sub_y3 = sub_y2 - 0.22 / fig_h
+    title_block_bottom_y = sub_y3 - 0.15 / fig_h  # buffer below subtitle
 
     fig.text(0.02, title_y,         "How The New York Times",
              fontsize=28, family='serif', weight='semibold',
@@ -504,7 +505,9 @@ def main():
                     fontsize=fs, family='serif', weight='semibold',
                     color=INK, rotation=rotation, zorder=4)
 
-    # Callouts
+    # Callouts: short leader from the country to a label cluster sitting
+    # just outside the polygon. Name and term render TIGHT TOGETHER so
+    # they read as one unit (Ted: previously the gap was too wide).
     for gname, text, anchor in callouts:
         dx, dy = CALLOUT_OFFSETS.get(gname, (0.04, 0.02))
         lx = anchor.x + dx * eur_w
@@ -513,11 +516,12 @@ def main():
                     [anchor.y, ly],
                     color=LEADER, linewidth=0.7, alpha=0.85, zorder=2.5)
         analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
-        map_ax.text(lx, ly + eur_h * 0.012, analysis_name,
-                    fontsize=8, ha='left', va='center',
+        # Tight stacking: name just above term, no visible gap
+        map_ax.text(lx, ly + eur_h * 0.005, analysis_name + ':',
+                    fontsize=8, ha='left', va='bottom',
                     family='serif', color=MUTED, zorder=4)
-        map_ax.text(lx, ly - eur_h * 0.005, text,
-                    fontsize=10, ha='left', va='center',
+        map_ax.text(lx, ly + eur_h * 0.005, text,
+                    fontsize=10, ha='left', va='top',
                     family='serif', weight='semibold', color=INK, zorder=4)
 
     # Methodology
