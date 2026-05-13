@@ -94,17 +94,19 @@ EUROPE_OVERRIDES = {
     'Sweden':     {'rotations': [70, 90, 0]},
     'Finland':    {'rotations': [80, 90, 0]},
     'Italy':      {'rotations': [-40, -30, 0], 'forced_text': 'Roman\nCivilization'},
-    'Portugal':   {'rotations': [70, 90, 0]},
+    'Portugal':   {'rotations': [70, 90, 0], 'fs_max': 11},
     'Ireland':    {'forced_text': 'Irish-\nAmericans', 'fs_max': 18},
     'United Kingdom': {'forced_text': 'Transit\nSystems', 'fs_max': 26,
                        'anchor_y_frac': 0.25},  # push into wide lower portion
-    'Switzerland': {'forced_text': 'Alpine\nSkiing', 'fs_max': 14},
+    'Switzerland': {'forced_text': 'Alpine\nSkiing', 'fs_max': 11},
     'Netherlands': {'forced_text': 'Bicycles', 'fs_max': 11},
-    'Belgium':    {'forced_text': 'Diamonds', 'fs_max': 11},
+    'Belgium':    {'forced_text': 'Diamonds', 'fs_max': 12,
+                   'rotations': [30, 0]},
     'Denmark':    {'forced_text': 'Dog\nSledding', 'fs_max': 12},
     'Croatia':    {'rotations': [-30, 0]},
     'Czechia':    {'forced_text': 'Civil War', 'fs_max': 11},
-    'Slovakia':   {'fs_max': 9},
+    'Slovakia':   {'fs_max': 11, 'rotations': [-30, 0],
+                   'forced_text': 'Discrimination'},
     'Slovenia':   {'fs_max': 9, 'forced_text': 'Monuments'},
     'Bosnia and Herz.': {'forced_text': 'War\nCrimes', 'fs_max': 12},
     'North Macedonia': {'fs_max': 9, 'forced_text': 'Geographic\nNames'},
@@ -115,8 +117,10 @@ EUROPE_OVERRIDES = {
     'Lithuania':  {'fs_max': 9, 'forced_text': 'WWII'},
     'Cyprus':     {'fs_max': 8},
     'Albania':    {'rotations': [80, 0], 'forced_text': 'Sociology', 'fs_max': 10},
-    'Iceland':    {'forced_text': 'Geothermal\nPower', 'fs_max': 12},
-    'Hungary':    {'forced_text': 'Academic\nFreedom', 'fs_max': 13},
+    'Iceland':    {'forced_text': 'Geothermal\nPower', 'fs_max': 11,
+                   'anchor_y_frac': 0.35},  # leave room for Iceland: caption above
+    'Hungary':    {'forced_text': 'Academic\nFreedom', 'fs_max': 13,
+                   'rotations': [-20, 0]},
     'Kosovo':     {'fs_max': 9},
     'Russia':     {'fs_max': 30},
     'Greece':     {'rotations': [-30, 0], 'forced_text': 'Athens\n2004\nOlympics',
@@ -515,21 +519,25 @@ def main():
     from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
     METH_FS = 11
     METH_COLOR = '#4a4438'
-    # Compact 6-line methodology so it fits in the Atlantic Ocean band
-    # south of Iceland and north of Ireland — only ~0.18 figure-y units
-    # of clear space available, so we need wider lines and fewer of them.
+    # Methodology — positioned just below the title in the upper-left,
+    # in the Atlantic Ocean strip ABOVE Iceland's latitude. Pushed UP
+    # from the earlier mid-map position so it doesn't crowd Britain or
+    # the European mainland.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the World section from 2000 to 2026,',
-        'depicting the subject keyword that (a) appeared on at least 1% of each',
-        'country’s coverage and (b) was **most** out of proportion with that keyword’s',
-        'frequency in World coverage overall. Subjects matching the country name,',
-        'broad regional tags, and one-time events such as named storms, crashes,',
-        'the Olympics, and conferences are excluded.',
+        f'This map draws on {rounded_articles} articles in the World section from 2000 to 2026.',
+        'The New York Times assigns each article subject keywords (separate from its',
+        'tags for individual people and organizations, which are not included here).',
+        'For each country, the map shows the keyword that (a) appeared on at least 1%',
+        'of the country’s coverage and (b) was **most** out of proportion with that',
+        'keyword’s frequency in World coverage overall. Excluded: each country’s own',
+        'name; broad geopolitical buckets every country accumulates such as Politics,',
+        'International Relations, Military, and Diplomacy; local currencies; and one-',
+        'time events such as named storms, major accidents, and specific Olympic Games.',
     ]
     METH_X = 0.025
-    LINE_SPACING = 0.022
-    # Top of block sits just below Iceland's south coast, in the open ocean
-    y = 0.595
+    LINE_SPACING = 0.020
+    title_bottom = title_y - 0.55 / fig_h
+    y = title_bottom - 0.015
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
