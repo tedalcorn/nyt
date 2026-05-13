@@ -132,7 +132,7 @@ EUROPE_OVERRIDES = {
     'Kosovo':     {'fs_max': 9},
     'Russia':     {'fs_max': 30},
     'Greece':     {'rotations': [-30, 0], 'forced_text': 'Greek\nCivilization',
-                   'fs_max': 14},
+                   'fs_max': 22},
     'Serbia':     {'forced_text': 'Chess', 'fs_max': 16},
     'Bulgaria':   {'forced_text': 'Organized\nCrime', 'fs_max': 11},
     'Romania':    {'forced_text': 'Human\nTrafficking', 'fs_max': 12},
@@ -539,28 +539,26 @@ def main():
     from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
     METH_FS = 11
     METH_COLOR = '#4a4438'
-    # Methodology — Ted's edited text. Wide lines so the block is short
-    # enough vertically to fit in the Atlantic strip BETWEEN Iceland's
-    # south coast and Britain's north coast. Block top sits just below
-    # Iceland; bottom sits just above Scotland.
+    # Methodology — Ted's edited text. Slightly wider lines (extends ~3%
+    # further right than v8 per Ted's review) so the block fits in fewer
+    # lines, and tighter line spacing so it doesn't bleed into Britain.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the World section from 2000 to',
-        '2026. The New York Times assigns each article subject keywords (separate',
-        'from tags for individual people and organizations, which are not included',
-        'here). For each country with sufficient coverage to identify recurring',
-        'patterns, the map shows the keyword that (a) appeared on at least 1% of',
-        'the country’s coverage and (b) was **most** out of proportion with that',
-        'keyword’s frequency in World coverage overall. The analysis excludes each',
-        'country’s own name and currency, broad topics applied to most countries',
-        'such as “international relations,” and one-time events such as named',
-        'storms, major accidents, and specific Olympic Games.',
+        f'This map draws on {rounded_articles} articles in the World section from 2000 to 2026. The',
+        'New York Times assigns each article subject keywords (separate from tags for',
+        'individual people and organizations, which are not included here). For each',
+        'country with sufficient coverage to identify recurring patterns, the map shows',
+        'the keyword that (a) appeared on at least 1% of the country’s coverage and',
+        '(b) was **most** out of proportion with that keyword’s frequency in World',
+        'coverage overall. The analysis excludes each country’s own name and currency,',
+        'broad topics applied to most countries such as “international relations,” and',
+        'one-time events such as named storms, major accidents, and specific Olympic Games.',
     ]
     METH_X = 0.025
-    METH_FS = 9
-    LINE_SPACING = 0.0135  # tighter spacing — was 0.0155, too airy
-    # Top of methodology block sits just below Iceland's south coast.
-    # Bumped UP from 0.615 — block was sitting too far south of Iceland.
-    y = 0.740
+    METH_FS = 8           # one point smaller so we can compress vertically
+    LINE_SPACING = 0.0095  # ~33% tighter than v8's 0.0135
+    # Lower the block by 1.5 lines from v8 (0.020 figure-y) per Ted's note
+    # that v8 was 1.5 lines too high.
+    y = 0.720
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
