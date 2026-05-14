@@ -503,6 +503,25 @@ def main():
             'Argentina', 'Brazil', 'Bolivia', 'Chile', 'Colombia', 'Ecuador',
             'Guyana', 'Paraguay', 'Peru', 'Suriname', 'Uruguay', 'Venezuela',
         },
+        'Africa-and-Middle-East': {
+            # Africa
+            'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi',
+            'Cameroon', 'Cape Verde', 'Central African Republic', 'Chad',
+            'Comoros', 'Republic of Congo', 'Ivory Coast',
+            'Democratic Republic of Congo', 'Djibouti', 'Egypt',
+            'Equatorial Guinea', 'Eritrea', 'Eswatini', 'Ethiopia', 'Gabon',
+            'Gambia', 'Ghana', 'Guinea', 'Guinea-Bissau', 'Kenya', 'Lesotho',
+            'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali', 'Mauritania',
+            'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger',
+            'Nigeria', 'Rwanda', 'Sao Tome and Principe', 'Senegal',
+            'Seychelles', 'Sierra Leone', 'Somalia', 'South Africa',
+            'South Sudan', 'Sudan', 'Tanzania', 'Togo', 'Tunisia', 'Uganda',
+            'Zambia', 'Zimbabwe',
+            # Middle East
+            'Bahrain', 'Iraq', 'Iran', 'Israel', 'Jordan', 'Kuwait', 'Lebanon',
+            'Oman', 'Qatar', 'Saudi Arabia', 'Syria', 'United Arab Emirates',
+            'Yemen', 'Gaza Strip', 'West Bank',
+        },
     }
     region_filter = REGION_COUNTRIES.get(region, set())
 
