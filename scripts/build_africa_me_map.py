@@ -76,77 +76,103 @@ COUNTRY_DISPLAY_NAME = {
 
 # Per-country fit overrides.
 AFME_OVERRIDES = {
-    # Big countries with room for big labels
-    'Egypt':              {'forced_text': 'Egyptian\nCivilization', 'fs_max': 24,
-                           'anchor_y_frac': 0.45},
-    'South Africa':       {'forced_text': 'Apartheid', 'fs_max': 28},
-    'Algeria':            {'forced_text': 'Berbers', 'fs_max': 26},
-    'Libya':              {'forced_text': 'Diplomatic\nEmbassies', 'fs_max': 18},
-    'Sudan':              {'forced_text': 'Tribes', 'fs_max': 22},
-    'S. Sudan':           {'forced_text': 'Gold', 'fs_max': 12},
-    'Ethiopia':           {'forced_text': 'Oromo', 'fs_max': 18},
-    'Dem. Rep. Congo':    {'forced_text': 'Cobalt', 'fs_max': 26},
-    'Tanzania':           {'forced_text': 'US Foreign\nService', 'fs_max': 13},
-    'Nigeria':            {'forced_text': 'Poliomyelitis', 'fs_max': 12},
-    'Iran':               {'forced_text': 'Iran-Israel\nProxy Conflict', 'fs_max': 20},
-    'Iraq':               {'forced_text': 'Yazidi', 'fs_max': 22,
-                           'fit_threshold': 0.85},
-    'Saudi Arabia':       {'forced_text': 'Pilgrimages', 'fs_max': 32},
-    'Syria':              {'forced_text': 'Assyrian\nCivilization', 'fs_max': 14},
-    'Yemen':              {'forced_text': 'Navies', 'fs_max': 16},
-    'Morocco':            {'forced_text': 'Railroads', 'fs_max': 14,
+    # Big African countries: large fs and varied rotations per country's
+    # widest dimension. fit_label tries each rotation and picks the
+    # largest font that fits.
+    'Egypt':              {'forced_text': 'Egyptian\nCivilization', 'fs_max': 36,
+                           'anchor_y_frac': 0.45,
+                           'rotations': [0]},
+    'South Africa':       {'forced_text': 'Apartheid', 'fs_max': 42,
+                           'rotations': [-10, 0]},
+    'Algeria':            {'forced_text': 'Berbers', 'fs_max': 46,
+                           'rotations': [-15, 0]},
+    'Libya':              {'forced_text': 'Diplomatic\nEmbassies', 'fs_max': 28,
+                           'rotations': [-10, 0]},
+    'Sudan':              {'forced_text': 'Tribes', 'fs_max': 38,
+                           'rotations': [0]},
+    'S. Sudan':           {'forced_text': 'Gold', 'fs_max': 14},
+    'Ethiopia':           {'forced_text': 'Oromo', 'fs_max': 30,
                            'rotations': [-30, 0]},
+    'Dem. Rep. Congo':    {'forced_text': 'Cobalt', 'fs_max': 42,
+                           'rotations': [0]},
+    'Tanzania':           {'forced_text': 'US Foreign\nService', 'fs_max': 18,
+                           'rotations': [30, 0]},
+    'Nigeria':            {'forced_text': 'Poliomyelitis', 'fs_max': 22,
+                           'rotations': [0]},
+    'Iran':               {'forced_text': 'Iran-Israel\nProxy Conflict', 'fs_max': 26,
+                           'rotations': [-25, 0]},
+    'Iraq':               {'forced_text': 'Yazidi', 'fs_max': 30,
+                           'fit_threshold': 0.85},
+    'Saudi Arabia':       {'forced_text': 'Pilgrimages', 'fs_max': 44,
+                           'rotations': [-25, 0]},
+    'Yemen':              {'forced_text': 'Navies', 'fs_max': 26,
+                           'rotations': [0]},
+    'Morocco':            {'forced_text': 'Railroads', 'fs_max': 20,
+                           'rotations': [-35, 0]},
     'Tunisia':            {'forced_text': 'Drownings', 'fs_max': 11,
                            'rotations': [80, 0]},
-    'Mali':               {'forced_text': 'Tuareg', 'fs_max': 18},
-    'Niger':              {'forced_text': 'Polio', 'fs_max': 14},
-    'Chad':               {'forced_text': 'Pipelines', 'fs_max': 11},
-    'Cameroon':           {'forced_text': 'Health', 'fs_max': 9},
-    'Kenya':              {'forced_text': 'Kikuyu', 'fs_max': 14},
-    'Uganda':             {'forced_text': 'Condoms', 'fs_max': 10},
+    'Mali':               {'forced_text': 'Tuareg', 'fs_max': 32,
+                           'rotations': [-15, 0]},
+    'Niger':              {'forced_text': 'Polio', 'fs_max': 24,
+                           'rotations': [0]},
+    'Chad':               {'forced_text': 'Pipelines', 'fs_max': 18,
+                           'rotations': [80, 0]},
+    'Cameroon':           {'forced_text': 'Health', 'fs_max': 14,
+                           'rotations': [40, 0]},
+    'Kenya':              {'forced_text': 'Kikuyu', 'fs_max': 20,
+                           'rotations': [-30, 0]},
+    'Uganda':             {'forced_text': 'Condoms', 'fs_max': 11},
     'Rwanda':             {'forced_text': 'Conflict\nMinerals', 'fs_max': 8},
-    'Burundi':            {'forced_text': 'Hutu', 'fs_max': 8},
-    'Angola':             {'forced_text': 'Diamonds', 'fs_max': 18},
-    'Mozambique':         {'forced_text': 'Cyclones', 'fs_max': 14,
-                           'rotations': [-50, 0]},
-    'Madagascar':         {'fs_max': 10},
-    'Zambia':             {'forced_text': 'Diet', 'fs_max': 12},
-    'Zimbabwe':           {'forced_text': 'Lions', 'fs_max': 14},
+    'Burundi':            {'forced_text': 'Hutu', 'fs_max': 9},
+    'Angola':             {'forced_text': 'Diamonds', 'fs_max': 28,
+                           'rotations': [0]},
+    'Mozambique':         {'forced_text': 'Cyclones', 'fs_max': 18,
+                           'rotations': [-60, 0]},
+    'Madagascar':         {'fs_max': 14, 'rotations': [-65, 0]},
+    'Zambia':             {'forced_text': 'Diet', 'fs_max': 18,
+                           'rotations': [-20, 0]},
+    'Zimbabwe':           {'forced_text': 'Lions', 'fs_max': 20},
     'Malawi':             {'forced_text': 'Diet', 'fs_max': 8,
                            'rotations': [80, 0]},
     'Eritrea':            {'forced_text': 'Tigrayans', 'fs_max': 9,
                            'rotations': [80, 0]},
-    'Liberia':            {'forced_text': 'Ebola', 'fs_max': 10},
+    'Liberia':            {'forced_text': 'Ebola', 'fs_max': 11},
     'Sierra Leone':       {'forced_text': 'Ebola', 'fs_max': 9},
-    'Guinea':             {'forced_text': 'Ebola', 'fs_max': 9},
-    'Ghana':              {'forced_text': 'Malaria', 'fs_max': 10},
-    'Côte d\'Ivoire':     {'forced_text': 'Civil War', 'fs_max': 10},
+    'Guinea':             {'forced_text': 'Ebola', 'fs_max': 11,
+                           'rotations': [-30, 0]},
+    'Ghana':              {'forced_text': 'Malaria', 'fs_max': 11,
+                           'rotations': [80, 0]},
+    'Côte d\'Ivoire':     {'forced_text': 'Civil War', 'fs_max': 13},
     'Burkina Faso':       {'forced_text': 'Mercenaries', 'fs_max': 9},
-    'Senegal':            {'forced_text': 'Sufism', 'fs_max': 11},
-    'Central African Rep.': {'forced_text': 'Mercenaries', 'fs_max': 8},
-    'Somalia':            {'forced_text': 'Piracy', 'fs_max': 14},
-    'Israel':             {'forced_text': 'Temple\nMount', 'fs_max': 12,
-                           'tight_caption': True},
-    'Lebanon':            {'fs_max': 9},
-    'Jordan':             {'fs_max': 12},
+    'Senegal':            {'forced_text': 'Sufism', 'fs_max': 12},
+    'Central African Rep.': {'forced_text': 'Mercenaries', 'fs_max': 11,
+                           'rotations': [0]},
+    'Somalia':            {'forced_text': 'Piracy', 'fs_max': 18,
+                           'rotations': [-55, 0]},
+    'Jordan':             {'forced_text': 'Temple\nMount', 'fs_max': 9},
     'Eswatini':           {'forced_text': 'AIDS', 'fs_max': 7},
+    # Israel / Lebanon / Syria moved to callouts (see below)
 }
 
 # Small countries → callouts
 # (dx, dy[, rotation[, forced_text[, ha_override]]])
 CALLOUT_OFFSETS = {
-    # Persian Gulf cluster — fan out
-    'Bahrain':     ( 0.020,  0.005, 0, 'Tear Gas'),
-    'Qatar':       ( 0.022, -0.005, 0, 'Peace Process'),
-    'Kuwait':      (-0.025,  0.005, 0, 'Persian Gulf War'),
-    'United Arab Emirates': (0.025, -0.015, 0, 'Wealth'),
-    # Mediterranean / Levant micro
-    'Lebanon':     (-0.022,  0.005, 0, 'Iran Proxy', 'right'),
-    # African micro
-    'Djibouti':    (0.020, -0.000),
+    # Northern Middle East — all annotated from the NORTH so they don't
+    # crowd each other and the text can be readable. Israel/Lebanon/
+    # Syria are too small / crowded for in-polygon labels.
+    'Israel':      ( 0.000,  0.050, 0, 'Temple Mount', 'center'),
+    'Lebanon':     (-0.020,  0.075, 0, 'Iran Proxy Conflict', 'center'),
+    'Syria':       ( 0.025,  0.090, 0, 'Assyrian Civilization', 'center'),
+    'Kuwait':      ( 0.000,  0.045, 0, 'Persian Gulf War', 'center'),
+    # Persian Gulf eastern cluster
+    'Bahrain':     ( 0.025,  0.010, 0, 'Tear Gas'),
+    'Qatar':       ( 0.028, -0.010, 0, 'Peace Process'),
+    'United Arab Emirates': (0.030, -0.020, 0, 'Wealth'),
+    # African micro states
+    'Djibouti':    (0.022, -0.000),
     'Gambia':      (-0.020, 0.000),
-    'Lesotho':     (0.020, -0.005),
-    'eSwatini':    (0.020, -0.005, 0, 'AIDS'),
+    'Lesotho':     (0.022, -0.005),
+    'eSwatini':    (0.022, -0.005, 0, 'AIDS'),
 }
 
 # Skip-countries set — special exclusions
@@ -155,7 +181,7 @@ SKIP_COUNTRIES = set()
 # Bbox in lat/lon — covers all of Africa (lat -35 to 38) and the Middle
 # East (lon ~25-60). Slightly wider west (-20) to give Senegal/Mauritania
 # room, east (60) for Iran's eastern border.
-AFME_BBOX_LATLON = (-20, -38, 62, 40)
+AFME_BBOX_LATLON = (-22, -38, 67, 40)
 
 MIN_SCORE_TO_LABEL = 6.0
 MIN_TAG_YEAR_SPAN = 2
@@ -533,43 +559,36 @@ def main():
     rounded_articles = f"{round(n_world_articles, -3):,.0f}"
     from matplotlib.offsetbox import HPacker, TextArea, AnnotationBbox
     METH_COLOR = '#4a4438'
+    # Methodology — widened lines (~25% more chars per line) and start
+    # 3 lines lower than v1 per Ted's note.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles',
-        'in the World section from 2000 to',
-        '2026. The New York Times assigns',
-        'each article subject keywords',
-        '(separate from tags for individual',
-        'people and organizations, which are',
-        'not included here). For each country',
-        'with sufficient coverage to identify',
-        'recurring patterns, the map shows',
-        'the keyword that (a) appeared on at',
-        'least 1% of the country’s coverage',
-        'and (b) was **most** out of',
-        'proportion with that keyword’s',
-        'frequency in World coverage overall.',
-        'The analysis excludes each country’s',
-        'own name and currency, broad topics',
-        'applied to most countries such as',
-        '“international relations,” and one-',
-        'time events such as named storms,',
-        'major accidents, and specific Olympic',
-        'Games. For Saudi Arabia (and for',
-        'Afghanistan and Pakistan on the Asia',
-        'map), the four 9/11-aftermath tags',
-        '(Pentagon, World Trade Center,',
-        'Hijacking, and Airlines and Airplanes)',
-        'are excluded so the country’s own',
+        f'This map draws on {rounded_articles} articles in the World',
+        'section from 2000 to 2026. The New York Times',
+        'assigns each article subject keywords (separate',
+        'from tags for individual people and',
+        'organizations, which are not included here). For',
+        'each country with sufficient coverage to identify',
+        'recurring patterns, the map shows the keyword that',
+        '(a) appeared on at least 1% of the country’s',
+        'coverage and (b) was **most** out of proportion',
+        'with that keyword’s frequency in World coverage',
+        'overall. The analysis excludes each country’s own',
+        'name and currency, broad topics applied to most',
+        'countries such as “international relations,” and',
+        'one-time events such as named storms, major',
+        'accidents, and specific Olympic Games. For Saudi',
+        'Arabia (and for Afghanistan and Pakistan on the',
+        'Asia map), the four 9/11-aftermath tags (Pentagon,',
+        'World Trade Center, Hijacking, and Airlines and',
+        'Airplanes) are excluded so the country’s own',
         'recurring themes can surface.',
     ]
     METH_X = 0.025
     METH_FS = 11
     LINE_SPACING = 0.0135
-    # Position: lower-left, off the West African coast (Atlantic Ocean).
-    # That's the open ocean area between lat -10 and lat +10, lon -20 to
-    # lon -5. With bbox extending from x=0 to map's left edge, this is
-    # roughly y_fig 0.10-0.35 in figure fraction.
-    y = 0.485
+    # Position: lower-left, in the open Atlantic Ocean off W. Africa.
+    # Start 3 text lines lower than v1 (was y=0.485, now y=0.444).
+    y = 0.444
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
