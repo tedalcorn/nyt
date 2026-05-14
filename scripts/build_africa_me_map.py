@@ -131,7 +131,8 @@ AFME_OVERRIDES = {
     'Madagascar':         {'fs_max': 14, 'rotations': [-65, 0]},
     'Zambia':             {'forced_text': 'Diet', 'fs_max': 28,
                            'rotations': [-20, 0],
-                           'anchor_x_frac': 0.45},
+                           'anchor_x_frac': 0.50,
+                           'anchor_y_frac': 0.30},  # lower in country to clear Angola/Diamonds
     'Zimbabwe':           {'forced_text': 'Lions', 'fs_max': 20},
     'Malawi':             {'forced_text': 'Diet', 'fs_max': 8,
                            'rotations': [80, 0]},
@@ -163,16 +164,18 @@ CALLOUT_OFFSETS = {
     'Israel':      (-0.030,  0.040, 0, 'Temple Mount', 'center'),
     'Lebanon':     (-0.025,  0.080, 0, 'Iran Proxy Conflict', 'center'),
     'Syria':       ( 0.025,  0.090, 0, 'Assyrian Civilization', 'center'),
-    # Jordan moved slightly up + left per Ted
-    'Jordan':      (-0.055,  0.020, 0, 'Temple Mount', 'center'),
-    # Kuwait lifted further up (offshore in the open space above Iran)
-    'Kuwait':      ( 0.020,  0.115, 0, 'Persian Gulf War', 'center'),
+    # Jordan: shows its #2 ('Foreign Service') instead of #1 to avoid
+    # duplicating Israel's 'Temple Mount' on the map. NYT's Jordan
+    # coverage is largely the diplomatic angle anyway.
+    'Jordan':      (-0.055,  0.020, 0, 'Foreign Service', 'center'),
+    # Kuwait nudged a tiny bit more up
+    'Kuwait':      ( 0.020,  0.125, 0, 'Persian Gulf War', 'center'),
     # Persian Gulf small states
     'Bahrain':     ( 0.030,  0.012, 0, 'Tear Gas'),
-    # Qatar: pushed further south + slightly right
-    'Qatar':       ( 0.055, -0.045, 0, 'Peace Process'),
-    # UAE: center-aligned, slightly further south
-    'United Arab Emirates': ( 0.055, -0.050, 0, 'Wealth', 'center'),
+    # Qatar pushed far south into open Gulf space
+    'Qatar':       ( 0.060, -0.120, 0, 'Peace Process'),
+    # UAE pushed right and down (~2 text lines)
+    'United Arab Emirates': ( 0.075, -0.075, 0, 'Wealth', 'center'),
     # Morocco: callout offshore in the Atlantic, NW of country
     'Morocco':     (-0.035,  0.020, 30, 'Railroads', 'center'),
     # Rwanda: callout placed left + up so it sits inside DRC's empty
@@ -381,7 +384,7 @@ def main():
     # for footer.
     map_h_inches = 16
     map_w_inches = map_h_inches * bbox_aspect
-    TOP_MARGIN_INCHES = 3.2   # title (~1.0") + bigger subtitle (~1.4") + buffer
+    TOP_MARGIN_INCHES = 2.7   # title (~1.0") + 3-line subtitle (~0.9") + small buffer
     BOTTOM_MARGIN_INCHES = 0.4
     fig_w = map_w_inches
     fig_h = map_h_inches + TOP_MARGIN_INCHES + BOTTOM_MARGIN_INCHES
@@ -396,16 +399,15 @@ def main():
     map_ax.set_xlim(bbox_minx, bbox_maxx)
     map_ax.set_ylim(bbox_miny, bbox_maxy)
 
-    # Title block — title at 28pt, subtitle bumped to 15pt across 4
-    # lines with slightly wider line spacing (per Ted's review).
+    # Title block — title at 28pt, subtitle at 15pt across 3 wider lines
+    # (wraps near the figure horizontal centerline, per Ted).
     title_y = 1.0 - 0.50 / fig_h
     title_line2_y = title_y - 0.55 / fig_h
     SUB_LINE_INCH = 0.27       # 15pt × 1.15 / 72 ≈ 0.24, +buffer
     sub_y1 = title_line2_y - 0.50 / fig_h
     sub_y2 = sub_y1 - SUB_LINE_INCH / fig_h
     sub_y3 = sub_y2 - SUB_LINE_INCH / fig_h
-    sub_y4 = sub_y3 - SUB_LINE_INCH / fig_h
-    title_block_bottom_y = sub_y4 - 0.15 / fig_h
+    title_block_bottom_y = sub_y3 - 0.15 / fig_h
 
     fig.text(0.02, title_y, "How The New York Times",
              fontsize=28, family='serif', weight='semibold',
@@ -413,15 +415,11 @@ def main():
     fig.text(0.02, title_line2_y, "Looks At Africa & the Middle East",
              fontsize=28, family='serif', weight='semibold',
              color=INK, ha='left', va='top')
-    # Subtitle: 15pt, 4 lines, wrapped so margin is at least as wide as
-    # title text
-    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its",
+    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its articles show",
              fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y2, "articles show which recurring subjects are",
+    fig.text(0.02, sub_y2, "which recurring subjects are covered in each country out of",
              fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y3, "covered in each country out of proportion to",
-             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y4, "international coverage as a whole.",
+    fig.text(0.02, sub_y3, "proportion to international coverage as a whole.",
              fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
 
     assert title_block_bottom_y > map_ax_top, (
