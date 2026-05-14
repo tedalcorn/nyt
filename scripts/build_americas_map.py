@@ -125,9 +125,10 @@ CALLOUT_OFFSETS = {
     #     Jamaica (out in the Caribbean Sea SW of Cuba)
     #   - Jamaica label moved very tight NW of itself
     'Bahamas':             ( 0.025,  0.012),
-    # Cuba label below the WESTERN part of the country, rotated -15°,
-    # text wrapped at the hyphen so the block is narrower.
-    'Cuba':                (-0.040, -0.025, -15, 'Cuban-\nAmericans'),
+    # Cuba label tucked close to the west half of the country (dy small
+    # so it hugs Cuba's south coast instead of bleeding south into
+    # Central America's airspace).
+    'Cuba':                (-0.040, -0.012, -15, 'Cuban-\nAmericans'),
     # Haiti: NORTH of the island, label centered + shifted RIGHT so it
     # clears Cuba/Hispaniola
     'Haiti':               ( 0.015,  0.025, 0, None, 'center'),
@@ -140,9 +141,8 @@ CALLOUT_OFFSETS = {
     # Central America: Pacific side labels (polygons too narrow for inside)
     'Guatemala': (-0.025, -0.015, 0, 'Mayans'),
     'Honduras':  (-0.020, -0.020, 0, 'Gangs'),
-    # Panama: off the Pacific shore in the NW portion of the country,
-    # rotated -30° to match Panama's east-west axis
-    'Panama':    (-0.025, -0.015, -30, 'Canals'),
+    # Panama: callout right under Panama, center-aligned, rotated -30°
+    'Panama':    (0.0, -0.008, -30, 'Canals', 'center'),
 }
 
 # Bbox in lat/lon — covers Tierra del Fuego (lat -56) up to the Canadian
