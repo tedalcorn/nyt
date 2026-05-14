@@ -76,8 +76,9 @@ AMERICAS_OVERRIDES = {
                   'rotations': [-30, 0]},  # tilt to match the country's NW-SE axis
     'Brazil':    {'forced_text': 'Carnival', 'fs_max': 80,
                   'rotations': [-40]},  # tilt clockwise across the top
-    'Argentina': {'forced_text': 'Defaulting', 'fs_max': 16,
-                  'rotations': [70, 0]},
+    'Argentina': {'forced_text': 'Defaulting', 'fs_max': 40,
+                  'rotations': [70, 0],
+                  'anchor_x_frac': 0.40},  # shift slightly left per Ted
     'Chile':     {'forced_text': 'Wildfires', 'fs_max': 10,
                   'rotations': [80, 0]},
     'Peru':      {'forced_text': 'Incas', 'fs_max': 18},
@@ -125,10 +126,9 @@ CALLOUT_OFFSETS = {
     #     Jamaica (out in the Caribbean Sea SW of Cuba)
     #   - Jamaica label moved very tight NW of itself
     'Bahamas':             ( 0.025,  0.012),
-    # Cuba label tucked close to the west half of the country (dy small
-    # so it hugs Cuba's south coast instead of bleeding south into
-    # Central America's airspace).
-    'Cuba':                (-0.040, -0.012, -15, 'Cuban-\nAmericans'),
+    # Cuba label: hugs the west half of the south coast (closing the
+    # gap between Cuba and the label), centered horizontally.
+    'Cuba':                (-0.040, -0.005, -15, 'Cuban-\nAmericans', 'center'),
     # Haiti: NORTH of the island, label centered + shifted RIGHT so it
     # clears Cuba/Hispaniola
     'Haiti':               ( 0.015,  0.025, 0, None, 'center'),
@@ -141,8 +141,10 @@ CALLOUT_OFFSETS = {
     # Central America: Pacific side labels (polygons too narrow for inside)
     'Guatemala': (-0.025, -0.015, 0, 'Mayans'),
     'Honduras':  (-0.020, -0.020, 0, 'Gangs'),
-    # Panama: callout right under Panama, center-aligned, rotated -30°
-    'Panama':    (0.0, -0.008, -30, 'Canals', 'center'),
+    # Panama: callout off the Pacific shore in the NW part of the
+    # country (where the previous version placed it), text under the
+    # name, center-aligned, rotated -30°.
+    'Panama':    (-0.025, -0.015, -30, 'Canals', 'center'),
 }
 
 # Bbox in lat/lon — covers Tierra del Fuego (lat -56) up to the Canadian
@@ -239,12 +241,12 @@ def rotated_text_box(cx, cy, w, h, angle_deg):
     return ShpPolygon(corners)
 
 
-def candidate_anchors(poly, anchor_y_frac=None):
+def candidate_anchors(poly, anchor_y_frac=None, anchor_x_frac=None):
     pts = [poly.representative_point(), poly.centroid]
     minx, miny, maxx, maxy = poly.bounds
-    if anchor_y_frac is not None:
-        cy = miny + (maxy - miny) * anchor_y_frac
-        cx = (minx + maxx) / 2
+    if anchor_y_frac is not None or anchor_x_frac is not None:
+        cy = miny + (maxy - miny) * (anchor_y_frac if anchor_y_frac is not None else 0.5)
+        cx = minx + (maxx - minx) * (anchor_x_frac if anchor_x_frac is not None else 0.5)
         candidate = Point(cx, cy)
         if poly.contains(candidate):
             pts.insert(0, candidate)
@@ -288,10 +290,12 @@ def fit_label(ax, fig, poly, label, override):
     fs_min = override.get('fs_min', 6)
     rotations = override.get('rotations', [0])
     anchor_y_frac = override.get('anchor_y_frac')
+    anchor_x_frac = override.get('anchor_x_frac')
     fit_threshold = override.get('fit_threshold', 0.97)
     forced_text = override.get('forced_text')
 
-    anchors = list(candidate_anchors(poly, anchor_y_frac=anchor_y_frac))
+    anchors = list(candidate_anchors(poly, anchor_y_frac=anchor_y_frac,
+                                     anchor_x_frac=anchor_x_frac))
     if not anchors:
         return None
     if forced_text:
