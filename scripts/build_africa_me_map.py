@@ -113,7 +113,7 @@ AFME_OVERRIDES = {
                            'rotations': [80, 0]},
     'Mali':               {'forced_text': 'Tuareg', 'fs_max': 32,
                            'rotations': [-15, 0]},
-    'Niger':              {'forced_text': 'Polio', 'fs_max': 24,
+    'Niger':              {'forced_text': 'Poliomyelitis', 'fs_max': 22,
                            'rotations': [0]},
     'Chad':               {'forced_text': 'Pipelines', 'fs_max': 18,
                            'rotations': [80, 0]},
@@ -129,8 +129,9 @@ AFME_OVERRIDES = {
     'Mozambique':         {'forced_text': 'Cyclones', 'fs_max': 18,
                            'rotations': [-60, 0]},
     'Madagascar':         {'fs_max': 14, 'rotations': [-65, 0]},
-    'Zambia':             {'forced_text': 'Diet', 'fs_max': 18,
-                           'rotations': [-20, 0]},
+    'Zambia':             {'forced_text': 'Diet', 'fs_max': 28,
+                           'rotations': [-20, 0],
+                           'anchor_x_frac': 0.45},
     'Zimbabwe':           {'forced_text': 'Lions', 'fs_max': 20},
     'Malawi':             {'forced_text': 'Diet', 'fs_max': 8,
                            'rotations': [80, 0]},
@@ -162,15 +163,23 @@ CALLOUT_OFFSETS = {
     'Israel':      (-0.030,  0.040, 0, 'Temple Mount', 'center'),
     'Lebanon':     (-0.025,  0.080, 0, 'Iran Proxy Conflict', 'center'),
     'Syria':       ( 0.025,  0.090, 0, 'Assyrian Civilization', 'center'),
-    'Jordan':      (-0.045,  0.005, 0, 'Temple Mount', 'center'),
-    # Kuwait: lifted up and slightly right per Ted, sitting above Iran
-    'Kuwait':      ( 0.020,  0.085, 0, 'Persian Gulf War', 'center'),
-    # Persian Gulf small states — push further into open Gulf/sea space
+    # Jordan moved slightly up + left per Ted
+    'Jordan':      (-0.055,  0.020, 0, 'Temple Mount', 'center'),
+    # Kuwait lifted further up (offshore in the open space above Iran)
+    'Kuwait':      ( 0.020,  0.115, 0, 'Persian Gulf War', 'center'),
+    # Persian Gulf small states
     'Bahrain':     ( 0.030,  0.012, 0, 'Tear Gas'),
-    'Qatar':       ( 0.045, -0.025, 0, 'Peace Process'),
-    'United Arab Emirates': ( 0.050, -0.040, 0, 'Wealth'),
+    # Qatar: pushed further south + slightly right
+    'Qatar':       ( 0.055, -0.045, 0, 'Peace Process'),
+    # UAE: center-aligned, slightly further south
+    'United Arab Emirates': ( 0.055, -0.050, 0, 'Wealth', 'center'),
     # Morocco: callout offshore in the Atlantic, NW of country
     'Morocco':     (-0.035,  0.020, 30, 'Railroads', 'center'),
+    # Rwanda: callout placed left + up so it sits inside DRC's empty
+    # space (DRC's text 'Cobalt' is further south on the polygon).
+    # Heavily wrapped so it stacks vertically in the small space.
+    'Rwanda':      (-0.040,  0.030, 0,
+                    'Conflict\nMinerals\n& Resources', 'center'),
     # African micro states
     'Djibouti':    (0.022, -0.000),
     'Gambia':      (-0.020, 0.000),
@@ -597,8 +606,9 @@ def main():
     METH_FS = 11
     LINE_SPACING = 0.0135
     # Position: lower-left, in the open Atlantic Ocean off W. Africa.
-    # Start 3 text lines lower than v1 (was y=0.485, now y=0.444).
-    y = 0.444
+    # One more line lower than v2 to clear the wider title block (was
+    # 0.444, now 0.4305).
+    y = 0.4305
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
