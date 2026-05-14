@@ -127,8 +127,9 @@ CALLOUT_OFFSETS = {
     #   - Jamaica label moved very tight NW of itself
     'Bahamas':             ( 0.025,  0.012),
     # Cuba label: hugs the west half of the south coast (closing the
-    # gap between Cuba and the label), centered horizontally.
-    'Cuba':                (-0.040, -0.005, -15, 'Cuban-\nAmericans', 'center'),
+    # gap between Cuba and the label), centered horizontally. Shifted
+    # slightly more west so the label clears Jamaica.
+    'Cuba':                (-0.050, -0.005, -15, 'Cuban-\nAmericans', 'center'),
     # Haiti: NORTH of the island, label centered + shifted RIGHT so it
     # clears Cuba/Hispaniola
     'Haiti':               ( 0.015,  0.025, 0, None, 'center'),
@@ -529,34 +530,58 @@ def main():
                     fontsize=fs, family='serif', weight='semibold',
                     color=INK, rotation=rotation, zorder=4)
 
-    # Callouts: short leader from the country to a label cluster sitting
-    # just outside the polygon. Name and term render TIGHT TOGETHER so
-    # they read as one unit (Ted: previously the gap was too wide).
+    # Helper to estimate text height in DATA units (LAEA meters) so we
+    # can stack callout name and term tight together regardless of
+    # rotation.
+    def _text_height_data(fs, n_lines=1):
+        inv = map_ax.transData.inverted()
+        h_pt = fs * 1.18 * n_lines
+        h_px = h_pt * fig.dpi / 72
+        (_, y0) = inv.transform((0, 0))
+        (_, y1) = inv.transform((0, h_px))
+        return abs(y1 - y0)
+
+    NAME_FS = 8
+    TERM_FS = 10
+
     for gname, text, anchor in callouts:
         cfg = CALLOUT_OFFSETS.get(gname, (0.04, 0.02))
         dx, dy = cfg[0], cfg[1]
         rotation = cfg[2] if len(cfg) > 2 else 0
-        # Per-country forced text override
         if len(cfg) > 3 and cfg[3]:
             text = cfg[3]
-        # Optional horizontal-alignment override (5th tuple element).
-        # When unset, auto-pick based on dx sign so the label sits on the
-        # ocean side of the leader.
         ha_override = cfg[4] if len(cfg) > 4 else None
         lx = anchor.x + dx * eur_w
         ly = anchor.y + dy * eur_h
-        map_ax.plot([anchor.x, lx - eur_w * 0.003],
-                    [anchor.y, ly],
+
+        # Leader line: stop 85% of the way from the anchor to the label
+        # position so it doesn't crash into the rendered text.
+        leader_end_x = anchor.x + 0.85 * (lx - anchor.x)
+        leader_end_y = anchor.y + 0.85 * (ly - anchor.y)
+        map_ax.plot([anchor.x, leader_end_x], [anchor.y, leader_end_y],
                     color=LEADER, linewidth=0.7, alpha=0.85, zorder=2.5)
+
         analysis_name = GEOJSON_TO_ANALYSIS.get(gname, gname)
         ha = ha_override if ha_override else ('right' if dx < 0 else 'left')
-        map_ax.text(lx, ly + eur_h * 0.005, analysis_name + ':',
-                    fontsize=8, ha=ha, va='bottom',
-                    family='serif', color=MUTED, rotation=rotation, zorder=4)
-        map_ax.text(lx, ly + eur_h * 0.005, text,
-                    fontsize=10, ha=ha, va='top',
+
+        # Tight name-above-term stacking: compute exact data-coord offset
+        # so the name sits directly above the term in the rotated frame,
+        # with zero visible gap.
+        n_term_lines = text.count('\n') + 1
+        name_h = _text_height_data(NAME_FS, 1)
+        term_h = _text_height_data(TERM_FS, n_term_lines)
+        between = (name_h + term_h) / 2  # zero gap between them
+        rot_rad = math.radians(rotation)
+        name_x = lx + (-math.sin(rot_rad)) * between
+        name_y = ly +   math.cos(rot_rad)  * between
+
+        map_ax.text(lx, ly, text,
+                    fontsize=TERM_FS, ha=ha, va='center',
                     family='serif', weight='semibold', color=INK,
                     rotation=rotation, zorder=4)
+        map_ax.text(name_x, name_y, analysis_name + ':',
+                    fontsize=NAME_FS, ha=ha, va='center',
+                    family='serif', color=MUTED, rotation=rotation, zorder=4)
 
     # Methodology
     n_world_articles = sum(1 for a in arts if (a.get('s') or '') == 'World')
