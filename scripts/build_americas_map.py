@@ -126,10 +126,9 @@ CALLOUT_OFFSETS = {
     #     Jamaica (out in the Caribbean Sea SW of Cuba)
     #   - Jamaica label moved very tight NW of itself
     'Bahamas':             ( 0.025,  0.012),
-    # Cuba label: hugs the west half of the south coast (closing the
-    # gap between Cuba and the label), centered horizontally. Shifted
-    # slightly more west so the label clears Jamaica.
-    'Cuba':                (-0.050, -0.005, -15, 'Cuban-\nAmericans', 'center'),
+    # Cuba label: dropped one line of text south so it doesn't cover
+    # the country's south coast. Centered horizontally, rotated -15°.
+    'Cuba':                (-0.050, -0.014, -15, 'Cuban-\nAmericans', 'center'),
     # Haiti: NORTH of the island, label centered + shifted RIGHT so it
     # clears Cuba/Hispaniola
     'Haiti':               ( 0.015,  0.025, 0, None, 'center'),
