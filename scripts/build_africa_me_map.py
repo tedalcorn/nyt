@@ -82,23 +82,24 @@ AFME_OVERRIDES = {
     'Egypt':              {'forced_text': 'Egyptian\nCivilization', 'fs_max': 36,
                            'anchor_y_frac': 0.45,
                            'rotations': [0]},
-    'South Africa':       {'forced_text': 'Apartheid', 'fs_max': 42,
-                           'rotations': [-10, 0]},
+    'South Africa':       {'forced_text': 'Apartheid', 'fs_max': 48,
+                           'rotations': [30, 0],
+                           'anchor_y_frac': 0.65},  # bias north to dodge Lesotho hole
     'Algeria':            {'forced_text': 'Berbers', 'fs_max': 46,
                            'rotations': [-15, 0]},
     'Libya':              {'forced_text': 'Diplomatic\nEmbassies', 'fs_max': 28,
                            'rotations': [-10, 0]},
     'Sudan':              {'forced_text': 'Tribes', 'fs_max': 38,
                            'rotations': [0]},
-    'S. Sudan':           {'forced_text': 'Gold', 'fs_max': 14},
+    'S. Sudan':           {'forced_text': 'Gold', 'fs_max': 22},
     'Ethiopia':           {'forced_text': 'Oromo', 'fs_max': 30,
                            'rotations': [-30, 0]},
     'Dem. Rep. Congo':    {'forced_text': 'Cobalt', 'fs_max': 42,
                            'rotations': [0]},
     'Tanzania':           {'forced_text': 'US Foreign\nService', 'fs_max': 18,
                            'rotations': [30, 0]},
-    'Nigeria':            {'forced_text': 'Poliomyelitis', 'fs_max': 22,
-                           'rotations': [0]},
+    'Nigeria':            {'forced_text': 'Poliomyelitis', 'fs_max': 28,
+                           'rotations': [30, 0]},
     'Iran':               {'forced_text': 'Iran-Israel\nProxy Conflict', 'fs_max': 26,
                            'rotations': [-25, 0]},
     'Iraq':               {'forced_text': 'Yazidi', 'fs_max': 30,
@@ -107,8 +108,7 @@ AFME_OVERRIDES = {
                            'rotations': [-25, 0]},
     'Yemen':              {'forced_text': 'Navies', 'fs_max': 26,
                            'rotations': [0]},
-    'Morocco':            {'forced_text': 'Railroads', 'fs_max': 20,
-                           'rotations': [-35, 0]},
+    # Morocco → callout (offshore in the Atlantic, NW of country)
     'Tunisia':            {'forced_text': 'Drownings', 'fs_max': 11,
                            'rotations': [80, 0]},
     'Mali':               {'forced_text': 'Tuareg', 'fs_max': 32,
@@ -145,11 +145,11 @@ AFME_OVERRIDES = {
     'Côte d\'Ivoire':     {'forced_text': 'Civil War', 'fs_max': 13},
     'Burkina Faso':       {'forced_text': 'Mercenaries', 'fs_max': 9},
     'Senegal':            {'forced_text': 'Sufism', 'fs_max': 12},
-    'Central African Rep.': {'forced_text': 'Mercenaries', 'fs_max': 11,
+    'Central African Rep.': {'forced_text': 'Mercenaries', 'fs_max': 18,
                            'rotations': [0]},
     'Somalia':            {'forced_text': 'Piracy', 'fs_max': 18,
                            'rotations': [-55, 0]},
-    'Jordan':             {'forced_text': 'Temple\nMount', 'fs_max': 9},
+    # Jordan → callout (NW of country, into open space above Israel)
     'Eswatini':           {'forced_text': 'AIDS', 'fs_max': 7},
     # Israel / Lebanon / Syria moved to callouts (see below)
 }
@@ -157,17 +157,20 @@ AFME_OVERRIDES = {
 # Small countries → callouts
 # (dx, dy[, rotation[, forced_text[, ha_override]]])
 CALLOUT_OFFSETS = {
-    # Northern Middle East — all annotated from the NORTH so they don't
-    # crowd each other and the text can be readable. Israel/Lebanon/
-    # Syria are too small / crowded for in-polygon labels.
-    'Israel':      ( 0.000,  0.050, 0, 'Temple Mount', 'center'),
-    'Lebanon':     (-0.020,  0.075, 0, 'Iran Proxy Conflict', 'center'),
+    # Northern Middle East cluster — all annotated FROM OUTSIDE (mostly
+    # north) so the tangle of small countries can each be readable.
+    'Israel':      (-0.030,  0.040, 0, 'Temple Mount', 'center'),
+    'Lebanon':     (-0.025,  0.080, 0, 'Iran Proxy Conflict', 'center'),
     'Syria':       ( 0.025,  0.090, 0, 'Assyrian Civilization', 'center'),
-    'Kuwait':      ( 0.000,  0.045, 0, 'Persian Gulf War', 'center'),
-    # Persian Gulf eastern cluster
-    'Bahrain':     ( 0.025,  0.010, 0, 'Tear Gas'),
-    'Qatar':       ( 0.028, -0.010, 0, 'Peace Process'),
-    'United Arab Emirates': (0.030, -0.020, 0, 'Wealth'),
+    'Jordan':      (-0.045,  0.005, 0, 'Temple Mount', 'center'),
+    # Kuwait: lifted up and slightly right per Ted, sitting above Iran
+    'Kuwait':      ( 0.020,  0.085, 0, 'Persian Gulf War', 'center'),
+    # Persian Gulf small states — push further into open Gulf/sea space
+    'Bahrain':     ( 0.030,  0.012, 0, 'Tear Gas'),
+    'Qatar':       ( 0.045, -0.025, 0, 'Peace Process'),
+    'United Arab Emirates': ( 0.050, -0.040, 0, 'Wealth'),
+    # Morocco: callout offshore in the Atlantic, NW of country
+    'Morocco':     (-0.035,  0.020, 30, 'Railroads', 'center'),
     # African micro states
     'Djibouti':    (0.022, -0.000),
     'Gambia':      (-0.020, 0.000),
@@ -181,7 +184,7 @@ SKIP_COUNTRIES = set()
 # Bbox in lat/lon — covers all of Africa (lat -35 to 38) and the Middle
 # East (lon ~25-60). Slightly wider west (-20) to give Senegal/Mauritania
 # room, east (60) for Iran's eastern border.
-AFME_BBOX_LATLON = (-22, -38, 67, 40)
+AFME_BBOX_LATLON = (-26, -38, 72, 40)
 
 MIN_SCORE_TO_LABEL = 6.0
 MIN_TAG_YEAR_SPAN = 2
@@ -369,7 +372,7 @@ def main():
     # for footer.
     map_h_inches = 16
     map_w_inches = map_h_inches * bbox_aspect
-    TOP_MARGIN_INCHES = 2.4
+    TOP_MARGIN_INCHES = 3.2   # title (~1.0") + bigger subtitle (~1.4") + buffer
     BOTTOM_MARGIN_INCHES = 0.4
     fig_w = map_w_inches
     fig_h = map_h_inches + TOP_MARGIN_INCHES + BOTTOM_MARGIN_INCHES
@@ -384,13 +387,16 @@ def main():
     map_ax.set_xlim(bbox_minx, bbox_maxx)
     map_ax.set_ylim(bbox_miny, bbox_maxy)
 
-    # Title block (mirrors state/Americas template)
-    title_y = 1.0 - 0.45 / fig_h
-    title_line2_y = title_y - 0.50 / fig_h
-    sub_y1 = title_line2_y - 0.40 / fig_h
-    sub_y2 = sub_y1 - 0.22 / fig_h
-    sub_y3 = sub_y2 - 0.22 / fig_h
-    title_block_bottom_y = sub_y3 - 0.15 / fig_h
+    # Title block — title at 28pt, subtitle bumped to 15pt across 4
+    # lines with slightly wider line spacing (per Ted's review).
+    title_y = 1.0 - 0.50 / fig_h
+    title_line2_y = title_y - 0.55 / fig_h
+    SUB_LINE_INCH = 0.27       # 15pt × 1.15 / 72 ≈ 0.24, +buffer
+    sub_y1 = title_line2_y - 0.50 / fig_h
+    sub_y2 = sub_y1 - SUB_LINE_INCH / fig_h
+    sub_y3 = sub_y2 - SUB_LINE_INCH / fig_h
+    sub_y4 = sub_y3 - SUB_LINE_INCH / fig_h
+    title_block_bottom_y = sub_y4 - 0.15 / fig_h
 
     fig.text(0.02, title_y, "How The New York Times",
              fontsize=28, family='serif', weight='semibold',
@@ -398,12 +404,16 @@ def main():
     fig.text(0.02, title_line2_y, "Looks At Africa & the Middle East",
              fontsize=28, family='serif', weight='semibold',
              color=INK, ha='left', va='top')
-    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its articles show which",
-             fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y2, "recurring subjects are covered in each country out of proportion to",
-             fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y3, "international coverage as a whole.",
-             fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
+    # Subtitle: 15pt, 4 lines, wrapped so margin is at least as wide as
+    # title text
+    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its",
+             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
+    fig.text(0.02, sub_y2, "articles show which recurring subjects are",
+             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
+    fig.text(0.02, sub_y3, "covered in each country out of proportion to",
+             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
+    fig.text(0.02, sub_y4, "international coverage as a whole.",
+             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
 
     assert title_block_bottom_y > map_ax_top, (
         f"Title block ends at y={title_block_bottom_y:.3f}, "
