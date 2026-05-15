@@ -46,9 +46,12 @@ data/bio_photos/Supporting photos/
 data/bio_photos/-Prompt.rtf
 
 # Local working files — never commit
-outputs/
-logos/
 *.bak
 *.pre_*
 data/corrections_overrides.json
 ~$*
+
+# Note: drafts and source assets (formerly tracked here as outputs/, logos/)
+# now live one level up, outside this repo, at /Users/tedalcorn/Desktop/claude-projects/nyt/
+# in projects/ and logos/. The repo is the site/ subfolder; the parent folder is
+# the working area and is not part of the git repo at all.
