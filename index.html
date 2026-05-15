@@ -7415,10 +7415,19 @@ const statesObserver = new MutationObserver(() => {
 });
 statesObserver.observe(document.getElementById('view-states'), { attributes: true });
 
-// Trigger Headlines tracker when tab shown (needs trackerReady)
+// Trigger Headlines tracker when tab shown. trackTerms() handles both states
+// internally: if !trackerReady it shows the "Loading N of 27 years…" indicator,
+// otherwise it renders the chart (no-op if there are no terms). Previously
+// this observer gated on trackerReady, so opening the tab during the initial
+// background load left the user staring at a blank tab with no feedback.
 const trackerObserver = new MutationObserver(() => {
-  if (document.getElementById('view-tracker').classList.contains('active') && trackerReady) {
-    if (!chartInstances['chartTracker']) trackTerms();
+  if (!document.getElementById('view-tracker').classList.contains('active')) return;
+  if (!trackerReady) {
+    // Data still loading — let trackTerms show the progress indicator.
+    trackTerms();
+  } else if (!chartInstances['chartTracker']) {
+    // Data ready, chart not yet built.
+    trackTerms();
   }
 });
 trackerObserver.observe(document.getElementById('view-tracker'), { attributes: true });
