@@ -2372,6 +2372,46 @@ def build_dashboard_data(articles, authors):
         })
     recent_lotto_articles.sort(key=lambda x: x["d"], reverse=True)
 
+    # --- Other standing features ---
+    # Folded in from the former scripts/patch_features.py (2026-05-15). Each
+    # entry is a (key, match_fn) pair where match_fn takes (headline, kicker).
+    # Articles are mutually exclusive across these — first match wins.
+    standing_feature_specs = [
+        ('letters_to_editor',    lambda h, k: h == 'Letters to the Editor'),
+        ('on_the_market',        lambda h, k: h.startswith('On the Market in')),
+        ('metropolitan_diary',   lambda h, k: h == 'Metropolitan Diary' or k.lower() == 'metropolitan diary'),
+        ('boldface_names',       lambda h, k: h == 'BOLDFACE NAMES'),
+        ('names_of_the_dead',    lambda h, k: h == 'Names of the Dead'),
+        ('coronavirus_briefing', lambda h, k: h.startswith('Coronavirus Briefing')),
+        ('arts_briefly',         lambda h, k: h == 'Arts, Briefly'),
+    ]
+    standing_by_year = {key: defaultdict(int) for key, _ in standing_feature_specs}
+    standing_recent = {key: [] for key, _ in standing_feature_specs}
+    standing_authors = {key: Counter() for key, _ in standing_feature_specs}
+    for art in articles:
+        h = art.get("headline", "") or ""
+        k = art.get("kicker", "") or ""
+        for key, match_fn in standing_feature_specs:
+            if not match_fn(h, k):
+                continue
+            y = str(art["year"])
+            standing_by_year[key][y] += 1
+            for auth in art.get("authors", []):
+                standing_authors[key][auth] += 1
+            url = art.get("web_url", "") or ""
+            if url.startswith(URL_PREFIX_FULL):
+                url = url[len(URL_PREFIX_FULL):]
+            standing_recent[key].append({
+                "d": art["pub_date"][:10],
+                "h": h,
+                "a": art.get("authors", []),
+                "w": art.get("word_count", 0),
+                "u": url,
+            })
+            break  # each article matches at most one standing feature
+    for key in standing_recent:
+        standing_recent[key].sort(key=lambda x: x["d"], reverse=True)
+
     features_data = {
         "weddings": {
             "by_year": dict(weddings_by_year),
@@ -2395,6 +2435,18 @@ def build_dashboard_data(articles, authors):
             "by_year": dict(lotto_by_year),
             "recent_articles": recent_lotto_articles[:50],
             "total": sum(lotto_by_year.values()),
+        },
+        **{
+            key: {
+                "by_year": dict(sorted(standing_by_year[key].items())),
+                "top_authors": [
+                    {"name": n, "count": c}
+                    for n, c in standing_authors[key].most_common(8)
+                ],
+                "recent_articles": standing_recent[key][:50],
+                "total": sum(standing_by_year[key].values()),
+            }
+            for key, _ in standing_feature_specs
         },
     }
 
