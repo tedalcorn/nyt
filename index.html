@@ -1547,12 +1547,17 @@ async function loadData() {
     // Phase 2b: full article files (for detail panels, article lists, author analysis, etc.)
     // Skipped on mobile — loading 2.1M articles exceeds iOS Safari memory limits.
     // Article lists in detail panels will show a desktop prompt instead.
+    //
+    // Fetched in parallel (Promise.all) instead of serially: same change as
+    // Phase 2a (tracker) above. Each year file is independent, yearCache is
+    // keyed by year so there's no cross-year coupling, and the final articles
+    // array doesn't depend on load order.
     if (!IS_MOBILE) {
       (async () => {
         const years = dashboard.all_years.map(Number);
         articles = [];
-        for (const y of years) {
-          const yearArticles = await ensureYearLoaded(y);
+        const perYear = await Promise.all(years.map(y => ensureYearLoaded(y)));
+        for (const yearArticles of perYear) {
           for (const a of yearArticles) articles.push(a);
         }
         articlesReady = true;
