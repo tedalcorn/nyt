@@ -2662,8 +2662,16 @@ def _normalize_subject_kw(name):
             return merges[restored]
         name = restored
     alpha = [c for c in name if c.isalpha()]
-    if alpha and all(c.isupper() for c in alpha) and '.' not in name and "'" not in name and '’' not in name:
+    if alpha and all(c.isupper() for c in alpha) and '.' not in name:
+        # str.title() over-capitalizes letters after apostrophes
+        # ("AMERICA'S CUP" → "America'S Cup"). Fix by post-processing: any
+        # alphabetic char immediately after a straight or curly apostrophe
+        # gets lowercased. Now "AMERICA'S CUP" → "America's Cup", matching
+        # any "America's Cup" entries already canonical.
         title = name.title()
+        title = re.sub(r"(['’])([A-Za-z])",
+                       lambda m: m.group(1) + m.group(2).lower(),
+                       title)
         for word in (' And ', ' Or ', ' The ', ' Of ', ' In ', ' For ', ' To ', ' A '):
             title = title.replace(word, word.lower())
         title = _restore_abbrevs(title)
