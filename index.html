@@ -1511,24 +1511,37 @@ async function loadData() {
     // Phase 2a: tracker files — headline+month only, 226MB (28% of full articles).
     // Loads first so the Headline Frequency tab is usable in ~1/4 the usual wait.
     // Skipped on mobile for the same memory reasons as full articles.
+    //
+    // Fetched in parallel (Promise.all) instead of serially: the previous
+    // for/await version sent 27 requests one at a time and could spend 10+
+    // seconds on a typical connection. Parallel multiplexing over HTTP/2
+    // typically resolves in 1/3 to 1/5 the time. Each year resolves
+    // independently and bumps window._trackerProgress so the loading
+    // indicator (in trackTerms) can show "Loading 14/27 years…".
     if (!IS_MOBILE) {
-      (async () => {
-        const years = dashboard.all_years.map(Number);
-        trackerArticles = [];
-        for (const y of years) {
-          try {
-            const res = await fetch(`data/tracker_${y}.json`);
-            if (res.ok) {
-              const recs = _parseTrackerRecords(await res.json());
-              for (const r of recs) trackerArticles.push(r);
-            }
-          } catch(_) {}
+      const years = dashboard.all_years.map(Number);
+      window._trackerProgress = { done: 0, total: years.length };
+      trackerArticles = [];
+      Promise.all(years.map(async (y) => {
+        try {
+          const res = await fetch(`data/tracker_${y}.json`);
+          if (res.ok) {
+            const recs = _parseTrackerRecords(await res.json());
+            for (const r of recs) trackerArticles.push(r);
+          }
+        } catch(_) {}
+        window._trackerProgress.done += 1;
+        // If the loading indicator is currently visible, update its progress text
+        const txt = document.getElementById('trackerProgressText');
+        if (txt) {
+          txt.textContent = `Loading ${window._trackerProgress.done} of ${window._trackerProgress.total} years…`;
         }
+      })).then(() => {
         trackerReady = true;
         _applyRestore('tracker');
         // If no restore pending, run with whatever terms are in the inputs
         if (!_pendingRestore || !_pendingRestore.q) trackTerms();
-      })().catch(e => console.error('Tracker load failed:', e));
+      }).catch(e => console.error('Tracker load failed:', e));
     }
 
     // Phase 2b: full article files (for detail panels, article lists, author analysis, etc.)
@@ -5092,13 +5105,19 @@ function trackTerms() {
       document.getElementById('chartTracker').parentElement.innerHTML =
         '<p style="color:#888;font-size:13px;padding:20px 0">The headline tracker requires the full article dataset, which is not loaded on mobile devices due to memory constraints. Use a desktop browser to access this feature.</p>';
     } else {
-      // Show a loading message so the user knows it's working, not frozen
+      // Show a loading message so the user knows it's working, not frozen.
+      // Uses window._trackerProgress (set by the Phase 2a parallel fetch) so
+      // the user sees real progress instead of a static "Loading…".
       if (!document.getElementById('trackerLoadingMsg')) {
         const wrap = document.getElementById('chartTracker').parentElement;
         const msg = document.createElement('div');
         msg.id = 'trackerLoadingMsg';
         msg.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(247,245,240,0.92);z-index:4;font-family:Georgia,serif;text-align:center;pointer-events:none';
-        msg.innerHTML = `<div style="font-size:15px;color:#555">Loading…</div>`;
+        const p = window._trackerProgress || { done: 0, total: 0 };
+        const initialText = p.total
+          ? `Loading ${p.done} of ${p.total} years…`
+          : 'Loading…';
+        msg.innerHTML = `<div id="trackerProgressText" style="font-size:15px;color:#555">${initialText}</div>`;
         wrap.appendChild(msg);
       }
     }

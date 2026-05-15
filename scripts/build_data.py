@@ -899,7 +899,9 @@ def build_author_stats(articles):
             "monthly_shared_counts": dict(d["monthly_shared_counts"]),
             "coauthors": top_coauthors,
             "likely_multimedia": likely_multimedia,
-            "solo_text_articles": d["solo_text_articles"],
+            # Note: solo_text_articles is computed above and used internally for the
+            # has_reporting_history gate, but not emitted — the dashboard JS doesn't
+            # read it. Removed from output 2026-05-15 to slim authors.json.
             "wc_hist": d["wc_hist"],  # 21-bin word-count histogram (200-word bins, last = 4000+)
             "beats": [],  # filled in later by build_beats()
         })
