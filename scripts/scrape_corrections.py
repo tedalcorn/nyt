@@ -18,6 +18,15 @@ CACHE_DIR = 'cache/corrections'
 OUT_PATH = 'data/corrections.json'
 RAW_DIR = 'data/raw'
 
+# NYT enabled DataDome bot-protection on /pageoneplus/ corrections pages
+# around the start of 2026. Wayback's snapshots of those pages are the 403
+# block page itself, not the real content. They cannot become useful unless
+# NYT removes DataDome. Skipping them during fetch saves ~5-6 min/run.
+# validate.py still reports these as hand-save candidates so we don't lose
+# track. Bump the cutoff if you confirm Wayback starts archiving real
+# content from a later date.
+DATADOME_CUTOFF = '2026-01-01'
+
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
@@ -198,12 +207,20 @@ def fetch_all(urls, pace=6.0, max_retries=3):
     Exponential backoff on 429 / 503 / connection errors.
     """
     todo = []
+    skipped_datadome = 0
     for u, p, h in urls:
         path = os.path.join(CACHE_DIR, slug(u) + '.html')
         if os.path.exists(path) and os.path.getsize(path) > 5000:
             continue
+        # Skip URLs in the DataDome window — Wayback can't get real content
+        # for these and retrying every nightly run is pure waste. validate.py
+        # still surfaces them in the hand-save todo report.
+        if p and p >= DATADOME_CUTOFF:
+            skipped_datadome += 1
+            continue
         todo.append((u, p))
-    print(f'{len(urls)} total, {len(urls)-len(todo)} cached, {len(todo)} to fetch')
+    cached = len(urls) - len(todo) - skipped_datadome
+    print(f'{len(urls)} total, {cached} cached, {skipped_datadome} skipped (DataDome window ≥ {DATADOME_CUTOFF}), {len(todo)} to fetch')
     if not todo:
         return
     counts = {}
