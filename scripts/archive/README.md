@@ -12,8 +12,9 @@ All four of these were "surgical patches" that modified `data/` files outside th
 | `patch_lottery_feature.py` | `scripts/build_data.py:425-433` (section reassignment + is_lottery_numbers flag) and the `lottery_numbers` feature block in `features_data`. |
 | `patch_medians.py` | `scripts/build_data.py:1911-1953` (exact annual median computation from per-article word counts, with the same blog/podcast/live/brief filters). |
 | `patch_rnc_dnc_year.py` | `scripts/build_data.py:2543-2557` (`_rewrite_conv_year`) applied to every subject tag at `:2722`. Future convention years get the suffix automatically. |
+| `regenerate_obit_interactive_fixes.py` | `scripts/build_obituaries.py:1370` (`NON_OBIT_URLS` filter during ingestion) and `:1574-1584` (`OBIT_OVERRIDES` applied to all records). Was previously called by `update.py` after `build_obituaries.py` for a fast-iteration loop during the 2026-04-25 interactive obit audit. **Had a bug**: when an override defined both `name` and `display_name`, it forced `display_name = ov['name']`, ignoring `ov['display_name']`. This silently stripped honorifics ("Pope John Paul II" → "John Paul II") and middle initials ("Geraldine A. Ferraro" → "Geraldine Ferraro") on every nightly run. Removed from `update.py` and archived 2026-05-15. `build_obituaries.py` already does the right thing in one pass. |
 
-If you're tempted to resurrect one of these, first check whether `build_data.py` already handles the case — it almost certainly does.
+If you're tempted to resurrect one of these, first check whether `build_data.py` / `build_obituaries.py` already handles the case — it almost certainly does.
 
 ## Other archived scripts
 

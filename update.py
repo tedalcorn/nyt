@@ -56,7 +56,6 @@ def main():
     step('Rebuilding dashboard data',                    [py, s('build_data.py')])
     step('Rebuilding unique reporters (section + state)',[py, s('build_unique_reporters.py')])
     step('Rebuilding obituaries',                        [py, s('build_obituaries.py')])
-    step('Applying surgical obit fixes',                 [py, s('regenerate_obit_interactive_fixes.py')])
 
     if do_corr:
         step(f'Scraping corrections ({cur_year})',       [py, s('scrape_corrections.py'), cur_year])
