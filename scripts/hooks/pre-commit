@@ -1,0 +1,26 @@
+#!/bin/bash
+# Auto-update the "Last revised" timestamp in index.html before each commit.
+# Triggered by every `git commit` from this clone — manual edits AND the
+# nightly cron's commit_and_push_nyt.py.
+#
+# Why: ensures every push to GitHub Pages reflects the actual build time,
+# so visitors (and Ted) can verify the live site is the latest deploy
+# without checking git log.
+#
+# Install: copy this file to .git/hooks/pre-commit and chmod +x. The
+# rewrite_git_history.sh maintenance script does this automatically.
+
+set -e
+
+INDEX="$(git rev-parse --show-toplevel)/index.html"
+[ -f "$INDEX" ] || exit 0
+
+TS=$(date '+%-m/%-d/%y %-I:%M%p' | tr '[:upper:]' '[:lower:]')
+
+# Update the timestamp span (preserves existing attributes).
+sed -i '' -E "s|(<span id=\"bottomRevStamp\"[^>]*>Last revised: )[^<]*(</span>)|\1${TS}\2|" "$INDEX"
+
+# Stage the change if sed actually modified the file.
+if ! git diff --quiet -- "$INDEX" 2>/dev/null; then
+  git add "$INDEX"
+fi
