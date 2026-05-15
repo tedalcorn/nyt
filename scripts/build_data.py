@@ -312,6 +312,16 @@ _NYC_LOCS = {
     "Staten Island", "Harlem", "Manhattan (NYC)", "New York City (NYC)",
 }
 
+# Pre-computed uppercase lookups so glocation_to_state handles "ARIZONA",
+# "AMERICAN SAMOA", etc. that appear in older API data. Without this, the
+# raw `loc in US_STATES` check was case-sensitive and silently dropped any
+# uppercase-tagged article from canonical_states (and therefore from
+# us_state_coverage on the dashboard).
+_US_STATES_BY_UPPER = {s.upper(): s for s in US_STATES}
+_US_TERRITORIES_BY_UPPER = {t.upper(): t for t in US_TERRITORIES}
+_NYC_LOCS_UPPER = {n.upper() for n in _NYC_LOCS}
+
+
 def glocation_to_state(loc):
     """Return canonical state-or-territory name for a glocation string, or None.
 
@@ -319,17 +329,28 @@ def glocation_to_state(loc):
     five U.S. territories (Puerto Rico, Guam, USVI, Northern Mariana Islands,
     American Samoa). The frontend separates territories from states using
     `us_state_coverage.territories`.
+
+    Case-insensitive — older API data (2000s era) frequently tags glocations
+    in ALL CAPS ("ARIZONA", "AMERICAN SAMOA", etc.).
     """
-    if loc in _NYC_LOCS:
+    if not loc:
+        return None
+    loc_upper = loc.upper()
+    if loc_upper in _NYC_LOCS_UPPER:
         return "New York"
-    if loc in US_STATES:
-        return STATE_ALIASES.get(loc, loc)
-    if loc in US_TERRITORIES:
-        return STATE_ALIASES.get(loc, loc)
-    if loc == "Washington (State)":
+    if loc_upper in _US_STATES_BY_UPPER:
+        canonical = _US_STATES_BY_UPPER[loc_upper]
+        return STATE_ALIASES.get(canonical, canonical)
+    if loc_upper in _US_TERRITORIES_BY_UPPER:
+        canonical = _US_TERRITORIES_BY_UPPER[loc_upper]
+        return STATE_ALIASES.get(canonical, canonical)
+    if loc_upper == "WASHINGTON (STATE)":
         return "Washington"
     m = re.search(r'\(([^)]+)\)', loc)
     if m:
+        # ABBREV_TO_STATE already contains both case variants for most entries
+        # (e.g. "Calif" and "CALIF"). Direct lookup preserves the existing
+        # behavior without forcing case folding on abbreviations.
         return ABBREV_TO_STATE.get(m.group(1))
     return None
 
