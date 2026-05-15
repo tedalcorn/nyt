@@ -11,7 +11,6 @@ article's date + headline so we can later match it back to the article record.
 Resumable via cache/corrections/<slug>.html (skip if cached).
 """
 import json, os, re, sys, time, glob, hashlib, urllib.request, gzip
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, timedelta
 from bs4 import BeautifulSoup
 
@@ -383,7 +382,7 @@ def parse_all(urls):
         if not os.path.exists(path):
             no_html += 1
             continue
-        with open(path) as fh:
+        with open(path, encoding='utf-8', errors='replace') as fh:
             html = fh.read()
         if 'captcha-delivery.com' in html or len(html) < 2000:
             no_html += 1

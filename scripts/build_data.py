@@ -790,7 +790,10 @@ def build_author_stats(articles):
             for y, ctr in d["annual_sections"].items() if ctr
         }
         # Sort sections by total article count desc, limit to 6 most frequent
-        sec_counts = {s: d["sections"][s] for s in set(annual_primary.values())}
+        # sorted() makes iteration deterministic — without it, set iteration order
+        # is hash-bucket-dependent and tied-count sections appear in random order
+        # across builds, polluting the auto-update diff.
+        sec_counts = {s: d["sections"][s] for s in sorted(set(annual_primary.values()))}
         if primary_section and primary_section not in sec_counts:
             sec_counts[primary_section] = d["sections"].get(primary_section, 0)
         all_sections = [s for s, _ in sorted(sec_counts.items(), key=lambda x: -x[1])][:6]
@@ -1962,10 +1965,15 @@ def build_dashboard_data(articles, authors):
     section_words = defaultdict(int)
     section_wc_hist = defaultdict(lambda: [0] * 21)   # 21 bins × 200 words, last = 4000+
     section_nonzero = defaultdict(int)                 # articles with word_count > 0
+    # Accumulate per-year aggregates for every section. After the loop we'll
+    # filter down to top_sections (excludes "" and "(none)"). One pass over
+    # articles serves both the overall sections list and section_time.
+    section_time_all = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0, "wc_list": [], "wc_hist": [0] * 21}))
     for art in articles:
         if art.get("is_lottery_numbers"):
             continue
-        s = art["section"] or "(none)"
+        raw_s = art["section"]
+        s = raw_s or "(none)"
         section_counts[s] += 1
         section_words[s] += art["word_count"]
         wc = art["word_count"] or 0
@@ -1973,6 +1981,13 @@ def build_dashboard_data(articles, authors):
             section_nonzero[s] += 1
             bin_idx = min(wc // 200, 20)
             section_wc_hist[s][bin_idx] += 1
+        if raw_s:  # section_time excludes empty-section articles
+            y = str(art["year"])
+            section_time_all[raw_s][y]["count"] += 1
+            section_time_all[raw_s][y]["words"] += art["word_count"]
+            if wc > 0:
+                section_time_all[raw_s][y]["wc_list"].append(wc)
+                section_time_all[raw_s][y]["wc_hist"][bin_idx] += 1
 
     sections = []
     for s, count in section_counts.most_common():
@@ -1984,21 +1999,15 @@ def build_dashboard_data(articles, authors):
             "wc_hist": section_wc_hist[s],
         })
 
-    # Words per section over time (all sections). Same lottery exclusion as above.
+    # Filter the per-year aggregates to the "top sections" set (everything
+    # except the empty-string / "(none)" buckets).
     top_sections = [s["name"] for s in sections if s["name"] not in ("", "(none)")]
+    top_section_set = set(top_sections)
     section_time = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0, "wc_list": [], "wc_hist": [0] * 21}))
-    for art in articles:
-        if art.get("is_lottery_numbers"):
-            continue
-        s = art["section"]
-        if s in top_sections:
-            y = str(art["year"])
-            section_time[s][y]["count"] += 1
-            section_time[s][y]["words"] += art["word_count"]
-            wc = art["word_count"] or 0
-            if wc > 0:
-                section_time[s][y]["wc_list"].append(wc)
-                section_time[s][y]["wc_hist"][min(wc // 200, 20)] += 1
+    for s, yr_data in section_time_all.items():
+        if s in top_section_set:
+            for yr, agg in yr_data.items():
+                section_time[s][yr] = agg
 
     # --- Inferred Movies for 2005: in that year the API filed movie reviews under "Arts"  ---
     # Identify "core movie reviewers" = authors with >=20 Movies articles in 2004 OR 2006.

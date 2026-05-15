@@ -332,7 +332,7 @@ def main():
         'by_author': by_author.most_common(50),
     }
     with open(OUT_SUMMARY, 'w') as fh:
-        json.dump(summary, fh, indent=2)
+        json.dump(summary, fh, separators=(',', ':'))
     print(f'Saved {OUT_SUMMARY}')
 
     print('\nTop 10 corrected sections:')
