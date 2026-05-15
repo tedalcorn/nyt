@@ -271,11 +271,14 @@ def check_articles():
     # Zero-wc rate by section: high concentration is suspicious (we'd want refetch)
     zero_by_sec = Counter()
     total_by_sec = Counter()
+    empty_headlines = 0
     for a in arts:
         sec = a.get('s', '') or ''
         total_by_sec[sec] += 1
         if (a.get('w') or 0) == 0:
             zero_by_sec[sec] += 1
+        if not (a.get('h') or '').strip():
+            empty_headlines += 1
     flagged = []
     for sec, total in total_by_sec.most_common():
         if total < 50: continue
@@ -287,6 +290,85 @@ def check_articles():
         flag('articles', f'{len(flagged)} section(s) with >20% zero-word-count articles in {CUR_YEAR}:')
         for sec, z, t, r in flagged[:8]:
             issues.append(('  ', f"      {sec:25s}  {z}/{t} ({100*r:.0f}%)"))
+    if empty_headlines:
+        flag('articles', f'{empty_headlines} {CUR_YEAR} article(s) have empty headline (parser drift or upstream gap)')
+
+
+# ── Data-coverage audit: silent drops across all categories ─────────────────
+# Pattern: any lookup-table-with-fallback can silently drop data. For each
+# major canonicalization point (state mapping, section names, byline parsing),
+# count the falls-through and surface the top values so a human can eyeball
+# whether anything looks like real data being missed. This is the pattern that
+# would have caught the case-sensitivity state-mapping bug on day 1.
+def check_coverage():
+    print('  Auditing canonicalization coverage…')
+    # Load build_data's canonical maps; if not importable, skip the audit.
+    try:
+        import sys
+        sys.path.insert(0, 'scripts')
+        from build_data import glocation_to_state, _INSTITUTIONAL_BYLINES
+    except Exception as e:
+        flag('coverage', f'could not import build_data for audit: {e}')
+        return
+
+    raw_files = sorted(glob.glob('data/raw/*.json'))
+    if not raw_files:
+        return
+
+    # 1. State glocations: top unmapped values for US/NY section articles.
+    # If anything in this list looks like a state, we're dropping it.
+    unmapped_glocs = Counter()
+    section_counts = Counter()
+    unparseable_bylines = 0
+    bylines_seen = 0
+
+    for f in raw_files:
+        try:
+            with open(f) as fh:
+                docs = json.load(fh)
+        except Exception:
+            continue
+        for d in docs:
+            sec = (d.get('section_name') or '').strip()
+            section_counts[sec] += 1
+            # Byline parse audit: any byline.original that yields no person entries
+            byline = d.get('byline') or {}
+            orig = (byline.get('original') or '').strip()
+            persons = byline.get('person') or []
+            if orig:
+                bylines_seen += 1
+                if not persons and orig.lower() not in ('by', ''):
+                    unparseable_bylines += 1
+            # State glocation audit (US-section only — same scope as the choropleth)
+            if sec in ('U.S.', 'New York'):
+                for kw in (d.get('keywords') or []):
+                    if kw.get('name') in ('glocations', 'Location'):
+                        v = kw.get('value','') or ''
+                        if v and not glocation_to_state(v):
+                            unmapped_glocs[v] += 1
+
+    # Report unmapped state glocations — top values likely to be state-like
+    if unmapped_glocs:
+        flag('coverage', f'Top unmapped US-section glocations (eyeball for state names we should be capturing):')
+        for v, n in unmapped_glocs.most_common(15):
+            issues.append(('  ', f"      {n:>6,}  {v!r}"))
+
+    # Report distinct sections — typo'd or new sections jump out here
+    issues.append(('  ', f"   sections seen: {len(section_counts)} distinct values"))
+    # Long tail of low-volume section names is where typos/new things hide
+    rare = [(s, n) for s, n in section_counts.items() if n < 100 and s]
+    if rare:
+        flag('coverage', f'{len(rare)} rare section names (<100 articles, possible typos or new sections):')
+        for s, n in sorted(rare, key=lambda x: x[1])[:10]:
+            issues.append(('  ', f"      {n:>5,}  {s!r}"))
+
+    # Byline parse failures
+    if bylines_seen:
+        rate = unparseable_bylines / bylines_seen
+        if rate > 0.02:  # >2% is suspicious
+            flag('coverage', f'{unparseable_bylines:,} of {bylines_seen:,} bylines ({100*rate:.1f}%) had byline.original but no parsed person entries')
+        else:
+            issues.append(('  ', f"   byline parse rate: {100*(1-rate):.2f}% of {bylines_seen:,} non-empty bylines yielded a person"))
 
 
 def main():
@@ -294,6 +376,7 @@ def main():
     check_articles()
     check_obits()
     check_corrections()
+    check_coverage()
 
     if not issues:
         print('\nNo issues flagged. Looks clean.')

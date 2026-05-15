@@ -310,6 +310,10 @@ ABBREV_TO_STATE = {
 _NYC_LOCS = {
     "New York City", "Manhattan", "Brooklyn", "Queens", "The Bronx", "Bronx",
     "Staten Island", "Harlem", "Manhattan (NYC)", "New York City (NYC)",
+    "New York City Metropolitan Area",  # surfaced by the validate.py audit
+                                         # 2026-05-15 — ~749 US-section articles
+                                         # were tagged with this and missing
+                                         # from NY state's coverage count.
 }
 
 # Pre-computed uppercase lookups so glocation_to_state handles "ARIZONA",
