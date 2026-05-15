@@ -2600,6 +2600,11 @@ const FEATURE_META = {
     desc: 'A short-takes column compiling small arts-world items (gallery openings, casting announcements, music-business notes) into a single daily Metro/Arts page item — a wire-style omnibus that ran through the late-aughts era of the Times print edition.',
     period: '2004–2010',
   },
+  election_results: {
+    label: 'Election Results',
+    desc: 'Auto-published per-state, per-cycle election-result data pages — e.g. "Illinois Primary Election Results", "Election Results for New York\'s 13th Congressional District". They lack individual bylines (typically tagged "The New York Times" or no byline at all) and tag every state covered. Pulled out of state and section analysis so they don\'t inflate coverage counts. Real bylined election reporting stays in normal section coverage.',
+    period: '2000–present',
+  },
 };
 
 function renderFeatures() {
@@ -2678,6 +2683,17 @@ function isLotteryNumbersArticle(a) {
       || h.startsWith('Winning Lottery')
       || h.startsWith('Winning Powerball')
       || h === 'Powerball and Lottery Numbers';
+}
+function isElectionResultsArticle(a) {
+  // Mirror of build_data.py's is_election_results: headline contains
+  // "election result(s)" AND no real (non-institutional) byline. The byline
+  // gate is what keeps real reporting like "Doubt Over Election Result..."
+  // out of this bucket — only the formulaic data-dump articles match.
+  const h = (a.headline || '').toLowerCase();
+  if (!h.includes('election result')) return false;
+  const authors = a.authors || [];
+  const hasRealByline = authors.some(n => n && !INSTITUTIONAL_BYLINES.has(n));
+  return !hasRealByline;
 }
 // Standing features added in patch_features.py — match heuristics must stay
 // in sync with that script so the Features-table count matches the rendered
@@ -2802,6 +2818,7 @@ function fillFeatureArticleList() {
   const FEATURE_FILTERS = {
     quote_of_the_day:     isQOTDArticle,
     lottery_numbers:      isLotteryNumbersArticle,
+    election_results:     isElectionResultsArticle,
     letters_to_editor:    isLettersToEditorArticle,
     on_the_market:        isOnTheMarketArticle,
     metropolitan_diary:   isMetropolitanDiaryArticle,

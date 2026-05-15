@@ -453,6 +453,28 @@ def process_articles(raw_articles):
         if is_lottery_numbers:
             section = "Today's Paper"
 
+        # "Election Results" data-dump articles: pre-formatted per-state election
+        # results auto-published by NYT (one per state per cycle, e.g.
+        # "Illinois Primary Election Results", "Election Results for New York's
+        # 13th Congressional District"). They tag every state covered, lack
+        # real bylines, and aren't editorial reporting — including them
+        # inflated every state's article totals and unique-reporter counts.
+        #
+        # Filter: headline contains "election result(s)" AND no real byline
+        # (empty or all-institutional). The byline check is what protects real
+        # reporting like "Doubt Over Election Result Spurs Plans for Change"
+        # (Paul Zielbauer) from being swept up. Same treatment as lottery:
+        # reassign section to "Today's Paper" so state and section counts
+        # ignore them, set is_election_results so the section_time loop also
+        # skips them, and surface them as their own feature.
+        has_real_byline = any(a not in _INSTITUTIONAL_BYLINES for a in authors)
+        is_election_results = (
+            'election result' in headline_main.lower()
+            and not has_real_byline
+        )
+        if is_election_results:
+            section = "Today's Paper"
+
         # Override section for obituaries filed under subject sections.
         # 2001-2010: tom was usually "Obituary; Biography" (or "Obituary"/
         # "Biography; Obituary") but section was Arts/Sports/Business/etc.
@@ -538,6 +560,7 @@ def process_articles(raw_articles):
             "organizations": organizations_kw,
             "canonical_states": canonical_states,
             "is_lottery_numbers": is_lottery_numbers,
+            "is_election_results": is_election_results,
         })
 
     print(f"  {len(articles):,} processed, {skipped} skipped")
@@ -1993,7 +2016,7 @@ def build_dashboard_data(articles, authors):
     # articles serves both the overall sections list and section_time.
     section_time_all = defaultdict(lambda: defaultdict(lambda: {"count": 0, "words": 0, "wc_list": [], "wc_hist": [0] * 21}))
     for art in articles:
-        if art.get("is_lottery_numbers"):
+        if art.get("is_lottery_numbers") or art.get("is_election_results"):
             continue
         raw_s = art["section"]
         s = raw_s or "(none)"
@@ -2404,6 +2427,31 @@ def build_dashboard_data(articles, authors):
         })
     recent_lotto_articles.sort(key=lambda x: x["d"], reverse=True)
 
+    # --- Election Results ---
+    # Auto-published per-state results articles ("Illinois Primary Election
+    # Results", "Election Results for New York's 13th Congressional District",
+    # etc.). Detection happened in process_articles via the is_election_results
+    # flag — same pattern as is_lottery_numbers. Surfaced as their own feature
+    # so the user can see the volume without polluting state coverage.
+    election_by_year = defaultdict(int)
+    recent_election_articles = []
+    for art in articles:
+        if not art.get("is_election_results"):
+            continue
+        y = str(art["year"])
+        election_by_year[y] += 1
+        url = art.get("web_url", "") or ""
+        if url.startswith(URL_PREFIX_FULL):
+            url = url[len(URL_PREFIX_FULL):]
+        recent_election_articles.append({
+            "d": art["pub_date"][:10],
+            "h": art.get("headline", "") or "",
+            "a": art.get("authors", []),
+            "w": art.get("word_count", 0),
+            "u": url,
+        })
+    recent_election_articles.sort(key=lambda x: x["d"], reverse=True)
+
     # --- Other standing features ---
     # Folded in from the former scripts/patch_features.py (2026-05-15). Each
     # entry is a (key, match_fn) pair where match_fn takes (headline, kicker).
@@ -2467,6 +2515,11 @@ def build_dashboard_data(articles, authors):
             "by_year": dict(lotto_by_year),
             "recent_articles": recent_lotto_articles[:50],
             "total": sum(lotto_by_year.values()),
+        },
+        "election_results": {
+            "by_year": dict(sorted(election_by_year.items())),
+            "recent_articles": recent_election_articles[:50],
+            "total": sum(election_by_year.values()),
         },
         **{
             key: {
