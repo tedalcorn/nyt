@@ -471,7 +471,9 @@ def process_articles(raw_articles):
         # reassign section to "Today's Paper" so state and section counts
         # ignore them, set is_election_results so the section_time loop also
         # skips them, and surface them as their own feature.
-        has_real_byline = any(a not in _INSTITUTIONAL_BYLINES for a in authors)
+        # authors at this point is the list of dicts from extract_authors;
+        # use ['fullname'] to get the name string for the institutional check.
+        has_real_byline = any(a["fullname"] not in _INSTITUTIONAL_BYLINES for a in authors)
         is_election_results = (
             'election result' in headline_main.lower()
             and not has_real_byline
