@@ -2090,7 +2090,7 @@ def build_dashboard_data(articles, authors):
     # Photo grid (top-100) needs 2025 stats for every name in the manifest, but
     # top_authors is capped at 50 — so emit a separate lookup for the grid.
     try:
-        with open("data/bio_photos/manifest.json") as fh:
+        with open("graphics/bio_photos/manifest.json") as fh:
             _manifest = json.load(fh)
         _names = {e["name"] for e in _manifest}
         _grid_stats = {}

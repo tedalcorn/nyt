@@ -75,19 +75,28 @@ site/                              ← this repo (deployed to GitHub Pages from 
 │   ├── dashboard.json             # pre-computed chart data
 │   ├── tag_config.json            # subject merges, filters, headline-event rules
 │   ├── raw/                       # raw monthly API JSON (gitignored, ~3 GB)
-│   └── bio_photos/                # bio_photos compressed illustrations (gitignored masters)
-├── graphics/                      # standalone PNG/JPG used by the dashboard or downloads
-├── scripts/
+│   └── bio_photos/                # uncompressed source illustrations (gitignored)
+├── graphics/
+│   ├── below-the-fold-logo.png    # site logo
+│   ├── state-map.jpg / .png       # downloadable U.S. states graphic
+│   ├── final-obits.jpg / .png     # downloadable longest-obits graphic
+│   └── bio_photos/                # served bio photos (manifest.json + Compressed Illustrations/)
+├── scripts/                       # ONGOING build pipeline only (one-off project scripts live in the parent's projects/ folder)
 │   ├── fetch_nyt.py               # API fetcher
-│   ├── build_*.py                 # the build family (data, obits, corrections, country/state cards, regional maps, etc.)
-│   ├── scrape_*.py                # corrections + bio scrapers
-│   ├── patch_*.py                 # surgical post-build patches (beats, features, etc.)
+│   ├── build_data.py              # core dashboard builder
+│   ├── build_unique_reporters.py  # reporter lists by section + state
+│   ├── build_obituaries.py + regenerate_obit_interactive_fixes.py
+│   ├── scrape_corrections.py + build_corrections.py + build_corrections_denominators.py
+│   ├── patch_*.py                 # surgical patches (run when their input source changes — e.g. patch_beats after tag_config.json edits)
+│   ├── scrape_bios.py             # run periodically to refresh reporter bios
 │   ├── validate.py
 │   └── archive/                   # old/deprecated scripts kept for reference
 └── cache/                         # scrape caches (gitignored, resumable)
 ```
 
-The parent folder one level up (`/Users/tedalcorn/Desktop/claude-projects/nyt/`) is the local working area — it holds the `projects/` folder (analyses and products derived from the dashboard: Twitter threads, Instagram exports, the obits infographic, pitch docs, etc.) and `logos/` (evolving logo versions). Nothing outside `site/` is part of this repo.
+The parent folder one level up (`/Users/tedalcorn/Desktop/claude-projects/nyt/`) is the local working area and is NOT part of this repo. It holds:
+- `projects/` — analyses and products derived from the dashboard. Each project has its own `scripts/` folder when it has build scripts (state-map, regional maps, doodles, etc.). The `corrections-workflow/` sub-project contains the tools and review page used to manually match NYT corrections to articles.
+- `logos/` — evolving logo source versions (the deployed copy lives in `site/graphics/`).
 
 ---
 

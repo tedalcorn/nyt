@@ -428,7 +428,7 @@
 <body>
 
 <header>
-  <img src="below-the-fold-logo.png" alt="Below the Fold" style="height:100px;cursor:pointer" onclick="showView('home');window.scrollTo({top:0,behavior:'smooth'})">
+  <img src="graphics/below-the-fold-logo.png" alt="Below the Fold" style="height:100px;cursor:pointer" onclick="showView('home');window.scrollTo({top:0,behavior:'smooth'})">
 </header>
 
 <nav id="nav">
@@ -1836,7 +1836,7 @@ function initHomeCarousel() {
   if (grid && !grid.dataset.loaded) {
     const esc = s => s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
     Promise.all([
-      fetch('data/bio_photos/manifest.json').then(r => r.json()),
+      fetch('graphics/bio_photos/manifest.json').then(r => r.json()),
       fetch('data/photo_grid_stats.json').then(r => r.json()).catch(() => ({})),
     ]).then(([m, stats]) => {
       // Sort by 2025 word count desc, falling back to manifest rank for ties / missing stats
@@ -1852,7 +1852,7 @@ function initHomeCarousel() {
                     `<div>${(s.articles||0).toLocaleString()} articles in 2025</div>` +
                     `<div>${(s.words||0).toLocaleString()} words</div></div>`;
         const slug = e.slug || e.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-        const illSrc = `data/bio_photos/Compressed Illustrations/${slug}.jpg`;
+        const illSrc = `graphics/bio_photos/Compressed Illustrations/${slug}.jpg`;
         // Use illustration if available; fall back to grey dot (missing class)
         const img = `<img src="${illSrc}" onerror="this.parentNode.classList.add('missing');this.remove()" alt="${escapeHtml(e.name)}" loading="lazy">`;
         return `<div class="cell" onclick="openAuthor('${esc(e.name)}')">${img}${tip}</div>`;
