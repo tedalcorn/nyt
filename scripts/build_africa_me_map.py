@@ -45,7 +45,7 @@ AFME_COUNTRIES = {
     'Libya','Madagascar','Malawi','Mali','Mauritania','Morocco','Mozambique',
     'Namibia','Niger','Nigeria','Rwanda','Senegal','Sierra Leone','Somalia',
     'Somaliland','South Africa','S. Sudan','Sudan','Tanzania','Togo','Tunisia',
-    'Uganda','Western Sahara','Zambia','Zimbabwe',
+    'Uganda','W. Sahara','Zambia','Zimbabwe',
     # Middle East
     'Bahrain','Iran','Iraq','Israel','Jordan','Kuwait','Lebanon','Oman',
     'Qatar','Saudi Arabia','Syria','United Arab Emirates','Yemen',
@@ -60,6 +60,7 @@ GEOJSON_TO_ANALYSIS = {
     'Côte d\'Ivoire': 'Ivory Coast',
     'Central African Rep.': 'Central African Republic',
     'eSwatini': 'Eswatini',
+    'W. Sahara': 'Western Sahara',
 }
 
 # Short display names for the country caption
@@ -89,9 +90,10 @@ AFME_OVERRIDES = {
                            'rotations': [-15, 0]},
     'Libya':              {'forced_text': 'Diplomatic\nEmbassies', 'fs_max': 28,
                            'rotations': [-10, 0]},
-    'Sudan':              {'forced_text': 'Tribes', 'fs_max': 38,
+    'Sudan':              {'forced_text': 'Tribes and\nTribalism', 'fs_max': 30,
                            'rotations': [0]},
-    'S. Sudan':           {'forced_text': 'Gold', 'fs_max': 22},
+    'S. Sudan':           {'forced_text': 'Gold', 'fs_max': 22,
+                           'anchor_y_frac': 0.42},  # nudge down so label fits inside borders
     'Ethiopia':           {'forced_text': 'Oromo', 'fs_max': 30,
                            'rotations': [-30, 0]},
     'Dem. Rep. Congo':    {'forced_text': 'Cobalt', 'fs_max': 42,
@@ -117,8 +119,9 @@ AFME_OVERRIDES = {
                            'rotations': [0]},
     'Chad':               {'forced_text': 'Pipelines', 'fs_max': 18,
                            'rotations': [80, 0]},
-    'Cameroon':           {'forced_text': 'Health', 'fs_max': 14,
-                           'rotations': [40, 0]},
+    'Cameroon':           {'forced_text': 'Medicine\nand Health', 'fs_max': 12,
+                           'rotations': [40, 0],
+                           'anchor_x_frac': 0.42, 'anchor_y_frac': 0.35},
     'Kenya':              {'forced_text': 'Kikuyu', 'fs_max': 20,
                            'rotations': [-30, 0]},
     'Uganda':             {'forced_text': 'Condoms', 'fs_max': 11},
@@ -129,12 +132,12 @@ AFME_OVERRIDES = {
     'Mozambique':         {'forced_text': 'Cyclones', 'fs_max': 18,
                            'rotations': [-60, 0]},
     'Madagascar':         {'fs_max': 14, 'rotations': [-65, 0]},
-    'Zambia':             {'forced_text': 'Diet', 'fs_max': 28,
+    'Zambia':             {'forced_text': 'Diet and\nNutrition', 'fs_max': 18,
                            'rotations': [-20, 0],
                            'anchor_x_frac': 0.50,
                            'anchor_y_frac': 0.30},  # lower in country to clear Angola/Diamonds
     'Zimbabwe':           {'forced_text': 'Lions', 'fs_max': 20},
-    'Malawi':             {'forced_text': 'Diet', 'fs_max': 8,
+    'Malawi':             {'forced_text': 'Diet and\nNutrition', 'fs_max': 6,
                            'rotations': [80, 0]},
     'Eritrea':            {'forced_text': 'Tigrayans', 'fs_max': 9,
                            'rotations': [80, 0]},
@@ -149,8 +152,8 @@ AFME_OVERRIDES = {
     'Senegal':            {'forced_text': 'Sufism', 'fs_max': 12},
     'Central African Rep.': {'forced_text': 'Mercenaries', 'fs_max': 18,
                            'rotations': [0]},
-    'Somalia':            {'forced_text': 'Piracy', 'fs_max': 18,
-                           'rotations': [-55, 0]},
+    'Somalia':            {'forced_text': 'Piracy', 'fs_max': 26,
+                           'rotations': [45]},
     # Jordan → callout (NW of country, into open space above Israel)
     'Eswatini':           {'forced_text': 'AIDS', 'fs_max': 7},
     # Israel / Lebanon / Syria moved to callouts (see below)
@@ -162,20 +165,23 @@ CALLOUT_OFFSETS = {
     # Northern Middle East cluster — all annotated FROM OUTSIDE (mostly
     # north) so the tangle of small countries can each be readable.
     'Israel':      (-0.030,  0.040, 0, 'Temple Mount', 'center'),
-    'Lebanon':     (-0.025,  0.080, 0, 'Iran Proxy Conflict', 'center'),
+    'Lebanon':     (-0.025,  0.080, 0, 'Iran-Israel\nProxy Conflict', 'center'),
     'Syria':       ( 0.025,  0.090, 0, 'Assyrian Civilization', 'center'),
-    # Jordan: shows its #2 ('Foreign Service') instead of #1 to avoid
-    # duplicating Israel's 'Temple Mount' on the map. NYT's Jordan
-    # coverage is largely the diplomatic angle anyway.
-    'Jordan':      (-0.055,  0.020, 0, 'Foreign Service', 'center'),
+    # Jordan: Temple Mount is also Jordan's #1 — the Hashemite kingdom
+    # is the official Muslim custodian of the site, so the duplication
+    # with Israel reflects real NYT coverage. Showing as-is.
+    'Jordan':      (-0.055,  0.020, 0, 'Temple Mount', 'center'),
     # Kuwait nudged a tiny bit more up
     'Kuwait':      ( 0.020,  0.125, 0, 'Persian Gulf War', 'center'),
-    # Persian Gulf small states
-    'Bahrain':     ( 0.030,  0.012, 0, 'Tear Gas'),
-    # Qatar pushed far south into open Gulf space
-    'Qatar':       ( 0.060, -0.120, 0, 'Peace Process'),
-    # UAE pushed right and down (~2 text lines)
-    'United Arab Emirates': ( 0.075, -0.075, 0, 'Wealth', 'center'),
+    # Persian Gulf small states — Bahrain pushed far right (~near right
+    # edge of image) and ~2 lines down. ha='right' so the text ENDS at
+    # the anchor, keeping it on-canvas.
+    'Bahrain':     ( 0.165, -0.012, 0, 'Tear Gas', 'right'),
+    # Qatar pushed far south into open Gulf space, center-aligned
+    'Qatar':       ( 0.060, -0.120, 0, 'Peace Process', 'center'),
+    # UAE pushed right and down (~2.5 text lines)
+    'United Arab Emirates': ( 0.075, -0.087, 0,
+                             'High Net Worth\nIndividuals', 'center'),
     # Morocco: callout offshore in the Atlantic, NW of country
     'Morocco':     (-0.035,  0.020, 30, 'Railroads', 'center'),
     # Rwanda: callout placed left + up so it sits inside DRC's empty
@@ -384,7 +390,8 @@ def main():
     # for footer.
     map_h_inches = 16
     map_w_inches = map_h_inches * bbox_aspect
-    TOP_MARGIN_INCHES = 2.7   # title (~1.0") + 3-line subtitle (~0.9") + small buffer
+    TOP_MARGIN_INCHES = 3.2   # title (~1.0") + 5-line subtitle at 19pt (~2.0") + buffer
+                              # (was 3.6; cropped 0.4" off the top — undo: 3.6)
     BOTTOM_MARGIN_INCHES = 0.4
     fig_w = map_w_inches
     fig_h = map_h_inches + TOP_MARGIN_INCHES + BOTTOM_MARGIN_INCHES
@@ -399,28 +406,21 @@ def main():
     map_ax.set_xlim(bbox_minx, bbox_maxx)
     map_ax.set_ylim(bbox_miny, bbox_maxy)
 
-    # Title block — title at 28pt, subtitle at 15pt across 3 wider lines
-    # (wraps near the figure horizontal centerline, per Ted).
-    title_y = 1.0 - 0.50 / fig_h
-    title_line2_y = title_y - 0.55 / fig_h
-    SUB_LINE_INCH = 0.27       # 15pt × 1.15 / 72 ≈ 0.24, +buffer
-    sub_y1 = title_line2_y - 0.50 / fig_h
+    # Title on ONE line spanning the figure, subtitle on 2 wider lines.
+    # Both lowered ~1 big line for more air at the top.
+    title_y = 1.0 - 0.55 / fig_h
+    SUB_LINE_INCH = 0.35
+    sub_y1 = title_y - 0.70 / fig_h
     sub_y2 = sub_y1 - SUB_LINE_INCH / fig_h
-    sub_y3 = sub_y2 - SUB_LINE_INCH / fig_h
-    title_block_bottom_y = sub_y3 - 0.15 / fig_h
+    title_block_bottom_y = sub_y2 - 0.15 / fig_h
 
-    fig.text(0.02, title_y, "How The New York Times",
+    fig.text(0.02, title_y, "How The New York Times Looks At Africa & the Middle East",
              fontsize=28, family='serif', weight='semibold',
              color=INK, ha='left', va='top')
-    fig.text(0.02, title_line2_y, "Looks At Africa & the Middle East",
-             fontsize=28, family='serif', weight='semibold',
-             color=INK, ha='left', va='top')
-    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its articles show",
-             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y2, "which recurring subjects are covered in each country out of",
-             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y3, "proportion to international coverage as a whole.",
-             fontsize=15, family='serif', color='#4a4438', ha='left', va='top')
+    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its articles show which recurring",
+             fontsize=19, family='serif', color='#4a4438', ha='left', va='top')
+    fig.text(0.02, sub_y2, "subjects are covered in each country out of proportion to international coverage as a whole.",
+             fontsize=19, family='serif', color='#4a4438', ha='left', va='top')
 
     assert title_block_bottom_y > map_ax_top, (
         f"Title block ends at y={title_block_bottom_y:.3f}, "
@@ -446,7 +446,14 @@ def main():
         for poly in polys:
             if not poly.exterior: continue
             xs, ys = poly.exterior.xy
-            map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
+            if has_data:
+                map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
+            else:
+                # No-data countries get a hatched fill so they read as
+                # distinct from labeled-but-not-shown countries.
+                map_ax.fill(xs, ys, facecolor=NO_DATA_FILL,
+                            edgecolor='#b8ad95', linewidth=0.0,
+                            hatch='////', zorder=1.5)
         for poly in polys:
             if not poly.exterior: continue
             xs, ys = poly.exterior.xy
@@ -485,7 +492,11 @@ def main():
             try:
                 c = p.intersection(bbox_rect)
             except Exception:
-                continue
+                # Invalid geometry — repair with buffer(0) and retry.
+                try:
+                    c = p.buffer(0).intersection(bbox_rect)
+                except Exception:
+                    continue
             if c.is_empty: continue
             if c.geom_type == 'Polygon':
                 clipped_pieces.append(c)
@@ -523,6 +534,12 @@ def main():
                     ha='center', va='center',
                     fontsize=fs, family='serif', weight='semibold',
                     color=INK, rotation=rotation, zorder=4)
+
+    # Bahrain is too tiny to be in this geojson — inject a synthetic
+    # anchor at its actual lat/lon so the callout still renders.
+    bahrain_pt = gpd.GeoSeries(
+        [Point(50.55, 26.0)], crs=world_gdf.crs).to_crs(target_crs)[0]
+    callouts.append(('Bahrain', 'Tear Gas', bahrain_pt))
 
     # Callouts with tight name/term stacking + shortened leaders
     def _text_height_data(fs, n_lines=1):
@@ -579,34 +596,36 @@ def main():
     # Methodology — widened lines (~25% more chars per line) and start
     # 3 lines lower than v1 per Ted's note.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the World',
-        'section from 2000 to 2026. The New York Times',
-        'assigns each article subject keywords (separate',
-        'from tags for individual people and',
-        'organizations, which are not included here). For',
-        'each country with sufficient coverage to identify',
-        'recurring patterns, the map shows the keyword that',
+        f'This map draws on {rounded_articles} articles in the',
+        'World section from 2000 to 2026. The New',
+        'York Times assigns each article subject',
+        'keywords (separate from tags for individual',
+        'people and organizations, which are not',
+        'included here). For each country with',
+        'sufficient coverage to identify recurring',
+        'patterns, the map shows the keyword that',
         '(a) appeared on at least 1% of the country’s',
-        'coverage and (b) was **most** out of proportion',
-        'with that keyword’s frequency in World coverage',
-        'overall. The analysis excludes each country’s own',
-        'name and currency, broad topics applied to most',
-        'countries such as “international relations,” and',
-        'one-time events such as named storms, major',
-        'accidents, and specific Olympic Games. For Saudi',
-        'Arabia (and for Afghanistan and Pakistan on the',
-        'Asia map), the four 9/11-aftermath tags (Pentagon,',
-        'World Trade Center, Hijacking, and Airlines and',
-        'Airplanes) are excluded so the country’s own',
-        'recurring themes can surface.',
+        'coverage and (b) was **most** out of',
+        'proportion with that keyword’s frequency in',
+        'World coverage overall. The analysis',
+        'excludes each country’s own currency and',
+        'majority ethnic group, broad topics applied',
+        'to most countries such as “international',
+        'relations,” and one-time events such as named',
+        'storms, major accidents, and specific Olympic',
+        'Games. In Saudi Arabia, tags related to 9/11',
+        'that dominated coverage in the early 2000s',
+        'are also excluded so more typical recurring',
+        'themes can surface.',
     ]
     METH_X = 0.025
-    METH_FS = 11
-    LINE_SPACING = 0.0135
+    METH_FS = 13
+    LINE_SPACING = 0.016
     # Position: lower-left, in the open Atlantic Ocean off W. Africa.
-    # One more line lower than v2 to clear the wider title block (was
-    # 0.444, now 0.4305).
-    y = 0.4305
+    # Bumped font 11→13pt, ~3px more right margin, ~23 lines. Starts
+    # at roughly equatorial latitude in the projection so it sits in
+    # the wider Atlantic strip south of the W. African coast.
+    y = 0.41
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
@@ -631,9 +650,27 @@ def main():
             fig.add_artist(ab)
         y -= LINE_SPACING
 
-    fig.text(0.98, 0.02,
-             'Data from NYT Archive API  •  Full analysis at tedalcorn.github.io/nyt',
-             fontsize=11, ha='right', family='serif', color=MUTED, zorder=10)
+    # Footer with legend swatch for no-data hatching.
+    from matplotlib.offsetbox import DrawingArea
+    from matplotlib.patches import Rectangle
+    swatch = DrawingArea(11, 11, 0, 0)
+    swatch.add_artist(Rectangle((0, 0), 11, 11,
+                                facecolor=NO_DATA_FILL,
+                                edgecolor='#9a8f78', linewidth=0.5,
+                                hatch='////'))
+    legend_text = TextArea(
+        ' Insufficient coverage to identify recurring themes  •  '
+        'Data from NYT Archive API  •  '
+        'Full analysis at tedalcorn.github.io/nyt',
+        textprops=dict(fontsize=10, family='serif', color=MUTED,
+                       stretch='condensed'))
+    footer_packer = HPacker(children=[swatch, legend_text],
+                            align='center', pad=0, sep=2)
+    footer_ab = AnnotationBbox(footer_packer, (0.98, 0.02),
+                               xycoords='figure fraction',
+                               box_alignment=(1.0, 0.0),
+                               frameon=False, pad=0)
+    fig.add_artist(footer_ab)
 
     out_dir = os.path.join(PROJECT_DIR, 'outputs', '2026-05-top-keyword',
                            '2026-05-13-world-country-tweets', 'Africa-and-Middle-East')

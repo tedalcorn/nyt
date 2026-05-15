@@ -151,7 +151,9 @@ CALLOUT_OFFSETS = {
 # Arctic (lat 75), and from the Pacific west of Alaska (lon -140) east to
 # the Brazilian coast (lon -33). Slightly extended past prior version so
 # Canada's full northern extent and Mexico's western coast aren't cropped.
-AMERICAS_BBOX_LATLON = (-152, -55, -27, 78)  # minx, miny, maxx, maxy
+AMERICAS_BBOX_LATLON = (-152, -55, -17, 78)  # minx, miny, maxx, maxy
+                                                # east edge extended 10° total
+                                                # (-27 → -17) so Brazil fits
 
 # Threshold for showing a country's label at all
 MIN_SCORE_TO_LABEL = 6.0
@@ -371,14 +373,14 @@ def main():
     map_ax.set_xlim(bbox_minx, bbox_maxx)
     map_ax.set_ylim(bbox_miny, bbox_maxy)
 
-    # Title block lives in the top margin. Pixel-position-driven so we can
-    # assert at the end that nothing overlaps the map.
-    title_y = 1.0 - 0.45 / fig_h            # title line 1
-    title_line2_y = title_y - 0.50 / fig_h  # title line 2
-    sub_y1 = title_line2_y - 0.40 / fig_h
+    # Title block — title line spacing tightened ~25% (was 0.50,
+    # tried 0.25 = too tight, settled on 0.375); subtitle dropped half
+    # a line and runs wider so it fits on 2 lines.
+    title_y = 1.0 - 0.45 / fig_h
+    title_line2_y = title_y - 0.375 / fig_h
+    sub_y1 = title_line2_y - 0.55 / fig_h
     sub_y2 = sub_y1 - 0.22 / fig_h
-    sub_y3 = sub_y2 - 0.22 / fig_h
-    title_block_bottom_y = sub_y3 - 0.15 / fig_h  # buffer below subtitle
+    title_block_bottom_y = sub_y2 - 0.15 / fig_h
 
     fig.text(0.02, title_y,         "How The New York Times",
              fontsize=28, family='serif', weight='semibold',
@@ -386,11 +388,9 @@ def main():
     fig.text(0.02, title_line2_y,   "Looks At The Americas",
              fontsize=28, family='serif', weight='semibold',
              color=INK, ha='left', va='top')
-    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its articles show which",
+    fig.text(0.02, sub_y1, "Keywords that The New York Times assigns to its articles show which recurring",
              fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y2, "recurring subjects are covered in each country out of proportion to",
-             fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
-    fig.text(0.02, sub_y3, "international coverage as a whole.",
+    fig.text(0.02, sub_y2, "subjects are covered in each country out of proportion to international coverage as a whole.",
              fontsize=12, family='serif', color='#4a4438', ha='left', va='top')
 
     # Hard assertion: title block must end above the map. Catches future
@@ -430,8 +430,14 @@ def main():
                 # disappearing the country.
                 map_ax.fill(xs, ys, facecolor='#eee6d3', edgecolor='none',
                             zorder=1.5)
-            else:
+            elif has_data:
                 map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
+            else:
+                # No-data countries get diagonal hatching to match the
+                # footer legend swatch.
+                map_ax.fill(xs, ys, facecolor=NO_DATA_FILL,
+                            edgecolor='#b8ad95', linewidth=0.0,
+                            hatch='////', zorder=1.5)
         # Hatching for US-style "covered elsewhere" countries
         if hatched:
             for poly in polys:
@@ -644,9 +650,27 @@ def main():
             fig.add_artist(ab)
         y -= LINE_SPACING
 
-    fig.text(0.98, 0.02,
-             'Data from NYT Archive API  •  Full analysis at tedalcorn.github.io/nyt',
-             fontsize=11, ha='right', family='serif', color=MUTED, zorder=10)
+    # Footer with legend swatch for no-data hatching.
+    from matplotlib.offsetbox import DrawingArea
+    from matplotlib.patches import Rectangle
+    swatch = DrawingArea(11, 11, 0, 0)
+    swatch.add_artist(Rectangle((0, 0), 11, 11,
+                                facecolor=NO_DATA_FILL,
+                                edgecolor='#9a8f78', linewidth=0.5,
+                                hatch='////'))
+    legend_text = TextArea(
+        ' Insufficient coverage to identify recurring themes  •  '
+        'Data from NYT Archive API  •  '
+        'Full analysis at tedalcorn.github.io/nyt',
+        textprops=dict(fontsize=10, family='serif', color=MUTED,
+                       stretch='condensed'))
+    footer_packer = HPacker(children=[swatch, legend_text],
+                            align='center', pad=0, sep=2)
+    footer_ab = AnnotationBbox(footer_packer, (0.98, 0.02),
+                               xycoords='figure fraction',
+                               box_alignment=(1.0, 0.0),
+                               frameon=False, pad=0)
+    fig.add_artist(footer_ab)
 
     out_dir = os.path.join(PROJECT_DIR, 'outputs', '2026-05-top-keyword',
                            '2026-05-13-world-country-tweets', 'Americas')

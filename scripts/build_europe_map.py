@@ -112,13 +112,13 @@ EUROPE_OVERRIDES = {
     # axis and shorten the term so it fits inside the polygon.
     'Slovakia':   {'fs_max': 9, 'rotations': [-10],
                    'forced_text': 'Discrim-\nination', 'tight_caption': True},
-    'Slovenia':   {'fs_max': 9, 'forced_text': 'Monuments'},
+    'Slovenia':   {'fs_max': 7, 'forced_text': 'Monuments\nand\nMemorials'},
     'Bosnia and Herz.': {'forced_text': 'War\nCrimes', 'fs_max': 12},
     'North Macedonia': {'fs_max': 8, 'forced_text': 'Dispute over\ncountry\nrenaming'},
     'Macedonia':  {'fs_max': 8, 'forced_text': 'Dispute over\ncountry\nrenaming'},
     'Moldova':    {'fs_max': 10, 'forced_text': 'Secession',
                    'rotations': [-40]},
-    'Estonia':    {'fs_max': 9, 'forced_text': 'Memorials'},
+    'Estonia':    {'fs_max': 7, 'forced_text': 'Monuments\nand\nMemorials'},
     'Latvia':     {'fs_max': 9, 'forced_text': 'Russian\nLanguage'},
     'Lithuania':  {'fs_max': 9, 'forced_text': 'WWII'},
     'Cyprus':     {'fs_max': 8},
@@ -353,6 +353,18 @@ def main():
     european_polys = get_country_polys(world_gdf, target_crs)
     print(f'  {len(european_polys)} European country geometries')
 
+    # Cheat-geography: shift Iceland physically north so the
+    # methodology paragraph fits in the Atlantic strip below it.
+    # ~550 km in projection meters ≈ 12 preview-px upward (was 700, but
+    # that pushed Iceland off the top of the canvas).
+    if 'Iceland' in european_polys:
+        from shapely.affinity import translate as _shp_translate
+        ICELAND_SHIFT_NORTH_M = 500_000
+        european_polys['Iceland'] = [
+            _shp_translate(p, xoff=0, yoff=ICELAND_SHIFT_NORTH_M)
+            for p in european_polys['Iceland']
+        ]
+
     # ── Figure ─────────────────────────────────────────────────────────
     # Compute Europe bbox in projection coords
     bbox_pts = gpd.GeoSeries([
@@ -413,11 +425,16 @@ def main():
             map_ax.fill([x + ox for x in xs], [y - oy for y in ys],
                         facecolor='#c2b9a3', edgecolor='none',
                         alpha=0.30, zorder=1)
-        # Fill
+        # Fill — hatching for no-data countries so they read as distinct.
         for poly in polys:
             if not poly.exterior: continue
             xs, ys = poly.exterior.xy
-            map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
+            if has_data:
+                map_ax.fill(xs, ys, facecolor=fill, edgecolor='none', zorder=1.5)
+            else:
+                map_ax.fill(xs, ys, facecolor=NO_DATA_FILL,
+                            edgecolor='#b8ad95', linewidth=0.0,
+                            hatch='////', zorder=1.5)
         # Outline
         for poly in polys:
             if not poly.exterior: continue
@@ -553,22 +570,27 @@ def main():
     # further right than v8 per Ted's review) so the block fits in fewer
     # lines, and tighter line spacing so it doesn't bleed into Britain.
     # 10 lines at fs=10 — slightly bigger font, one extra line.
+    # Narrower column (~8 px less wide than v9) wrapping onto 2 more
+    # lines so the right edge doesn't crash into Norway/Sweden.
     methodology_lines = [
-        f'This map draws on {rounded_articles} articles in the World section from 2000',
-        'to 2026. The New York Times assigns each article subject keywords',
-        '(separate from tags for individual people and organizations, which are',
-        'not included here). For each country with sufficient coverage to',
-        'identify recurring patterns, the map shows the keyword that (a) appeared',
-        'on at least 1% of the country’s coverage and (b) was **most** out of',
-        'proportion with that keyword’s frequency in World coverage overall.',
-        'The analysis excludes each country’s own name and currency, broad topics',
-        'applied to most countries such as “international relations,” and one-time',
-        'events such as named storms, major accidents, and specific Olympic Games.',
+        f'This map draws on {rounded_articles} articles in the World',
+        'section from 2000 to 2026. The New York Times assigns each',
+        'article subject keywords (separate from tags for individual',
+        'people and organizations, which are not included here). For',
+        'each country with sufficient coverage to identify recurring',
+        'patterns, the map shows the keyword that (a) appeared on at',
+        'least 1% of the country’s coverage and (b) was **most** out of',
+        'proportion with that keyword’s frequency in World coverage',
+        'overall. The analysis excludes each country’s own currency',
+        'and majority ethnic group, broad topics applied to most',
+        'countries such as “international relations,” and one-time',
+        'events such as named storms, major accidents, and specific',
+        'Olympic Games.',
     ]
     METH_X = 0.025
-    METH_FS = 10
-    LINE_SPACING = 0.013
-    y = 0.715
+    METH_FS = 13   # bumped 10→13 per Ted (3pt larger)
+    LINE_SPACING = 0.0165   # scaled with font
+    y = 0.795     # bumped up ~10 preview-px from 0.715
     for line in methodology_lines:
         if '**most**' not in line:
             fig.text(METH_X, y, line, fontsize=METH_FS,
@@ -593,12 +615,27 @@ def main():
             fig.add_artist(ab)
         y -= LINE_SPACING
 
-    # ── Footer ─────────────────────────────────────────────────────────
-    # (No "insufficient coverage" list — methodology text already explains
-    # that countries with insufficient coverage are unlabeled.)
-    fig.text(0.98, 0.02,
-             'Data from NYT Archive API  •  Full analysis at tedalcorn.github.io/nyt',
-             fontsize=11, ha='right', family='serif', color=MUTED, zorder=10)
+    # ── Footer with legend swatch ──────────────────────────────────────
+    from matplotlib.offsetbox import DrawingArea
+    from matplotlib.patches import Rectangle
+    swatch = DrawingArea(11, 11, 0, 0)
+    swatch.add_artist(Rectangle((0, 0), 11, 11,
+                                facecolor=NO_DATA_FILL,
+                                edgecolor='#9a8f78', linewidth=0.5,
+                                hatch='////'))
+    legend_text = TextArea(
+        ' Insufficient coverage to identify recurring themes  •  '
+        'Data from NYT Archive API  •  '
+        'Full analysis at tedalcorn.github.io/nyt',
+        textprops=dict(fontsize=10, family='serif', color=MUTED,
+                       stretch='condensed'))
+    footer_packer = HPacker(children=[swatch, legend_text],
+                            align='center', pad=0, sep=2)
+    footer_ab = AnnotationBbox(footer_packer, (0.98, 0.02),
+                               xycoords='figure fraction',
+                               box_alignment=(1.0, 0.0),
+                               frameon=False, pad=0)
+    fig.add_artist(footer_ab)
 
     # ── Save ───────────────────────────────────────────────────────────
     out_dir = os.path.join(PROJECT_DIR, 'outputs', '2026-05-top-keyword',

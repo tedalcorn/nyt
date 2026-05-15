@@ -163,6 +163,7 @@ COUNTRY_TO_GEOJSON = {
     'South Korea': 'South Korea',
     'North Korea': 'North Korea',
     'Czech Republic': 'Czechia',
+    'Bosnia and Herzegovina': 'Bosnia and Herz.',
 }
 
 
@@ -311,9 +312,25 @@ def make_card(country, recurring, output_path, world_gdf, n_themes=5,
     # ── Figure ─────────────────────────────────────────────────────────
     fig = plt.figure(figsize=(16, 9), dpi=100, facecolor=CREAM)
 
-    # Title — two-part typography matching state cards
+    # Title — two-part typography matching state cards. Long country
+    # names get abbreviated in the title (and sometimes the subhead too)
+    # so they fit on a 16:9 card.
+    COUNTRY_TITLE_ABBREV = {
+        'Papua New Guinea': 'P.N.G.',
+        'Democratic Republic of Congo': 'D.R.C.',
+        'United Arab Emirates': 'U.A.E.',
+        'Central African Republic': 'C.A.R.',
+        'Bosnia and Herzegovina': 'BOSNIA',
+    }
+    COUNTRY_SUBHEAD_ABBREV = {
+        # Names so long the subhead also crashes the right margin.
+        'Democratic Republic of Congo': 'the D.R.C.',
+        'Central African Republic': 'the C.A.R.',
+        'Bosnia and Herzegovina': 'Bosnia',
+    }
     title_prefix = "How The New York Times Covers "
-    country_token = country.upper()
+    country_token = COUNTRY_TITLE_ABBREV.get(country, country.upper())
+    country_in_subhead = COUNTRY_SUBHEAD_ABBREV.get(country, country)
     PREFIX_FS = 36
     COUNTRY_FS = 44
     y_title = 0.905
@@ -353,7 +370,7 @@ def make_card(country, recurring, output_path, world_gdf, n_themes=5,
 
     # Subhead
     fig.text(0.5, 0.838,
-             f"Subjects in {country} that The New York Times covers most out "
+             f"Subjects in {country_in_subhead} that The New York Times covers most out "
              f"of proportion to international coverage include:",
              fontsize=18, family='serif', color='#4a4438',
              ha='center')
@@ -502,6 +519,26 @@ def main():
             # South America
             'Argentina', 'Brazil', 'Bolivia', 'Chile', 'Colombia', 'Ecuador',
             'Guyana', 'Paraguay', 'Peru', 'Suriname', 'Uruguay', 'Venezuela',
+        },
+        'Asia-and-Oceania': {
+            # East Asia
+            'China', 'Japan', 'Mongolia', 'North Korea', 'South Korea', 'Taiwan',
+            # SE Asia
+            'Brunei', 'Cambodia', 'Indonesia', 'Laos', 'Malaysia', 'Myanmar',
+            'Philippines', 'Thailand', 'East Timor', 'Vietnam',
+            # South Asia
+            'Afghanistan', 'Bangladesh', 'Bhutan', 'India', 'Nepal',
+            'Pakistan', 'Sri Lanka', 'Maldives',
+            # Central Asia
+            'Kazakhstan', 'Kyrgyzstan', 'Tajikistan', 'Turkmenistan',
+            'Uzbekistan',
+            # Caucasus
+            'Armenia', 'Azerbaijan', 'Georgia',
+            # North
+            'Russia',
+            # Oceania
+            'Australia', 'Fiji', 'New Caledonia', 'New Zealand',
+            'Papua New Guinea', 'Solomon Islands', 'Vanuatu',
         },
         'Africa-and-Middle-East': {
             # Africa

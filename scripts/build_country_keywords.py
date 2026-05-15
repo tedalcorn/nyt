@@ -67,13 +67,28 @@ def is_correction_article(a):
 # themes (Opium, Pashtun, Pilgrimages, etc.). Exclude them from those
 # three countries' scoring so the actual recurring beats surface. The
 # methodology note on the Europe map will indicate the carve-out.
+NINE_ELEVEN_TAGS = {'Pentagon Building', 'World Trade Center (NYC)',
+                    'Hijacking', 'Airlines and Airplanes'}
+
 COUNTRY_TAG_EXCLUSIONS = {
-    'Afghanistan':  {'Pentagon Building', 'World Trade Center (NYC)',
-                     'Hijacking', 'Airlines and Airplanes'},
-    'Pakistan':     {'Pentagon Building', 'World Trade Center (NYC)',
-                     'Hijacking', 'Airlines and Airplanes'},
-    'Saudi Arabia': {'Pentagon Building', 'World Trade Center (NYC)',
-                     'Hijacking', 'Airlines and Airplanes'},
+    'Afghanistan':  set(NINE_ELEVEN_TAGS),
+    'Pakistan':     set(NINE_ELEVEN_TAGS),
+    'Saudi Arabia': set(NINE_ELEVEN_TAGS),
+    # Drop the majority ethnic group so the country's actual ethnic
+    # tensions / minority dynamics surface.
+    'China':        {'Han Chinese (Ethnic Group)'},
+    'Armenia':      {'Armenians'},
+    'Kyrgyzstan':   {'Kyrgyz (Ethnic Group)'},
+    'Sri Lanka':    {'Sinhalese (Ethnic Group)'},
+    # 'stan countries adjacent to Afghanistan get the 9/11 carve-out
+    # too, since post-9/11 US military operations crowd out every
+    # other tag.
+    'Tajikistan':   {'Tajiks (Ethnic Group)'} | NINE_ELEVEN_TAGS,
+    'Uzbekistan':   {'Uzbeks (Ethnic Group)'} | NINE_ELEVEN_TAGS,
+    'Kyrgyzstan':   {'Kyrgyz (Ethnic Group)'} | NINE_ELEVEN_TAGS,
+    # Kuwait gets the carve-out too — Iraq/Afghanistan war coverage
+    # routed heavy 9/11-aftermath tagging through it.
+    'Kuwait':       set(NINE_ELEVEN_TAGS),
 }
 
 
