@@ -2872,10 +2872,10 @@ def main():
         if a.get("subjects"):
             rec["sb"] = [_rewrite_conv_year(_normalize_subject_kw(s), a["year"])
                          for s in a["subjects"]]  # subject keywords
-        if a.get("persons"):
-            rec["pe"] = a["persons"]   # persons keywords
-        if a.get("organizations"):
-            rec["og"] = [_normalize_org_kw(o) for o in a["organizations"]]  # organizations keywords
+        # 'pe' (persons) and 'og' (organizations) intentionally omitted
+        # from the on-disk article files: no dashboard view reads them
+        # (Newsmakers uses data/subjects.json instead). Dropping them
+        # saves ~13% of total article-data payload on page load.
         if a.get("print_headline"):
             rec["ph"] = a["print_headline"]  # print headline (omit if empty to save space)
         if a.get("kicker"):
