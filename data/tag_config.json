@@ -7,6 +7,7 @@
   "subject_merges": {
     "ABANDONMENT": "Abandonment (Property)",
     "Aborigines": "Indigenous Australians",
+    "Gypsies": "Romani People",
     "ADVERTISING": "Advertising and Marketing",
     "Afghanistan War (2001-14)": "Afghanistan War (2001- )",
     "AGRICULTURE": "Agriculture and Farming",
@@ -235,6 +236,17 @@
     "International Relations-",
     "(Currency)"
   ],
+  "_doc_country_event_tags": "Per-country override: tags listed here are treated as headline events for the named country only. Use when a generic tag (e.g. 'Cable Cars and Trams') gets dragged to the top of one country's recurring list by a single dated incident that the tag name doesn't reveal (e.g. the September 2025 Lisbon funicular crash). The tag still scores normally for other countries.",
+  "country_event_tags": {
+    "Portugal": ["Cable Cars and Trams"]
+  },
+  "_doc_country_exclusion_tags": "Per-country exclusions: tags listed here are dropped entirely from the named country's scoring (treated as junk). Use for tautological tags (e.g. 'Latvian Language' for Latvia) and for tags that look like country coverage but are mostly artifacts of US/diaspora coverage with the country tagged incidentally (e.g. 'St Patrick's Day' for Ireland — most articles are about White House celebrations and Irish-American politics).",
+  "country_exclusion_tags": {
+    "Latvia": ["Latvian Language", "Latvians"],
+    "Ireland": ["St Patrick's Day"],
+    "Montenegro": ["Names, Geographical"],
+    "Romania": ["Romani People"]
+  },
   "_doc_year_detection": "A tag is also classified as a headline event if its name contains a 4-digit year (1900–2099) NOT part of a range. Range markers are '-' or '–' immediately after the year. So 'Hurricane Sandy (2012)' → headline (single year), but 'World War II (1939-45)' → recurring (year range = era), 'Iraq War (2003- )' → recurring (open-ended era), 'Coronavirus (2019-nCoV)' → recurring (year is part of identifier, not a single event marker).",
   "_doc_state_listings": "Standing-feature headlines (event calendars, real-estate listings, art-review roundups, briefs columns) are excluded from state subject analysis the same way corrections are: kept in the dataset and in state article totals, but dropped from the recurring-themes score so they don't manufacture phony recurring topics. Without this filter Connecticut's top recurring theme was Culture (Arts), driven 97% by 'Events in Connecticut' calendar items.",
   "state_listing_headlines_exact": [

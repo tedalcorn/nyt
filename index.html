@@ -6232,15 +6232,19 @@ function openCountryDetail(country) {
   const WORLD_GENERIC_SUBSTRS = tagConfigW.world_coverage_generic_substrings || [];
   const HEADLINE_TAG_SET_W  = new Set(tagConfigW.headline_event_tags || []);
   const HEADLINE_PATTERNS_W = tagConfigW.headline_event_patterns || [];
+  const COUNTRY_EVENT_TAGS_W = new Set((tagConfigW.country_event_tags || {})[country] || []);
+  const COUNTRY_EXCLUSION_TAGS_W = new Set((tagConfigW.country_exclusion_tags || {})[country] || []);
 
   function isWorldJunkTag(tag) {
     if (WORLD_GENERIC_SET.has(tag)) return true;
     if (WORLD_GENERIC_PREFIXES.some(p => tag.startsWith(p))) return true;
     if (WORLD_GENERIC_SUBSTRS.some(s => tag.indexOf(s) !== -1)) return true;
     if (tag.toLowerCase() === country.toLowerCase()) return true;
+    if (COUNTRY_EXCLUSION_TAGS_W.has(tag)) return true;
     return false;
   }
   function isHeadlineEventW(tag) {
+    if (COUNTRY_EVENT_TAGS_W.has(tag)) return true;
     if (HEADLINE_TAG_SET_W.has(tag)) return true;
     for (const p of HEADLINE_PATTERNS_W) {
       if (tag.indexOf(p) !== -1) return true;
@@ -9087,7 +9091,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/17/26 12:12pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/18/26 2:27pm</span>
 </div>
 </body>
 </html>
