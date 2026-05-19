@@ -438,9 +438,10 @@
   <button data-view="newsmakers">Newsmakers</button>
   <button data-view="sections">Sections</button>
   <button data-view="authors">Reporters</button>
-  <button data-view="states">U.S. States</button>
+  <button data-view="states">U.S.</button>
   <button data-view="world">World</button>
-  <button data-view="obits">Obituaries</button>
+  <button data-view="obits">Obits</button>
+  <button data-view="themes">Themes</button>
   <button data-view="corrections">Corrections</button>
   <button data-view="about">About</button>
 </nav>
@@ -546,6 +547,431 @@
   </div>
 
   <!-- ABOUT -->
+  <div class="view" id="view-themes">
+    <style>
+      #view-themes .title-row { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 18px; }
+      #view-themes .title-row h2 { font-size: 24px; font-weight: bold; margin: 0; letter-spacing: -0.01em; flex: 1; }
+      #view-themes .scope-toggle { display: inline-flex; border: 1px solid #5a5447; border-radius: 3px; overflow: hidden; }
+      #view-themes .scope-toggle button { font-family: inherit; font-size: 11px; padding: 3px 10px; border: none; background: transparent; cursor: pointer; color: #7a7368; }
+      #view-themes .scope-toggle button.active { background: #326891; color: white; }
+      #themesCountry { font-family: inherit; font-size: 24px; font-weight: bold; color: #326891; background: transparent; border: none; border-bottom: 2px solid #326891; padding: 2px 6px; width: 320px; }
+      #themesCountry:focus { outline: none; }
+      #view-themes .themes-main { display: grid; grid-template-columns: 240px 1fr; gap: 28px; }
+      #view-themes .map-box svg { width: 100%; height: 200px; display: block; }
+      #view-themes .country-poly { fill: #e8e1d2; stroke: #5a5447; stroke-width: 0.6; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+      #view-themes .country-stats { text-align: center; margin-top: 6px; }
+      #view-themes .country-stats .line { font-size: 13px; margin: 0; line-height: 1.35; }
+      #view-themes .country-stats .line strong { font-weight: bold; }
+      #view-themes .country-stats .note { font-size: 11px; color: #7a7368; margin: 2px 0 0; }
+      #view-themes .themes-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+      #view-themes .themes-cols h3 { font-size: 11px; color: #7a7368; text-transform: uppercase; letter-spacing: 0.06em; font-weight: normal; margin: 0 0 6px; }
+      #view-themes .theme-row { padding: 6px 0; border-bottom: 1px solid #e7dfca; }
+      #view-themes .theme-row:last-child { border-bottom: none; }
+      #view-themes .theme-name { font-size: 15px; font-weight: bold; margin: 0; line-height: 1.2; color: #2a2a2a; }
+      #view-themes .theme-name.headline { color: #1f4e7a; }
+      #view-themes .theme-meta { color: #7a7368; font-size: 11px; margin: 2px 0 0; line-height: 1.35; }
+      #view-themes .empty { color: #7a7368; font-style: italic; padding: 20px 0; font-size: 13px; }
+      #view-themes .themes-filters { margin-top: 28px; padding: 12px 20px; background: #ece5d4; border-radius: 6px; border: 1px solid #d6cdb6; max-width: 600px; }
+      #view-themes .themes-filters .row { display: grid; grid-template-columns: 360px 360px 80px; align-items: center; padding: 6px 0; font-size: 13px; white-space: nowrap; gap: 16px; }
+      #view-themes .themes-slider { width: 100%; min-width: 0; max-width: none; }
+      #view-themes .themes-filters input[type="range"] { width: 100%; }
+      #view-themes .themes-filters .val { text-align: right; font-variant-numeric: tabular-nums; color: #7a7368; }
+    </style>
+    <div class="chart-box">
+      <p style="font-size:13px;color:#666;margin:0 0 26px">Identify recurring themes that the New York Times has covered disproportionately in a given geography over the past 25 years. Pick a country or U.S. state and see which subject keywords appear in coverage of that place out of proportion to comparable coverage elsewhere.</p>
+      <div class="title-row">
+        <h2>How The New York Times covers <input id="themesCountry" list="themes-country-list" placeholder="Type a country…" autocomplete="off"></h2>
+        <div class="scope-toggle" id="themes-scope-toggle">
+          <button data-scope="world" class="active">Countries</button>
+          <button data-scope="states">U.S. states</button>
+        </div>
+      </div>
+      <datalist id="themes-country-list"></datalist>
+      <div id="themesLoading" style="padding:40px 0;text-align:center;color:#7a7368">Loading data…</div>
+      <div class="themes-main" id="themesMain" style="display:none">
+        <div class="map-box">
+          <svg id="themesShape" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+          <div class="country-stats" id="themesStats"></div>
+        </div>
+        <div class="themes-cols" id="themesList"></div>
+      </div>
+    </div>
+    <div class="chart-box" style="position:relative;padding-top:18px">
+      <div style="position:absolute;top:10px;left:14px;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:#9a9080;font-weight:normal">Adjust thresholds</div>
+      <section class="themes-filters" style="margin:0 auto;background:transparent;border:none;padding:0">
+        <div class="row">
+          <label for="th-min-count">Min. articles per keyword</label>
+          <div class="yr-slider-wrap themes-slider">
+            <div class="yr-slider-track"></div>
+            <div class="yr-slider-fill" id="thMinCountFill"></div>
+            <input type="range" id="th-min-count" min="1" max="20" value="5" step="1">
+          </div>
+          <span class="val" id="th-min-count-val">5</span>
+        </div>
+        <div class="row">
+          <label for="th-min-pct">Min. share of country's overall coverage</label>
+          <div class="yr-slider-wrap themes-slider">
+            <div class="yr-slider-track"></div>
+            <div class="yr-slider-fill" id="thMinPctFill"></div>
+            <input type="range" id="th-min-pct" min="0" max="5" value="0.5" step="0.1">
+          </div>
+          <span class="val"><span id="th-min-pct-val">0.5</span>%</span>
+        </div>
+        <div class="row">
+          <label for="th-min-years">Min. distinct years a keyword appears in</label>
+          <div class="yr-slider-wrap themes-slider">
+            <div class="yr-slider-track"></div>
+            <div class="yr-slider-fill" id="thMinYearsFill"></div>
+            <input type="range" id="th-min-years" min="1" max="10" value="2" step="1">
+          </div>
+          <span class="val" id="th-min-years-val">2</span>
+        </div>
+        <div class="row">
+          <label for="th-burst">2-year share to mark as 'episodic'</label>
+          <div class="yr-slider-wrap themes-slider">
+            <div class="yr-slider-track"></div>
+            <div class="yr-slider-fill" id="thBurstFill"></div>
+            <input type="range" id="th-burst" min="50" max="100" value="85" step="1">
+          </div>
+          <span class="val"><span id="th-burst-val">85</span>%</span>
+        </div>
+        <div class="row">
+          <label>Year range</label>
+          <div class="yr-slider-wrap themes-slider">
+            <div class="yr-slider-track"></div>
+            <div class="yr-slider-fill" id="thYrSliderFill"></div>
+            <input type="range" id="thYrStart">
+            <input type="range" id="thYrEnd">
+          </div>
+          <span class="val" style="white-space:nowrap"><span id="thYrStartLbl"></span>–<span id="thYrEndLbl"></span></span>
+        </div>
+      </section>
+    </div>
+    <script>
+    (function() {
+      const YEAR_BARE_RE = /\b(19|20)\d{2}\b(?!\s*[-–])/;
+      const YEAR_RANGE_RE = /\b(199\d|20\d\d)\s*[-–]\s*[\d)]/;
+      function burstThreshold() {
+        return (+document.getElementById('th-burst').value) / 100;
+      }
+      const ALIASES = {
+        'United Kingdom':'Great Britain', 'UK':'Great Britain', 'Britain':'Great Britain',
+        'Czechia':'Czech Republic', "Côte d'Ivoire":'Ivory Coast',
+        'DRC':'Democratic Republic of Congo', 'USA':'United States', 'U.S.':'United States',
+      };
+      // State name aliases (handle DC variants)
+      const STATE_ALIASES = {
+        'District of Columbia':'D.C.', 'DC':'D.C.', 'Washington DC':'D.C.',
+      };
+      let TH_WORLD = null;     // themes_explorer.json (countries)
+      let TH_STATES = null;    // themes_states.json (US states)
+      let themesLoaded = false;
+      let currentScope = 'world';
+      let TH_DATA = null;      // points at active dataset
+
+      // Scope-aware accessors
+      function scopeCfg() {
+        if (currentScope === 'world') {
+          return {
+            data: TH_WORLD,
+            places: TH_WORLD.countries,
+            geometry: TH_WORLD.country_geometry,
+            sectionLabel: 'Intl. section',
+            placeholder: 'Type a country…',
+            placeName: 'country',
+            defaultPick: 'France',
+            aliases: ALIASES,
+          };
+        } else {
+          return {
+            data: TH_STATES,
+            places: TH_STATES.states,
+            geometry: TH_STATES.state_geometry,
+            sectionLabel: 'U.S. & NY section',
+            placeholder: 'Type a U.S. state…',
+            placeName: 'state',
+            defaultPick: 'California',
+            aliases: STATE_ALIASES,
+          };
+        }
+      }
+
+      window._themesInit = async function() {
+        if (themesLoaded) return;
+        themesLoaded = true;
+        // Eagerly load both datasets so the toggle is instant
+        const [rw, rs] = await Promise.all([
+          fetch('data/themes_explorer.json'),
+          fetch('data/themes_states.json'),
+        ]);
+        TH_WORLD = await rw.json();
+        TH_STATES = await rs.json();
+        TH_DATA = TH_WORLD;
+        loadPlaceList();
+        document.getElementById('themesCountry').value = scopeCfg().defaultPick;
+        document.getElementById('themesLoading').style.display = 'none';
+        document.getElementById('themesMain').style.display = 'grid';
+
+        // Wire scope toggle buttons
+        document.querySelectorAll('#themes-scope-toggle button').forEach(b => {
+          b.addEventListener('click', () => {
+            if (b.disabled) return;
+            const sc = b.dataset.scope;
+            if (sc === currentScope) return;
+            currentScope = sc;
+            TH_DATA = (sc === 'world') ? TH_WORLD : TH_STATES;
+            document.querySelectorAll('#themes-scope-toggle button').forEach(x => x.classList.remove('active'));
+            b.classList.add('active');
+            const cfg = scopeCfg();
+            document.getElementById('themesCountry').placeholder = cfg.placeholder;
+            document.getElementById('themesCountry').value = cfg.defaultPick;
+            // Update wording in min-share label
+            document.querySelector('label[for="th-min-pct"]').textContent =
+              `Min. share of ${cfg.placeName}'s overall coverage`;
+            loadPlaceList();
+            // Reset year range to full span for the new dataset
+            const yrs = Object.keys(TH_DATA.corpus_total_by_year).map(Number).sort((a,b)=>a-b);
+            document.getElementById('thYrStart').value = yrs[0];
+            document.getElementById('thYrEnd').value = yrs[yrs.length-1];
+            updateYrSlider();
+            renderFromInput();
+          });
+        });
+
+        const sIn = document.getElementById('thYrStart');
+        const eIn = document.getElementById('thYrEnd');
+        // Initialize bounds and values BEFORE any rendering — corpus key
+        // strings are like "2000".."2026"; force the slider to span them.
+        const initYears = Object.keys(TH_DATA.corpus_total_by_year).map(Number).sort((a,b)=>a-b);
+        sIn.min = eIn.min = initYears[0];
+        sIn.max = eIn.max = initYears[initYears.length-1];
+        sIn.value = initYears[0];
+        eIn.value = initYears[initYears.length-1];
+        function refreshYrBounds() {
+          const years = Object.keys(TH_DATA.corpus_total_by_year).map(Number).sort((a,b)=>a-b);
+          const minY = years[0], maxY = years[years.length-1];
+          sIn.min = eIn.min = minY; sIn.max = eIn.max = maxY;
+          if (+sIn.value < minY || +sIn.value > maxY) sIn.value = minY;
+          if (+eIn.value < minY || +eIn.value > maxY) eIn.value = maxY;
+          return { minY, maxY };
+        }
+        function updateYrSlider() {
+          const { minY, maxY } = refreshYrBounds();
+          let s = parseInt(sIn.value), e = parseInt(eIn.value);
+          if (s > e) { s = e; sIn.value = s; }
+          const range = maxY - minY;
+          document.getElementById('thYrSliderFill').style.left  = ((s - minY) / range * 100) + '%';
+          document.getElementById('thYrSliderFill').style.right = ((maxY - e) / range * 100) + '%';
+          document.getElementById('thYrStartLbl').textContent = s;
+          document.getElementById('thYrEndLbl').textContent = e;
+          renderFromInput();
+        }
+        sIn.addEventListener('input', updateYrSlider);
+        eIn.addEventListener('input', updateYrSlider);
+
+        // Single-handle sliders: have their fill mirror current value
+        const SINGLES = [
+          { id: 'th-min-count', fillId: 'thMinCountFill' },
+          { id: 'th-min-pct',   fillId: 'thMinPctFill' },
+          { id: 'th-min-years', fillId: 'thMinYearsFill' },
+          { id: 'th-burst',     fillId: 'thBurstFill' },
+        ];
+        function updateSingleFill(cfg) {
+          const el = document.getElementById(cfg.id);
+          const mn = +el.min, mx = +el.max, val = +el.value;
+          const pct = ((val - mn) / (mx - mn)) * 100;
+          document.getElementById(cfg.fillId).style.left = '0%';
+          document.getElementById(cfg.fillId).style.right = (100 - pct) + '%';
+        }
+
+        document.getElementById('themesCountry').addEventListener('input', () => renderFromInput());
+        document.querySelectorAll('.themes-filters input[type="range"]').forEach(el => {
+          if (el.id === 'thYrStart' || el.id === 'thYrEnd') return;
+          el.addEventListener('input', () => {
+            const v = document.getElementById(el.id + '-val'); if (v) v.textContent = el.value;
+            const cfg = SINGLES.find(c => c.id === el.id);
+            if (cfg) updateSingleFill(cfg);
+            renderFromInput();
+          });
+        });
+
+        // Initialize single-slider fills
+        SINGLES.forEach(updateSingleFill);
+        updateYrSlider();
+      };
+
+      function loadPlaceList() {
+        const cfg = scopeCfg();
+        const names = Object.keys(cfg.places).sort();
+        document.getElementById('themes-country-list').innerHTML =
+          names.concat(Object.keys(cfg.aliases)).sort().map(n => `<option value="${n}">`).join('');
+        document.getElementById('themesCountry').placeholder = cfg.placeholder;
+      }
+      function renderFromInput() {
+        const cfg = scopeCfg();
+        const raw = document.getElementById('themesCountry').value;
+        const c = cfg.aliases[raw] || raw;
+        if (cfg.places[c]) renderTh(c);
+      }
+
+      function isHeadlineByName(tag) {
+        const F = TH_DATA.filters;
+        if (F.headline_event_tags.includes(tag)) return true;
+        for (const p of F.headline_event_patterns) if (tag.indexOf(p) !== -1) return true;
+        if (YEAR_BARE_RE.test(tag)) return true;
+        if (YEAR_RANGE_RE.test(tag)) return true;
+        return false;
+      }
+      function isBurst(yc) {
+        const counts = Object.values(yc);
+        const total = counts.reduce((a,b)=>a+b, 0);
+        if (total < 5) return false;
+        const thresh = burstThreshold();
+        if (Math.max(...counts) / total > thresh) return true;
+        const yrs = Object.keys(yc).map(Number).sort((a,b)=>a-b);
+        let mp = 0;
+        for (let i = 0; i < yrs.length-1; i++) {
+          if (yrs[i+1] === yrs[i]+1) {
+            const pair = yc[yrs[i]] + yc[yrs[i+1]];
+            if (pair > mp) mp = pair;
+          }
+        }
+        return mp / total > thresh;
+      }
+      function isGeneric(tag, c) {
+        const F = TH_DATA.filters;
+        if ((F.generic_always || []).includes(tag)) return true;
+        if (currentScope === 'world') {
+          if ((F.world_generic_subjects || []).includes(tag)) return true;
+          if ((F.world_generic_prefixes || []).some(p => tag.startsWith(p))) return true;
+          if ((F.world_generic_substrings || []).some(s => tag.indexOf(s) !== -1)) return true;
+          // country-specific exclusion list
+          if (((F.country_exclusion_tags || {})[c] || []).includes(tag)) return true;
+        } else {
+          if ((F.state_generic_subjects || []).includes(tag)) return true;
+          if ((F.state_generic_prefixes || []).some(p => tag.startsWith(p))) return true;
+          if ((F.single_venue_tags || []).includes(tag)) return true;
+          // per-state carve-outs (e.g. 9/11 tags for NY/DC)
+          if (((F.state_tag_exclusions || {})[c] || []).includes(tag)) return true;
+        }
+        if (tag.toLowerCase() === c.toLowerCase()) return true;
+        return false;
+      }
+      function isCountryEvent(tag, c) {
+        if (currentScope !== 'world') return false;
+        return ((TH_DATA.filters.country_event_tags || {})[c] || []).includes(tag);
+      }
+
+      function sumYearRange(yearDict, startYr, endYr) {
+        let s = 0;
+        for (const [y, n] of Object.entries(yearDict)) {
+          const yi = +y;
+          if (yi >= startYr && yi <= endYr) s += n;
+        }
+        return s;
+      }
+      function restrictYears(yearDict, startYr, endYr) {
+        const out = {};
+        for (const [y, n] of Object.entries(yearDict)) {
+          const yi = +y;
+          if (yi >= startYr && yi <= endYr) out[y] = n;
+        }
+        return out;
+      }
+
+      function renderTh(country) {
+        const cfg = scopeCfg();
+        if (!country || !cfg.places[country]) return;
+        const cdata = cfg.places[country];
+        const polys = cfg.geometry[country] || [];
+        const svg = document.getElementById('themesShape');
+        if (polys.length) {
+          let xmin=Infinity, xmax=-Infinity, ymin=Infinity, ymax=-Infinity;
+          for (const ring of polys) for (const [x, y] of ring) {
+            if (x<xmin) xmin=x; if (x>xmax) xmax=x;
+            if (y<ymin) ymin=y; if (y>ymax) ymax=y;
+          }
+          const w = xmax-xmin, h = ymax-ymin, m = Math.max(w, h)*0.05;
+          svg.setAttribute('viewBox', `${xmin-m} ${-ymax-m} ${w+m*2} ${h+m*2}`);
+          svg.innerHTML = polys.map(ring => {
+            const d = ring.map(([x,y], i) => (i===0?'M':'L') + x + ' ' + (-y)).join(' ') + ' Z';
+            return `<path class="country-poly" d="${d}"/>`;
+          }).join('');
+        } else {
+          svg.innerHTML = '<text x="50" y="50" text-anchor="middle" fill="#bbb" font-size="6">—</text>';
+        }
+
+        const startYr = +document.getElementById('thYrStart').value;
+        const endYr   = +document.getElementById('thYrEnd').value;
+        const fullRange = (startYr === +document.getElementById('thYrStart').min &&
+                           endYr === +document.getElementById('thYrEnd').max);
+        const cTotalInRange = fullRange
+          ? cdata.total
+          : sumYearRange(cdata.total_by_year || {}, startYr, endYr);
+        const corpusTotalInRange = fullRange
+          ? TH_DATA.corpus_total
+          : sumYearRange(TH_DATA.corpus_total_by_year, startYr, endYr);
+        document.getElementById('themesStats').innerHTML = `
+          <p class="line"><strong>${cTotalInRange.toLocaleString()}</strong> ${cfg.sectionLabel} articles</p>
+          <p class="note">excluding corrections</p>`;
+
+        if (cTotalInRange === 0) {
+          document.getElementById('themesList').innerHTML =
+            '<div><p class="empty">No articles in this year range.</p></div>';
+          return;
+        }
+
+        const minCount = +document.getElementById('th-min-count').value;
+        const minPct   = +document.getElementById('th-min-pct').value;
+        const minYears = +document.getElementById('th-min-years').value;
+        const scored = [];
+        for (const [tag, info] of Object.entries(cdata.tags)) {
+          const yearsInRange = fullRange ? info.years : restrictYears(info.years, startYr, endYr);
+          const cnt = fullRange ? info.count : Object.values(yearsInRange).reduce((a,b)=>a+b, 0);
+          if (cnt < minCount) continue;
+          const pct = cnt / cTotalInRange * 100;
+          if (pct < minPct) continue;
+          if (isGeneric(tag, country)) continue;
+
+          let baseFreq;
+          if (fullRange) {
+            baseFreq = TH_DATA.corpus_freq[tag];
+          } else {
+            const tagYr = TH_DATA.corpus_freq_by_year[tag] || {};
+            baseFreq = sumYearRange(tagYr, startYr, endYr);
+          }
+          if (!baseFreq) continue;
+
+          const score = (cnt/cTotalInRange) / (baseFreq/corpusTotalInRange);
+          const nYears = Object.keys(yearsInRange).length;
+          let isEvent = false;
+          if (isCountryEvent(tag, country)) isEvent = true;
+          else if (isHeadlineByName(tag)) isEvent = true;
+          else if (isBurst(yearsInRange)) isEvent = true;
+          if (!isEvent && nYears < minYears) continue;
+          scored.push({tag, count: cnt, pct, score, isEvent, years: nYears});
+        }
+        scored.sort((a,b) => b.score - a.score);
+        const recurring = scored.filter(t => !t.isEvent).slice(0, 8);
+        const headlines = scored.filter(t => t.isEvent).slice(0, 6);
+        const compareLabel = currentScope === 'world' ? 'intl. coverage' : 'U.S. coverage';
+        function row(t, head) {
+          const sc = t.score >= 100 ? Math.round(t.score) : t.score.toFixed(1);
+          const pc = t.pct >= 1 ? t.pct.toFixed(1)+'%' : t.pct.toFixed(2)+'%';
+          return `<div class="theme-row"><p class="theme-name${head?' headline':''}">${t.tag}</p>
+            <p class="theme-meta">${sc}× as common as in ${compareLabel} · ${pc} of articles · ${t.count} articles over ${t.years} year${t.years===1?'':'s'}</p></div>`;
+        }
+        let html = '<div><h3>Recurring themes</h3>';
+        html += recurring.length ? recurring.map(t=>row(t,false)).join('') : '<p class="empty">No recurring themes at these settings.</p>';
+        html += '</div><div><h3>Episodic coverage</h3>';
+        html += headlines.length ? headlines.map(t=>row(t,true)).join('') : '<p class="empty">No episodic coverage at these thresholds.</p>';
+        html += '</div>';
+        document.getElementById('themesList').innerHTML = html;
+      }
+    })();
+    </script>
+  </div>
+
   <div class="view" id="view-about">
     <div class="chart-box" style="font-size:14px;line-height:1.7">
       <h4 style="margin-top:0">Data source</h4>
@@ -1677,6 +2103,9 @@ function showView(view) {
   document.getElementById('view-' + view).classList.add('active');
   document.querySelector(`nav button[data-view="${view}"]`).classList.add('active');
   _writeHash({ tab: view });
+  if (view === 'themes' && typeof window._themesInit === 'function') {
+    window._themesInit();
+  }
 }
 
 function openAuthor(name) {
@@ -9091,7 +9520,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/19/26 12:12pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/19/26 5:44pm</span>
 </div>
 </body>
 </html>

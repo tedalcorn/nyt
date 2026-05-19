@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Themes — NYT coverage explorer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    :root {
+      --cream: #f4efe6;
+      --ink: #2a2a2a;
+      --muted: #7a7368;
+      --accent: #326891;
+      --fill: #e8e1d2;
+      --border: #5a5447;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: Georgia, 'Times New Roman', serif;
+      background: var(--cream);
+      color: var(--ink);
+      margin: 0 auto;
+      padding: 24px 32px 48px;
+      max-width: 1200px;
+    }
+    .title-row {
+      display: flex; align-items: baseline; gap: 16px;
+      flex-wrap: wrap; margin-bottom: 18px;
+    }
+    .title-row h1 {
+      font-size: 24px; font-weight: bold; margin: 0;
+      letter-spacing: -0.01em; flex: 1;
+    }
+    .scope-toggle {
+      display: inline-flex; border: 1px solid var(--border);
+      border-radius: 3px; overflow: hidden;
+    }
+    .scope-toggle button {
+      font-family: inherit; font-size: 11px;
+      padding: 3px 10px; border: none; background: transparent;
+      cursor: pointer; color: var(--muted);
+    }
+    .scope-toggle button.active { background: var(--accent); color: white; }
+    #country {
+      font-family: inherit; font-size: 24px; font-weight: bold;
+      color: var(--accent); background: transparent; border: none;
+      border-bottom: 2px solid var(--accent);
+      padding: 2px 6px; width: 320px;
+    }
+    #country:focus { outline: none; }
+
+    main { display: grid; grid-template-columns: 240px 1fr; gap: 28px; }
+    .map-box svg { width: 100%; height: 200px; display: block; }
+    .country-poly {
+      fill: var(--fill); stroke: var(--border); stroke-width: 0.6;
+      stroke-linejoin: round; vector-effect: non-scaling-stroke;
+    }
+    .country-stats { text-align: center; margin-top: 6px; }
+    .country-stats .big {
+      font-size: 16px; font-weight: bold; margin: 0; line-height: 1.25;
+    }
+    .country-stats .label {
+      font-size: 13px; color: var(--muted); margin: 0;
+    }
+    .country-stats .note {
+      font-size: 11px; color: var(--muted); margin: 2px 0 0; font-style: italic;
+    }
+
+    .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .themes h3 {
+      font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      font-weight: normal;
+      margin: 0 0 6px;
+    }
+    .theme-row {
+      padding: 6px 0;
+      border-bottom: 1px solid #e7dfca;
+    }
+    .theme-row:last-child { border-bottom: none; }
+    .theme-name { font-size: 15px; font-weight: bold; margin: 0; line-height: 1.2; }
+    .theme-name.headline { color: #1f4e7a; }
+    .theme-meta { color: var(--muted); font-size: 11px; margin: 2px 0 0; line-height: 1.35; }
+    .empty { color: var(--muted); font-style: italic; padding: 20px 0; font-size: 13px; }
+
+    .filters {
+      margin-top: 28px;
+      padding: 12px 20px;
+      background: #ece5d4;
+      border-radius: 6px;
+      border: 1px solid #d6cdb6;
+      max-width: 600px;
+    }
+    .filters .row {
+      display: grid; grid-template-columns: 360px 1fr 50px;
+      align-items: center;
+      padding: 5px 0;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .filters input[type="range"] { width: 100%; }
+    .filters .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+    #loading { padding: 60px 0; text-align: center; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<div class="title-row">
+  <h1>How The New York Times covers <input id="country" list="country-list" placeholder="Type a country…" autocomplete="off"></h1>
+  <div class="scope-toggle" id="scope-toggle">
+    <button data-scope="world" class="active">Countries</button>
+    <button data-scope="states" disabled title="Coming next">US states</button>
+  </div>
+</div>
+<datalist id="country-list"></datalist>
+
+<div id="loading">Loading data…</div>
+<main id="main" style="display:none">
+  <div class="map-box">
+    <svg id="country-shape" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="country-stats" id="country-stats"></div>
+  </div>
+  <div class="themes" id="themes"></div>
+</main>
+
+<section class="filters">
+  <div class="row">
+    <label for="f-min-count">Minimum articles per keyword</label>
+    <input type="range" id="f-min-count" min="1" max="20" value="5" step="1">
+    <span class="val" id="f-min-count-val">5</span>
+  </div>
+  <div class="row">
+    <label for="f-min-pct">Minimum share of country's overall coverage</label>
+    <input type="range" id="f-min-pct" min="0" max="5" value="0.5" step="0.1">
+    <span class="val"><span id="f-min-pct-val">0.5</span>%</span>
+  </div>
+  <div class="row">
+    <label for="f-min-years">Minimum distinct years a keyword appears in</label>
+    <input type="range" id="f-min-years" min="1" max="10" value="2" step="1">
+    <span class="val" id="f-min-years-val">2</span>
+  </div>
+</section>
+
+<script>
+const YEAR_BURST_THRESHOLD = 0.85;
+const YEAR_BARE_RE = /\b(19|20)\d{2}\b(?!\s*[-–])/;
+const YEAR_RANGE_RE = /\b(199\d|20\d\d)\s*[-–]\s*[\d)]/;
+
+const COUNTRY_ALIASES = {
+  'United Kingdom': 'Great Britain',
+  'UK': 'Great Britain',
+  'Britain': 'Great Britain',
+  'Czechia': 'Czech Republic',
+  "Côte d'Ivoire": 'Ivory Coast',
+  'Cote d Ivoire': 'Ivory Coast',
+  'DRC': 'Democratic Republic of Congo',
+  'USA': 'United States',
+  'U.S.': 'United States',
+};
+
+let DATA = null;
+
+async function init() {
+  const r = await fetch('data/themes_explorer.json');
+  DATA = await r.json();
+
+  const names = Object.keys(DATA.countries).sort();
+  const datalist = names.concat(Object.keys(COUNTRY_ALIASES)).sort();
+  document.getElementById('country-list').innerHTML =
+    datalist.map(n => `<option value="${n}">`).join('');
+
+  document.getElementById('country').value = 'France';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('main').style.display = 'grid';
+
+  document.getElementById('country').addEventListener('input', () => {
+    const raw = document.getElementById('country').value;
+    const canonical = COUNTRY_ALIASES[raw] || raw;
+    if (DATA.countries[canonical]) render(canonical);
+  });
+  document.querySelectorAll('.filters input').forEach(el => {
+    el.addEventListener('input', () => {
+      const valEl = document.getElementById(el.id + '-val');
+      if (valEl) valEl.textContent = el.value;
+      const raw = document.getElementById('country').value;
+      render(COUNTRY_ALIASES[raw] || raw);
+    });
+  });
+
+  render('France');
+}
+
+function isHeadlineByName(tag) {
+  const F = DATA.filters;
+  if (F.headline_event_tags.includes(tag)) return true;
+  for (const p of F.headline_event_patterns) if (tag.indexOf(p) !== -1) return true;
+  if (YEAR_BARE_RE.test(tag)) return true;
+  if (YEAR_RANGE_RE.test(tag)) return true;
+  return false;
+}
+
+function isYearBurst(yearCounts) {
+  const counts = Object.values(yearCounts);
+  const total = counts.reduce((a,b)=>a+b, 0);
+  if (total < 5) return false;
+  if (Math.max(...counts) / total > YEAR_BURST_THRESHOLD) return true;
+  const yrs = Object.keys(yearCounts).map(Number).sort((a,b)=>a-b);
+  let mp = 0;
+  for (let i = 0; i < yrs.length - 1; i++) {
+    if (yrs[i+1] === yrs[i] + 1) {
+      const pair = yearCounts[yrs[i]] + yearCounts[yrs[i+1]];
+      if (pair > mp) mp = pair;
+    }
+  }
+  return mp / total > YEAR_BURST_THRESHOLD;
+}
+
+function isGeneric(tag, country) {
+  const F = DATA.filters;
+  if (F.generic_always.includes(tag)) return true;
+  if (F.world_generic_subjects.includes(tag)) return true;
+  if (F.world_generic_prefixes.some(p => tag.startsWith(p))) return true;
+  if (F.world_generic_substrings.some(s => tag.indexOf(s) !== -1)) return true;
+  if (tag.toLowerCase() === country.toLowerCase()) return true;
+  return false;
+}
+
+function isCountryEvent(tag, country) {
+  return (DATA.filters.country_event_tags[country] || []).includes(tag);
+}
+
+function render(country) {
+  if (!country || !DATA.countries[country]) return;
+  const cdata = DATA.countries[country];
+
+  const polys = DATA.country_geometry[country] || [];
+  const svg = document.getElementById('country-shape');
+  if (polys.length) {
+    let xmin=Infinity, xmax=-Infinity, ymin=Infinity, ymax=-Infinity;
+    for (const ring of polys) for (const [x, y] of ring) {
+      if (x<xmin) xmin=x; if (x>xmax) xmax=x;
+      if (y<ymin) ymin=y; if (y>ymax) ymax=y;
+    }
+    const w = xmax-xmin, h = ymax-ymin;
+    const m = Math.max(w, h) * 0.05;
+    svg.setAttribute('viewBox', `${xmin-m} ${-ymax-m} ${w+m*2} ${h+m*2}`);
+    svg.innerHTML = polys.map(ring => {
+      const d = ring.map(([x,y], i) => (i===0?'M':'L') + x + ' ' + (-y)).join(' ') + ' Z';
+      return `<path class="country-poly" d="${d}"/>`;
+    }).join('');
+  } else {
+    svg.innerHTML = '<text x="50" y="50" text-anchor="middle" fill="#bbb" font-size="6">—</text>';
+  }
+  document.getElementById('country-stats').innerHTML = `
+    <p class="big">${cdata.total.toLocaleString()}</p>
+    <p class="label">International section articles</p>
+    <p class="note">excluding corrections</p>`;
+
+  const minCount = +document.getElementById('f-min-count').value;
+  const minPct   = +document.getElementById('f-min-pct').value;
+  const minYears = +document.getElementById('f-min-years').value;
+
+  const scored = [];
+  for (const [tag, info] of Object.entries(cdata.tags)) {
+    if (info.count < minCount) continue;
+    const pct = info.count / cdata.total * 100;
+    if (pct < minPct) continue;
+    if (isGeneric(tag, country)) continue;
+    const baseFreq = DATA.corpus_freq[tag];
+    if (!baseFreq) continue;
+    const score = (info.count / cdata.total) / (baseFreq / DATA.corpus_total);
+    const nYears = Object.keys(info.years).length;
+    let isEvent = false;
+    if (isCountryEvent(tag, country)) isEvent = true;
+    else if (isHeadlineByName(tag)) isEvent = true;
+    else if (isYearBurst(info.years)) isEvent = true;
+    if (!isEvent && nYears < minYears) continue;
+    scored.push({tag, count: info.count, pct, score, isEvent, years: nYears});
+  }
+  scored.sort((a,b) => b.score - a.score);
+
+  const recurring = scored.filter(t => !t.isEvent).slice(0, 8);
+  const headlines = scored.filter(t => t.isEvent).slice(0, 6);
+
+  let html = '';
+  html += '<div><h3>Recurring themes</h3>';
+  if (recurring.length) {
+    for (const t of recurring) html += renderRow(t, false);
+  } else {
+    html += '<p class="empty">No recurring themes at these settings.</p>';
+  }
+  html += '</div>';
+  html += '<div><h3>Episodic coverage</h3>';
+  if (headlines.length) {
+    for (const t of headlines) html += renderRow(t, true);
+  } else {
+    html += '<p class="empty">No episodic coverage at these thresholds.</p>';
+  }
+  html += '</div>';
+  document.getElementById('themes').innerHTML = html;
+}
+
+function renderRow(t, isHeadline) {
+  const scoreStr = t.score >= 100 ? Math.round(t.score) : t.score.toFixed(1);
+  const pctStr = t.pct >= 1 ? t.pct.toFixed(1) + '%' : t.pct.toFixed(2) + '%';
+  return `
+    <div class="theme-row">
+      <p class="theme-name${isHeadline ? ' headline' : ''}">${t.tag}</p>
+      <p class="theme-meta">${scoreStr}× as common as in intl. coverage · ${pctStr} of articles · ${t.count} articles over ${t.years} year${t.years===1?'':'s'}</p>
+    </div>`;
+}
+
+init();
+</script>
+
+</body>
+</html>
