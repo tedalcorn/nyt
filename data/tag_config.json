@@ -243,7 +243,6 @@
   "_doc_country_exclusion_tags": "Per-country exclusions: tags listed here are dropped entirely from the named country's scoring (treated as junk). Use for tautological tags (e.g. 'Latvian Language' for Latvia) and for tags that look like country coverage but are mostly artifacts of US/diaspora coverage with the country tagged incidentally (e.g. 'St Patrick's Day' for Ireland — most articles are about White House celebrations and Irish-American politics).",
   "country_exclusion_tags": {
     "Latvia": ["Latvian Language", "Latvians"],
-    "Ireland": ["St Patrick's Day"],
     "Montenegro": ["Names, Geographical"],
     "Romania": ["Romani People"]
   },
