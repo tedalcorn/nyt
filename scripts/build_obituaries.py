@@ -336,6 +336,13 @@ NON_OBIT_URLS = {
     '/2018/05/02/reader-center/obituary-suggestions-overlooked.html',
     # Maureen Stapleton memorial-service announcement (sibling of /2006/09/16/obituaries/17stapleton.html)
     '/2006/09/17/obituaries/stapleton-memorial.html',
+    # ---- 2026-05-19 (monthly-card review) ----
+    # Group roundup ("These Runners Kept Going to 100 or Beyond") — individual
+    # subjects like Lester Wright have their own obit URLs already.
+    '/2026/04/29/obituaries/100-year-old-runners-lester-wright.html',
+    # Aldwyth duplicate — the canonical record is /aldwyth-dead.html.
+    # The /aldwyth-art-dead.html URL is the same artist's obit re-slugged.
+    '/2026/04/24/arts/design/aldwyth-art-dead.html',
 }
 
 # Per-URL corrections for records the parsers can't recover programmatically:
@@ -838,6 +845,34 @@ OBIT_OVERRIDES = {
     # — profession precedes the name, so the comma-less parser finds nothing.
     '/2020/08/28/movies/chadwick-boseman-dead.html': {
         'profession': "'Black Panther' Star",
+    },
+    # ---- 2026-05-19 (monthly-card review) — uncertain/missing ages ----
+    # `age_note` is a free-text gloss explaining why age is approximate or
+    # absent. The dashboard renders the age with an asterisk and tooltip
+    # showing the note; the monthly-card script appends a footnote line.
+    # Kabuga: NYT obit text says "He was 91 or 93, based on various accounts."
+    '/2026/05/16/world/africa/felicien-kabuga-dead.html': {
+        'age': 93, 'gender': 'M', 'gender_src': 'manual',
+        'age_note': 'Reported as 91 or 93',
+    },
+    # Fauja Singh: marathon runner, died at 114 per family. No birth certificate.
+    '/2025/07/14/sports/fauja-singh-dead.html': {
+        'age': 114,
+        'age_note': 'No verified birth record',
+    },
+    # Agosto Machado: NYT obit says "believed to be in his late 80s." No firm age.
+    '/2026/03/30/arts/design/agosto-machado-dead.html': {
+        'age': None,
+        'age_note': 'Believed to be in his late 80s',
+    },
+    # Moya Brennan: parser left gender None despite "Voice of Clannad" headline.
+    '/2026/04/19/obituaries/moya-brennan-dead.html': {
+        'gender': 'F', 'gender_src': 'manual',
+    },
+    # Margaret 'Gipsy Moth' Moth: CNN camerawoman. NYT "Overlooked No More"
+    # headline omitted her age (59); parser left it None.
+    '/2026/04/11/obituaries/margaret-gipsy-moth-overlooked.html': {
+        'age': 59,
     },
 }
 
