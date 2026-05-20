@@ -564,6 +564,16 @@
       #view-themes .country-stats .line strong { font-weight: bold; }
       #view-themes .country-stats .note { font-size: 11px; color: #7a7368; margin: 2px 0 0; }
       #view-themes .themes-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+      @media (max-width: 760px) {
+        #view-themes .themes-main { grid-template-columns: 1fr; gap: 12px; }
+        #view-themes .map-box svg { max-height: 160px; }
+        #view-themes .themes-cols { grid-template-columns: 1fr; gap: 18px; }
+        #view-themes .themes-filters .row { grid-template-columns: 1fr; gap: 4px; padding: 8px 0; }
+        #view-themes .themes-filters .val { text-align: left; }
+        #view-themes .title-row { gap: 8px; }
+        #view-themes .title-row h2 { font-size: 19px; }
+        #themesCountry { width: 100%; font-size: 19px; }
+      }
       #view-themes .themes-cols h3 { font-size: 11px; color: #7a7368; text-transform: uppercase; letter-spacing: 0.06em; font-weight: normal; margin: 0 0 6px; }
       #view-themes .theme-row { padding: 6px 0; border-bottom: 1px solid #e7dfca; }
       #view-themes .theme-row:last-child { border-bottom: none; }
@@ -707,8 +717,19 @@
         TH_WORLD = await rw.json();
         TH_STATES = await rs.json();
         TH_DATA = TH_WORLD;
+        // Pre-apply hash params if present (#tab=themes&scope=states&place=California)
+        const params = (typeof _readHash === 'function') ? _readHash() : {};
+        if (params.scope === 'states') {
+          currentScope = 'states';
+          TH_DATA = TH_STATES;
+        }
         loadPlaceList();
-        document.getElementById('themesCountry').value = scopeCfg().defaultPick;
+        const initialPick = params.place && scopeCfg().places[params.place]
+                            ? params.place : scopeCfg().defaultPick;
+        document.getElementById('themesCountry').value = initialPick;
+        // Reflect scope toggle visual state
+        document.querySelectorAll('#themes-scope-toggle button').forEach(x => x.classList.remove('active'));
+        document.querySelector(`#themes-scope-toggle button[data-scope="${currentScope}"]`).classList.add('active');
         document.getElementById('themesLoading').style.display = 'none';
         document.getElementById('themesMain').style.display = 'grid';
 
@@ -811,7 +832,13 @@
         const cfg = scopeCfg();
         const raw = document.getElementById('themesCountry').value;
         const c = cfg.aliases[raw] || raw;
-        if (cfg.places[c]) renderTh(c);
+        if (cfg.places[c]) {
+          renderTh(c);
+          // Reflect current scope+place in URL so it's shareable
+          if (typeof _writeHash === 'function') {
+            _writeHash({ tab: 'themes', scope: currentScope, place: c });
+          }
+        }
       }
 
       function isHeadlineByName(tag) {
@@ -9520,7 +9547,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/19/26 5:50pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/19/26 6:00pm</span>
 </div>
 </body>
 </html>
