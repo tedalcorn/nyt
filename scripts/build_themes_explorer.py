@@ -112,13 +112,20 @@ def main():
         'Spratly Islands', 'Paracel Islands', 'Senkaku Islands',
     }
 
+    # Location merges — variant tags that should fold into one canonical name
+    # (parallel to subject_merges but for glocations). Mirrored in index.html
+    # so the world tab and themes tab show the same thing.
+    LOCATION_MERGES = {
+        'Antarctic Regions': 'Antarctica',
+    }
+
     country_total = Counter()
     country_total_by_year = defaultdict(Counter)
     country_tag_counts = defaultdict(Counter)
     country_tag_years = defaultdict(lambda: defaultdict(Counter))
     for a in world_clean:
         locs = a.get('gn') or a.get('g') or []
-        locs = [l for l in locs if l not in SKIP_LOCATIONS]
+        locs = [LOCATION_MERGES.get(l, l) for l in locs if l not in SKIP_LOCATIONS]
         yr = (a.get('d') or '')[:4]
         seen = set()
         for c in locs:
@@ -188,7 +195,6 @@ def main():
         'eSwatini': 'Eswatini',
         'W. Sahara': 'Western Sahara',
         'Congo': 'Republic of Congo',
-        'Antarctica': 'Antarctic Regions',
     }
 
     def simplify_geom(geom, tolerance=0.05):
@@ -235,24 +241,25 @@ def main():
             [50.45, 26.30],
         ]]
 
-    # Antarctica: the raw polygon includes the -90/-180 anti-meridian
-    # boundary that splays across the whole map under a flat lat/lon
-    # projection. Project to South Polar Stereographic so it renders as a
-    # recognizable disc with the peninsula protruding.
-    if 'Antarctic Regions' in countries:
+    # Antarctica: use the higher-resolution Natural Earth 50m polygon
+    # (Natural Earth 110m has only 14 vertices for the main continent).
+    # Project to South Polar Stereographic (EPSG:3031) so it renders as a
+    # recognizable continent rather than a flat lat/lon strip.
+    if 'Antarctica' in countries:
         try:
-            import math
-            ant_row = gdf[gdf[name_field] == 'Antarctica']
-            if not ant_row.empty:
-                projected = ant_row.to_crs('EPSG:3031').iloc[0].geometry
-                projected = projected.simplify(20000, preserve_topology=True)
+            ant_path = os.path.join(DATA_DIR, 'antarctica_50m.geojson')
+            if os.path.exists(ant_path):
+                ant_gdf = gpd.read_file(ant_path)
+                projected = ant_gdf.to_crs('EPSG:3031').iloc[0].geometry
+                projected = projected.simplify(8000, preserve_topology=True)
                 polys_p = list(projected.geoms) if projected.geom_type == 'MultiPolygon' else [projected]
-                main = max(polys_p, key=lambda p: p.area)
-                # Scale to nice integers in the JSON
-                country_geometry['Antarctic Regions'] = [[
-                    [round(x/1000, 1), round(y/1000, 1)]
-                    for x, y in main.exterior.coords
-                ]]
+                # Keep the main continent + any sub-polygon ≥ 5% of the largest
+                main_area = max(p.area for p in polys_p)
+                kept = [p for p in polys_p if p.area >= 0.05 * main_area]
+                country_geometry['Antarctica'] = [
+                    [[round(x/1000, 1), round(y/1000, 1)] for x, y in p.exterior.coords]
+                    for p in kept
+                ]
         except Exception as e:
             print(f'  (could not project Antarctica: {e})')
 

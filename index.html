@@ -668,7 +668,7 @@
         'United Kingdom':'Great Britain', 'UK':'Great Britain', 'Britain':'Great Britain',
         'Czechia':'Czech Republic', "Côte d'Ivoire":'Ivory Coast',
         'DRC':'Democratic Republic of Congo', 'USA':'United States', 'U.S.':'United States',
-        'Antarctica':'Antarctic Regions',
+        'Antarctic Regions':'Antarctica',
       };
       // State name aliases (handle DC variants)
       const STATE_ALIASES = {
@@ -1806,6 +1806,12 @@ function _parseTrackerRecords(recs) {
 
 function _parseYearRecords(yearArticles) {
   const URL_PREFIX = 'https://www.nytimes.com';
+  // Merge variant glocation tags so they're treated as a single place.
+  // NYT uses both "Antarctica" (5 articles) and "Antarctic Regions" (68);
+  // we surface them as one canonical "Antarctica".
+  const LOCATION_MERGES = {
+    'Antarctic Regions': 'Antarctica',
+  };
   return yearArticles.map(a => ({
     headline: a.h,
     authors: a.a,
@@ -1818,7 +1824,7 @@ function _parseYearRecords(yearArticles) {
     print_section: a.ps,
     print_page: a.pp,
     glocations: a.g || [],          // raw (for sublocation city detection)
-    glocations_norm: a.gn || a.g || [], // normalized (for country matching)
+    glocations_norm: ((a.gn || a.g || []).map(l => LOCATION_MERGES[l] || l)), // normalized + merged
     canonical_states: a.st || [],
     subjects: a.sb || [],
     persons: a.pe || [],
@@ -9548,7 +9554,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/19/26 6:25pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/19/26 6:34pm</span>
 </div>
 </body>
 </html>
