@@ -235,6 +235,27 @@ def main():
             [50.45, 26.30],
         ]]
 
+    # Antarctica: the raw polygon includes the -90/-180 anti-meridian
+    # boundary that splays across the whole map under a flat lat/lon
+    # projection. Project to South Polar Stereographic so it renders as a
+    # recognizable disc with the peninsula protruding.
+    if 'Antarctic Regions' in countries:
+        try:
+            import math
+            ant_row = gdf[gdf[name_field] == 'Antarctica']
+            if not ant_row.empty:
+                projected = ant_row.to_crs('EPSG:3031').iloc[0].geometry
+                projected = projected.simplify(20000, preserve_topology=True)
+                polys_p = list(projected.geoms) if projected.geom_type == 'MultiPolygon' else [projected]
+                main = max(polys_p, key=lambda p: p.area)
+                # Scale to nice integers in the JSON
+                country_geometry['Antarctic Regions'] = [[
+                    [round(x/1000, 1), round(y/1000, 1)]
+                    for x, y in main.exterior.coords
+                ]]
+        except Exception as e:
+            print(f'  (could not project Antarctica: {e})')
+
     # Only emit corpus_freq_by_year for tags we actually use (any country tag).
     used_tags = set()
     for c in countries.values():
