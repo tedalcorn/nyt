@@ -104,8 +104,10 @@ def main():
         'Kerch Strait', 'Taiwan Strait', 'Strait of Malacca',
         # Sub-national / contested / regional
         'Baltic Region', 'Horn of Africa', 'Kurdistan', 'Abu Ghraib',
-        # Polar
-        'Arctic Regions', 'Antarctic Regions', 'Antarctica',
+        # Polar — keep Antarctic Regions as a place (NYT uses it as the
+        # canonical Antarctica tag). Arctic Regions stays skipped: it's a
+        # region spanning multiple sovereign territories.
+        'Arctic Regions',
         # Contested islands often tagged without a parent country
         'Spratly Islands', 'Paracel Islands', 'Senkaku Islands',
     }
@@ -186,6 +188,7 @@ def main():
         'eSwatini': 'Eswatini',
         'W. Sahara': 'Western Sahara',
         'Congo': 'Republic of Congo',
+        'Antarctica': 'Antarctic Regions',
     }
 
     def simplify_geom(geom, tolerance=0.05):
