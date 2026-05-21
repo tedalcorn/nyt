@@ -669,6 +669,7 @@
         'Czechia':'Czech Republic', "Côte d'Ivoire":'Ivory Coast',
         'DRC':'Democratic Republic of Congo', 'USA':'United States', 'U.S.':'United States',
         'Antarctic Regions':'Antarctica',
+        'Macedonia':'North Macedonia',
       };
       // State name aliases (handle DC variants)
       const STATE_ALIASES = {
@@ -824,9 +825,12 @@
 
       function loadPlaceList() {
         const cfg = scopeCfg();
+        // Only canonical names appear in the dropdown — aliases ('Czechia',
+        // 'UK', 'Britain', 'DRC', etc.) still resolve when typed, but don't
+        // double-populate the picker as separate entries.
         const names = Object.keys(cfg.places).sort();
         document.getElementById('themes-country-list').innerHTML =
-          names.concat(Object.keys(cfg.aliases)).sort().map(n => `<option value="${n}">`).join('');
+          names.map(n => `<option value="${n}">`).join('');
         document.getElementById('themesCountry').placeholder = cfg.placeholder;
       }
       function renderFromInput() {
@@ -1811,6 +1815,7 @@ function _parseYearRecords(yearArticles) {
   // we surface them as one canonical "Antarctica".
   const LOCATION_MERGES = {
     'Antarctic Regions': 'Antarctica',
+    'Macedonia': 'North Macedonia',
   };
   return yearArticles.map(a => ({
     headline: a.h,
@@ -5820,7 +5825,6 @@ const POPULATION_M = {
   // Name-variant aliases used in NYT API tagging
   'Congo, Democratic Republic of (Congo-Kinshasa)':105,
   'Republic of Congo':6,'Congo, Republic of (Congo-Brazzaville)':6,
-  'Macedonia':2,  // pre-2019 name for North Macedonia
   // Small sovereign states — per-capita may be extreme, that's informative
   'Monaco':0.038,'Liechtenstein':0.038,'San Marino':0.034,'Andorra':0.077,
   'Nauru':0.011,'Tuvalu':0.011,'Palau':0.018,'Kiribati':0.12,
@@ -5875,7 +5879,7 @@ function renderWorldTable(years) {
 
   const WORLD_TABLE_EXCLUDE = new Set(['New York City', 'Washington (DC)', 'United States', 'Europe', 'Africa', 'Abu Ghraib', 'Antarctic Regions']);
   // Locations that should absorb counts from an alias row (alias → canonical)
-  const LOCATION_ALIASES = { 'Antarctic Regions': 'Antarctica' };
+  const LOCATION_ALIASES = { 'Antarctic Regions': 'Antarctica', 'Macedonia': 'North Macedonia' };
   // Pre-compute alias totals to merge into canonical rows
   const aliasTrends = {};
   Object.entries(LOCATION_ALIASES).forEach(([alias, canonical]) => {
@@ -6009,7 +6013,6 @@ const NYT_TO_GEO = {
   'East Timor': 'Timor-Leste',
   'Central African Republic': 'Central African Rep.',
   'Equatorial Guinea': 'Eq. Guinea',
-  'Macedonia': 'North Macedonia',
   'South Sudan': 'S. Sudan',
   'Ivory Coast': "Côte d'Ivoire",
   'Swaziland': 'Eswatini',
@@ -6510,8 +6513,9 @@ const WORLD_ANNOTATIONS = {
   'Indian Ocean': {
     '2005': 'Aftermath of Dec. 2004 tsunami (228,000 killed across 14 countries)',
   },
-  'Macedonia': {
+  'North Macedonia': {
     '2001': 'Insurgency by ethnic Albanian NLA; Ohrid Framework Agreement',
+    '2019': 'Renamed from "Macedonia" under Prespa agreement; resolved Greece dispute',
   },
   'Cyprus': {
     '2002': 'UN-brokered reunification talks (Annan Plan) resume',
@@ -9554,7 +9558,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/21/26 10:03am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/21/26 12:17pm</span>
 </div>
 </body>
 </html>
