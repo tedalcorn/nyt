@@ -127,18 +127,15 @@ def main():
         locs = a.get('gn') or a.get('g') or []
         locs = [LOCATION_MERGES.get(l, l) for l in locs if l not in SKIP_LOCATIONS]
         yr = (a.get('d') or '')[:4]
-        seen = set()
-        for c in locs:
+        unique_tags = set(a.get('sb') or [])
+        for c in set(locs):
             country_total[c] += 1
             if yr:
                 country_total_by_year[c][yr] += 1
-            for tag in (a.get('sb') or []):
-                if tag in seen: continue
+            for tag in unique_tags:
                 country_tag_counts[c][tag] += 1
                 if yr:
                     country_tag_years[c][tag][yr] += 1
-            for tag in (a.get('sb') or []):
-                seen.add(tag)
 
     print(f'  Countries tracked: {len(country_total)}')
 
