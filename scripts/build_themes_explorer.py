@@ -195,31 +195,39 @@ def main():
         'Congo': 'Republic of Congo',
     }
 
-    # Extract Crimea + Sevastopol polygons from Russia's MultiPolygon — they'll
-    # be appended to Ukraine's silhouette below (Natural Earth tags Crimea as
-    # Russia, reflecting de-facto control post-2014; internationally it's
-    # Ukraine). Pulling the polygons aside here lets the regular country loop
-    # build the silhouettes in one pass without needing a shapely union (which
-    # breaks under numpy 2 / shapely 2.0).
-    crimea_polys_for_ukraine = []
+    # Crimea fix: Natural Earth tags Crimea + Sevastopol as part of Russia
+    # (de-facto control post-2014); internationally it's Ukraine. We pull the
+    # Crimea polygon out of Russia and *topologically union* it with Ukraine's
+    # mainland so the result is a single polygon connected through the Isthmus
+    # of Perekop — no internal seam between Crimea and the mainland.
+    # Pairwise .union() works under numpy 2 / shapely 2.0; the list-form
+    # unary_union breaks with a ufunc casting error, so we union iteratively.
+    from shapely.geometry import MultiPolygon
+    crimea_polys = []
+    ukraine_unioned_geom = None
     ru_idx = gdf.index[gdf[name_field] == 'Russia']
-    if len(ru_idx):
+    uk_idx = gdf.index[gdf[name_field] == 'Ukraine']
+    if len(ru_idx) and len(uk_idx):
         ru_geom = gdf.loc[ru_idx[0], 'geometry']
+        uk_geom = gdf.loc[uk_idx[0], 'geometry']
         ru_polys = list(ru_geom.geoms) if ru_geom.geom_type == 'MultiPolygon' else [ru_geom]
         for p in ru_polys:
             # Crimea piece in NE 110m sits roughly 32.5-36.5°E, 44.4-46.2°N,
             # detached from mainland Russia (which spans to 180°E).
             x0, y0, x1, y1 = p.bounds
             if 32 <= x0 and x1 <= 37 and 44 <= y0 and y1 <= 47:
-                crimea_polys_for_ukraine.append(p)
-        if crimea_polys_for_ukraine:
-            print(f'  Reassigning {len(crimea_polys_for_ukraine)} Crimea polygon(s) Russia→Ukraine')
+                crimea_polys.append(p)
+        if crimea_polys:
+            merged = uk_geom
+            for c in crimea_polys:
+                merged = merged.union(c)
+            ukraine_unioned_geom = merged
+            print(f'  Reassigning {len(crimea_polys)} Crimea polygon(s) Russia→Ukraine '
+                  f'(unioned into single landmass via Isthmus of Perekop)')
 
-    def simplify_geom(geom, tolerance=0.05, extra_polys=(), skip_polys=()):
+    def simplify_geom(geom, tolerance=0.05, skip_polys=()):
         """Simplify a country's geometry and return [[[x,y], ...], ...].
 
-        `extra_polys` — additional polygons to include before simplification
-        (used to graft Crimea into Ukraine's silhouette).
         `skip_polys` — polygons to drop from the source (used to remove Crimea
         from Russia's silhouette, identified by exact bounds match).
         """
@@ -232,11 +240,6 @@ def main():
         if skip_polys:
             skip_bounds = {p.bounds for p in skip_polys}
             raw_polys = [p for p in raw_polys if p.bounds not in skip_bounds]
-        for ep in extra_polys:
-            try:
-                raw_polys.append(ep.simplify(tolerance, preserve_topology=True))
-            except Exception:
-                raw_polys.append(ep)
         if not raw_polys:
             return []
         # Drop far-flung overseas territories: keep only polygons whose
@@ -264,12 +267,11 @@ def main():
         analysis = geojson_to_analysis.get(nm, nm)
         if analysis not in countries:
             continue
-        if nm == 'Ukraine':
-            country_geometry[analysis] = simplify_geom(
-                row.geometry, extra_polys=crimea_polys_for_ukraine)
+        if nm == 'Ukraine' and ukraine_unioned_geom is not None:
+            country_geometry[analysis] = simplify_geom(ukraine_unioned_geom)
         elif nm == 'Russia':
             country_geometry[analysis] = simplify_geom(
-                row.geometry, skip_polys=crimea_polys_for_ukraine)
+                row.geometry, skip_polys=crimea_polys)
         else:
             country_geometry[analysis] = simplify_geom(row.geometry)
 
