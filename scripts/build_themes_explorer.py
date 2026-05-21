@@ -117,6 +117,7 @@ def main():
     # so the world tab and themes tab show the same thing.
     LOCATION_MERGES = {
         'Antarctic Regions': 'Antarctica',
+        'Macedonia': 'North Macedonia',
     }
 
     country_total = Counter()
@@ -194,13 +195,48 @@ def main():
         'Congo': 'Republic of Congo',
     }
 
-    def simplify_geom(geom, tolerance=0.05):
+    # Extract Crimea + Sevastopol polygons from Russia's MultiPolygon — they'll
+    # be appended to Ukraine's silhouette below (Natural Earth tags Crimea as
+    # Russia, reflecting de-facto control post-2014; internationally it's
+    # Ukraine). Pulling the polygons aside here lets the regular country loop
+    # build the silhouettes in one pass without needing a shapely union (which
+    # breaks under numpy 2 / shapely 2.0).
+    crimea_polys_for_ukraine = []
+    ru_idx = gdf.index[gdf[name_field] == 'Russia']
+    if len(ru_idx):
+        ru_geom = gdf.loc[ru_idx[0], 'geometry']
+        ru_polys = list(ru_geom.geoms) if ru_geom.geom_type == 'MultiPolygon' else [ru_geom]
+        for p in ru_polys:
+            # Crimea piece in NE 110m sits roughly 32.5-36.5°E, 44.4-46.2°N,
+            # detached from mainland Russia (which spans to 180°E).
+            x0, y0, x1, y1 = p.bounds
+            if 32 <= x0 and x1 <= 37 and 44 <= y0 and y1 <= 47:
+                crimea_polys_for_ukraine.append(p)
+        if crimea_polys_for_ukraine:
+            print(f'  Reassigning {len(crimea_polys_for_ukraine)} Crimea polygon(s) Russia→Ukraine')
+
+    def simplify_geom(geom, tolerance=0.05, extra_polys=(), skip_polys=()):
+        """Simplify a country's geometry and return [[[x,y], ...], ...].
+
+        `extra_polys` — additional polygons to include before simplification
+        (used to graft Crimea into Ukraine's silhouette).
+        `skip_polys` — polygons to drop from the source (used to remove Crimea
+        from Russia's silhouette, identified by exact bounds match).
+        """
         try:
             g = geom.simplify(tolerance, preserve_topology=True)
         except Exception:
             g = geom
         raw_polys = list(g.geoms) if g.geom_type == 'MultiPolygon' else [g]
         raw_polys = [p for p in raw_polys if p.exterior]
+        if skip_polys:
+            skip_bounds = {p.bounds for p in skip_polys}
+            raw_polys = [p for p in raw_polys if p.bounds not in skip_bounds]
+        for ep in extra_polys:
+            try:
+                raw_polys.append(ep.simplify(tolerance, preserve_topology=True))
+            except Exception:
+                raw_polys.append(ep)
         if not raw_polys:
             return []
         # Drop far-flung overseas territories: keep only polygons whose
@@ -226,7 +262,15 @@ def main():
     for _, row in gdf.iterrows():
         nm = row[name_field]
         analysis = geojson_to_analysis.get(nm, nm)
-        if analysis in countries:
+        if analysis not in countries:
+            continue
+        if nm == 'Ukraine':
+            country_geometry[analysis] = simplify_geom(
+                row.geometry, extra_polys=crimea_polys_for_ukraine)
+        elif nm == 'Russia':
+            country_geometry[analysis] = simplify_geom(
+                row.geometry, skip_polys=crimea_polys_for_ukraine)
+        else:
             country_geometry[analysis] = simplify_geom(row.geometry)
 
     # Natural Earth 110m omits Bahrain (too small). Provide a synthetic

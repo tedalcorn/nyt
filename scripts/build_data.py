@@ -1591,8 +1591,27 @@ LOCATION_NORMALIZE = {
     "Harare (Zimbabwe)":          "Zimbabwe",
     # ── Bosnia ────────────────────────────────────────────────────────
     "SREBRENICA (BOSNIA)":        "Bosnia and Herzegovina",
-    # ── Macedonia ─────────────────────────────────────────────────────
-    "MACEDONIA (FORMER YUGOSLAV REPUBLIC)": "Macedonia",
+    # ── North Macedonia (renamed from Macedonia in 2019; all variants merge) ──
+    "MACEDONIA (FORMER YUGOSLAV REPUBLIC)": "North Macedonia",
+    "Macedonia":                  "North Macedonia",
+    "Skopje (Macedonia)":         "North Macedonia",
+    "TETOVO (MACEDONIA)":         "North Macedonia",
+    "Republic of North Macedonia": "North Macedonia",
+    "Kocani (North Macedonia)":   "North Macedonia",
+    "Kurbinovo (Macedonia)":      "North Macedonia",
+    "ARACINOVO (MACEDONIA)":      "North Macedonia",
+    "STRUGA (MACEDONIA)":         "North Macedonia",
+    "LJUBOTEN (MACEDONIA)":       "North Macedonia",
+    "TANUSEVCI (MACEDONIA)":      "North Macedonia",
+    "BREST (MACEDONIA)":          "North Macedonia",
+    "TUTOVA (MACEDONIA)":         "North Macedonia",
+    "VELESTA (MACEDONIA)":        "North Macedonia",
+    "RESTAN (MACEDONIA)":         "North Macedonia",
+    "LESOK (MACEDONIA)":          "North Macedonia",
+    "OTLJA (MACEDONIA)":          "North Macedonia",
+    "BRODEC (MACEDONIA)":         "North Macedonia",
+    # MACEDONIA (GREECE) is the Greek province — keep as Greece
+    "MACEDONIA (GREECE)":         "Greece",
     # ── ALL-CAPS country name fixes ───────────────────────────────────
     "AFRICA":                     "Africa",
     "ALGERIA":                    "Algeria",
@@ -1777,8 +1796,6 @@ LOCATION_NORMALIZE = {
     "GOUALOGO TRIANGLE (CONGO REPUBLIC)": "Republic of Congo",
     "OKAPI FAUNAL RESERVE (REPUBLIC OF CONGO)": "Republic of Congo",
     "Democratic Federation of Rojava-North Syria": "Syria",
-    "Republic of North Macedonia": "North Macedonia",
-    "TETOVO (MACEDONIA)": "North Macedonia",
     "Kurile Islands": "Russia",
     "SAKHALIN ISLAND": "Russia",
     # Remaining city→country entries whose parents need explicit mapping
@@ -1829,7 +1846,7 @@ PARENT_MAP = {
     "Burkina Faso": "Burkina Faso", "Malawi": "Malawi", "Zambia": "Zambia",
     "Madagascar": "Madagascar", "Eritrea": "Eritrea", "Djibouti": "Djibouti",
     "Bosnia and Herzegovina": "Bosnia and Herzegovina",
-    "Kosovo": "Kosovo", "Macedonia": "Macedonia", "Montenegro": "Montenegro",
+    "Kosovo": "Kosovo", "Macedonia": "North Macedonia", "Montenegro": "Montenegro",
     "Kazakhstan": "Kazakhstan", "Uzbekistan": "Uzbekistan",
     "Kyrgyzstan": "Kyrgyzstan", "Tajikistan": "Tajikistan",
     "Turkmenistan": "Turkmenistan", "Azerbaijan": "Azerbaijan",
