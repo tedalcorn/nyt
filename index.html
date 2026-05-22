@@ -9,6 +9,12 @@
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <style>
+  :root {
+    /* Accent color — terracotta. Used wherever something is "currently
+       selected" or "actively hovered." One swap reverts the experiment. */
+    --accent: #b85c3b;
+    --accent-tint: rgba(184, 92, 59, 0.10);
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; overflow-x: hidden; }
 
@@ -37,8 +43,8 @@
     cursor: pointer; white-space: nowrap;
     border-bottom: 2px solid transparent; transition: all 0.15s;
   }
-  nav button:hover { color: #121212; }
-  nav button.active { color: #121212; border-bottom-color: #121212; }
+  nav button:hover { color: var(--accent); }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
 
   .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
 
@@ -152,7 +158,12 @@
   }
   /* About tab paragraph spacing */
   #view-about p { margin: 0 0 12px; }
-  #view-about h4 { margin-top: 22px; margin-bottom: 8px; }
+  #view-about h4 {
+    margin-top: 26px; margin-bottom: 10px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--accent);
+    display: inline-block;
+  }
   #view-about ul, #view-about ol { margin: 0 0 12px; padding-left: 22px; }
   #view-about li { margin-bottom: 6px; }
 
@@ -243,10 +254,10 @@
   .author-table th:hover { color: #333; }
   .author-table td { padding: 6px 12px; border-bottom: 1px solid #eee; }
   .author-table tr:hover { background: #f0ede6; }
-  .author-table tr.selected { background: #e8e0d4; }
+  .author-table tr.selected { background: var(--accent-tint); box-shadow: inset 3px 0 0 var(--accent); }
   .author-table .num { text-align: right; font-variant-numeric: tabular-nums; }
   .author-table td.author-name { cursor: pointer; color: #326891; }
-  .author-table td.author-name:hover { text-decoration: underline; }
+  .author-table td.author-name:hover { color: var(--accent); text-decoration: underline; }
 
   /* Corrections-specific column widths: narrow Reporter, give Correction more room */
   .corrections-table { table-layout: auto; }
@@ -258,7 +269,7 @@
   .corrections-table td.corr-section-cell,
   .corrections-table td.corr-author-link { cursor: pointer; color: #326891; }
   .corrections-table td.corr-section-cell:hover,
-  .corrections-table td.corr-author-link:hover { text-decoration: underline; }
+  .corrections-table td.corr-author-link:hover { color: var(--accent); text-decoration: underline; }
   .corrections-table .corr-author-link + .corr-author-link::before { content: ", "; color: #666; }
   /* Mobile: drop section + reporter columns; date / article / correction only */
   @media (max-width: 720px) {
@@ -329,7 +340,7 @@
   .headline-result .title { font-weight: 600; }
   .headline-result .meta { font-size: 12px; color: #888; margin-top: 2px; }
   .headline-result a { color: #326891; text-decoration: none; }
-  .headline-result a:hover { text-decoration: underline; }
+  .headline-result a:hover { color: var(--accent); text-decoration: underline; }
 
   .results-count { font-size: 13px; color: #888; margin-bottom: 12px; }
 
@@ -558,7 +569,7 @@
       #themesCountry:focus { outline: none; }
       #view-themes .themes-main { display: grid; grid-template-columns: 240px 1fr; gap: 28px; }
       #view-themes .map-box svg { width: 100%; height: 200px; display: block; }
-      #view-themes .country-poly { fill: #e8e1d2; stroke: #5a5447; stroke-width: 0.6; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+      #view-themes .country-poly { fill: #e8e1d2; stroke: var(--accent); stroke-width: 1.2; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
       #view-themes .country-stats { text-align: center; margin-top: 6px; }
       #view-themes .country-stats .line { font-size: 13px; margin: 0; line-height: 1.35; }
       #view-themes .country-stats .line strong { font-weight: bold; }
@@ -2626,7 +2637,7 @@ function _paintCarouselWorldMap(geo) {
         body = `${pcLine}<br>${raw.toLocaleString()} articles in 2025`;
       }
       tip.style('display','block').html(`<strong>${name}</strong><br>${body}`);
-      d3.select(this).attr('stroke','#333').attr('stroke-width', 1);
+      d3.select(this).attr('stroke','#b85c3b').attr('stroke-width', 1.5);
     })
     .on('mousemove', function(event) {
       const rect = container.getBoundingClientRect();
@@ -6163,7 +6174,7 @@ function renderWorldMap(years) {
         label = `${raw.toLocaleString()} articles (~${Math.round(raw / numYears)}/yr)${yrsStr}`;
       }
       tip.style('display', 'block').html(`<strong>${name}</strong>: ${label}`);
-      d3.select(this).attr('stroke', '#333').attr('stroke-width', 1);
+      d3.select(this).attr('stroke', '#b85c3b').attr('stroke-width', 1.5);
     })
     .on('mousemove', function(event) {
       const rect = svgWrap.getBoundingClientRect();
@@ -7144,7 +7155,7 @@ function renderStateMap(years) {
       const yrsStr = years.length ? ` · ${years[0]}–${years[years.length-1]}` : '';
       const label = perCapita ? `${v.toLocaleString()} articles/year/million residents${yrsStr}` : `${v.toLocaleString()} articles${yrsStr}`;
       tip.style('display', 'block').html(`<strong>${name}</strong>: ${label}`);
-      d3.select(this).attr('stroke', '#333').attr('stroke-width', 1.2);
+      d3.select(this).attr('stroke', '#b85c3b').attr('stroke-width', 1.8);
     })
     .on('mousemove', function(event) {
       const rect = svgWrap.getBoundingClientRect();
@@ -9558,7 +9569,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/22/26 12:12pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/22/26 1:20pm</span>
 </div>
 </body>
 </html>
