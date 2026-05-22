@@ -18,6 +18,11 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Georgia', 'Times New Roman', serif; background: #f7f5f0; color: #333; overflow-x: hidden; }
 
+  /* Text the user types appears in blue — mirrors the Themes country
+     input. Visual cue that the content came from the reader, not the
+     dataset. Doesn't touch ranges, checkboxes, or buttons. */
+  input[type=text], input[type=search] { color: #326891; }
+
   header {
     background: #fff; color: #121212; padding: 4px 12px;
     text-align: center;
@@ -253,7 +258,7 @@
   }
   .author-table th:hover { color: #333; }
   .author-table td { padding: 6px 12px; border-bottom: 1px solid #eee; }
-  .author-table tr:hover { background: #f0ede6; }
+  .author-table tr:hover { background: var(--accent-tint); }
   .author-table tr.selected { background: var(--accent-tint); box-shadow: inset 3px 0 0 var(--accent); }
   .author-table .num { text-align: right; font-variant-numeric: tabular-nums; }
   .author-table td.author-name { cursor: pointer; color: #326891; }
@@ -296,12 +301,12 @@
   .corr-viz-chip button:hover { color:#000; }
   .corr-viz-add-wrap { position:relative; display:inline-block; }
   .corr-viz-add { padding:3px 10px; border:1px dashed #aaa; border-radius:12px; background:#fafafa; cursor:pointer; font-size:12px; color:#326891; }
-  .corr-viz-add:hover { background:#f0ede6; }
+  .corr-viz-add:hover { background: var(--accent-tint); }
   .corr-viz-search { position:absolute; top:100%; left:0; margin-top:4px; background:#fff; border:1px solid #ccc; border-radius:4px; padding:6px; z-index:30; box-shadow:0 2px 8px rgba(0,0,0,0.1); min-width:280px; }
   .corr-viz-search input { width:100%; padding:4px 8px; border:1px solid #ccc; border-radius:3px; font-size:13px; box-sizing:border-box; }
   .corr-viz-search ul { list-style:none; margin:6px 0 0; padding:0; max-height:240px; overflow-y:auto; }
   .corr-viz-search li { padding:4px 8px; cursor:pointer; font-size:12px; border-radius:3px; }
-  .corr-viz-search li:hover { background:#f0ede6; }
+  .corr-viz-search li:hover { background: var(--accent-tint); }
   .corr-viz-search li .meta { color:#888; font-size:11px; margin-left:6px; }
 
   /* Author timeline */
@@ -336,7 +341,9 @@
   .headline-result {
     background: #fff; border: 1px solid #eee; border-radius: 4px;
     padding: 10px 14px; margin-bottom: 6px;
+    transition: background 0.12s;
   }
+  .headline-result:hover { background: var(--accent-tint); }
   .headline-result .title { font-weight: 600; }
   .headline-result .meta { font-size: 12px; color: #888; margin-top: 2px; }
   .headline-result a { color: #326891; text-decoration: none; }
@@ -364,7 +371,7 @@
   .loading { text-align: center; padding: 60px; color: #888; font-size: 16px; }
 
   .beat-suggestion { padding: 8px 12px; cursor: pointer; font-size: 14px; border-bottom: 1px solid #eee; }
-  .beat-suggestion:hover { background: #f0ebe3; }
+  .beat-suggestion:hover { background: var(--accent-tint); }
   .beat-suggestion .beat-count { color: #888; font-size: 12px; float: right; }
   .beat-reporter { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
   .beat-reporter .rank { color: #888; width: 28px; flex-shrink: 0; }
@@ -372,7 +379,7 @@
   .beat-reporter .section { color: #666; font-size: 12px; margin-right: 12px; }
   .beat-reporter .articles { color: #333; white-space: nowrap; }
   .related-tag { display: inline-block; background: #e8e0d4; color: #555; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 3px 4px 3px 0; cursor: pointer; }
-  .related-tag:hover { background: #d4c9b8; }
+  .related-tag:hover { background: var(--accent-tint); }
 
   /* Subjects tab type filter buttons */
   .subject-type-btn {
@@ -9569,7 +9576,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/22/26 1:20pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 5/22/26 1:43pm</span>
 </div>
 </body>
 </html>
