@@ -1507,7 +1507,7 @@ let dashboard = null;
 let articles = [];
 let authors = null;
 let articlesReady = false;
-let trackerArticles = [];   // lean headline+month data — loaded first for fast tracker
+let trackerArticles = [];   // v2: UNUSED — tracker reads trackerPacked (per-year packed strings)
 let trackerReady = false;
 
 // Detect mobile to skip heavy article pre-loading (prevents iOS Safari memory crash)
@@ -1911,6 +1911,126 @@ async function ensureYearLoaded(year) {
 let lastOpenedState = null;
 let lastOpenedCountry = null;
 
+// ── v2: on-demand data loading ───────────────────────────────────────────────
+// Nothing row-level loads at startup. The first feature that needs full
+// article records calls startArticlesLoad(); the first open of the Headlines
+// tab calls startTrackerLoad(). Both are idempotent and no-ops on mobile
+// (same memory constraints as v1's eager loads).
+let _articlesLoadStarted = false;
+function startArticlesLoad() {
+  if (_articlesLoadStarted || IS_MOBILE || !window._startArticlesLoadInner) return;
+  _articlesLoadStarted = true;
+  window._startArticlesLoadInner();
+}
+
+let _trackerLoadStarted = false;
+const trackerPacked = {};  // year -> packed structures (see scripts/build_v2_tracker.py)
+
+function startTrackerLoad() {
+  if (_trackerLoadStarted || IS_MOBILE) return;
+  _trackerLoadStarted = true;
+  const years = dashboard.all_years.map(Number);
+  window._trackerProgress = { done: 0, total: years.length };
+  Promise.all(years.map(async (y) => {
+    try {
+      const res = await fetch(`data/v2/tracker_${y}.json`);
+      if (res.ok) {
+        const p = await res.json();
+        p.lineStarts = _trackerLineStarts(p.h, p.n);
+        p.fpSet = new Set(p.fp);
+        trackerPacked[y] = p;
+      }
+    } catch(_) {}
+    window._trackerProgress.done += 1;
+    const txt = document.getElementById('trackerProgressText');
+    if (txt) {
+      txt.textContent = `Loading ${window._trackerProgress.done} of ${window._trackerProgress.total} years…`;
+    }
+  })).then(() => {
+    trackerReady = true;
+    _applyRestore('tracker');
+    // If no restore pending, run with whatever terms are in the inputs
+    if (!_pendingRestore || !_pendingRestore.q) trackTerms();
+  }).catch(e => console.error('Tracker load failed:', e));
+}
+
+// Line-start offsets for a newline-joined string with n lines. Lets the scan
+// engine map a match position back to its line (= article) by binary search.
+function _trackerLineStarts(h, n) {
+  const starts = new Uint32Array(n);
+  let pos = 0;
+  for (let i = 0; i < n; i++) {
+    starts[i] = pos;
+    const nl = h.indexOf('\n', pos);
+    pos = nl === -1 ? h.length + 1 : nl + 1;
+  }
+  return starts;
+}
+
+// Print-mode packed string, built lazily per year on first print-edition query.
+// Effective print headline per line = phd[i] ?? original web headline — same
+// fallback as v1's `a.print_headline || a.headline`. Lines whose effective
+// string embeds a newline go into exc and are regex-tested individually on the
+// original string, exactly as v1 tested every record individually.
+function _trackerPrintPack(yp) {
+  if (yp.print) return yp.print;
+  const webLines = yp.h.split('\n');
+  const lines = new Array(yp.n);
+  const exc = {};
+  for (let i = 0; i < yp.n; i++) {
+    let eff = yp.phd[i] !== undefined ? yp.phd[i]
+            : (yp.exc[i] !== undefined ? yp.exc[i] : webLines[i]);
+    if (eff.indexOf('\n') !== -1 || eff.indexOf('\r') !== -1) {
+      exc[i] = eff;
+      eff = eff.replace(/[\r\n]/g, ' ');
+    }
+    lines[i] = eff;
+  }
+  const h = lines.join('\n');
+  yp.print = { h, lineStarts: _trackerLineStarts(h, yp.n), exc };
+  return yp.print;
+}
+
+// Count matching headlines for one year directly on the packed string.
+// Equivalent to v1's per-record `re.test(hl)`: each line counts at most once
+// per term (after a hit we jump to the next line before continuing the scan).
+// Patterns can never match across a line break: terms contain no newline
+// literals, and \w / \b / escaped literals / spaces all exclude '\n'.
+function _countYearPacked(yp, terms, termRegs, series, frontOnly, usePrint) {
+  const pack = usePrint ? _trackerPrintPack(yp)
+                        : { h: yp.h, lineStarts: yp.lineStarts, exc: yp.exc };
+  const { h, lineStarts, exc } = pack;
+  const n = yp.n, mi = yp.mi, months = yp.months, fpSet = yp.fpSet;
+  for (let t = 0; t < terms.length; t++) {
+    const s = series[terms[t]];
+    const re = new RegExp(termRegs[t].source, 'gi');
+    let m;
+    while ((m = re.exec(h)) !== null) {
+      // Binary-search the line containing this match, then jump past it.
+      let lo = 0, hi = n - 1;
+      while (lo < hi) {
+        const mid = (lo + hi + 1) >> 1;
+        if (lineStarts[mid] <= m.index) lo = mid; else hi = mid - 1;
+      }
+      re.lastIndex = lo + 1 < n ? lineStarts[lo + 1] : h.length + 1;
+      if (exc[lo] !== undefined) continue;   // exception lines counted below
+      if (frontOnly && !fpSet.has(lo)) continue;
+      const mo = months[mi[lo]];
+      s[mo] = (s[mo] || 0) + 1;
+    }
+    // Exception lines (embedded newlines): test originals one by one — this is
+    // bit-identical to v1, which saw these strings newlines and all.
+    for (const k in exc) {
+      const line = +k;
+      if (frontOnly && !fpSet.has(line)) continue;
+      if (termRegs[t].test(exc[k])) {
+        const mo = months[mi[line]];
+        s[mo] = (s[mo] || 0) + 1;
+      }
+    }
+  }
+}
+
 async function loadData() {
   try {
     // Phase 1a: load dashboard only → show page immediately
@@ -2023,51 +2143,20 @@ async function loadData() {
       window._tagConfig = tagConfig;
     }).catch(e => console.warn('Failed to load tag_config:', e));
 
-    // Phase 2a: tracker files — headline+month only, 226MB (28% of full articles).
-    // Loads first so the Headline Frequency tab is usable in ~1/4 the usual wait.
-    // Skipped on mobile for the same memory reasons as full articles.
-    //
-    // Fetched in parallel (Promise.all) instead of serially: the previous
-    // for/await version sent 27 requests one at a time and could spend 10+
-    // seconds on a typical connection. Parallel multiplexing over HTTP/2
-    // typically resolves in 1/3 to 1/5 the time. Each year resolves
-    // independently and bumps window._trackerProgress so the loading
-    // indicator (in trackTerms) can show "Loading 14/27 years…".
-    if (!IS_MOBILE) {
-      const years = dashboard.all_years.map(Number);
-      window._trackerProgress = { done: 0, total: years.length };
-      trackerArticles = [];
-      Promise.all(years.map(async (y) => {
-        try {
-          const res = await fetch(`data/tracker_${y}.json`);
-          if (res.ok) {
-            const recs = _parseTrackerRecords(await res.json());
-            for (const r of recs) trackerArticles.push(r);
-          }
-        } catch(_) {}
-        window._trackerProgress.done += 1;
-        // If the loading indicator is currently visible, update its progress text
-        const txt = document.getElementById('trackerProgressText');
-        if (txt) {
-          txt.textContent = `Loading ${window._trackerProgress.done} of ${window._trackerProgress.total} years…`;
-        }
-      })).then(() => {
-        trackerReady = true;
-        _applyRestore('tracker');
-        // If no restore pending, run with whatever terms are in the inputs
-        if (!_pendingRestore || !_pendingRestore.q) trackTerms();
-      }).catch(e => console.error('Tracker load failed:', e));
-    }
+    // Phase 2a (v2): tracker data no longer loads at startup. The packed
+    // per-year files (data/v2/tracker_*.json, see scripts/build_v2_tracker.py)
+    // are fetched by startTrackerLoad() the first time the Headlines tab is
+    // opened (tracker observer / sample chip / trackTerms). Until then the
+    // page costs nothing for users who never open that tab.
 
-    // Phase 2b: full article files (for detail panels, article lists, author analysis, etc.)
-    // Skipped on mobile — loading 2.1M articles exceeds iOS Safari memory limits.
-    // Article lists in detail panels will show a desktop prompt instead.
-    //
-    // Fetched in parallel (Promise.all) instead of serially: same change as
-    // Phase 2a (tracker) above. Each year file is independent, yearCache is
-    // keyed by year so there's no cross-year coupling, and the final articles
-    // array doesn't depend on load order.
-    if (!IS_MOBILE) {
+    // Phase 2b (v2): full article files load on demand, not at startup.
+    // startArticlesLoad() is called the first time a feature actually needs
+    // row-level articles (detail panels, headline search, beats charts,
+    // multi-byline table). The loader body below is unchanged from v1 —
+    // including the panel-refresh and restore machinery that runs when
+    // loading completes, which is what makes "panel opened before data
+    // arrived" resolve itself. Still skipped on mobile (memory limits).
+    window._startArticlesLoadInner = () => {
       (async () => {
         const years = dashboard.all_years.map(Number);
         articles = [];
@@ -2121,7 +2210,7 @@ async function loadData() {
         // Populate headline section dropdown after panels refresh (O(1M) scan — deferred)
         setTimeout(populateHeadlineSection, 200);
       })().catch(e => console.error('Failed to load articles:', e));
-    }
+    };
 
   } catch (e) {
     document.getElementById('loading').textContent = 'Error loading data. Run build_data.py first, then serve with: python3 -m http.server 8080';
@@ -2925,6 +3014,7 @@ function renderMultiBylineTrend() {
 }
 
 function renderMultiBylineTable() {
+  startArticlesLoad();  // v2
   if (!articlesReady) {
     document.getElementById('multiBylineTableWrap').innerHTML = '<p style="color:#888;font-size:13px;padding:12px 0">Loading article data…</p>';
     return;
@@ -3247,6 +3337,7 @@ let featureArticleOrder = 'newest';
 let featureVowsOnly = false;
 
 function openFeatureDetail(featureKey) {
+  startArticlesLoad();  // v2
   const feat = dashboard.features;
   const f = feat?.[featureKey];
   if (!f) return;
@@ -3582,6 +3673,7 @@ function _toggleSecYear(yr) {
 }
 
 function openSectionDetail(sectionName) {
+  startArticlesLoad();  // v2: article list for this panel needs row-level data
   _secFilters = { year: null, wcBin: null };  // reset on new section open
   _writeHash({ tab: 'sections', section: sectionName });
   const panel = document.getElementById('sectionDetailPanel');
@@ -4593,6 +4685,7 @@ function initBeats() {
 }
 
 function selectBeat(subject) {
+  startArticlesLoad();  // v2: beat volume chart + year filter need row-level data
   _writeHash({ tab: 'beats', beat: subject });
   const resultsBox = document.getElementById('beatResults');
 
@@ -5507,6 +5600,7 @@ function searchHeadlines() {
   }
 
   if (!articlesReady) {
+    startArticlesLoad();  // v2: first search keystroke starts the load
     document.getElementById('headlineResults').innerHTML = IS_MOBILE
       ? '<p style="color:#888;font-size:13px">Headline search requires the full article dataset and is available on desktop.</p>'
       : '<p style="color:#888;font-size:13px">Loading article data — search will be available shortly…</p>';
@@ -5591,7 +5685,9 @@ document.getElementById('trackerYrEnd').addEventListener('input', () => { update
 function trackerSampleClick(term) {
   document.getElementById('term1').value = term;
   ['term2','term3','term4'].forEach(id => { document.getElementById(id).value = ''; });
-  if (trackerReady) trackTerms();
+  // v2: trackTerms handles both states — starts the load + shows progress if
+  // data isn't ready, renders the chart if it is.
+  trackTerms();
 }
 
 // Populate tracker year selects once dashboard loads — called from initOverview
@@ -5641,6 +5737,7 @@ function _clearTrackerLoadingMsg() {
 
 function trackTerms() {
   if (!trackerReady) {
+    startTrackerLoad();  // v2: first call kicks off the data fetch (idempotent)
     if (IS_MOBILE) {
       document.getElementById('chartTracker').parentElement.innerHTML =
         '<p style="color:#888;font-size:13px;padding:20px 0">The headline tracker requires the full article dataset, which is not loaded on mobile devices due to memory constraints. Use a desktop browser to access this feature.</p>';
@@ -5678,13 +5775,26 @@ function trackTerms() {
   const cutoffYear = String(new Date().getFullYear());
   const startYear = document.getElementById('trackerYrStart').value;
   const endYear = document.getElementById('trackerYrEnd').value;
-  let pool = trackerArticles.filter(a => {
-    const y = a.year_month.slice(0, 4);
-    return y !== cutoffYear && y >= startYear && y <= endYear;
-  });
-  if (frontOnly) pool = pool.filter(a => a.print_section === 'A' && a.print_page === '1');
+  // v2: the pool is the set of packed year files in range. Same filter as v1:
+  // string comparison on the year, current (incomplete) year always excluded.
+  const activeYears = dashboard.all_years
+    .filter(y => y !== cutoffYear && y >= startYear && y <= endYear)
+    .map(Number)
+    .filter(y => trackerPacked[y]);
 
-  const months = [...new Set(pool.map(a => a.year_month))].sort();
+  // Month axis: distinct months present in the pool, sorted. v1 derived this
+  // from pool records AFTER the front-page filter, so in A1-only mode the axis
+  // only includes months with at least one front-page article — replicated here.
+  const monthSet = new Set();
+  for (const y of activeYears) {
+    const yp = trackerPacked[y];
+    if (frontOnly) {
+      for (const li of yp.fpSet) monthSet.add(yp.months[yp.mi[li]]);
+    } else {
+      for (const mo of yp.months) monthSet.add(mo);
+    }
+  }
+  const months = [...monthSet].sort();
   const series = {};
   // Build per-term regexes supporting | for OR and * for prefix wildcard
   // e.g. "Democrat|Democratic" → \b(Democrat|Democratic)\b
@@ -5702,16 +5812,9 @@ function trackTerms() {
   const termRegs = terms.map(buildTermReg);
   terms.forEach(t => { series[t] = {}; months.forEach(m => series[t][m] = 0); });
 
-  pool.forEach(a => {
-    // Use print headline when checked; fall back to web headline if no print version stored
-    const hl = usePrint ? (a.print_headline || a.headline) : a.headline;
-    termRegs.forEach((re, i) => {
-      if (re.test(hl)) {
-        const t = terms[i];
-        series[t][a.year_month] = (series[t][a.year_month] || 0) + 1;
-      }
-    });
-  });
+  for (const y of activeYears) {
+    _countYearPacked(trackerPacked[y], terms, termRegs, series, frontOnly, usePrint);
+  }
 
   const trackerColors = ['#c44', '#44c', '#4a4', '#c84'];
   // Convert short hex to rgba for semi-transparent fill
@@ -6579,6 +6682,7 @@ const WORLD_ANNOTATIONS = {
 };
 
 function openCountryDetail(country) {
+  startArticlesLoad();  // v2
   lastOpenedCountry = country;
   _writeHash({ tab: 'world', country });
   const wc = dashboard.world_coverage;
@@ -7429,6 +7533,7 @@ function _toggleStateYear(yr) {
 }
 
 function openStateDetail(state) {
+  startArticlesLoad();  // v2
   _stateYearFilter = null; _stateAllArticles = null;
   lastOpenedState = state;
   _writeHash({ tab: 'states', state });
@@ -7961,6 +8066,7 @@ statesObserver.observe(document.getElementById('view-states'), { attributes: tru
 const trackerObserver = new MutationObserver(() => {
   if (!document.getElementById('view-tracker').classList.contains('active')) return;
   if (!trackerReady) {
+    startTrackerLoad();  // v2: opening the tab is what starts the data fetch
     // Data still loading — let trackTerms show the progress indicator.
     trackTerms();
   } else if (!chartInstances['chartTracker']) {
@@ -9275,6 +9381,7 @@ function renderSubjectCompareChart() {
 }
 
 function openSubjectDetail(rawName, type) {
+  startArticlesLoad();  // v2
   window._lastOpenedSubjectRaw = rawName;
   window._lastOpenedSubjectType = type;
   const displayName = type === 'person' ? formatPersonName(rawName) : rawName;
@@ -9608,7 +9715,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 6/11/26 8:12pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 6/12/26 10:57am</span>
 </div>
 </body>
 </html>

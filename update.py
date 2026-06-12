@@ -54,6 +54,7 @@ def main():
         step('Fetching new months from NYT Archive API', [py, s('fetch_nyt.py')])
 
     step('Rebuilding dashboard data',                    [py, s('build_data.py')])
+    step('Packing tracker files (v2 format)',            [py, s('build_v2_tracker.py')])
     step('Rebuilding unique reporters (section + state)',[py, s('build_unique_reporters.py')])
     step('Rebuilding obituaries',                        [py, s('build_obituaries.py')])
     step('Rebuilding themes explorer (countries)',       [py, s('build_themes_explorer.py')])

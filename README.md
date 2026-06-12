@@ -8,7 +8,7 @@ An interactive, self-updating dashboard built on the [NYT Archive API](https://d
 
 ## What the dashboard shows
 
-The site is a single static page (`index.html`) that loads pre-built JSON from `data/` and renders everything in the browser. Tabs across the top:
+The site is a single static page (`index.html`) that loads pre-built JSON from `data/` and renders everything in the browser. Since the 2026-06-12 v2 adoption, heavy data loads on demand: the Headlines tab fetches packed per-year files (`data/v2/`) on first open, and full article files load the first time a detail panel needs them — nothing row-level downloads at page-open. The pre-v2 page is preserved as `legacy.html` (its Headlines tab is disabled because the raw tracker files it reads are no longer deployed). Tabs across the top:
 
 | Tab | What it shows |
 |-----|---|
@@ -35,6 +35,7 @@ fetch_nyt.py          # one JSON per month into data/raw/  (~317 months, gitigno
        │
        ▼
 build_data.py         # core build: articles_YYYY.json, authors.json, beats.json, dashboard.json
+build_v2_tracker.py   # packs tracker_YYYY.json into data/v2/ (one string per year; only the packed form is deployed)
 build_unique_reporters.py
 build_obituaries.py + regenerate_obit_interactive_fixes.py
 scrape_corrections.py + build_corrections.py + build_corrections_denominators.py

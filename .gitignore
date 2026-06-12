@@ -45,6 +45,12 @@ data/bio_photos/NYT photos/
 data/bio_photos/Supporting photos/
 data/bio_photos/-Prompt.rtf
 
+# Raw per-year tracker files — build_data.py still writes these as the INPUT
+# to build_v2_tracker.py (which packs them into the deployed data/v2/ files),
+# but the raw form stopped being deployed at the v2 adoption (2026-06-12).
+# Ignoring them keeps the nightly `git add data/` from re-tracking 218MB.
+data/tracker_*.json
+
 # Local working files — never commit
 *.bak
 *.pre_*
