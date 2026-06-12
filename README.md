@@ -8,7 +8,7 @@ An interactive, self-updating dashboard built on the [NYT Archive API](https://d
 
 ## What the dashboard shows
 
-The site is a single static page (`index.html`) that loads pre-built JSON from `data/` and renders everything in the browser. Since the 2026-06-12 v2 adoption, heavy data loads on demand: the Headlines tab fetches packed per-year files (`data/v2/`) on first open, and full article files load the first time a detail panel needs them — nothing row-level downloads at page-open. The pre-v2 page is preserved as `legacy.html` (its Headlines tab is disabled because the raw tracker files it reads are no longer deployed). Tabs across the top:
+The site is a single static page (`index.html`) that loads pre-built JSON from `data/` and renders everything in the browser. Since the 2026-06-12 v2 adoption, heavy data loads on demand: the Headlines tab fetches packed per-year files (`data/v2/`) on first open, and full article files load the first time a detail panel needs them — nothing row-level downloads at page-open. Tabs across the top:
 
 | Tab | What it shows |
 |-----|---|
