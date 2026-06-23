@@ -160,6 +160,17 @@ def extract_authors(byline):
     for name in names:
         name = name.strip()
         name = CREDIT_PREFIX.sub('', name).strip()
+        # Strip photo/wire-agency credit tails that bleed into the byline string
+        # when the API person array is empty, e.g.
+        #   "Arash Khamooshi/Polaris for The New York Times" -> "Arash Khamooshi"
+        #   "Alec MacGillis/propublica"                      -> "Alec MacGillis"
+        #   "Elaine Constantine for The New York Times"      -> "Elaine Constantine"
+        # These are the SAME people who also appear under a clean byline; stripping
+        # the tail re-merges them into one author record (see Arash Khamooshi,
+        # bylined since 2023 but split off by the May 2026 Polaris credit).
+        name = re.sub(r'\s*/.*$', '', name).strip()
+        name = re.sub(r'\s+for\s+the\s+new\s+york\s+times\s*$', '', name,
+                      flags=re.IGNORECASE).strip()
         if not name or len(name) < 3 or len(name) > 80:
             continue
         # Skip junk entries from malformed "original" byline strings

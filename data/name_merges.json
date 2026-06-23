@@ -393,7 +393,7 @@
   },
   {
     "canonical": "Alec MacGillis",
-    "canonical_count": 18,
+    "canonical_count": 20,
     "merged": [
       {
         "name": "Alec MacGILLIS",
@@ -2942,16 +2942,6 @@
     ]
   },
   {
-    "canonical": "Christoph Bangert for the New York Times",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "Christoph Bangert for The New York Times",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "Christopher R. Beha",
     "canonical_count": 15,
     "merged": [
@@ -3401,6 +3391,16 @@
     "merged": [
       {
         "name": "D. Z. STONE",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Dakota Santiago",
+    "canonical_count": 2,
+    "merged": [
+      {
+        "name": "Dakota santiago",
         "count": 1
       }
     ]
@@ -4750,16 +4750,6 @@
     ]
   },
   {
-    "canonical": "David Payr for The New York Times",
-    "canonical_count": 1,
-    "merged": [
-      {
-        "name": "David Chow for The New York Times",
-        "count": 1
-      }
-    ]
-  },
-  {
     "canonical": "David G. Victor",
     "canonical_count": 8,
     "merged": [
@@ -5342,30 +5332,12 @@
     ]
   },
   {
-    "canonical": "DOW JONES/AP",
-    "canonical_count": 33,
+    "canonical": "Dow Jones",
+    "canonical_count": 1425,
     "merged": [
       {
-        "name": "Dow Jones/Ap",
-        "count": 6
-      },
-      {
-        "name": "Dow Jones/AP",
-        "count": 1
-      }
-    ]
-  },
-  {
-    "canonical": "DOW JONES/THE ASSOCIATED PRESS",
-    "canonical_count": 21,
-    "merged": [
-      {
-        "name": "DOW JONES/ASSOCIATED PRESS",
-        "count": 8
-      },
-      {
-        "name": "Dow Jones/the Associated Press",
-        "count": 3
+        "name": "DOW JONES",
+        "count": 62
       }
     ]
   },
@@ -7612,6 +7584,16 @@
       {
         "name": "Hubert H. Herring",
         "count": 2
+      }
+    ]
+  },
+  {
+    "canonical": "Hunter Mcrae",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Hunter McRae",
+        "count": 1
       }
     ]
   },
@@ -18271,7 +18253,7 @@
     "merged": [
       {
         "name": "Scott Mcintyre",
-        "count": 5
+        "count": 7
       }
     ]
   },
@@ -19883,7 +19865,7 @@
   },
   {
     "canonical": "The New York Times",
-    "canonical_count": 37327,
+    "canonical_count": 37328,
     "merged": [
       {
         "name": "THE NEW YORK TIMES",
