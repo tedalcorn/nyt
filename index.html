@@ -1910,6 +1910,24 @@ async function _fetchGzJson(url) {
   return JSON.parse(text);
 }
 
+// Run `worker` over `items` with at most `limit` in flight. The bulk year
+// loads used to fire all 27 fetches at once; on slower connections they
+// split bandwidth evenly, so no file finished until nearly the end (the
+// progress counter sat at 0) and small interactive fetches (e.g.
+// subjects.json) starved behind them. A capped pool finishes files steadily
+// and leaves the connection slack. Total time is unchanged (bandwidth-bound
+// either way).
+async function _loadPool(items, limit, worker) {
+  const queue = [...items];
+  const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      try { await worker(item); } catch (_) {}
+    }
+  });
+  await Promise.all(runners);
+}
+
 // Ensure a specific year file is loaded; returns the parsed records.
 async function ensureYearLoaded(year) {
   if (yearCache[year]) return yearCache[year];
@@ -1938,8 +1956,14 @@ let lastOpenedCountry = null;
 // tab calls startTrackerLoad(). Both are idempotent and no-ops on mobile
 // (same memory constraints as v1's eager loads).
 let _articlesLoadStarted = false;
+let _articlesLoadWanted = false;
 function startArticlesLoad() {
-  if (_articlesLoadStarted || IS_MOBILE || !window._startArticlesLoadInner) return;
+  if (_articlesLoadStarted || IS_MOBILE) return;
+  // Callers that run before _startArticlesLoadInner is defined (the deep-link
+  // restore path opens detail panels mid-init) used to be silently dropped,
+  // leaving "Loading article data…" up forever. Remember the request and
+  // fire it when the inner loader is assigned.
+  if (!window._startArticlesLoadInner) { _articlesLoadWanted = true; return; }
   _articlesLoadStarted = true;
   window._startArticlesLoadInner();
 }
@@ -1950,9 +1974,10 @@ const trackerPacked = {};  // year -> packed structures (see scripts/build_v2_tr
 function startTrackerLoad() {
   if (_trackerLoadStarted || IS_MOBILE) return;
   _trackerLoadStarted = true;
-  const years = dashboard.all_years.map(Number);
+  // Newest-first so the years users search most land earliest.
+  const years = dashboard.all_years.map(Number).sort((a, b) => b - a);
   window._trackerProgress = { done: 0, total: years.length };
-  Promise.all(years.map(async (y) => {
+  _loadPool(years, 4, async (y) => {
     try {
       const p = await _fetchGzJson(`data/v2/tracker_${y}.json.gz`);
       if (p) {
@@ -1966,11 +1991,16 @@ function startTrackerLoad() {
     if (txt) {
       txt.textContent = `Loading ${window._trackerProgress.done} of ${window._trackerProgress.total} years…`;
     }
-  })).then(() => {
+  }).then(() => {
     trackerReady = true;
     _applyRestore('tracker');
-    // If no restore pending, run with whatever terms are in the inputs
-    if (!_pendingRestore || !_pendingRestore.q) trackTerms();
+    // If no restore pending, run with whatever terms are in the inputs —
+    // but only if the tab is visible. When this load finishes in the
+    // background (idle prefetch, or the user navigated away), skip the
+    // render; the trackerObserver's `!chartInstances['chartTracker']`
+    // branch renders on tab open instead.
+    const trackerVisible = document.getElementById('view-tracker')?.classList.contains('active');
+    if (trackerVisible && (!_pendingRestore || !_pendingRestore.q)) trackTerms();
   }).catch(e => console.error('Tracker load failed:', e));
 }
 
@@ -2121,6 +2151,13 @@ async function loadData() {
     }
     setTimeout(addDownloadBtns, 200);
 
+    // Warm the Headlines (tracker) data in the background a few seconds
+    // after first render, so the tab is partly or fully loaded by the time
+    // a user opens it (~59 MB, desktop only — startTrackerLoad no-ops on
+    // mobile and is idempotent if the user opens the tab first). The capped
+    // pool keeps bandwidth free for interactive fetches meanwhile.
+    if (!IS_MOBILE) setTimeout(startTrackerLoad, 3000);
+
     // Phase 1b: load authors and beats independently (non-blocking)
     fetch('data/authors.json').then(r => r.json()).then(authData => {
       authors = authData;
@@ -2176,13 +2213,22 @@ async function loadData() {
     // including the panel-refresh and restore machinery that runs when
     // loading completes, which is what makes "panel opened before data
     // arrived" resolve itself. Still skipped on mobile (memory limits).
-    window._startArticlesLoadInner = () => {
+    window._startArticlesLoadInner = _startArticlesLoadInnerImpl;
+    // A caller asked for the articles load before the loader existed (deep-
+    // link restore) — start it now.
+    if (_articlesLoadWanted) startArticlesLoad();
+
+    function _startArticlesLoadInnerImpl() {
       (async () => {
         const years = dashboard.all_years.map(Number);
         articles = [];
-        const perYear = await Promise.all(years.map(y => ensureYearLoaded(y)));
-        for (const yearArticles of perYear) {
-          for (const a of yearArticles) articles.push(a);
+        // Fetch newest-first with capped concurrency (see _loadPool), then
+        // assemble from yearCache in canonical ascending order — same final
+        // `articles` ordering as the old Promise.all over years.
+        const fetchOrder = [...years].sort((a, b) => b - a);
+        await _loadPool(fetchOrder, 3, y => ensureYearLoaded(y));
+        for (const y of years) {
+          for (const a of (yearCache[y] || [])) articles.push(a);
         }
         articlesReady = true;
         console.log('[NYT] articlesReady: articles.length =', articles.length);
@@ -9735,7 +9781,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 7/3/26 12:45pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 7/3/26 1:27pm</span>
 </div>
 </body>
 </html>
