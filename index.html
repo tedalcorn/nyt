@@ -1889,6 +1889,27 @@ function _parseYearRecords(yearArticles) {
   }));
 }
 
+// Fetch a gzip-compressed JSON file and return the parsed object.
+// The big per-year data (articles_*, v2/tracker_*) is deployed gzipped to
+// stay under the GitHub Pages 1 GB limit (see scripts/compress_data.py).
+// GitHub Pages serves .gz as raw bytes (no Content-Encoding), so we
+// decompress in-browser. The magic-byte check keeps this correct even if a
+// transport ever pre-decompresses the body. Requires DecompressionStream
+// (Chrome 80+, Safari 16.4+, Firefox 113+).
+async function _fetchGzJson(url) {
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const buf = new Uint8Array(await res.arrayBuffer());
+  let text;
+  if (buf[0] === 0x1f && buf[1] === 0x8b && typeof DecompressionStream !== 'undefined') {
+    const stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+    text = await new Response(stream).text();
+  } else {
+    text = new TextDecoder().decode(buf);
+  }
+  return JSON.parse(text);
+}
+
 // Ensure a specific year file is loaded; returns the parsed records.
 async function ensureYearLoaded(year) {
   if (yearCache[year]) return yearCache[year];
@@ -1900,8 +1921,8 @@ async function ensureYearLoaded(year) {
   }
   yearCache[year] = null; // sentinel: in-flight
   try {
-    const res = await fetch(`data/articles_${year}.json`);
-    yearCache[year] = res.ok ? _parseYearRecords(await res.json()) : [];
+    const data = await _fetchGzJson(`data/articles_${year}.json.gz`);
+    yearCache[year] = data ? _parseYearRecords(data) : [];
   } catch (_) {
     yearCache[year] = [];
   }
@@ -1933,9 +1954,8 @@ function startTrackerLoad() {
   window._trackerProgress = { done: 0, total: years.length };
   Promise.all(years.map(async (y) => {
     try {
-      const res = await fetch(`data/v2/tracker_${y}.json`);
-      if (res.ok) {
-        const p = await res.json();
+      const p = await _fetchGzJson(`data/v2/tracker_${y}.json.gz`);
+      if (p) {
         p.lineStarts = _trackerLineStarts(p.h, p.n);
         p.fpSet = new Set(p.fp);
         trackerPacked[y] = p;
@@ -9715,7 +9735,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 7/3/26 12:12pm</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 7/3/26 12:45pm</span>
 </div>
 </body>
 </html>

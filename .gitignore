@@ -51,6 +51,13 @@ data/bio_photos/-Prompt.rtf
 # Ignoring them keeps the nightly `git add data/` from re-tracking 218MB.
 data/tracker_*.json
 
+# Big per-year data is deployed gzipped (see scripts/compress_data.py), not
+# plain, to stay under the GitHub Pages 1 GB published-site limit. The plain
+# .json stay on disk as build inputs; only the .json.gz are committed. These
+# patterns match the plain files only — *.json.gz is not matched by *.json.
+data/articles_*.json
+data/v2/tracker_*.json
+
 # Local working files — never commit
 *.bak
 *.pre_*

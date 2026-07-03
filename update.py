@@ -74,6 +74,11 @@ def main():
     if do_validate:
         step('Validating fresh records',                 [py, s('validate.py')])
 
+    # Must run last: gzips the big per-year files for deploy, after every
+    # step above that reads the plain data/articles_*.json. Only the .gz are
+    # committed/deployed (Pages 1 GB limit); the plain .json stay as inputs.
+    step('Compressing per-year data for deploy',         [py, s('compress_data.py')])
+
     print('\nAll steps complete. Remember to update the timestamp in index.html and push.')
 
 
