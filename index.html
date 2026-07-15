@@ -1561,6 +1561,60 @@ function getChartFilename(box) {
   return full.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
+// ── Below the Fold export branding ────────────────────────────────────
+// Preloaded once so it's ready by the time a user clicks a download button.
+// The raster JPG never taints the export canvas (an SVG image can in some
+// browsers), keeping toDataURL() working everywhere.
+const _btfBadge = new Image();
+_btfBadge.src = 'graphics/below-the-fold-badge.jpg';
+const _BTF_ASPECT = 1650 / 300;   // ≈ 5.5, the badge's intrinsic aspect
+
+// Draw the site URL right-aligned at (rightX, y) with the "Below the Fold"
+// badge just to its left, badge height matched to the URL text. If the pair
+// would exceed opts.maxWidth, both shrink together. Every chart-download footer
+// calls this so the credit is identical across the dashboard.
+//   px       — URL font size in device px (already ×SCALE where applicable)
+//   opts.color, opts.baseline ('alphabetic'|'top'), opts.maxWidth
+function drawExportCredit(c, rightX, y, px, opts = {}) {
+  const url = 'https://tedalcorn.github.io/nyt/';
+  const baseline = opts.baseline || 'alphabetic';
+  let fontPx = px, badgeH = px * 1.3;
+  c.font = `${fontPx}px Arial,sans-serif`;
+  let urlW = c.measureText(url).width, badgeW = badgeH * _BTF_ASPECT, gap = fontPx * 0.6;
+  if (opts.maxWidth && badgeW + gap + urlW > opts.maxWidth) {
+    const f = opts.maxWidth / (badgeW + gap + urlW);
+    fontPx *= f; badgeH *= f;
+    c.font = `${fontPx}px Arial,sans-serif`;
+    urlW = c.measureText(url).width; badgeW = badgeH * _BTF_ASPECT; gap = fontPx * 0.6;
+  }
+  c.fillStyle = opts.color || '#aaa';
+  c.textAlign = 'right';
+  c.textBaseline = baseline;
+  c.fillText(url, rightX, y);
+  c.textAlign = 'left';
+  if (_btfBadge.complete && _btfBadge.naturalWidth) {
+    const textCenter = baseline === 'top' ? y + fontPx * 0.5 : y - fontPx * 0.35;
+    c.drawImage(_btfBadge, rightX - urlW - gap - badgeW, textCenter - badgeH / 2, badgeW, badgeH);
+  }
+  c.textBaseline = 'alphabetic';
+}
+
+// Return a copy of `src` with a white footer band added below it carrying the
+// standard credit. Used by exports that otherwise have no footer (author/beat
+// charts sent straight from the DOM).
+function appendCreditBand(src) {
+  const px = Math.max(11, Math.round(src.width * 0.013));
+  const band = Math.round(px * 2.2);
+  const out = document.createElement('canvas');
+  out.width = src.width; out.height = src.height + band;
+  const c = out.getContext('2d');
+  c.fillStyle = '#fff'; c.fillRect(0, 0, out.width, out.height);
+  c.drawImage(src, 0, 0);
+  drawExportCredit(c, out.width - px, src.height + band - Math.round(px * 0.8), px,
+                   { maxWidth: out.width * 0.6 });
+  return out;
+}
+
 function addDownloadBtns() {
   document.querySelectorAll('.chart-box').forEach(box => {
     if (box.dataset.noDl || box.querySelector('.chart-dl-btn') || !box.querySelector('canvas')) return;
@@ -1604,7 +1658,9 @@ function addDownloadBtns() {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, offscreen.width, offscreen.height);
         ctx.drawImage(canvas, 0, 0);
-        a.href = offscreen.toDataURL('image/jpeg', 0.92);
+        // Add the Below the Fold + URL footer band for consistency with the
+        // other chart exports (these charts carry no URL of their own).
+        a.href = appendCreditBand(offscreen).toDataURL('image/jpeg', 0.92);
         a.click();
         btn.textContent = '↓ JPG';
       } else {
@@ -1612,7 +1668,7 @@ function addDownloadBtns() {
           .then(c => {
             const a = document.createElement('a');
             a.download = filename + '.jpg';
-            a.href = c.toDataURL('image/jpeg', 0.92);
+            a.href = appendCreditBand(c).toDataURL('image/jpeg', 0.92);
             a.click();
             btn.textContent = '↓ JPG';
           }).catch(() => { btn.textContent = '↓ JPG'; });
@@ -1720,12 +1776,9 @@ function downloadSectionChart(btn, canvasId) {
 
   c.drawImage(canvas, 0, TOP, W, H);
 
-  // URL credit
-  c.font = `${9 * SCALE}px Arial,sans-serif`;
-  c.fillStyle = '#aaa';
-  c.textAlign = 'right';
-  c.fillText('https://tedalcorn.github.io/nyt/', W - 8 * SCALE, TOP + H + BOT - 8 * SCALE);
-  c.textAlign = 'left';
+  // Below the Fold badge + URL credit, lower-right
+  drawExportCredit(c, W - 8 * SCALE, TOP + H + BOT - 8 * SCALE, 9 * SCALE,
+                   { maxWidth: W - 16 * SCALE });
 
   const a = document.createElement('a');
   a.download = filename + '.jpg';
@@ -1827,11 +1880,9 @@ function downloadObitChart(canvasId, baseName, btn) {
   // Upscale the chart canvas to match the 2x export.
   c.drawImage(canvas, 0, TOP, W, H);
 
-  c.font = `${9 * SCALE}px Arial,sans-serif`;
-  c.fillStyle = '#aaa';
-  c.textAlign = 'right';
-  c.fillText('https://tedalcorn.github.io/nyt/', W - 8 * SCALE, TOP + H + BOT - 8 * SCALE);
-  c.textAlign = 'left';
+  // Below the Fold badge + URL credit, lower-right
+  drawExportCredit(c, W - 8 * SCALE, TOP + H + BOT - 8 * SCALE, 9 * SCALE,
+                   { maxWidth: W - 16 * SCALE });
 
   const a = document.createElement('a');
   a.download = baseName + '.jpg';
@@ -5939,26 +5990,27 @@ function downloadTrackerChart() {
   const terms = ['term1','term2','term3','term4'].map(id => document.getElementById(id)?.value?.trim()).filter(Boolean);
   const termStr = terms.length ? terms.join(' · ') : 'headline search';
   const W = src.width, H = src.height;
-  const PAD = 48;
+  // Title band on top, credit footer on the bottom — footer position kept
+  // consistent with every other chart export (no header-stamped URL).
+  const urlPx = Math.round(W * 0.013);
+  const TOP = 34;
+  const BOT = Math.round(urlPx * 2.2);
   const out = document.createElement('canvas');
-  out.width = W; out.height = H + PAD;
+  out.width = W; out.height = TOP + H + BOT;
   const ctx2 = out.getContext('2d');
   ctx2.fillStyle = '#fff';
-  ctx2.fillRect(0, 0, W, H + PAD);
-  // Title
+  ctx2.fillRect(0, 0, out.width, out.height);
+  // Title (top-left)
   ctx2.fillStyle = '#222';
   ctx2.font = `bold ${Math.round(W * 0.018)}px Arial,sans-serif`;
   ctx2.textBaseline = 'top';
   ctx2.fillText(`New York Times headline frequency: ${termStr}`, 16, 10);
-  // Source URL lower right
-  const url = 'https://tedalcorn.github.io/nyt/';
-  ctx2.font = `${Math.round(W * 0.013)}px Arial,sans-serif`;
-  ctx2.fillStyle = '#888';
-  ctx2.textAlign = 'right';
-  ctx2.fillText(url, W - 12, 28);
-  ctx2.textAlign = 'left';
+  ctx2.textBaseline = 'alphabetic';
   // Chart canvas
-  ctx2.drawImage(src, 0, PAD);
+  ctx2.drawImage(src, 0, TOP);
+  // Below the Fold badge + URL credit, lower-right
+  drawExportCredit(ctx2, W - 12, TOP + H + BOT - Math.round(urlPx * 0.8), urlPx,
+                   { maxWidth: W * 0.6 });
   const a = document.createElement('a');
   a.download = `nyt-headlines-${termStr.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}.jpg`;
   a.href = out.toDataURL('image/jpeg', 0.92);
@@ -6446,12 +6498,10 @@ function _buildAnnotatedMapCanvas(svgEl, title1, title2, legendItems, noDataColo
       ctx.fillStyle = '#666';
       ctx.fillText(title2, 10, 35);
 
-      // URL credit (lower right)
-      ctx.font = '9px Arial,sans-serif';
-      ctx.fillStyle = '#aaa';
-      ctx.textAlign = 'right';
-      ctx.fillText('https://tedalcorn.github.io/nyt/', W - 4, TOP + H + BOT - 5);
-      ctx.textAlign = 'left';
+      // Below the Fold badge + URL credit (lower right). ctx is pre-scaled by
+      // SCALE, so these are unscaled units. Cap width to half so it clears the
+      // legend on the lower-left.
+      drawExportCredit(ctx, W - 4, TOP + H + BOT - 5, 9, { maxWidth: W * 0.5 });
 
       // Legend — optional prefix label then swatches
       const LY = TOP + H + 20;
@@ -8973,11 +9023,9 @@ function _downloadCorrVizChart(btn) {
     lx += 16 * SCALE + lblW + 14 * SCALE;
   });
 
-  c.font = `${9 * SCALE}px Arial,sans-serif`;
-  c.fillStyle = '#aaa';
-  c.textAlign = 'right';
-  c.fillText('https://tedalcorn.github.io/nyt/', W - 8 * SCALE, TOP + H + BOT - 8 * SCALE);
-  c.textAlign = 'left';
+  // Below the Fold badge + URL credit, lower-right
+  drawExportCredit(c, W - 8 * SCALE, TOP + H + BOT - 8 * SCALE, 9 * SCALE,
+                   { maxWidth: W * 0.5 });
 
   const slug = (isRate ? 'nyt-corrections-rate' : 'nyt-corrections-count')
              + (_vizSectionChips.length || _vizReporterChips.length ? '-filtered' : '');
@@ -9781,7 +9829,7 @@ loadData();
         async src="//gc.zgo.at/count.js"></script>
 <div style="position:fixed;bottom:8px;right:12px;font-size:10px;color:#bbb;z-index:9999;display:flex;align-items:center;gap:8px">
   <a href="https://forms.gle/6zyN4X1ds4j2LpTV7" target="_blank" style="color:#888;text-decoration:none;border:1px solid #ddd;border-radius:3px;padding:2px 6px;background:#fff;font-size:10px">Send feedback</a>
-  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 7/15/26 7:17am</span>
+  <span id="bottomRevStamp" style="pointer-events:none">Last revised: 7/15/26 7:53am</span>
 </div>
 </body>
 </html>
