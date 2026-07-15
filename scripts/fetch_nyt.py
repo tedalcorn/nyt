@@ -89,10 +89,20 @@ def main():
 
         if data and "response" in data and "docs" in data["response"]:
             docs = data["response"]["docs"]
-            filepath = os.path.join(RAW_DIR, f"{year}-{month:02d}.json")
-            with open(filepath, "w") as f:
-                json.dump(docs, f)
-            print(f"{len(docs)} articles")
+            # Truncation guard: the Archive API returns ALL of a month's docs in
+            # one shot and reports the true total in meta.hits. If we got fewer
+            # docs than hits, the response was cut short (network/partial read) —
+            # do NOT save it over good data. Skipping leaves the month missing
+            # (or preserves the existing good file), so it's retried next run.
+            # This is exactly the bug that silently froze 2026-01 at 694/4046.
+            hits = (data["response"].get("meta") or {}).get("hits")
+            if hits is not None and len(docs) < hits:
+                print(f"TRUNCATED: got {len(docs)} of {hits} — not saving, will retry")
+            else:
+                filepath = os.path.join(RAW_DIR, f"{year}-{month:02d}.json")
+                with open(filepath, "w") as f:
+                    json.dump(docs, f)
+                print(f"{len(docs)} articles")
         else:
             print("no data")
 

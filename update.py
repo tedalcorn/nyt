@@ -57,6 +57,7 @@ def main():
     step('Packing tracker files (v2 format)',            [py, s('build_v2_tracker.py')])
     step('Rebuilding unique reporters (section + state)',[py, s('build_unique_reporters.py')])
     step('Rebuilding obituaries',                        [py, s('build_obituaries.py')])
+    step('Rebuilding presidents headline chart',         [py, s('build_presidents.py')])
     step('Rebuilding themes explorer (countries)',       [py, s('build_themes_explorer.py')])
     step('Rebuilding themes explorer (states)',          [py, s('build_themes_states.py')])
 
