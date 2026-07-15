@@ -353,6 +353,12 @@ NON_OBIT_URLS = {
 # - age: republished obits whose source year predates 2000 (no raw-dump record
 #   to cross-reference) and whose abstract carries no age phrase
 OBIT_OVERRIDES = {
+    # MLK's original 1968 obituary, republished in 2018. A genuine (historical)
+    # obituary, but the descriptive headline leaves the parser with "Martin
+    # Luther" from the slug. Restore the full name.
+    '/2018/04/02/obituaries/martin-luther-king-jr.html': {
+        'name': 'Martin Luther King Jr.', 'gender': 'M', 'gender_src': 'manual',
+    },
     # Sister Inah Canabarro Lucas: headline starts "Brazilian Nun Who Was World's
     # Oldest Person…" — no comma-delimited profession, so extraction fails. Her
     # headline also begins with description rather than name, so name comes from
@@ -1351,6 +1357,27 @@ def main():
     NOT_OBIT_URLS = {
         '/2017/07/18/obituaries/the-house-that-did-the-housework.html',  # feature on Frances Gabe's house
         '/2026/03/13/obituaries/candy-land-creator-eleanor-abbott.html',  # companion feature about the game, not Abbott's obit
+        # Companion features that ride the Obituaries section alongside a real
+        # obit for the same subject (the actual obit record is kept). These are
+        # essays, reader-reaction roundups, or photo packages — not obituaries.
+        '/2018/04/05/obituaries/simplicity-by-amsale.html',  # visual feature; real Amsale Aberra obit kept
+        '/2019/06/07/obituaries/anthony-bourdain-in-your-words.html',  # reader-reaction feature; real Bourdain obit kept
+        '/2018/11/14/obituaries/i-met-mr-lee-once-fans-of-stan-lee-describe-face-to-face-encounters-with-him.html',  # reader feature; real Stan Lee obit kept
+        '/2018/12/01/obituaries/george-hw-bush-points-of-power.html',  # photo feature; real GHW Bush obit kept
+        '/2018/12/01/obituaries/george-bushs-life-in-13-objects.html',  # objects feature; real GHW Bush obit kept
+        '/2025/01/24/obituaries/jo-baer-evolving.html',  # photo feature; real Jo Baer obit kept
+        '/2019/09/13/obituaries/robert-franks-legacy-nine-photographers-reflect.html',  # appreciation feature; real Robert Frank obit kept
+        '/2021/07/10/obituaries/the-eclectic-lives-behindalice-neels-portraits.html',  # feature on Alice Neel's portraits (Neel died 1984)
+        '/2017/10/31/obituaries/from-the-archives-the-kidnapping-of-little-june.html',  # archive crime feature, not an obit
+        '/2026/05/19/obituaries/tickle-me-elmo-greg-hyman.html',  # feature about the toy, not an individual obit
+        '/2026/06/06/obituaries/d-day-normandy-wwii-heroes.html',  # multi-subject D-Day roundup feature
+        # Times Insider / news meta-articles ABOUT obituary writing — not obits.
+        # Some slip through because the slug contains "obituar(y|ies)".
+        '/times-insider/2014/08/29/obituaries-for-the-pre-dead/',  # Insider meta on advance obits
+        '/2015/07/12/us/obituaries-shed-euphemisms-to-confront-heroins-toll.html',  # news feature about obit-writing
+        '/2016/05/25/insider/an-obituary-runs-seven-years-after-the-subjects-death-what-happened.html',  # Insider meta
+        '/2018/06/28/insider/obituary-writer-margalit-fox-retires.html',  # Insider: obit writer retires
+        '/2026/06/24/insider/obituaries-editor.html',  # Insider: obituaries editor retires
     }
 
     for f in files:
