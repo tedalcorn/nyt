@@ -49,6 +49,13 @@ it appears in the NYT API. Value = canonical form to use instead.
 > Robert H. Frank = Cornell economist/columnist; Robert Frank =
 > wealth/lifestyle reporter. Do not add an override merging these.
 
+> **Jason Bailey / Jason M. Bailey** — different people.
+> Jason Bailey = freelance film critic (Movies, 2012– , /by/jason-bailey);
+> Jason M. Bailey = Arts/U.S./Business staffer (2017– ). Do not merge.
+> "Jason T. Bailey" IS the film critic (his July 2026 bylines added the
+> middle initial; /by/jason-bailey serves those articles) — that pair is
+> merged in the overrides file.
+
 ## Per-entry notes
 
 | Key (wrong form) | Note |
@@ -63,6 +70,7 @@ it appears in the NYT API. Value = canonical form to use instead.
 | `Timothy Williams` | Maps to itself — keep-as-is marker; "Timothy R. Williams" is the rare variant and a different person |
 | `Deborah B. Solomon` | Shorter form "Deborah Solomon" is canonical |
 | `Alan S. Blinder` | Shorter form "Alan Blinder" is canonical |
+| `Jason T. Bailey` | Film critic's July 2026 middle-initial variant; canonical "Jason Bailey" (NYT byline page /by/jason-bailey). NOT Jason M. Bailey — see negative assertions |
 
 ## How to add a new override
 
