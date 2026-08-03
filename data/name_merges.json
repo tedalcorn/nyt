@@ -31,7 +31,7 @@
   },
   {
     "canonical": "A. O. Scott",
-    "canonical_count": 3519,
+    "canonical_count": 3520,
     "merged": [
       {
         "name": "A. O. SCOTT",
@@ -91,7 +91,7 @@
   },
   {
     "canonical": "Abby Ellin",
-    "canonical_count": 500,
+    "canonical_count": 501,
     "merged": [
       {
         "name": "ABBY ELLIN",
@@ -105,7 +105,7 @@
     "merged": [
       {
         "name": "Abby McGanney Nolan",
-        "count": 1
+        "count": 2
       }
     ]
   },
@@ -175,7 +175,7 @@
   },
   {
     "canonical": "Adam B. Ellick",
-    "canonical_count": 216,
+    "canonical_count": 218,
     "merged": [
       {
         "name": "ADAM B. ELLICK",
@@ -329,7 +329,7 @@
   },
   {
     "canonical": "Alan Cowell",
-    "canonical_count": 3321,
+    "canonical_count": 3322,
     "merged": [
       {
         "name": "Alan S. Cowell",
@@ -463,7 +463,7 @@
   },
   {
     "canonical": "Alex Williams",
-    "canonical_count": 894,
+    "canonical_count": 899,
     "merged": [
       {
         "name": "Alex T. Williams",
@@ -492,6 +492,16 @@
     ]
   },
   {
+    "canonical": "Alexander Thompson",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Alexander M. Thompson",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Alexandra Lange",
     "canonical_count": 53,
     "merged": [
@@ -503,7 +513,7 @@
   },
   {
     "canonical": "Alexandra E. Petri",
-    "canonical_count": 384,
+    "canonical_count": 392,
     "merged": [
       {
         "name": "Alexandra Petri",
@@ -985,7 +995,7 @@
   },
   {
     "canonical": "Andrew E. Kramer",
-    "canonical_count": 2472,
+    "canonical_count": 2484,
     "merged": [
       {
         "name": "ANDREW M. KRAMER",
@@ -1053,7 +1063,7 @@
   },
   {
     "canonical": "Andrew Ross Sorkin",
-    "canonical_count": 4098,
+    "canonical_count": 4119,
     "merged": [
       {
         "name": "Andrew Sorkin",
@@ -1575,7 +1585,7 @@
   },
   {
     "canonical": "Ashley Wu",
-    "canonical_count": 103,
+    "canonical_count": 104,
     "merged": [
       {
         "name": "Ashley Shannon Wu",
@@ -2121,7 +2131,7 @@
   },
   {
     "canonical": "Brian X. Chen",
-    "canonical_count": 1240,
+    "canonical_count": 1242,
     "merged": [
       {
         "name": "Brian Chen",
@@ -2239,7 +2249,7 @@
   },
   {
     "canonical": "Brian Otieno",
-    "canonical_count": 14,
+    "canonical_count": 15,
     "merged": [
       {
         "name": "Brian O. Otieno",
@@ -2459,7 +2469,7 @@
   },
   {
     "canonical": "Carl Hulse",
-    "canonical_count": 3904,
+    "canonical_count": 3917,
     "merged": [
       {
         "name": "Carl E. Hulse",
@@ -2697,7 +2707,7 @@
   },
   {
     "canonical": "Chang W. Lee",
-    "canonical_count": 137,
+    "canonical_count": 138,
     "merged": [
       {
         "name": "Chang Lee",
@@ -3033,7 +3043,7 @@
   },
   {
     "canonical": "Christopher F. Schuetze",
-    "canonical_count": 659,
+    "canonical_count": 662,
     "merged": [
       {
         "name": "Christopher Schuetze",
@@ -3093,7 +3103,7 @@
   },
   {
     "canonical": "Claire Cain Miller",
-    "canonical_count": 1700,
+    "canonical_count": 1701,
     "merged": [
       {
         "name": "Claire Miller",
@@ -3363,7 +3373,7 @@
   },
   {
     "canonical": "D. W. Gibson",
-    "canonical_count": 63,
+    "canonical_count": 64,
     "merged": [
       {
         "name": "D. W. GIBSON",
@@ -3427,7 +3437,7 @@
   },
   {
     "canonical": "Damien Cave",
-    "canonical_count": 1669,
+    "canonical_count": 1670,
     "merged": [
       {
         "name": "DAMIEN CAVE",
@@ -3477,7 +3487,7 @@
   },
   {
     "canonical": "Dana G. Smith",
-    "canonical_count": 144,
+    "canonical_count": 150,
     "merged": [
       {
         "name": "Dana G <missing Dot> Smith",
@@ -3787,7 +3797,7 @@
   },
   {
     "canonical": "David C. Adams",
-    "canonical_count": 81,
+    "canonical_count": 82,
     "merged": [
       {
         "name": "David G. Adams",
@@ -3895,7 +3905,7 @@
   },
   {
     "canonical": "David W. Blight",
-    "canonical_count": 20,
+    "canonical_count": 21,
     "merged": [
       {
         "name": "David Blight",
@@ -3935,7 +3945,7 @@
   },
   {
     "canonical": "David W. Chen",
-    "canonical_count": 1943,
+    "canonical_count": 1946,
     "merged": [
       {
         "name": "David Chen",
@@ -4063,7 +4073,7 @@
   },
   {
     "canonical": "David A. Fahrenthold",
-    "canonical_count": 152,
+    "canonical_count": 154,
     "merged": [
       {
         "name": "David Fahrenthold",
@@ -4133,7 +4143,7 @@
   },
   {
     "canonical": "David M. Halbfinger",
-    "canonical_count": 1461,
+    "canonical_count": 1467,
     "merged": [
       {
         "name": "DAVID M. HALBFINGER",
@@ -4543,7 +4553,7 @@
   },
   {
     "canonical": "David Oshinsky",
-    "canonical_count": 41,
+    "canonical_count": 42,
     "merged": [
       {
         "name": "David M. Oshinsky",
@@ -4653,7 +4663,7 @@
   },
   {
     "canonical": "David E. Sanger",
-    "canonical_count": 3946,
+    "canonical_count": 3961,
     "merged": [
       {
         "name": "David E Sanger",
@@ -5427,7 +5437,7 @@
   },
   {
     "canonical": "Dylan Loeb McClain",
-    "canonical_count": 1434,
+    "canonical_count": 1436,
     "merged": [
       {
         "name": "Dylan Loeb McCLAIN",
@@ -5763,7 +5773,7 @@
     "merged": [
       {
         "name": "Elizabeth Laura Nelson",
-        "count": 1
+        "count": 2
       }
     ]
   },
@@ -5779,7 +5789,7 @@
   },
   {
     "canonical": "Elizabeth Passarella",
-    "canonical_count": 18,
+    "canonical_count": 19,
     "merged": [
       {
         "name": "Elizabeth Schatz Passarella",
@@ -5967,7 +5977,7 @@
   },
   {
     "canonical": "Emma G. Fitzsimmons",
-    "canonical_count": 1315,
+    "canonical_count": 1321,
     "merged": [
       {
         "name": "Emma Graves Fitzsimmons",
@@ -6109,7 +6119,7 @@
   },
   {
     "canonical": "Eric Lipton",
-    "canonical_count": 1793,
+    "canonical_count": 1800,
     "merged": [
       {
         "name": "Eric S. Lipton",
@@ -6189,7 +6199,7 @@
   },
   {
     "canonical": "Eric Schmidt",
-    "canonical_count": 5,
+    "canonical_count": 6,
     "merged": [
       {
         "name": "Eric E. Schmidt",
@@ -6327,7 +6337,7 @@
   },
   {
     "canonical": "Erin McCann",
-    "canonical_count": 81,
+    "canonical_count": 87,
     "merged": [
       {
         "name": "Erin McCANN",
@@ -6431,7 +6441,7 @@
   },
   {
     "canonical": "Evelyn McDonnell",
-    "canonical_count": 10,
+    "canonical_count": 11,
     "merged": [
       {
         "name": "Evelyn Mcdonnell",
@@ -6525,7 +6535,7 @@
   },
   {
     "canonical": "Florence Fabricant",
-    "canonical_count": 8085,
+    "canonical_count": 8089,
     "merged": [
       {
         "name": "FLORENCE FABRICANT",
@@ -7073,7 +7083,7 @@
   },
   {
     "canonical": "Glenn Thrush",
-    "canonical_count": 1220,
+    "canonical_count": 1236,
     "merged": [
       {
         "name": "Glenn H. Thrush",
@@ -7262,11 +7272,11 @@
     ]
   },
   {
-    "canonical": "Harvey J. Lieberman",
-    "canonical_count": 3,
+    "canonical": "Harvey Lieberman",
+    "canonical_count": 4,
     "merged": [
       {
-        "name": "Harvey Lieberman",
+        "name": "Harvey J. Lieberman",
         "count": 3
       }
     ]
@@ -7311,7 +7321,7 @@
   },
   {
     "canonical": "Heather Senison",
-    "canonical_count": 203,
+    "canonical_count": 208,
     "merged": [
       {
         "name": "HEATHER SENISON",
@@ -7395,7 +7405,7 @@
   },
   {
     "canonical": "Helene Cooper",
-    "canonical_count": 2366,
+    "canonical_count": 2371,
     "merged": [
       {
         "name": "Helene C. Cooper",
@@ -7647,7 +7657,7 @@
   },
   {
     "canonical": "Ian Stewart",
-    "canonical_count": 536,
+    "canonical_count": 556,
     "merged": [
       {
         "name": "Ian A. Stewart",
@@ -7805,7 +7815,7 @@
   },
   {
     "canonical": "J. D. Biersdorfer",
-    "canonical_count": 3437,
+    "canonical_count": 3440,
     "merged": [
       {
         "name": "J. D. BIERSDORFER",
@@ -8107,7 +8117,7 @@
   },
   {
     "canonical": "James C. McKinley Jr.",
-    "canonical_count": 6,
+    "canonical_count": 7,
     "merged": [
       {
         "name": "James Forman Jr.",
@@ -8305,7 +8315,7 @@
   },
   {
     "canonical": "Jamie Lincoln Kitman",
-    "canonical_count": 31,
+    "canonical_count": 32,
     "merged": [
       {
         "name": "Jamie Kitman",
@@ -8489,17 +8499,21 @@
   },
   {
     "canonical": "Jason Bailey",
-    "canonical_count": 289,
+    "canonical_count": 290,
     "merged": [
       {
         "name": "Jason M. Bailey",
         "count": 39
+      },
+      {
+        "name": "Jason T. Bailey",
+        "count": 2
       }
     ]
   },
   {
     "canonical": "Jason DeParle",
-    "canonical_count": 155,
+    "canonical_count": 157,
     "merged": [
       {
         "name": "Jason Deparle",
@@ -8933,7 +8947,7 @@
   },
   {
     "canonical": "Jennifer Schuessler",
-    "canonical_count": 1422,
+    "canonical_count": 1429,
     "merged": [
       {
         "name": "JENNIFER SCHUESSLER",
@@ -9023,7 +9037,7 @@
   },
   {
     "canonical": "Jerrold L. Nadler",
-    "canonical_count": 4,
+    "canonical_count": 5,
     "merged": [
       {
         "name": "Jerrold Nadler",
@@ -9043,7 +9057,7 @@
   },
   {
     "canonical": "Jer\u00e9 Longman",
-    "canonical_count": 2125,
+    "canonical_count": 2132,
     "merged": [
       {
         "name": "JER\u00c9 LONGMAN",
@@ -9083,7 +9097,7 @@
   },
   {
     "canonical": "Jesse McKinley",
-    "canonical_count": 2580,
+    "canonical_count": 2584,
     "merged": [
       {
         "name": "Jesse McKINLEY",
@@ -9161,7 +9175,7 @@
   },
   {
     "canonical": "Jill P. Capuzzo",
-    "canonical_count": 629,
+    "canonical_count": 632,
     "merged": [
       {
         "name": "Jill C. Capuzzo",
@@ -9311,7 +9325,7 @@
     "merged": [
       {
         "name": "JoAnna Novak",
-        "count": 2
+        "count": 3
       }
     ]
   },
@@ -9905,7 +9919,7 @@
   },
   {
     "canonical": "John S. W. MacDonald",
-    "canonical_count": 23,
+    "canonical_count": 35,
     "merged": [
       {
         "name": "John MacDonald",
@@ -10219,7 +10233,7 @@
   },
   {
     "canonical": "John Woo",
-    "canonical_count": 189,
+    "canonical_count": 190,
     "merged": [
       {
         "name": "JOHN WOO",
@@ -10273,7 +10287,7 @@
     "merged": [
       {
         "name": "Jonah E. Bromwich",
-        "count": 755
+        "count": 763
       }
     ]
   },
@@ -10681,7 +10695,7 @@
   },
   {
     "canonical": "Josh Katz",
-    "canonical_count": 508,
+    "canonical_count": 509,
     "merged": [
       {
         "name": "Josh E. Katz",
@@ -10761,7 +10775,7 @@
   },
   {
     "canonical": "Joyce Cohen",
-    "canonical_count": 1130,
+    "canonical_count": 1132,
     "merged": [
       {
         "name": "JOYCE COHEN",
@@ -10911,7 +10925,7 @@
   },
   {
     "canonical": "Julie Bosman",
-    "canonical_count": 2482,
+    "canonical_count": 2486,
     "merged": [
       {
         "name": "JULIE BOSMAN",
@@ -10971,7 +10985,7 @@
   },
   {
     "canonical": "Julie Lasky",
-    "canonical_count": 613,
+    "canonical_count": 614,
     "merged": [
       {
         "name": "JULIE LASKY",
@@ -11001,7 +11015,7 @@
   },
   {
     "canonical": "Juliet Macur",
-    "canonical_count": 1581,
+    "canonical_count": 1582,
     "merged": [
       {
         "name": "Juliet MacUR",
@@ -11165,7 +11179,7 @@
   },
   {
     "canonical": "Karen Zraick",
-    "canonical_count": 1082,
+    "canonical_count": 1085,
     "merged": [
       {
         "name": "KAREN ZRAICK",
@@ -11377,7 +11391,7 @@
   },
   {
     "canonical": "Kathryn Shattuck",
-    "canonical_count": 3091,
+    "canonical_count": 3094,
     "merged": [
       {
         "name": "Kathryn L. Shattuck",
@@ -12040,6 +12054,16 @@
     ]
   },
   {
+    "canonical": "Laura Stevens",
+    "canonical_count": 3,
+    "merged": [
+      {
+        "name": "Laura Roe Stevens",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Laura van Straaten",
     "canonical_count": 40,
     "merged": [
@@ -12085,6 +12109,16 @@
     "merged": [
       {
         "name": "Lauren Winner",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Lauren-brooke Eisen",
+    "canonical_count": 1,
+    "merged": [
+      {
+        "name": "Lauren-Brooke Eisen",
         "count": 1
       }
     ]
@@ -12205,7 +12239,7 @@
     "merged": [
       {
         "name": "Leigh-Ann Jackson",
-        "count": 6
+        "count": 7
       }
     ]
   },
@@ -12349,7 +12383,7 @@
   },
   {
     "canonical": "Lisa Abend",
-    "canonical_count": 78,
+    "canonical_count": 79,
     "merged": [
       {
         "name": "Lisa Anne Abend",
@@ -12379,7 +12413,7 @@
   },
   {
     "canonical": "Lisa Friedman",
-    "canonical_count": 979,
+    "canonical_count": 989,
     "merged": [
       {
         "name": "Lisa K. Friedman",
@@ -12711,7 +12745,7 @@
   },
   {
     "canonical": "Manohla Dargis",
-    "canonical_count": 2725,
+    "canonical_count": 2726,
     "merged": [
       {
         "name": "MANOHLA DARGIS by LORD DARGIS",
@@ -12720,6 +12754,16 @@
       {
         "name": "Manohla Dargis by Lord Dargis",
         "count": 1
+      }
+    ]
+  },
+  {
+    "canonical": "Mar-vic Cagurangan",
+    "canonical_count": 3,
+    "merged": [
+      {
+        "name": "Mar-Vic Cagurangan",
+        "count": 2
       }
     ]
   },
@@ -12739,7 +12783,7 @@
   },
   {
     "canonical": "Marc Santora",
-    "canonical_count": 2377,
+    "canonical_count": 2385,
     "merged": [
       {
         "name": "Marc A. Santora",
@@ -12888,6 +12932,16 @@
     ]
   },
   {
+    "canonical": "Mark S. Ellis",
+    "canonical_count": 3,
+    "merged": [
+      {
+        "name": "Mark Ellis",
+        "count": 1
+      }
+    ]
+  },
+  {
     "canonical": "Mark W. Everson",
     "canonical_count": 2,
     "merged": [
@@ -12899,7 +12953,7 @@
   },
   {
     "canonical": "Mark Landler",
-    "canonical_count": 4379,
+    "canonical_count": 4395,
     "merged": [
       {
         "name": "MARK LANDLER",
@@ -13339,7 +13393,7 @@
   },
   {
     "canonical": "Matthew Rose",
-    "canonical_count": 6,
+    "canonical_count": 7,
     "merged": [
       {
         "name": "Matthew K. Rose",
@@ -13525,7 +13579,7 @@
   },
   {
     "canonical": "Melena Ryzik",
-    "canonical_count": 2281,
+    "canonical_count": 2283,
     "merged": [
       {
         "name": "Melena Z. Ryzik",
@@ -13747,7 +13801,7 @@
   },
   {
     "canonical": "Michael M. Grynbaum",
-    "canonical_count": 2235,
+    "canonical_count": 2243,
     "merged": [
       {
         "name": "MICHAEL M. GRYNBAUM",
@@ -13935,7 +13989,7 @@
   },
   {
     "canonical": "Michael J. de la Merced",
-    "canonical_count": 6059,
+    "canonical_count": 6081,
     "merged": [
       {
         "name": "Michael J. De La Merced",
@@ -14103,7 +14157,7 @@
   },
   {
     "canonical": "Michael S. Schmidt",
-    "canonical_count": 2350,
+    "canonical_count": 2354,
     "merged": [
       {
         "name": "Michael Schmidt",
@@ -14113,7 +14167,7 @@
   },
   {
     "canonical": "Michael Schwirtz",
-    "canonical_count": 1366,
+    "canonical_count": 1368,
     "merged": [
       {
         "name": "MICHAEL SCHWIRTZ",
@@ -14133,7 +14187,7 @@
   },
   {
     "canonical": "Michael D. Shear",
-    "canonical_count": 3519,
+    "canonical_count": 3534,
     "merged": [
       {
         "name": "MICHAEL D. SHEAR",
@@ -14305,7 +14359,7 @@
   },
   {
     "canonical": "Mike McIntire",
-    "canonical_count": 558,
+    "canonical_count": 560,
     "merged": [
       {
         "name": "Mike McINTIRE",
@@ -14409,7 +14463,7 @@
     "merged": [
       {
         "name": "MJ Franklin",
-        "count": 22
+        "count": 24
       }
     ]
   },
@@ -14419,13 +14473,13 @@
     "merged": [
       {
         "name": "MJ Davis Lin",
-        "count": 11
+        "count": 12
       }
     ]
   },
   {
     "canonical": "Mohamed A. El-Erian",
-    "canonical_count": 4,
+    "canonical_count": 5,
     "merged": [
       {
         "name": "Mohamed El-Erian",
@@ -14673,7 +14727,7 @@
   },
   {
     "canonical": "Neil MacFarquhar",
-    "canonical_count": 1932,
+    "canonical_count": 1936,
     "merged": [
       {
         "name": "Neil Macfarquhar",
@@ -14777,7 +14831,7 @@
   },
   {
     "canonical": "Nicholas Kristof",
-    "canonical_count": 2337,
+    "canonical_count": 2343,
     "merged": [
       {
         "name": "Nicholas D. Kristof",
@@ -15167,7 +15221,7 @@
   },
   {
     "canonical": "Patricia Cohen",
-    "canonical_count": 1380,
+    "canonical_count": 1383,
     "merged": [
       {
         "name": "Patricia Cline Cohen",
@@ -15239,7 +15293,7 @@
   },
   {
     "canonical": "Patrick Healy",
-    "canonical_count": 4096,
+    "canonical_count": 4097,
     "merged": [
       {
         "name": "Patrick D. Healy",
@@ -15317,7 +15371,7 @@
   },
   {
     "canonical": "Patrick McGeehan",
-    "canonical_count": 2375,
+    "canonical_count": 2380,
     "merged": [
       {
         "name": "Patrick McGEEHAN",
@@ -15591,13 +15645,13 @@
     "merged": [
       {
         "name": "Paulo Nunes dos Santos",
-        "count": 1
+        "count": 2
       }
     ]
   },
   {
     "canonical": "Penelope Green",
-    "canonical_count": 1165,
+    "canonical_count": 1169,
     "merged": [
       {
         "name": "PENELOPE GREEN",
@@ -15661,11 +15715,11 @@
   },
   {
     "canonical": "Peter Baker",
-    "canonical_count": 3012,
+    "canonical_count": 3021,
     "merged": [
       {
         "name": "Peter C. Baker",
-        "count": 28
+        "count": 29
       },
       {
         "name": "PETER BAKER",
@@ -15775,7 +15829,7 @@
   },
   {
     "canonical": "Peter S. Goodman",
-    "canonical_count": 420,
+    "canonical_count": 421,
     "merged": [
       {
         "name": "Peter Goodman",
@@ -16371,7 +16425,7 @@
   },
   {
     "canonical": "Rebecca F. Elliott",
-    "canonical_count": 161,
+    "canonical_count": 172,
     "merged": [
       {
         "name": "Rebecca Elliott",
@@ -16749,7 +16803,7 @@
   },
   {
     "canonical": "Richard P\u00e9rez-Pe\u00f1a",
-    "canonical_count": 2395,
+    "canonical_count": 2396,
     "merged": [
       {
         "name": "RICHARD P\u00e9REZ-PE\u00f1A",
@@ -16957,7 +17011,7 @@
   },
   {
     "canonical": "Robert Daniels",
-    "canonical_count": 131,
+    "canonical_count": 132,
     "merged": [
       {
         "name": "Robert V. Daniels",
@@ -17113,7 +17167,7 @@
   },
   {
     "canonical": "Robert D. Hershey Jr.",
-    "canonical_count": 4,
+    "canonical_count": 5,
     "merged": [
       {
         "name": "Robert McG. Thomas Jr.",
@@ -17227,7 +17281,7 @@
   },
   {
     "canonical": "Robert D. McFadden",
-    "canonical_count": 1106,
+    "canonical_count": 1108,
     "merged": [
       {
         "name": "ROBERT D. McFADDEN",
@@ -17391,7 +17445,7 @@
   },
   {
     "canonical": "Robert Siegel",
-    "canonical_count": 12,
+    "canonical_count": 14,
     "merged": [
       {
         "name": "Robert Anthony Siegel",
@@ -17559,7 +17613,7 @@
   },
   {
     "canonical": "Robin Pogrebin",
-    "canonical_count": 2625,
+    "canonical_count": 2632,
     "merged": [
       {
         "name": "Robin J. Pogrebin",
@@ -17717,7 +17771,7 @@
   },
   {
     "canonical": "Ronda Kaysen",
-    "canonical_count": 882,
+    "canonical_count": 885,
     "merged": [
       {
         "name": "RONDA KAYSEN",
@@ -17737,7 +17791,7 @@
   },
   {
     "canonical": "Rosalie R. Radomsky",
-    "canonical_count": 890,
+    "canonical_count": 893,
     "merged": [
       {
         "name": "Rosalie Radomsky",
@@ -17781,7 +17835,7 @@
   },
   {
     "canonical": "Roxana Popescu",
-    "canonical_count": 127,
+    "canonical_count": 128,
     "merged": [
       {
         "name": "Roxana M. Popescu",
@@ -18187,7 +18241,7 @@
   },
   {
     "canonical": "Sarah Maslin Nir",
-    "canonical_count": 1219,
+    "canonical_count": 1223,
     "merged": [
       {
         "name": "Sarah Nir",
@@ -18303,7 +18357,7 @@
   },
   {
     "canonical": "Scott McIntyre",
-    "canonical_count": 15,
+    "canonical_count": 16,
     "merged": [
       {
         "name": "Scott Mcintyre",
@@ -18499,7 +18553,7 @@
   },
   {
     "canonical": "Shaila Dewan",
-    "canonical_count": 890,
+    "canonical_count": 893,
     "merged": [
       {
         "name": "Shaila K. Dewan",
@@ -18517,7 +18571,7 @@
     "merged": [
       {
         "name": "Shannon M. Lin",
-        "count": 61
+        "count": 64
       }
     ]
   },
@@ -18561,7 +18615,7 @@
   },
   {
     "canonical": "Sheryl Gay Stolberg",
-    "canonical_count": 3490,
+    "canonical_count": 3497,
     "merged": [
       {
         "name": "SHERYL GAY STOLBERG",
@@ -18725,7 +18779,7 @@
   },
   {
     "canonical": "Stephanie Rosenbloom",
-    "canonical_count": 859,
+    "canonical_count": 860,
     "merged": [
       {
         "name": "STEPHANIE ROSENBLOOM",
@@ -18933,7 +18987,7 @@
   },
   {
     "canonical": "Steven Erlanger",
-    "canonical_count": 3562,
+    "canonical_count": 3568,
     "merged": [
       {
         "name": "STEVEN ERLANGER",
@@ -18953,7 +19007,7 @@
   },
   {
     "canonical": "Steven Kurutz",
-    "canonical_count": 900,
+    "canonical_count": 904,
     "merged": [
       {
         "name": "STEVEN KURUTZ",
@@ -19089,7 +19143,7 @@
     "merged": [
       {
         "name": "Sui-Lee Wee",
-        "count": 130
+        "count": 134
       }
     ]
   },
@@ -19421,7 +19475,7 @@
   },
   {
     "canonical": "Tammy LaGorce",
-    "canonical_count": 153,
+    "canonical_count": 156,
     "merged": [
       {
         "name": "Tammy Lagorce",
@@ -19434,11 +19488,11 @@
     ]
   },
   {
-    "canonical": "Taylor Brown",
-    "canonical_count": 1,
+    "canonical": "Taylor Mitchell Brown",
+    "canonical_count": 2,
     "merged": [
       {
-        "name": "Taylor Mitchell Brown",
+        "name": "Taylor Brown",
         "count": 1
       }
     ]
@@ -19555,7 +19609,7 @@
   },
   {
     "canonical": "The Editorial Board",
-    "canonical_count": 7264,
+    "canonical_count": 7272,
     "merged": [
       {
         "name": "THE EDITORIAL BOARD",
@@ -19607,11 +19661,11 @@
   },
   {
     "canonical": "The Styles Desk",
-    "canonical_count": 165,
+    "canonical_count": 166,
     "merged": [
       {
         "name": "The New York Times Food Desk",
-        "count": 3
+        "count": 4
       },
       {
         "name": "The New York Times Climate Desk",
@@ -19689,7 +19743,7 @@
   },
   {
     "canonical": "The Learning Network",
-    "canonical_count": 7614,
+    "canonical_count": 7646,
     "merged": [
       {
         "name": "THE LEARNING NETWORK",
@@ -19870,16 +19924,16 @@
     ]
   },
   {
-    "canonical": "The Morning Team",
-    "canonical_count": 25,
+    "canonical": "The Headlines Team",
+    "canonical_count": 28,
     "merged": [
       {
-        "name": "The Headlines Team",
-        "count": 24
+        "name": "The Morning Team",
+        "count": 25
       },
       {
         "name": "The Modern Love Podcast Team",
-        "count": 7
+        "count": 8
       },
       {
         "name": "The Serial Team",
@@ -19929,7 +19983,7 @@
   },
   {
     "canonical": "The New York Times",
-    "canonical_count": 37353,
+    "canonical_count": 37373,
     "merged": [
       {
         "name": "THE NEW YORK TIMES",
@@ -20091,7 +20145,7 @@
   },
   {
     "canonical": "Thomas L. Friedman",
-    "canonical_count": 2018,
+    "canonical_count": 2021,
     "merged": [
       {
         "name": "Thomas Friedman",
@@ -20275,7 +20329,7 @@
   },
   {
     "canonical": "Tim McKeough",
-    "canonical_count": 1199,
+    "canonical_count": 1203,
     "merged": [
       {
         "name": "Tim McKEOUGH",
@@ -20297,7 +20351,7 @@
     "merged": [
       {
         "name": "Tim Schneider",
-        "count": 1
+        "count": 2
       }
     ]
   },
@@ -20423,7 +20477,7 @@
   },
   {
     "canonical": "Tom LeClair",
-    "canonical_count": 14,
+    "canonical_count": 15,
     "merged": [
       {
         "name": "Tom Leclair",
@@ -20467,7 +20521,7 @@
     "merged": [
       {
         "name": "Tressie McMillan Cottom",
-        "count": 26
+        "count": 27
       }
     ]
   },
@@ -20859,7 +20913,7 @@
   },
   {
     "canonical": "William J. Broad",
-    "canonical_count": 958,
+    "canonical_count": 961,
     "merged": [
       {
         "name": "William Broad",
@@ -20879,7 +20933,7 @@
   },
   {
     "canonical": "William B. Davis",
-    "canonical_count": 269,
+    "canonical_count": 280,
     "merged": [
       {
         "name": "William P. Davis",
@@ -21023,7 +21077,7 @@
   },
   {
     "canonical": "William K. Rashbaum",
-    "canonical_count": 2315,
+    "canonical_count": 2320,
     "merged": [
       {
         "name": "William K <missing Dot> Rashbaum",
@@ -21127,7 +21181,7 @@
   },
   {
     "canonical": "Yeganeh Torbati",
-    "canonical_count": 52,
+    "canonical_count": 65,
     "merged": [
       {
         "name": "Yeganeh June Torbati",
