@@ -880,6 +880,27 @@ OBIT_OVERRIDES = {
     '/2026/04/11/obituaries/margaret-gipsy-moth-overlooked.html': {
         'age': 59,
     },
+    # ---- 2026-10-04 ----
+    # John Sedgwick: headline "He Wrote the Book on the Sedgwick ‘Family
+    # Disease,’ and Succumbed to It" has no name, so the parser stored "He"
+    # with the tail of the sentence as profession. Name is from the URL slug;
+    # the headline gives no age.
+    '/2026/10/02/books/john-sedgwick-dead.html': {
+        'name': 'John Sedgwick',
+        'profession': 'Wrote the Book on the Sedgwick \u2018Family Disease\u2019',
+    },
+    # William Draper: "He Was a Tech Investor Before There Was a Silicon
+    # Valley" — same nameless-headline failure; the parser stored "He" (and,
+    # until Sedgwick was fixed, merged the two men as one same-name record).
+    '/2026/09/30/technology/william-draper-dead.html': {
+        'name': 'William Draper',
+        'profession': 'Tech Investor Before There Was a Silicon Valley',
+    },
+    # Presley Gerber: "Police Investigating Overdose in Death of Presley
+    # Gerber at 27" — age is in the headline but not in a "Dies at" form.
+    '/2026/09/21/style/presley-gerber-dead-cindy-crawford.html': {
+        'age': 27,
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
@@ -1259,17 +1280,39 @@ _RE_DIES_SEMI = re.compile(
 )
 
 
+def _balance_quotes(role):
+    """Close a title quote that the comma / who-clause splits cut in half
+    ("Author of ‘Pilgrim at Tinker Creek" → "…Creek’"). A ’ followed by a
+    letter or digit is an apostrophe, not a closing quote. Unmatched closers
+    are left alone: they are almost always plural possessives ("Dolphins’")."""
+    for opener, closer in (('\u2018', '\u2019'), ('\u201C', '\u201D')):
+        at = role.rfind(opener)
+        if at < 0:
+            continue
+        tail = role[at + 1:]
+        if not re.search(re.escape(closer) + r'(?![A-Za-z0-9])', tail):
+            role += closer
+    return role
+
+
 def _clean_role(raw):
     role = raw.strip()
     role = re.sub(r'\s+(?:who|that|whose|which)\b.*$', '', role, flags=re.I)
     role = re.sub(r'\b(?:is\s+|was\s+)?(?:dies|dead|died|is\s+dead)\b.*$', '', role, flags=re.I).strip()
     role = re.sub(r'^(?:who|that|whose|of|with|by)\s+', '', role, flags=re.I).strip()
-    # Convert curly quotes to straight; keep straight apostrophes (e.g. possessives)
-    role = re.sub(r'[\u2018\u2019\u201C\u201D]', '', role)  # strip curly quotes, keep straight apostrophes
+    # Keep the headline's curly quotes and apostrophes. Stripping them (the
+    # behavior until 2026-10-04) also ate possessives, since NYT headlines
+    # use the curly apostrophe: "Womens Movement", "Britains MI6".
+    role = re.sub(r'[.,;:]+([\u2019\u201D])$', r'\1', role)  # "Creek,’" → "Creek’"
     role = role.rstrip('.,;:').strip()
+    # A closing quote left at the very start belongs to text the split cut
+    # off. (A leading apostrophe, as in "’60s Radical", abuts a letter/digit.)
+    role = re.sub(r'^[\u2019\u201D](?![A-Za-z0-9])\s*', '', role)
+    role = _balance_quotes(role)
     role = re.sub(r'^(?:[Aa]n?|[Tt]he)\s+', '', role)
-    if not role or role.isdigit(): return None
-    if len(role) < 3 or len(role) > 80: return None
+    bare = re.sub(r'[\u2018\u2019\u201C\u201D]', '', role).strip()
+    if not bare or bare.isdigit(): return None
+    if len(bare) < 3 or len(bare) > 80: return None
     return role
 
 
