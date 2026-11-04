@@ -901,6 +901,20 @@ OBIT_OVERRIDES = {
     '/2026/09/21/style/presley-gerber-dead-cindy-crawford.html': {
         'age': 27,
     },
+    # ---- 2026-11-03 ----
+    # New "X Has Died. <sentence>." headline form (three in Oct 2026): no
+    # comma-delimited profession and no age. Profession = the second sentence,
+    # trimmed to a noun phrase. Ages only where the API text states one.
+    '/2026/10/06/us/bill-harris-dead.html': {
+        'profession': 'Kidnapped Patty Hearst in 1974',
+    },
+    '/2026/10/09/sports/mike-ditka-dead.html': {
+        'profession': 'Bears Coach',
+    },
+    # Plavsic: "The Only Woman Charged With War Crimes in the Balkan Wars Has Died".
+    '/2026/10/04/world/europe/biljana-plavsic-dead.html': {
+        'profession': 'Only Woman Charged With War Crimes in the Balkan Wars',
+    },
 }
 
 # Multi-subject obituaries: one URL covers two or more deaths (spouses,
